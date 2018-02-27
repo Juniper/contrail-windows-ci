@@ -5,26 +5,32 @@ from publishers.database import Build, Stage
 
 class TestObjectStringifying(unittest.TestCase):
     def test_build_stringifying(self):
-        build = Build(job_name='Test',
-                      build_id=1234,
-                      build_url='test',
-                      finished_at_secs=5678,
-                      status='SUCCESS',
-                      duration_millis=4321)
+        build = Build(
+            job_name = 'Test',
+            build_id = 1234,
+            build_url = 'test',
+            finished_at_secs = 5678,
+            status = 'SUCCESS',
+            duration_millis = 4321,
+        )
 
         self.assertEqual(str(build), '<Build(id=None, name=Test, build_id=1234)>')
 
     def test_stage_stringifying(self):
-        build = Build(job_name='Test',
-                      build_id=1234,
-                      build_url='test',
-                      finished_at_secs=5678,
-                      status='SUCCESS',
-                      duration_millis=4321)
+        build = Build(
+            job_name = 'Test',
+            build_id = 1234,
+            build_url = 'test',
+            finished_at_secs = 5678,
+            status = 'SUCCESS',
+            duration_millis = 4321,
+        )
 
-        stage = Stage(name='TestStage',
-                      status='SUCCESS',
-                      duration_millis=1010)
+        stage = Stage(
+            name = 'TestStage',
+            status = 'SUCCESS',
+            duration_millis = 1010,
+        )
 
         build.stages.append(stage)
 
