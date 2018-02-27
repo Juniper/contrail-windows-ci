@@ -1,6 +1,7 @@
 import unittest
 
 from tests.test_collectors import *
+from tests.test_publishers import *
 from tests.test_database import *
 
 if __name__ == '__main__':
