@@ -35,13 +35,11 @@ class JenkinsCollectorAdapter(ICollector):
         stages_stats = []
 
         if 'stages' in raw_stats.keys():
-            for raw_stage in raw_stats['stages']:
-                stage = StageStats(
-                    name = raw_stage['name'],
-                    status = raw_stage['status'],
-                    duration_millis = raw_stage['durationMillis']
-                )
-                stages_stats.append(stage)
+            stages_stats = [StageStats(
+                name = raw_stage['name'],
+                status = raw_stage['status'],
+                duration_millis = raw_stage['durationMillis']
+            ) for raw_stage in raw_stats['stages']]
 
         build_stats = BuildStats(
             job_name = self.job_name,
