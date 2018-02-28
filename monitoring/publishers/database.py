@@ -2,6 +2,7 @@ from sqlalchemy import BigInteger, ForeignKey, Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
+
 MonitoringBase = declarative_base()
 
 
