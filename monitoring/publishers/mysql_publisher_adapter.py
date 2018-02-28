@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from publisher import IPublisher
-from publishers.database import Build, Stage
+from publishers.database import Build
 
 
 class MySQLPublisherAdapter(IPublisher):
@@ -12,7 +12,8 @@ class MySQLPublisherAdapter(IPublisher):
 
 
     def publish(self, build_stats):
-        self.session.add(build_stats)
+        build = Build.from_build_stats(build_stats)
+        self.session.add(build)
         self.session.commit()
 
 

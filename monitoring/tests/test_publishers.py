@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from publishers.mysql_publisher_adapter import MySQLPublisherAdapter
 from publishers.database import Build, Stage, MonitoringBase
+from stats import BuildStats, StageStats
 
 
 class TestConnectionString(unittest.TestCase):
@@ -30,18 +31,19 @@ class TestPublishing(unittest.TestCase):
         self.engine = None
 
     def test_publish_build_stats_no_stages(self):
-        build = Build(
+        build_stats = BuildStats(
             job_name = 'Test',
             build_id = 1234,
             build_url = 'http://localhost:8080/job/MyJob/1',
             finished_at_secs = 5678,
             status = 'SUCCESS',
             duration_millis = 4321,
+            stages = [],
         )
 
         with patch.object(MySQLPublisherAdapter, 'get_database_session', return_value=self.session):
             publisher = MySQLPublisherAdapter('', '', '', '')
-            publisher.publish(build)
+            publisher.publish(build_stats)
 
         build_count = self.session.query(Build).count()
         self.assertEqual(build_count, 1)
@@ -58,32 +60,31 @@ class TestPublishing(unittest.TestCase):
         self.assertEqual(build.duration_millis, 4321)
 
     def test_publish_build_stats_with_stages(self):
-        build = Build(
+        stage1_stats = StageStats(
+            name = 'TestStage1',
+            status = 'SUCCESS',
+            duration_millis = 1010,
+        )
+
+        stage2_stats = StageStats(
+            name = 'TestStage2',
+            status = 'FAILURE',
+            duration_millis = 10,
+        )
+
+        build_stats = BuildStats(
             job_name = 'Test',
             build_id = 1234,
             build_url = 'http://localhost:8080/job/MyJob/1',
             finished_at_secs = 5678,
             status = 'SUCCESS',
             duration_millis = 4321,
+            stages = [stage1_stats, stage2_stats],
         )
-
-        stage1 = Stage(
-            name = 'TestStage1',
-            status = 'SUCCESS',
-            duration_millis = 1010,
-        )
-
-        stage2 = Stage(
-            name = 'TestStage2',
-            status = 'FAILURE',
-            duration_millis = 10,
-        )
-
-        build.stages.extend([stage1, stage2])
 
         with patch.object(MySQLPublisherAdapter, 'get_database_session', return_value=self.session):
             publisher = MySQLPublisherAdapter('', '', '', '')
-            publisher.publish(build)
+            publisher.publish(build_stats)
 
         build_count = self.session.query(Build).count()
         self.assertEqual(build_count, 1)
