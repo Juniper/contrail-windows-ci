@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import unittest
 from stats import BuildStats, StageStats
 from publishers.database import Build, Stage
