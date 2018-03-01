@@ -82,5 +82,5 @@
 
 - name: Build IIS TCP test Docker image
   docker_image:
-    path: "C:\{{dockerfile_dir}}"
+    path: "C:\\{{dockerfile_dir}}"
     name: iis-tcptest
