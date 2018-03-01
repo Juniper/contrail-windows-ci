@@ -40,7 +40,7 @@ class Stage(MonitoringBase):
     __tablename__ = 'stages'
 
     id = Column(Integer, primary_key=True)
-    build_id = Column(Integer, ForeignKey('builds.id'))
+    build_id = Column(Integer, ForeignKey('builds.id'), nullable=False)
     name = Column(String(4096), nullable=False)
     status = Column(String(4096), nullable=False)
     duration_millis = Column(BigInteger, nullable=False)

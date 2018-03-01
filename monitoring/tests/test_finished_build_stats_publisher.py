@@ -2,8 +2,6 @@
 import unittest
 from unittest.mock import MagicMock
 from finished_build_stats_publisher import FinishedBuildStatsPublisher
-from collector import ICollector
-from publisher import IPublisher
 from stats import BuildStats
 
 
@@ -32,10 +30,10 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
     def test_finished(self):
         build_stats = self.get_build_stats_with_status('SUCCESS')
 
-        collector = ICollector()
+        collector = MagicMock()
         collector.collect = MagicMock(return_value=build_stats)
 
-        publisher = IPublisher()
+        publisher = MagicMock()
         publisher.publish = MagicMock()
 
         stats_publisher = FinishedBuildStatsPublisher(collector, publisher)
@@ -47,10 +45,10 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
     def test_with_retries(self):
         success_build_stats = self.get_build_stats_with_status('SUCCESS')
 
-        collector = ICollector()
+        collector = MagicMock()
         collector.collect = MagicMock(side_effect=TestFinishedBuildStatsPublisher.CollectSideEffect())
 
-        publisher = IPublisher()
+        publisher = MagicMock()
         publisher.publish = MagicMock()
 
         stats_publisher = FinishedBuildStatsPublisher(collector, publisher)

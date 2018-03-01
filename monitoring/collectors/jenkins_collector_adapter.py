@@ -1,5 +1,4 @@
 import requests
-from collector import ICollector
 from stats import BuildStats, StageStats
 
 
@@ -7,7 +6,7 @@ class InvalidResponseCodeError(Exception):
     pass
 
 
-class JenkinsCollectorAdapter(ICollector):
+class JenkinsCollectorAdapter(object):
 
     def __init__(self, job_name, build_url):
         self.job_name = job_name
