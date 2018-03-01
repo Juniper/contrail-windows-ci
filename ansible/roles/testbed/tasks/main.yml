@@ -72,9 +72,6 @@
   win_shell: >
     Bcdedit.exe -set TESTSIGNING ON
 
-- vars:
-    dockerfile_dir: iis-tcp-test-dockerfile
-
 - name: Copy IIS TCP test Dockerfile
   copy:
     src: "{{dockerfile_dir}}"
