@@ -58,16 +58,29 @@
     - Private
     state: disabled
 
-- name: stop docker
+- name: Stop Docker
   win_service:
-      name: docker
-      state: stopped
+    name: docker
+    state: stopped
 
-- name: remove container networks
+- name: Remove container networks
   win_shell: |
-        Get-NetNat | Remove-NetNat -Confirm:$false
-        Get-ContainerNetwork | Remove-ContainerNetwork -Force
+    Get-NetNat | Remove-NetNat -Confirm:$false
+    Get-ContainerNetwork | Remove-ContainerNetwork -Force
 
-- name: enable testsigning
+- name: Enable testsigning
   win_shell: >
-      Bcdedit.exe -set TESTSIGNING ON
+    Bcdedit.exe -set TESTSIGNING ON
+
+- vars:
+    dockerfile_dir: iis-tcp-test-dockerfile
+
+- name: Copy IIS TCP test Dockerfile
+  copy:
+    src: "{{dockerfile_dir}}"
+    dest: C:\
+
+- name: Build IIS TCP test Docker image
+  docker_image:
+    path: "C:\{{dockerfile_dir}}"
+    name: iis-tcptest
