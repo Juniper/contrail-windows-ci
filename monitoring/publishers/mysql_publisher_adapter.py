@@ -11,7 +11,7 @@ class MySQLPublisherAdapter(object):
 
 
     def publish(self, build_stats):
-        build = Build.from_build_stats(build_stats)
+        build = Build(build_stats)
         self.session.add(build)
         self.session.commit()
 

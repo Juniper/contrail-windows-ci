@@ -1,37 +1,46 @@
 #!/usr/bin/env python3
 import unittest
+from collections import namedtuple
 from stats import BuildStats, StageStats
 from publishers.database import Build, Stage
 
 
 class TestObjectStringifying(unittest.TestCase):
     def test_build_stringifying(self):
-        build = Build(
-            job_name = 'Test',
-            build_id = 1234,
-            build_url = 'test',
-            finished_at_secs = 5678,
-            status = 'SUCCESS',
-            duration_millis = 4321,
-        )
+        build_stats = {
+            'job_name': 'Test',
+            'build_id': 1234,
+            'build_url': 'test',
+            'finished_at_secs': 5678,
+            'status': 'SUCCESS',
+            'duration_millis': 4321,
+            'stages': [],
+        }
+        build_stats = namedtuple('TestStats', build_stats.keys())(*build_stats.values())
+        build = Build(build_stats)
 
         self.assertEqual(str(build), '<Build(id=None, name=Test, build_id=1234)>')
 
     def test_stage_stringifying(self):
-        build = Build(
-            job_name = 'Test',
-            build_id = 1234,
-            build_url = 'test',
-            finished_at_secs = 5678,
-            status = 'SUCCESS',
-            duration_millis = 4321,
-        )
+        build_stats = {
+            'job_name': 'Test',
+            'build_id': 1234,
+            'build_url': 'test',
+            'finished_at_secs': 5678,
+            'status': 'SUCCESS',
+            'duration_millis': 4321,
+            'stages': [],
+        }
+        build_stats = namedtuple('TestBuildStats', build_stats.keys())(*build_stats.values())
+        build = Build(build_stats)
 
-        stage = Stage(
-            name = 'TestStage',
-            status = 'SUCCESS',
-            duration_millis = 1010,
-        )
+        stage_stats = {
+            'name': 'TestStage',
+            'status': 'SUCCESS',
+            'duration_millis': 1010,
+        }
+        stage_stats = namedtuple('TestStageStats', stage_stats.keys())(*stage_stats.values())
+        stage = Stage(stage_stats)
 
         build.stages.append(stage)
 
@@ -46,7 +55,7 @@ class TestObjectConversions(unittest.TestCase):
             duration_millis = 123
         )
 
-        stage = Stage.from_stage_stats(stage_stats)
+        stage = Stage(stage_stats)
 
         self.assertIsNotNone(stage)
         self.assertEqual(stage.id, None)
@@ -67,7 +76,7 @@ class TestObjectConversions(unittest.TestCase):
             stages = [],
         )
 
-        build = Build.from_build_stats(build_stats)
+        build = Build(build_stats)
 
         self.assertIsNotNone(build)
         self.assertEqual(build.id, None)
@@ -102,7 +111,7 @@ class TestObjectConversions(unittest.TestCase):
             ],
         )
 
-        build = Build.from_build_stats(build_stats)
+        build = Build(build_stats)
 
         self.assertIsNotNone(build)
         self.assertEqual(build.id, None)
