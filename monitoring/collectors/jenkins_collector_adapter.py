@@ -14,12 +14,12 @@ class JenkinsCollectorAdapter(object):
 
 
     def collect(self):
-        resp = self.get_raw_stats_from_jenkins()
-        return self.convert_raw_stats_to_build_stats(resp)
+        resp = self._get_raw_stats_from_jenkins()
+        return self._convert_raw_stats_to_build_stats(resp)
 
 
-    def get_raw_stats_from_jenkins(self):
-        endpoint = self.get_build_stats_endpoint(self.url)
+    def _get_raw_stats_from_jenkins(self):
+        endpoint = self._get_build_stats_endpoint(self.url)
         resp = requests.get(endpoint)
 
         if resp.status_code != 200:
@@ -28,7 +28,7 @@ class JenkinsCollectorAdapter(object):
         return resp.json()
 
 
-    def convert_raw_stats_to_build_stats(self, raw_stats):
+    def _convert_raw_stats_to_build_stats(self, raw_stats):
         timestamp = int(raw_stats['endTimeMillis'] / 1000)
 
         stages_stats = []
@@ -54,5 +54,5 @@ class JenkinsCollectorAdapter(object):
 
 
     @classmethod
-    def get_build_stats_endpoint(cls, build_url):
+    def _get_build_stats_endpoint(cls, build_url):
         return '{}/wfapi/describe'.format(build_url)
