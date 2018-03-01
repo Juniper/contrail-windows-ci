@@ -81,7 +81,7 @@
 - name: Build IIS TCP test Docker image
   register: output
   win_shell: |
-    "docker build -t iis-tcptest C:\\{{dockerfile_dir}}"
+    docker build -t iis-tcptest "C:\\{{dockerfile_dir}}"
 
 - debug:
     var: output
