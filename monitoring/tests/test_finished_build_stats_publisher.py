@@ -3,7 +3,7 @@ import unittest
 import timeout_decorator
 from unittest.mock import MagicMock
 from finished_build_stats_publisher import FinishedBuildStatsPublisher, MaxRetriesExceededError
-from tests.common import get_build_stats_with_status
+from tests.common import get_test_build_stats_with_status
 
 
 class TestFinishedBuildStatsPublisher(unittest.TestCase):
@@ -12,8 +12,8 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
         self.publisher = MagicMock()
         self.publisher.publish = MagicMock()
         self.stats_publisher = FinishedBuildStatsPublisher(self.collector, self.publisher)
-        self.build_stats_success = get_build_stats_with_status('SUCCESS')
-        self.build_stats_in_progress = get_build_stats_with_status('IN_PROGRESS')
+        self.build_stats_success = get_test_build_stats_with_status('SUCCESS')
+        self.build_stats_in_progress = get_test_build_stats_with_status('IN_PROGRESS')
 
     def test_finished(self):
         self.collector.collect = MagicMock(return_value=self.build_stats_success)

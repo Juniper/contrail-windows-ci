@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from publishers.database_publisher_adapter import DatabasePublisherAdapter
 from publishers.database import Build, Stage, MonitoringBase
 from stats import BuildStats, StageStats
+from tests.common import get_test_build_stats, TEST_STAGE1_STATS, TEST_STAGE2_STATS
+from tests.common import assert_stage_matches_stage_stats, assert_build_matches_build_stats
 
 
 class TestPublishing(unittest.TestCase):
@@ -14,31 +16,22 @@ class TestPublishing(unittest.TestCase):
         self.engine = create_engine('sqlite://')
         MonitoringBase.metadata.create_all(self.engine)
 
-        self.session_factory = sessionmaker()
-        self.session_factory.configure(bind=self.engine)
-        self.session = self.session_factory()
+        session_factory = sessionmaker()
+        session_factory.configure(bind=self.engine)
+        self.session = session_factory()
+
+        db_session = MagicMock()
+        db_session.get_database_session = MagicMock(return_value=self.session)
+
+        self.publisher = DatabasePublisherAdapter(db_session)
 
     def tearDown(self):
-        self.session = None
-        self.session_factory = None
         self.engine.dispose()
         self.engine = None
 
     def test_publish_build_stats_no_stages(self):
-        build_stats = BuildStats(
-            job_name = 'Test',
-            build_id = 1234,
-            build_url = 'http://1.2.3.4:8080/job/MyJob/1',
-            finished_at_secs = 5678,
-            status = 'SUCCESS',
-            duration_millis = 4321,
-            stages = [],
-        )
-
-        db_session = MagicMock()
-        db_session.get_database_session = MagicMock(return_value=self.session)
-        publisher = DatabasePublisherAdapter(db_session)
-        publisher.publish(build_stats)
+        build_stats = get_test_build_stats()
+        self.publisher.publish(build_stats)
 
         build_count = self.session.query(Build).count()
         self.assertEqual(build_count, 1)
@@ -47,57 +40,25 @@ class TestPublishing(unittest.TestCase):
         self.assertEqual(stage_count, 0)
 
         build = self.session.query(Build).one()
-        self.assertEqual(build.job_name, 'Test')
-        self.assertEqual(build.build_id, 1234)
-        self.assertEqual(build.build_url, 'http://1.2.3.4:8080/job/MyJob/1')
-        self.assertEqual(build.finished_at_secs, 5678)
-        self.assertEqual(build.status, 'SUCCESS')
-        self.assertEqual(build.duration_millis, 4321)
+        assert_build_matches_build_stats(self, build, build_stats)
 
     def test_publish_build_stats_with_stages(self):
-        stage1_stats = StageStats(
-            name = 'TestStage1',
-            status = 'SUCCESS',
-            duration_millis = 1010,
-        )
-
-        stage2_stats = StageStats(
-            name = 'TestStage2',
-            status = 'FAILURE',
-            duration_millis = 10,
-        )
-
-        build_stats = BuildStats(
-            job_name = 'Test',
-            build_id = 1234,
-            build_url = 'http://1.2.3.4:8080/job/MyJob/1',
-            finished_at_secs = 5678,
-            status = 'SUCCESS',
-            duration_millis = 4321,
-            stages = [stage1_stats, stage2_stats],
-        )
-
-        db_session = MagicMock()
-        db_session.get_database_session = MagicMock(return_value=self.session)
-        publisher = DatabasePublisherAdapter(db_session)
-        publisher.publish(build_stats)
+        build_stats = get_test_build_stats([TEST_STAGE1_STATS, TEST_STAGE2_STATS])
+        self.publisher.publish(build_stats)
 
         build_count = self.session.query(Build).count()
         self.assertEqual(build_count, 1)
+
         build = self.session.query(Build).one()
         self.assertEqual(len(build.stages), 2)
         self.assertIsNotNone(build.stages[0])
         self.assertIsNotNone(build.stages[1])
 
-        self.assertEqual(build.stages[0].name, 'TestStage1')
-        self.assertEqual(build.stages[0].status, 'SUCCESS')
-        self.assertEqual(build.stages[0].duration_millis, 1010)
+        assert_stage_matches_stage_stats(self, build.stages[0], TEST_STAGE1_STATS)
         self.assertEqual(build.stages[0].build_id, build.id)
         self.assertEqual(build.stages[0].build, build)
 
-        self.assertEqual(build.stages[1].name, 'TestStage2')
-        self.assertEqual(build.stages[1].status, 'FAILURE')
-        self.assertEqual(build.stages[1].duration_millis, 10)
+        assert_stage_matches_stage_stats(self, build.stages[1], TEST_STAGE2_STATS)
         self.assertEqual(build.stages[1].build_id, build.id)
         self.assertEqual(build.stages[1].build, build)
 
