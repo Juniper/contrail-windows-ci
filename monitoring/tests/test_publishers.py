@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from publishers.mysql_publisher_adapter import MySQLPublisherAdapter
+from publishers.database_publisher_adapter import DatabasePublisherAdapter
 from publishers.database import Build, Stage, MonitoringBase
 from stats import BuildStats, StageStats
-
-
-class TestConnectionString(unittest.TestCase):
-    def test_get_connection_string(self):
-        connection_str = MySQLPublisherAdapter.get_connection_string('1.2.3.4', 'admin', 'test123', 'TestDB')
-        self.assertEqual(connection_str, 'mysql://admin:test123@1.2.3.4/TestDB')
 
 
 class TestPublishing(unittest.TestCase):
@@ -41,9 +35,10 @@ class TestPublishing(unittest.TestCase):
             stages = [],
         )
 
-        with patch.object(MySQLPublisherAdapter, 'get_database_session', return_value=self.session):
-            publisher = MySQLPublisherAdapter('', '', '', '')
-            publisher.publish(build_stats)
+        db_session = MagicMock()
+        db_session.get_database_session = MagicMock(return_value=self.session)
+        publisher = DatabasePublisherAdapter(db_session)
+        publisher.publish(build_stats)
 
         build_count = self.session.query(Build).count()
         self.assertEqual(build_count, 1)
@@ -82,9 +77,10 @@ class TestPublishing(unittest.TestCase):
             stages = [stage1_stats, stage2_stats],
         )
 
-        with patch.object(MySQLPublisherAdapter, 'get_database_session', return_value=self.session):
-            publisher = MySQLPublisherAdapter('', '', '', '')
-            publisher.publish(build_stats)
+        db_session = MagicMock()
+        db_session.get_database_session = MagicMock(return_value=self.session)
+        publisher = DatabasePublisherAdapter(db_session)
+        publisher.publish(build_stats)
 
         build_count = self.session.query(Build).count()
         self.assertEqual(build_count, 1)

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 from mysql_common_argument_parser import MysqlCommonArgumentParser
 from collectors.jenkins_collector_adapter import JenkinsCollectorAdapter
-from publishers.mysql_publisher_adapter import MySQLPublisherAdapter
+from publishers.database_publisher_adapter import DatabasePublisherAdapter
+from publishers.mysql_session import MySQLSession
 from finished_build_stats_publisher import FinishedBuildStatsPublisher
 
 
@@ -16,8 +17,9 @@ def main():
     args = parse_args()
 
     collector = JenkinsCollectorAdapter(job_name=args.job_name, build_url=args.build_url)
-    publisher = MySQLPublisherAdapter(host=args.mysql_host, username=args.mysql_username,
-                                      password=args.mysql_password, database=args.mysql_database)
+    db_session = MySQLSession(host=args.mysql_host, username=args.mysql_username,
+                              password=args.mysql_password, database=args.mysql_database)
+    publisher = DatabasePublisherAdapter(database_session=db_session)
 
     stats_publisher = FinishedBuildStatsPublisher(collector, publisher)
     stats_publisher.collect_and_publish()
