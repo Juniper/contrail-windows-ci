@@ -8,21 +8,21 @@ from stats import BuildStats, StageStats
 
 class TestJenkinsGetBuildStatsEndpoint(unittest.TestCase):
     def test_build_stats_endpoint_is_good(self):
-        url = JenkinsCollectorAdapter.get_build_stats_endpoint(build_url='http://localhost:8080/job/MyJob/1')
-        self.assertEqual(url, 'http://localhost:8080/job/MyJob/1/wfapi/describe')
+        url = JenkinsCollectorAdapter.get_build_stats_endpoint(build_url='http://1.2.3.4:5678/job/MyJob/1')
+        self.assertEqual(url, 'http://1.2.3.4:5678/job/MyJob/1/wfapi/describe')
 
 
 class TestJenkinsGetRawStats(unittest.TestCase):
     def test_get_raw_stats_ok(self):
         with requests_mock.mock() as m:
-            m.get('http://localhost:8080/job/MyJob/1/wfapi/describe', json={
+            m.get('http://1.2.3.4:5678/job/MyJob/1/wfapi/describe', json={
                 'id': 1,
                 'status': 'SUCCESS',
                 'durationMillis': 1000,
                 'endTimeMillis': 1234,
             })
 
-            collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+            collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
             stats = collector.get_raw_stats_from_jenkins()
 
         self.assertIsNotNone(stats)
@@ -31,11 +31,11 @@ class TestJenkinsGetRawStats(unittest.TestCase):
         self.assertEqual(stats['status'], 'SUCCESS')
         self.assertEqual(stats['durationMillis'], 1000)
 
-    def test_get_raw_stats_error(self):
+    def test_get_raw_stats_invalid_build_id(self):
         with requests_mock.mock() as m:
-            m.get('http://localhost:8080/job/MyJob/-1/wfapi/describe', status_code=404)
+            m.get('http://1.2.3.4:5678/job/MyJob/-1/wfapi/describe', status_code=404)
 
-            collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/-1')
+            collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/-1')
             with self.assertRaises(InvalidResponseCodeError):
                 collector.get_raw_stats_from_jenkins()
 
@@ -53,14 +53,14 @@ class TestJenkinsConvertStats(unittest.TestCase):
             'endTimeMillis': self.finished_at_millis,
         }
 
-        collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+        collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
         build_stats = collector.convert_raw_stats_to_build_stats(json)
 
         self.assertIsNotNone(build_stats)
         self.assertIsInstance(build_stats, BuildStats)
         self.assertEqual(build_stats.job_name, 'MyJob')
         self.assertEqual(build_stats.build_id, 1)
-        self.assertEqual(build_stats.build_url, 'http://localhost:8080/job/MyJob/1')
+        self.assertEqual(build_stats.build_url, 'http://1.2.3.4:5678/job/MyJob/1')
         self.assertEqual(build_stats.finished_at_secs, int(self.finished_at.timestamp()))
         self.assertEqual(build_stats.status, 'SUCCESS')
         self.assertEqual(build_stats.duration_millis, 1000)
@@ -73,7 +73,7 @@ class TestJenkinsConvertStats(unittest.TestCase):
             'endTimeMillis': self.finished_at_millis,
         }
 
-        collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+        collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
         build_stats = collector.convert_raw_stats_to_build_stats(json)
 
         self.assertIsNotNone(build_stats)
@@ -88,7 +88,7 @@ class TestJenkinsConvertStats(unittest.TestCase):
             'stages': [],
         }
 
-        collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+        collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
         build_stats = collector.convert_raw_stats_to_build_stats(json)
 
         self.assertIsNotNone(build_stats)
@@ -114,7 +114,7 @@ class TestJenkinsConvertStats(unittest.TestCase):
             ],
         }
 
-        collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+        collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
         build_stats = collector.convert_raw_stats_to_build_stats(json)
 
         self.assertIsNotNone(build_stats)
@@ -138,43 +138,43 @@ class TestJenkinsCollect(unittest.TestCase):
 
     def test_build_stats(self):
         with requests_mock.mock() as m:
-            m.get('http://localhost:8080/job/MyJob/1/wfapi/describe', json={
+            m.get('http://1.2.3.4:5678/job/MyJob/1/wfapi/describe', json={
                 'id': 1,
                 'status': 'SUCCESS',
                 'durationMillis': 1000,
                 'endTimeMillis': self.finished_at_millis,
             })
 
-            collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+            collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
             build_stats = collector.collect()
             self.assertIsNotNone(build_stats)
             self.assertIsInstance(build_stats, BuildStats)
             self.assertEqual(build_stats.job_name, 'MyJob')
             self.assertEqual(build_stats.build_id, 1)
-            self.assertEqual(build_stats.build_url, 'http://localhost:8080/job/MyJob/1')
+            self.assertEqual(build_stats.build_url, 'http://1.2.3.4:5678/job/MyJob/1')
             self.assertEqual(build_stats.finished_at_secs, int(self.finished_at.timestamp()))
             self.assertEqual(build_stats.status, 'SUCCESS')
             self.assertEqual(build_stats.duration_millis, 1000)
 
     def test_invalid_url(self):
         with requests_mock.mock() as m:
-            m.get('http://localhost:8080/job/MyJob/-1/wfapi/describe', status_code=404)
+            m.get('http://1.2.3.4:5678/job/MyJob/-1/wfapi/describe', status_code=404)
 
-            collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/-1')
+            collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/-1')
 
             with self.assertRaises(InvalidResponseCodeError):
                 collector.collect()
 
     def test_no_stages(self):
         with requests_mock.mock() as m:
-            m.get('http://localhost:8080/job/MyJob/1/wfapi/describe', json={
+            m.get('http://1.2.3.4:5678/job/MyJob/1/wfapi/describe', json={
                 'id': 1,
                 'status': 'SUCCESS',
                 'durationMillis': 1000,
                 'endTimeMillis': self.finished_at_millis,
             })
 
-            collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+            collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
             build_stats = collector.collect()
 
             self.assertIsNotNone(build_stats)
@@ -182,7 +182,7 @@ class TestJenkinsCollect(unittest.TestCase):
 
     def test_empty_stages(self):
         with requests_mock.mock() as m:
-            m.get('http://localhost:8080/job/MyJob/1/wfapi/describe', json={
+            m.get('http://1.2.3.4:5678/job/MyJob/1/wfapi/describe', json={
                 'id': 1,
                 'status': 'SUCCESS',
                 'durationMillis': 1000,
@@ -190,7 +190,7 @@ class TestJenkinsCollect(unittest.TestCase):
                 'stages': [],
             })
 
-            collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+            collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
             build_stats = collector.collect()
 
             self.assertIsNotNone(build_stats)
@@ -198,7 +198,7 @@ class TestJenkinsCollect(unittest.TestCase):
 
     def test_stages_stats(self):
         with requests_mock.mock() as m:
-            m.get('http://localhost:8080/job/MyJob/1/wfapi/describe', json={
+            m.get('http://1.2.3.4:5678/job/MyJob/1/wfapi/describe', json={
                 'id': 1,
                 'status': 'SUCCESS',
                 'durationMillis': 1000,
@@ -217,7 +217,7 @@ class TestJenkinsCollect(unittest.TestCase):
                 ],
             })
 
-            collector = JenkinsCollectorAdapter('MyJob', 'http://localhost:8080/job/MyJob/1')
+            collector = JenkinsCollectorAdapter('MyJob', 'http://1.2.3.4:5678/job/MyJob/1')
             build_stats = collector.collect()
 
             self.assertIsNotNone(build_stats)

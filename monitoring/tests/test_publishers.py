@@ -34,7 +34,7 @@ class TestPublishing(unittest.TestCase):
         build_stats = BuildStats(
             job_name = 'Test',
             build_id = 1234,
-            build_url = 'http://localhost:8080/job/MyJob/1',
+            build_url = 'http://1.2.3.4:8080/job/MyJob/1',
             finished_at_secs = 5678,
             status = 'SUCCESS',
             duration_millis = 4321,
@@ -54,7 +54,7 @@ class TestPublishing(unittest.TestCase):
         build = self.session.query(Build).one()
         self.assertEqual(build.job_name, 'Test')
         self.assertEqual(build.build_id, 1234)
-        self.assertEqual(build.build_url, 'http://localhost:8080/job/MyJob/1')
+        self.assertEqual(build.build_url, 'http://1.2.3.4:8080/job/MyJob/1')
         self.assertEqual(build.finished_at_secs, 5678)
         self.assertEqual(build.status, 'SUCCESS')
         self.assertEqual(build.duration_millis, 4321)
@@ -75,7 +75,7 @@ class TestPublishing(unittest.TestCase):
         build_stats = BuildStats(
             job_name = 'Test',
             build_id = 1234,
-            build_url = 'http://localhost:8080/job/MyJob/1',
+            build_url = 'http://1.2.3.4:8080/job/MyJob/1',
             finished_at_secs = 5678,
             status = 'SUCCESS',
             duration_millis = 4321,

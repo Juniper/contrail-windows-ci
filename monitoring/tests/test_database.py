@@ -68,7 +68,7 @@ class TestObjectConversions(unittest.TestCase):
     def test_build_from_build_stats(self):
         build_stats = BuildStats(
             job_name = 'MyJob',
-            build_url = 'http://localhost/',
+            build_url = 'http://1.2.3.4/',
             build_id = 10,
             finished_at_secs = 123,
             status = 'SUCCESS',
@@ -82,7 +82,7 @@ class TestObjectConversions(unittest.TestCase):
         self.assertEqual(build.id, None)
         self.assertEqual(build.job_name, 'MyJob')
         self.assertEqual(build.build_id, 10)
-        self.assertEqual(build.build_url, 'http://localhost/')
+        self.assertEqual(build.build_url, 'http://1.2.3.4/')
         self.assertEqual(build.finished_at_secs, 123)
         self.assertEqual(build.duration_millis, 3)
         self.assertEqual(build.status, 'SUCCESS')
@@ -92,7 +92,7 @@ class TestObjectConversions(unittest.TestCase):
     def test_build_from_build_and_stages_stats(self):
         build_stats = BuildStats(
             job_name = 'MyJob',
-            build_url = 'http://localhost/',
+            build_url = 'http://1.2.3.4/',
             build_id = 10,
             finished_at_secs = 123,
             status = 'SUCCESS',
@@ -117,7 +117,7 @@ class TestObjectConversions(unittest.TestCase):
         self.assertEqual(build.id, None)
         self.assertEqual(build.job_name, 'MyJob')
         self.assertEqual(build.build_id, 10)
-        self.assertEqual(build.build_url, 'http://localhost/')
+        self.assertEqual(build.build_url, 'http://1.2.3.4/')
         self.assertEqual(build.finished_at_secs, 123)
         self.assertEqual(build.duration_millis, 3)
         self.assertEqual(build.status, 'SUCCESS')
