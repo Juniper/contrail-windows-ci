@@ -10,7 +10,7 @@ class FinishedBuildStatsPublisher(object):
     def collect_and_publish(self, delay_ms=1000):
         while True:
             stats = self.collector.collect()
-            if stats.status != 'IN_PROGRESS':
+            if stats.is_finished():
                 break
 
             time.sleep(delay_ms / 1000.0)

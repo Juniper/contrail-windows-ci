@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import MagicMock
 from finished_build_stats_publisher import FinishedBuildStatsPublisher
-from stats import BuildStats
+from tests.common import get_build_stats_with_status
 
 
 class TestFinishedBuildStatsPublisher(unittest.TestCase):
@@ -13,22 +13,10 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
         def __call__(self):
             self.count += 1
             status = 'SUCCESS' if self.count >= 3 else 'IN_PROGRESS'
-            return TestFinishedBuildStatsPublisher.get_build_stats_with_status(status)
-
-    @classmethod
-    def get_build_stats_with_status(cls, status):
-        return BuildStats(
-            job_name = 'Test',
-            build_id = 1,
-            build_url = 'http://1.2.3.4/',
-            finished_at_secs = 2,
-            status = status,
-            duration_millis = 3,
-            stages = [],
-        )
+            return get_build_stats_with_status(status)
 
     def test_finished(self):
-        build_stats = self.get_build_stats_with_status('SUCCESS')
+        build_stats = get_build_stats_with_status('SUCCESS')
 
         collector = MagicMock()
         collector.collect = MagicMock(return_value=build_stats)
@@ -43,7 +31,7 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
         publisher.publish.assert_called_once_with(build_stats)
 
     def test_with_retries(self):
-        success_build_stats = self.get_build_stats_with_status('SUCCESS')
+        success_build_stats = get_build_stats_with_status('SUCCESS')
 
         collector = MagicMock()
         collector.collect = MagicMock(side_effect=TestFinishedBuildStatsPublisher.CollectSideEffect())
