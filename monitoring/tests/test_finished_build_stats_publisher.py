@@ -1,49 +1,51 @@
 #!/usr/bin/env python3
 import unittest
+import timeout_decorator
 from unittest.mock import MagicMock
-from finished_build_stats_publisher import FinishedBuildStatsPublisher
+from finished_build_stats_publisher import FinishedBuildStatsPublisher, MaxRetriesExceededError
 from tests.common import get_build_stats_with_status
 
 
 class TestFinishedBuildStatsPublisher(unittest.TestCase):
-    class CollectSideEffect(object):
-        def __init__(self):
-            self.count = 0
-
-        def __call__(self):
-            self.count += 1
-            status = 'SUCCESS' if self.count >= 3 else 'IN_PROGRESS'
-            return get_build_stats_with_status(status)
+    def setUp(self):
+        self.collector = MagicMock()
+        self.publisher = MagicMock()
+        self.publisher.publish = MagicMock()
+        self.stats_publisher = FinishedBuildStatsPublisher(self.collector, self.publisher)
+        self.build_stats_success = get_build_stats_with_status('SUCCESS')
+        self.build_stats_in_progress = get_build_stats_with_status('IN_PROGRESS')
 
     def test_finished(self):
-        build_stats = get_build_stats_with_status('SUCCESS')
+        self.collector.collect = MagicMock(return_value=self.build_stats_success)
 
-        collector = MagicMock()
-        collector.collect = MagicMock(return_value=build_stats)
+        self.stats_publisher.collect_and_publish()
 
-        publisher = MagicMock()
-        publisher.publish = MagicMock()
-
-        stats_publisher = FinishedBuildStatsPublisher(collector, publisher)
-        stats_publisher.collect_and_publish()
-
-        collector.collect.assert_called_once_with()
-        publisher.publish.assert_called_once_with(build_stats)
+        self.collector.collect.assert_called_once_with()
+        self.publisher.publish.assert_called_once_with(self.build_stats_success)
 
     def test_with_retries(self):
-        success_build_stats = get_build_stats_with_status('SUCCESS')
+        def generator():
+            yield self.build_stats_in_progress
+            yield self.build_stats_in_progress
+            while True:
+                yield self.build_stats_success
 
-        collector = MagicMock()
-        collector.collect = MagicMock(side_effect=TestFinishedBuildStatsPublisher.CollectSideEffect())
+        self.collector.collect = MagicMock(side_effect=generator())
 
-        publisher = MagicMock()
-        publisher.publish = MagicMock()
+        self.stats_publisher.collect_and_publish(delay_ms=0)
 
-        stats_publisher = FinishedBuildStatsPublisher(collector, publisher)
-        stats_publisher.collect_and_publish(delay_ms=0)
+        self.assertEqual(self.collector.collect.call_count, 3)
+        self.publisher.publish.assert_called_once_with(self.build_stats_success)
 
-        self.assertEqual(collector.collect.call_count, 3)
-        publisher.publish.assert_called_once_with(success_build_stats)
+    @timeout_decorator.timeout(2)
+    def test_timeout(self):
+        self.collector.collect = MagicMock(return_value=self.build_stats_in_progress)
+
+        with self.assertRaises(MaxRetriesExceededError):
+            self.stats_publisher.collect_and_publish(delay_ms=0, max_retries=10)
+
+        self.assertEqual(self.collector.collect.call_count, 10)
+        self.publisher.publish.assert_not_called()
 
 
 if __name__ == '__main__':
