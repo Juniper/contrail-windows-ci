@@ -24,13 +24,13 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
         self.publisher.publish.assert_called_once_with(self.build_stats_success)
 
     def test_with_retries(self):
-        def generator():
+        def counter():
             yield self.build_stats_in_progress
             yield self.build_stats_in_progress
             while True:
                 yield self.build_stats_success
 
-        self.collector.collect = MagicMock(side_effect=generator())
+        self.collector.collect = MagicMock(side_effect=counter())
 
         self.stats_publisher.collect_and_publish(delay_ms=0)
 

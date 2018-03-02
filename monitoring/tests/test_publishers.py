@@ -11,23 +11,28 @@ from tests.common import assert_stage_matches_stage_stats, assert_build_matches_
 
 
 class TestPublishing(unittest.TestCase):
+    class InMemorySQLiteSession(object):
+        def __init__(self):
+            self.engine = create_engine('sqlite://')
+
+        def get_database_session(self):
+            engine = self.get_database_engine()
+            session_factory = sessionmaker()
+            session_factory.configure(bind=engine)
+            return session_factory()
+
+        def get_database_engine(self):
+            return self.engine
+
     def setUp(self):
+        db_session = TestPublishing.InMemorySQLiteSession()
+        self.session = db_session.get_database_session()
+
         # Provision the SQLite in-memory database with our schema
-        self.engine = create_engine('sqlite://')
-        MonitoringBase.metadata.create_all(self.engine)
-
-        session_factory = sessionmaker()
-        session_factory.configure(bind=self.engine)
-        self.session = session_factory()
-
-        db_session = MagicMock()
-        db_session.get_database_session = MagicMock(return_value=self.session)
+        engine = db_session.get_database_engine()
+        MonitoringBase.metadata.create_all(engine)
 
         self.publisher = DatabasePublisherAdapter(db_session)
-
-    def tearDown(self):
-        self.engine.dispose()
-        self.engine = None
 
     def test_publish_build_stats_no_stages(self):
         build_stats = get_test_build_stats()

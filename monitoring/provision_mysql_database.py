@@ -11,7 +11,7 @@ def parse_args():
 
 
 def provision_database(database_session, model):
-    engine = database_session.get_database_engine(echo=True)
+    engine = database_session.get_database_engine()
     model.metadata.create_all(engine)
 
 
@@ -19,7 +19,7 @@ def main():
     args = parse_args()
 
     db_session = MySQLSession(host=args.mysql_host, username=args.mysql_username,
-                              password=args.mysql_password, database=args.mysql_database)
+                              password=args.mysql_password, database=args.mysql_database, echo=True)
     provision_database(db_session, MonitoringBase)
 
 
