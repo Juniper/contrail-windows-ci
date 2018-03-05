@@ -43,8 +43,9 @@
 - name: Pull docker images
   win_shell: "docker pull {{ item }}"
   with_items:
-      - microsoft/nanoserver
-      - microsoft/windowsservercore
+    - microsoft/nanoserver
+    - microsoft/windowsservercore
+    - microsoft/iis
 
 - name: Install MS Visuall C++ Redist 14
   win_chocolatey:
@@ -54,8 +55,8 @@
 - name: Disable Windows Firewall
   win_firewall:
     profiles:
-    - Domain
-    - Private
+      - Domain
+      - Private
     state: disabled
 
 - name: Stop Docker
@@ -71,17 +72,3 @@
 - name: Enable testsigning
   win_shell: |
     Bcdedit.exe -set TESTSIGNING ON
-
-- name: Copy IIS TCP test Dockerfile
-  win_copy:
-    src: "{{dockerfile_dir}}"
-    dest: C:\
-
-# docker_image module doesn't work on Windows
-- name: Build IIS TCP test Docker image
-  register: output
-  win_shell: |
-    docker build -t iis-tcptest "C:\\{{dockerfile_dir}}"
-
-- debug:
-    var: output
