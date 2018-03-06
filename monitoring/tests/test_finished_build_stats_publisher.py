@@ -15,7 +15,7 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
         self.build_stats_success = get_test_build_stats_with_status('SUCCESS')
         self.build_stats_in_progress = get_test_build_stats_with_status('IN_PROGRESS')
 
-    def test_finished(self):
+    def test_collecting_already_finished_build(self):
         self.collector.collect = MagicMock(return_value=self.build_stats_success)
 
         self.stats_publisher.collect_and_publish()
@@ -23,7 +23,7 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
         self.collector.collect.assert_called_once_with()
         self.publisher.publish.assert_called_once_with(self.build_stats_success)
 
-    def test_with_retries(self):
+    def test_collecting_in_progress_build_with_retries(self):
         def counter():
             yield self.build_stats_in_progress
             yield self.build_stats_in_progress
@@ -38,7 +38,7 @@ class TestFinishedBuildStatsPublisher(unittest.TestCase):
         self.publisher.publish.assert_called_once_with(self.build_stats_success)
 
     @timeout_decorator.timeout(2)
-    def test_timeout(self):
+    def test_collecting_in_progress_build_with_timeout(self):
         self.collector.collect = MagicMock(return_value=self.build_stats_in_progress)
 
         with self.assertRaises(MaxRetriesExceededError):

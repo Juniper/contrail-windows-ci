@@ -11,7 +11,7 @@ BuildStats = namedtuple('BuildStats', [
     'stages'
 ])
 
-BuildStats.is_finished = lambda self: self.status != 'IN_PROGRESS'
+BuildStats.is_build_finished = lambda self: self.status != 'IN_PROGRESS'
 
 
 StageStats = namedtuple('StageStats', [

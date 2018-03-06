@@ -56,8 +56,6 @@ class TestPublishing(unittest.TestCase):
 
         build = self.session.query(Build).one()
         self.assertEqual(len(build.stages), 2)
-        self.assertIsNotNone(build.stages[0])
-        self.assertIsNotNone(build.stages[1])
 
         assert_stage_matches_stage_stats(self, build.stages[0], TEST_STAGE1_STATS)
         self.assertEqual(build.stages[0].build_id, build.id)

@@ -14,7 +14,7 @@ class FinishedBuildStatsPublisher(object):
     def collect_and_publish(self, delay_ms=1000, max_retries=10):
         while max_retries != 0:
             stats = self.collector.collect()
-            if stats.is_finished():
+            if stats.is_build_finished():
                 self.publisher.publish(stats)
                 return
 
