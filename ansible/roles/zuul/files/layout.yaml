@@ -103,6 +103,10 @@ projects:
     template:
       - name: ci-contrail-windows-template
 
+  - name: Juniper/contrail-api-client
+    template:
+      - name: ci-contrail-windows-template
+
 # AUTOMATICALLY GENERATED NOOPs BELOW - DO NOT MODIFY THESE LINES MANUALLY
 
   - name: Juniper/contrail
