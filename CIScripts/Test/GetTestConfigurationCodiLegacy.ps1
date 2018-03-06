@@ -1,6 +1,6 @@
 function Get-TestConfiguration {
     [TestConfiguration] @{
-        ControllerIP = "10.7.0.54";
+        ControllerIP = env.CONTROLLER_IP;
         ControllerRestPort = 8082;
         ControllerHostUsername = "ubuntu";
         ControllerHostPassword = "ubuntu";
