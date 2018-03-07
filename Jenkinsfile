@@ -161,6 +161,7 @@ pipeline {
                             unstash 'Artifacts'
 
                             env.TESTBED_ADDRESSES = testbeds.join(',')
+                            echo controller
                             env.CONTROLLER_IP = controller
                             powershell script: './CIScripts/Deploy.ps1'
                         }

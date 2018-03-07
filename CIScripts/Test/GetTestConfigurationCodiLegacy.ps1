@@ -1,6 +1,6 @@
 function Get-TestConfiguration {
     [TestConfiguration] @{
-        ControllerIP = env.CONTROLLER_IP;
+        ControllerIP = $Env:CONTROLLER_IP;
         ControllerRestPort = 8082;
         ControllerHostUsername = "ubuntu";
         ControllerHostPassword = "ubuntu";
@@ -12,8 +12,9 @@ function Get-TestConfiguration {
         LinuxVirtualMachineIp = "10.0.0.3";
         DockerDriverConfiguration = [DockerDriverConfiguration] @{
             Username = "admin";
-            Password = "secret123";
-            AuthUrl = "http://10.7.0.54:5000/v2.0";
+            Password = "c0ntrail123";
+            TenantName = "admin"
+            AuthUrl = "http://$(ControllerIp):5000/v2.0";
             TenantConfiguration = [TenantConfiguration] @{
                 Name = "ci_tests";
                 DefaultNetworkName = "testnet1";
