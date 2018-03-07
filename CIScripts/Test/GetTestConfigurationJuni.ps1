@@ -1,6 +1,7 @@
 function Get-TestConfiguration {
+    $ControllerAddress = Get-ControllerAddressFromEnv
     [TestConfiguration] @{
-        ControllerIP = Get-ControllerAddressFromEnv;
+        ControllerIP = $ControllerAddress;
         ControllerRestPort = 8082;
         ControllerHostUsername = "ubuntu";
         ControllerHostPassword = "ubuntu";
@@ -14,7 +15,7 @@ function Get-TestConfiguration {
             Username = "admin";
             Password = "c0ntrail123";
             TenantName = "admin"
-            AuthUrl = "http://$(ControllerIP):5000/v2.0";
+            AuthUrl = "http://$(ControllerAddress):5000/v2.0";
             TenantConfiguration = [TenantConfiguration] @{
                 Name = "ci_tests";
                 DefaultNetworkName = "testnet1";
