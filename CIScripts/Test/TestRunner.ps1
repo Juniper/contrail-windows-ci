@@ -62,7 +62,8 @@ function Invoke-TestScenarios {
     $TestReportOutputPath = "$TestReportOutputDirectory\testReport.xml"
     $Results = Invoke-Pester -PassThru -Script $PesterScripts `
         -OutputFormat NUnitXml -OutputFile $TestReportOutputPath
-    Write-Host "Num failed tests: $($Results.FailedCount)"
+    Write-Host "Number of passed tests: $($Results.PassedCount)"
+    Write-Host "Number of failed tests: $($Results.FailedCount)"
     Write-Host "Report written to $TestReportOutputPath"
     if ($Results.FailedCount -gt 0) {
         throw "Some tests failed"

@@ -197,8 +197,12 @@ pipeline {
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
-                    unstash 'testReport'
-                    publishToLogServer(logServer, 'testReport.xml', destDir)
+                    try {
+                        unstash 'testReport'
+                        publishToLogServer(logServer, 'testReport.xml', destDir, false)
+                    } catch (Exception err) {
+                        echo "No test report to publish"
+                    }
 
                     def logFilename = 'log.txt.gz'
                     obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
