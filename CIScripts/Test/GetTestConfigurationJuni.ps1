@@ -1,7 +1,7 @@
 function Get-TestConfiguration {
     $ControllerAddress = Get-ControllerAddressFromEnv
-    [TestConfiguration] @{
-        ControllerIP = "$ControllerAddress";
+    return [TestConfiguration] @{
+        ControllerIP = $ControllerAddress;
         ControllerRestPort = 8082;
         ControllerHostUsername = "ubuntu";
         ControllerHostPassword = "ubuntu";
