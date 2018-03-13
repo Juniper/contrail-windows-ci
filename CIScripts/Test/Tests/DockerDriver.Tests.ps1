@@ -3,15 +3,9 @@ Param (
     [Parameter(Mandatory=$true)] [string] $ConfigFile
 )
 
-. $PSScriptRoot\..\Utils\CommonTestCode.ps1
-. $PSScriptRoot\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Common\Aliases.ps1
-. $PSScriptRoot\..\..\Common\VMUtils.ps1
-. $PSScriptRoot\..\PesterHelpers\PesterHelpers.ps1
 
 . $ConfigFile
-#$TestConf = Get-TestConfiguration
 $Session = New-PSSession -ComputerName $TestbedAddr -Credential (Get-TestbedCredential)
 $TestsPath = "C:\Program Files\Juniper Networks\"
 
@@ -31,8 +25,12 @@ function Start-DockerDriverUnitTest {
         # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
         $Res = Invoke-Command -ScriptBlock {
             $ErrorActionPreference = "SilentlyContinue"
-            Invoke-Expression -Command $Using:Command | Write-Host
-            return $LASTEXITCODE
+            if (Test-Path $TestFilePath) {
+                Invoke-Expression -Command $Using:Command | Write-Host
+                return $LASTEXITCODE
+            } else {
+                return 1
+            }
         }
 
         Pop-Location
@@ -49,7 +47,7 @@ function Save-DockerDriverUnitTestReport {
         [Parameter(Mandatory=$true)] [string] $Component
     )
 
-    Copy-Item -FromSession $Session -Path ($TestsPath + $_ + "_junit.xml") -ErrorAction SilentlyContinue
+    Copy-Item -FromSession $Session -Path ($TestsPath + $Component + "_junit.xml") -ErrorAction SilentlyContinue
 }
 
 # TODO: these modules should also be tested: controller, hns, hnsManager, driver
