@@ -40,8 +40,6 @@ function Start-DockerDriverUnitTest {
         return $Res
     }
 
-    Write-Host "Start-DockerDriverUnitTest: return code from $Component is $Res."
-
     return $Res
 }
 
