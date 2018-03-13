@@ -19,3 +19,17 @@ StageStats = namedtuple('StageStats', [
     'status',
     'duration_millis'
 ])
+
+
+TestStats = namedtuple('TestStats', [
+    'total',
+    'passed',
+    'errors',
+    'failures',
+    'not_run',
+    'inconclusive',
+    'ignored',
+    'skipped',
+    'invalid',
+    'report_url'
+])

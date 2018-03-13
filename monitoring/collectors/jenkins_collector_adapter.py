@@ -1,9 +1,6 @@
 import requests
+from collectors.exceptions import InvalidResponseCodeError
 from stats import BuildStats, StageStats
-
-
-class InvalidResponseCodeError(Exception):
-    pass
 
 
 class JenkinsCollectorAdapter(object):
