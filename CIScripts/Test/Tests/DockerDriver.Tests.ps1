@@ -55,20 +55,16 @@ function Save-DockerDriverUnitTestReport {
 # TODO: these modules should also be tested: controller, hns, hnsManager, driver
 $modules = @("agent")
 
-if($Env:RUN_DRIVER_TESTS -eq "1") {
-    Describe "Docker Driver" {
-        $modules | ForEach-Object {
-            Context "Tests for module $_" {
-                It "Tests are invoked" {
-                    Start-DockerDriverUnitTest -Session $Session -Component $_ | Should Be 0
-                }
+Describe "Docker Driver" {
+    $modules | ForEach-Object {
+        Context "Tests for module $_" {
+            It "Tests are invoked" {
+                Start-DockerDriverUnitTest -Session $Session -Component $_ | Should Be 0
+            }
 
-                AfterEach {
-                    Save-DockerDriverUnitTestReport -Session $Session -Component $_
-                }
+            AfterEach {
+                Save-DockerDriverUnitTestReport -Session $Session -Component $_
             }
         }
     }
-} else {
-    Write-Host "Skipping Docker Driver tests."
 }
