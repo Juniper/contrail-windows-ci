@@ -7,7 +7,7 @@ Param (
 
 . $ConfigFile
 $Session = New-PSSession -ComputerName $TestbedAddr -Credential (Get-TestbedCredential)
-$TestsPath = "C:\Program Files\Juniper Networks\"
+$TestsPath = "C:\Artifacts\"
 
 function Start-DockerDriverUnitTest {
     Param (
@@ -25,7 +25,7 @@ function Start-DockerDriverUnitTest {
         # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
         $Res = Invoke-Command -ScriptBlock {
             $ErrorActionPreference = "SilentlyContinue"
-            if (Test-Path $TestFilePath) {
+            if (Test-Path $Using:TestFilePath) {
                 Invoke-Expression -Command $Using:Command | Write-Host
                 return $LASTEXITCODE
             } else {
@@ -57,7 +57,8 @@ Describe "Docker Driver" {
     $modules | ForEach-Object {
         Context "Tests for module $_" {
             It "Tests are invoked" {
-                Start-DockerDriverUnitTest -Session $Session -Component $_ | Should Be 0
+                $TestResult = Start-DockerDriverUnitTest -Session $Session -Component $_
+                $TestResult | Should Be 0
             }
 
             AfterEach {
