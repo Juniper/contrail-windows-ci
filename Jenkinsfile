@@ -7,6 +7,8 @@ def vmwareConfig
 def testEnvName
 def testEnvFolder
 
+def testXmlReportUrl
+
 pipeline {
     agent none
 
@@ -182,6 +184,7 @@ pipeline {
     environment {
         LOG_SERVER = "logs.opencontrail.org"
         LOG_SERVER_USER = "zuul-win"
+        LOG_SERVER_FOLDER = "winci"
         LOG_ROOT_DIR = "/var/www/logs/winci"
     }
 
@@ -205,6 +208,7 @@ pipeline {
                     def logServer = [
                         addr: env.LOG_SERVER,
                         user: env.LOG_SERVER_USER,
+                        folder: env.LOG_SERVER_FOLDER,
                         rootDir: env.LOG_ROOT_DIR
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
@@ -213,6 +217,7 @@ pipeline {
                         unstash 'testReport'
                         publishToLogServer(logServer, 'testReport.xml', destDir, false)
                         publishToLogServer(logServer, 'testReport.html', destDir, false)
+                        testXmlReportUrl = decideTestXmlReportUrl(logServer, 'testReport.xml', env.ZUUL_UUID)
                     } catch (Exception err) {
                         echo "No test report to publish"
                     }
@@ -225,7 +230,8 @@ pipeline {
                 build job: 'WinContrail/gather-build-stats', wait: false,
                       parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
                                    string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
-                                   string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL)]
+                                   string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL),
+                                   string(name: 'TEST_XML_REPORT_URL', value: testXmlReportUrl)]
             }
         }
     }

@@ -17,6 +17,7 @@ pipeline {
                         './collect_and_push_build_stats.py',
                         '--job-name', env.MONITORED_JOB_NAME,
                         '--build-url', env.MONITORED_BUILD_URL,
+                        '--report-xml-url', env.TEST_XML_REPORT_URL,
                         '--mysql-host', env.MYSQL_HOST,
                         '--mysql-database', env.MYSQL_DATABASE,
                         '--mysql-username', env.MYSQL_USR,
