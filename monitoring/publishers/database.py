@@ -63,7 +63,7 @@ class Stage(MonitoringBase):
 class Report(MonitoringBase):
     __tablename__ = 'reports'
 
-    job_name = Column(String(4096), primary_key=True)
+    job_name = Column(String(2048), primary_key=True)
     build_id = Column(Integer, primary_key=True)
     total = Column(Integer, nullable=False)
     passed = Column(Integer, nullable=False)
