@@ -2,8 +2,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from collectors.build_stats_collector import (BuildStatsCollector, BuildStatsMissingError,
-                                              TestStatsMissingError)
+from collectors.build_stats_collector import BuildStatsCollector, BuildStatsMissingError
 from tests.common import get_test_build_stats, EXAMPLE_TESTS_STATS
 
 
@@ -40,14 +39,19 @@ class TestBuildStatsCollector(unittest.TestCase):
         with self.assertRaises(BuildStatsMissingError):
             build_stats = collector.collect()
 
-    def test_collecting_raises_exception_when_test_stats_are_missing(self):
+    def test_collecting_works_when_test_stats_are_missing(self):
         test_stats_collector = MagicMock()
         test_stats_collector.collect = MagicMock(side_effect=Exception)
 
         collector = BuildStatsCollector(build_stats_collector=self.example_build_stats_collector,
                                         test_stats_collector=test_stats_collector)
-        with self.assertRaises(TestStatsMissingError):
-            build_stats = collector.collect()
+        build_stats = collector.collect()
+        self.assertIsNotNone(build_stats)
+
+        self.assertEqual(build_stats.build_id, self.example_build_stats.build_id)
+        self.assertEqual(build_stats.job_name, self.example_build_stats.job_name)
+
+        self.assertIsNone(build_stats.test_stats)
 
 
 if __name__ == '__main__':
