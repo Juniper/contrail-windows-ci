@@ -238,7 +238,7 @@ def get_vm_clone_spec(config_spec, customization_spec, relocate_spec):
 
 def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, type):
     storage_spec = vim.storageDrs.StoragePlacementSpec()
-    storage_spec.name = name
+    storage_spec.cloneName = name
     storage_spec.folder = folder
     storage_spec.podSelectionSpec = pod_selection_spec
     storage_spec.vm = vm
@@ -248,28 +248,28 @@ def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, type):
 
 def get_vm_pod_selection_spec(api, storage_pod_name):
     pod_selection_spec = vim.storageDrs.PodSelectionSpec()
-    storage_pod = get_storage_pod(api, storage_pod_name)
+    storage_pod = _get_storage_pod(api, storage_pod_name)
     pod_selection_spec.storagePod = storage_pod
     return pod_selection_spec
 
 #folder?
-def __get_storage_pod(api, storage_pod_name):
+def _get_storage_pod(api, storage_pod_name):
     storage_pod = api.get_vc_object(vim.StoragePod, storage_pod_name)
     return storage_pod
 
-def __get_storage_resource_manager():
-    storage_manager = vim.StorageResourceManager()
+def _get_storage_resource_manager(api):
+    storage_manager = api.content.StorageResourceManager
     return storage_manager
 
-def __get_recommended_datastore_key(storage_manager, storage_spec):
-    storage_manager = get_storage_resource_manager()
+def _get_recommended_datastore_key(storage_manager, storage_spec):
     result = storage_manager.RecommendDatastores(storageSpec = storage_spec)
     recommendation = result.recommendations[0]
     recommendation_key = recommendation.key
     return recommendation_key
 
-def get_apply_storage_recommendation_task(storage_spec):
-    recommendation_key = get_recommended_datastore_key(storage_spec)
+def get_apply_storage_recommendation_task(api, storage_spec):
+    storage_manager = _get_storage_resource_manager(api)
+    recommendation_key = _get_recommended_datastore_key(storage_manager, storage_spec)
     task = storage_manager.ApplyStorageDrsRecommendation_Task(key = recommendation_key)
     return task
 

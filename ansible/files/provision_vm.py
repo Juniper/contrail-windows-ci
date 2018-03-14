@@ -106,9 +106,9 @@ def provision_vm(api, args):
     storage_pod_name = "WinCI-Datastores-SSD"
     op_type = "clone"
     pod_selection_spec = get_vm_pod_selection_spec(api, storage_pod_name)
-    storage_spec = get_vm_storage_spec(args.name, args.folder, pod_selection_spec, args.template, clone_spec, op_type)
+    storage_spec = get_vm_storage_spec(name, folder, pod_selection_spec, template, clone_spec, op_type)
 
-    task = get_apply_storage_recommendation_task(storage_spec)
+    task = get_apply_storage_recommendation_task(api, storage_spec)
     # task = template.Clone(name=name, folder=folder, spec=clone_spec)
     WaitForTask(task)
 
