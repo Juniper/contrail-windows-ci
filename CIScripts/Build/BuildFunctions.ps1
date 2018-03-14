@@ -323,7 +323,7 @@ function Invoke-AgentTestsBuild {
             "src/dns:dns_bind_test",
             "src/dns:dns_config_test",
             "src/dns:dns_mgr_test",
-            "controller/src/schema:test",
+            "src/contrail-api-client/schema:test",
             "src/xml:xml_test",
             "controller/src/xmpp:test",
             "src/base:libtask_test",
