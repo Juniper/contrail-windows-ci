@@ -9,7 +9,7 @@ MonitoringBase = declarative_base()
 class Build(MonitoringBase):
     __tablename__ = 'builds'
 
-    job_name = Column(String(4096), primary_key=True)
+    job_name = Column(String(1024), primary_key=True)
     build_id = Column(Integer, primary_key=True)
     build_url = Column(String(4096), nullable=False)
     finished_at_secs = Column(BigInteger, nullable=False)
@@ -33,9 +33,9 @@ class Build(MonitoringBase):
 class Stage(MonitoringBase):
     __tablename__ = 'stages'
 
-    job_name = Column(String(4096), primary_key=True)
+    job_name = Column(String(1024), primary_key=True)
     build_id = Column(Integer, primary_key=True)
-    name = Column(String(4096), primary_key=True)
+    name = Column(String(256), primary_key=True)
     status = Column(String(4096), nullable=False)
     duration_millis = Column(BigInteger, nullable=False)
 
