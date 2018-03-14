@@ -221,11 +221,9 @@ def get_vm_customization_spec(template, name, org, username, password, data_ip_a
     return customization_spec
 
 
-def get_vm_relocate_spec(cluster, host, datastore):
+def get_vm_relocate_spec(cluster):
     relocate_spec = vim.vm.RelocateSpec()
     relocate_spec.pool = cluster.resourcePool
-    relocate_spec.host = host
-    relocate_spec.datastore = datastore
     return relocate_spec
 
 
@@ -248,15 +246,15 @@ def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, type):
     storage_spec.type = type
     return storage_spec
 
-def get_vm_pod_selection_spec(storage_pod_name):
+def get_vm_pod_selection_spec(api, storage_pod_name):
     pod_selection_spec = vim.storageDrs.PodSelectionSpec()
-    storage_pod = get_storage_pod(storage_pod_name)
-    pod_selection_spec.storagePod = get_storage_pod(storage_pod)
+    storage_pod = get_storage_pod(api, storage_pod_name)
+    pod_selection_spec.storagePod = storage_pod
     return pod_selection_spec
 
 #folder?
-def get_storage_pod(storage_pod_name):
-    storage_pod = get_vc_object(vim.StoragePod, storage_pod_name)
+def get_storage_pod(api, storage_pod_name):
+    storage_pod = api.get_vc_object(vim.StoragePod, storage_pod_name)
     return storage_pod
 
 def get_storage_resource_manager():
