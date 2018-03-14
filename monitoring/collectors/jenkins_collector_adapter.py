@@ -45,6 +45,7 @@ class JenkinsCollectorAdapter(object):
             status = raw_stats['status'],
             duration_millis = raw_stats['durationMillis'],
             stages = stages_stats,
+            test_stats = []
         )
 
         return build_stats

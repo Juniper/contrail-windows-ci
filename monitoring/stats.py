@@ -8,7 +8,8 @@ BuildStats = namedtuple('BuildStats', [
     'finished_at_secs',
     'status',
     'duration_millis',
-    'stages'
+    'stages',
+    'test_stats'
 ])
 
 BuildStats.is_build_finished = lambda self: self.status != 'IN_PROGRESS'
