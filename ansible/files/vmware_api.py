@@ -238,6 +238,42 @@ def get_vm_clone_spec(config_spec, customization_spec, relocate_spec):
     clone_spec.location = relocate_spec
     return clone_spec
 
+def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, type):
+    storage_spec = vim.storageDrs.StoragePlacementSpec()
+    storage_spec.name = name
+    storage_spec.folder = folder
+    storage_spec.podSelectionSpec = pod_selection_spec
+    storage_spec.vm = vm
+    storage_spec.cloneSpec = clone_spec
+    storage_spec.type = type
+    return storage_spec
+
+def get_vm_pod_selection_spec(storage_pod_name):
+    pod_selection_spec = vim.storageDrs.PodSelectionSpec()
+    storage_pod = get_storage_pod(storage_pod_name)
+    pod_selection_spec.storagePod = get_storage_pod(storage_pod)
+    return pod_selection_spec
+
+#folder?
+def get_storage_pod(storage_pod_name):
+    storage_pod = get_vc_object(vim.StoragePod, storage_pod_name)
+    return storage_pod
+
+def get_storage_resource_manager():
+    storage_manager = vim.StorageResourceManager()
+    return storage_manager
+
+def get_recommended_datastore_key(storage_manager, storage_spec):
+    storage_manager = get_storage_resource_manager()
+    result = storage_manager.RecommendDatastores(storageSpec = storage_spec)
+    recommendation = result.recommendations[0]
+    recommendation_key = recommendation.key
+    return recommendation_key
+
+def get_apply_storage_recommendation_task(storage_spec):
+    recommendation_key = get_recommended_datastore_key(storage_spec)
+    task = storage_manager.ApplyStorageDrsRecommendation_Task(key = recommendation_key)
+    return task
 
 def get_connection_params(args):
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)

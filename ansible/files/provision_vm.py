@@ -85,9 +85,9 @@ def provision_vm(api, args):
         raise ResourceNotFound("Couldn't find the folder with the provided path "
                                "'{}'".format(args.folder))
 
-    host, datastore = api.select_destination_host_and_datastore_by_free_space()
-    if not host or not datastore:
-        raise ResourceNotFound('Choosing appropriate host and datastore failed')
+    # host, datastore = api.select_destination_host_and_datastore_by_free_space()
+    # if not host or not datastore:
+    #     raise ResourceNotFound('Choosing appropriate host and datastore failed')
 
     customization_data = {
         'name': args.name,
@@ -100,10 +100,16 @@ def provision_vm(api, args):
 
     config_spec = get_vm_config_spec(api, vm=template, networks=[args.mgmt_network, args.data_network])
     customization_spec = get_vm_customization_spec(template, **customization_data)
-    relocate_spec = get_vm_relocate_spec(api.cluster, host, datastore)
+    relocate_spec = get_vm_relocate_spec(api.cluster)
     clone_spec = get_vm_clone_spec(config_spec, customization_spec, relocate_spec)
 
-    task = template.Clone(name=name, folder=folder, spec=clone_spec)
+    storage_pod_name = "WinCI-Datastores-SSD"
+    op_type = "clone"
+    pod_selection_spec = get_vm_pod_selection_spec(storage_pod_name)
+    storage_spec = get_vm_storage_spec(args.name, args.folder, pod_selection_spec, args.template, clone_spec, op_type)
+
+    task = get_apply_storage_recommendation_task(storage_spec)
+    # task = template.Clone(name=name, folder=folder, spec=clone_spec)
     WaitForTask(task)
 
 
