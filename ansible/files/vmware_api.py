@@ -253,15 +253,15 @@ def get_vm_pod_selection_spec(api, storage_pod_name):
     return pod_selection_spec
 
 #folder?
-def get_storage_pod(api, storage_pod_name):
+def __get_storage_pod(api, storage_pod_name):
     storage_pod = api.get_vc_object(vim.StoragePod, storage_pod_name)
     return storage_pod
 
-def get_storage_resource_manager():
+def __get_storage_resource_manager():
     storage_manager = vim.StorageResourceManager()
     return storage_manager
 
-def get_recommended_datastore_key(storage_manager, storage_spec):
+def __get_recommended_datastore_key(storage_manager, storage_spec):
     storage_manager = get_storage_resource_manager()
     result = storage_manager.RecommendDatastores(storageSpec = storage_spec)
     recommendation = result.recommendations[0]
