@@ -24,8 +24,8 @@ function Start-DockerDriverUnitTest {
 
         # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
         $Res = Invoke-Command -ScriptBlock {
-            $ErrorActionPreference = "SilentlyContinue"
             if (Test-Path $Using:TestFilePath) {
+                $ErrorActionPreference = "SilentlyContinue"
                 Invoke-Expression -Command $Using:Command | Write-Host
                 return $LASTEXITCODE
             } else {
