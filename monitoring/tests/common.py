@@ -27,7 +27,7 @@ EXAMPLE_TESTS_STATS = TestStats(
 )
 
 
-def get_test_build_stats_with_status(status, stages_stats=[], test_stats=EXAMPLE_TESTS_STATS):
+def get_test_build_stats_with_status(status, stages_stats=[], test_stats=None):
     return BuildStats(
         job_name = 'MyJob',
         build_id = 7,
@@ -40,7 +40,7 @@ def get_test_build_stats_with_status(status, stages_stats=[], test_stats=EXAMPLE
     )
 
 
-def get_test_build_stats(stages_stats=[], test_stats=EXAMPLE_TESTS_STATS):
+def get_test_build_stats(stages_stats=[], test_stats=None):
     return get_test_build_stats_with_status('SUCCESS', stages_stats, test_stats)
 
 
