@@ -258,7 +258,7 @@ def _get_storage_pod(api, storage_pod_name):
     return storage_pod
 
 def _get_storage_resource_manager(api):
-    storage_manager = api.content.StorageResourceManager
+    storage_manager = api.content.storageResourceManager
     return storage_manager
 
 def _get_recommended_datastore_key(storage_manager, storage_spec):
