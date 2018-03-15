@@ -66,3 +66,6 @@ function New-RemoteSessionsToTestbeds {
 function Get-TestbedAddressesFromEnv {
     return $Env:TESTBED_ADDRESSES.Split(",")
 }
+function Get-ControllerAddressFromEnv {
+    return $Env:CONTROLLER_IP
+}

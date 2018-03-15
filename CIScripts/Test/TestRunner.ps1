@@ -9,7 +9,7 @@ function Invoke-TestScenarios {
 
     $TestsBlacklist = @(
         # Put filenames of blacklisted tests here.
-        "vRouterAgentService.Tests.ps1"
+        # "vRouterAgentService.Tests.ps1"
     )
 
     $TestPaths = Get-ChildItem -Recurse -Filter "*.Tests.ps1"
