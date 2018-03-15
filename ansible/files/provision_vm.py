@@ -105,9 +105,8 @@ def provision_vm(api, args):
     clone_spec = get_vm_clone_spec(config_spec, customization_spec, relocate_spec)
 
     storage_pod_name = args.storage_pod
-    op_type = 'clone'
     pod_selection_spec = get_vm_pod_selection_spec(api, storage_pod_name)
-    storage_spec = get_vm_storage_spec(name, folder, pod_selection_spec, template, clone_spec, op_type)
+    storage_spec = get_vm_storage_spec(name, folder, pod_selection_spec, template, clone_spec, operation_type='clone')
 
     task = get_apply_storage_recommendation_task(api, storage_spec)
     WaitForTask(task)

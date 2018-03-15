@@ -227,19 +227,18 @@ def get_vm_clone_spec(config_spec, customization_spec, relocate_spec):
     return clone_spec
 
 
-def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, type):
+def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, operation_type):
     storage_spec = vim.storageDrs.StoragePlacementSpec()
     storage_spec.cloneName = name
     storage_spec.folder = folder
     storage_spec.podSelectionSpec = pod_selection_spec
     storage_spec.vm = vm
     storage_spec.cloneSpec = clone_spec
-    storage_spec.type = type
+    storage_spec.type = operation_type
     return storage_spec
 
 def get_vm_pod_selection_spec(api, storage_pod_name):
     storage_pod = _get_storage_pod(api, storage_pod_name)
-    
     pod_selection_spec = vim.storageDrs.PodSelectionSpec()
     pod_selection_spec.storagePod = storage_pod
     return pod_selection_spec
@@ -263,15 +262,15 @@ def _get_storage_resource_manager(api):
 
 
 def _get_recommended_datastore_key(storage_manager, storage_spec):
-    recommendedDatastore = _get_recommended_datastore(storage_manager, storage_spec)
-    recommendation_key = recommendedDatastore.key
+    recommended_datastore = _get_recommended_datastore(storage_manager, storage_spec)
+    recommendation_key = recommended_datastore.key
     return recommendation_key
 
 
 def _get_recommended_datastore(storage_manager, storage_spec):
-    recommendedDatastores = storage_manager.RecommendDatastores(storageSpec = storage_spec)
-    recommendedDatastore = recommendedDatastores.recommendations[0]
-    return recommendedDatastore
+    recommended_datastores = storage_manager.RecommendDatastores(storageSpec = storage_spec)
+    recommended_datastore = recommended_datastores.recommendations[0]
+    return recommended_datastore
 
 
 def get_connection_params(args):
