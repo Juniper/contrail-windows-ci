@@ -14,6 +14,11 @@ def get_args():
                         action='store',
                         help='Cluster to use (if not provided, script will choose the first one available)')
 
+    parser.add_argument('--storage-pod',
+                        required=True,
+                        action='store',
+                        help='Datastore cluster to use')
+
     parser.add_argument('--template',
                         required=True,
                         action='store',
@@ -85,10 +90,6 @@ def provision_vm(api, args):
         raise ResourceNotFound("Couldn't find the folder with the provided path "
                                "'{}'".format(args.folder))
 
-    # host, datastore = api.select_destination_host_and_datastore_by_free_space()
-    # if not host or not datastore:
-    #     raise ResourceNotFound('Choosing appropriate host and datastore failed')
-
     customization_data = {
         'name': args.name,
         'org': 'Contrail',
@@ -103,13 +104,12 @@ def provision_vm(api, args):
     relocate_spec = get_vm_relocate_spec(api.cluster)
     clone_spec = get_vm_clone_spec(config_spec, customization_spec, relocate_spec)
 
-    storage_pod_name = "WinCI-Datastores-SSD"
-    op_type = "clone"
+    storage_pod_name = args.storage_pod
+    op_type = 'clone'
     pod_selection_spec = get_vm_pod_selection_spec(api, storage_pod_name)
     storage_spec = get_vm_storage_spec(name, folder, pod_selection_spec, template, clone_spec, op_type)
 
     task = get_apply_storage_recommendation_task(api, storage_spec)
-    # task = template.Clone(name=name, folder=folder, spec=clone_spec)
     WaitForTask(task)
 
 

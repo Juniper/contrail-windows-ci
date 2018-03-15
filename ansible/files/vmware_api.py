@@ -68,16 +68,6 @@ class VmwareApi(object):
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
 
 
-    def select_destination_host_and_datastore_by_free_space(self):
-        datastores = [d for d in self.datacenter.datastore if 'ssd' in d.name]
-        if len(datastores) == 0:
-            return None, None
-        datastores = sorted(datastores, key=lambda d: d.info.freeSpace)
-        chosen_datastore = datastores[-1]
-        chosen_host = chosen_datastore.host[0].key
-        return chosen_host, chosen_datastore
-
-
     def _setup_common_objects(self, datacenter_name, cluster_name):
         self.content = self.si.RetrieveContent()
 
@@ -236,6 +226,7 @@ def get_vm_clone_spec(config_spec, customization_spec, relocate_spec):
     clone_spec.location = relocate_spec
     return clone_spec
 
+
 def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, type):
     storage_spec = vim.storageDrs.StoragePlacementSpec()
     storage_spec.cloneName = name
@@ -247,31 +238,41 @@ def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, type):
     return storage_spec
 
 def get_vm_pod_selection_spec(api, storage_pod_name):
-    pod_selection_spec = vim.storageDrs.PodSelectionSpec()
     storage_pod = _get_storage_pod(api, storage_pod_name)
+    
+    pod_selection_spec = vim.storageDrs.PodSelectionSpec()
     pod_selection_spec.storagePod = storage_pod
     return pod_selection_spec
 
-#folder?
+
 def _get_storage_pod(api, storage_pod_name):
     storage_pod = api.get_vc_object(vim.StoragePod, storage_pod_name)
     return storage_pod
 
-def _get_storage_resource_manager(api):
-    storage_manager = api.content.storageResourceManager
-    return storage_manager
-
-def _get_recommended_datastore_key(storage_manager, storage_spec):
-    result = storage_manager.RecommendDatastores(storageSpec = storage_spec)
-    recommendation = result.recommendations[0]
-    recommendation_key = recommendation.key
-    return recommendation_key
 
 def get_apply_storage_recommendation_task(api, storage_spec):
     storage_manager = _get_storage_resource_manager(api)
     recommendation_key = _get_recommended_datastore_key(storage_manager, storage_spec)
     task = storage_manager.ApplyStorageDrsRecommendation_Task(key = recommendation_key)
     return task
+
+
+def _get_storage_resource_manager(api):
+    storage_manager = api.content.storageResourceManager
+    return storage_manager
+
+
+def _get_recommended_datastore_key(storage_manager, storage_spec):
+    recommendedDatastore = _get_recommended_datastore(storage_manager, storage_spec)
+    recommendation_key = recommendedDatastore.key
+    return recommendation_key
+
+
+def _get_recommended_datastore(storage_manager, storage_spec):
+    recommendedDatastores = storage_manager.RecommendDatastores(storageSpec = storage_spec)
+    recommendedDatastore = recommendedDatastores.recommendations[0]
+    return recommendedDatastore
+
 
 def get_connection_params(args):
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)

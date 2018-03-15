@@ -15,6 +15,7 @@ def call(vmRole = null) {
                       vcenter_password: env.VC_PSW,
                       validate_certs: 'no',
                       datacenter_name: env.VC_DATACENTER,
+                      storage_pod_name: env.VC_STORAGE_POD,
                       cluster_name: env.VC_CLUSTER]
 
   if (folder) {
