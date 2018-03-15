@@ -6,7 +6,6 @@ Param (
 . $PSScriptRoot\..\..\Common\Aliases.ps1
 
 . $ConfigFile
-$TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
