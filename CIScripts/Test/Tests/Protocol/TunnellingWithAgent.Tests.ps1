@@ -1,25 +1,24 @@
 Describe "Tunnelling with Agent tests" {
-    Context "ICMP" {
-        It "works over MPLSoGRE" -Pending {
+
+    Context "MPLSoGRE" {
+        It "ICMP" -Pending {
             # Test-ICMPoMPLSoGRE
         }
 
-        It "works over MPLSoUDP" -Pending {
-            # Test-ICMPoMPLSoUDP
-        }
-    }
-
-    Context "TCP" {
-        It "works over MPLSoGRE" -Pending {
+        It "TCP" -Pending {
             # Test-MultihostTcpTraffic
             # TODO: Is this actually correct test for MPLSoGRE?
         }
-    }
 
-    Context "UDP" {
-        It "works over MPLsoGRE" -Pending {
+        It "UDP" -Pending {
             # Test-MultihostUdpTraffic
             # TODO: Is this actually correct test for MPLSoGRE?
+        }
+    }
+
+    Context "MPLSoUDP" {
+        It "ICMP" -Pending {
+            # Test-ICMPoMPLSoUDP
         }
     }
 }
