@@ -14,7 +14,7 @@ def get_args():
                         action='store',
                         help='Cluster to use (if not provided, script will choose the first one available)')
 
-    parser.add_argument('--storage-pod',
+    parser.add_argument('--datastore-cluster',
                         required=True,
                         action='store',
                         help='Datastore cluster to use')
@@ -104,11 +104,11 @@ def provision_vm(api, args):
     relocate_spec = get_vm_relocate_spec(api.cluster)
     clone_spec = get_vm_clone_spec(config_spec, customization_spec, relocate_spec)
 
-    storage_pod_name = args.storage_pod
-    pod_selection_spec = get_vm_pod_selection_spec(api, storage_pod_name)
+    datastore_cluster_name = args.datastore_cluster
+    pod_selection_spec = get_vm_pod_selection_spec(api, datastore_cluster_name)
     storage_spec = get_vm_storage_spec(name, folder, pod_selection_spec, template, clone_spec, operation_type='clone')
 
-    task = get_apply_storage_recommendation_task(api, storage_spec)
+    task = clone_template_to_datastore_cluster(api, storage_spec)
     WaitForTask(task)
 
 

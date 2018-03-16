@@ -56,6 +56,7 @@ class VmwareApi(object):
         self.content = None
         self.datacenter = None
         self.cluster = None
+        self.storage_manager = None
         self._setup_common_objects(datacenter_name, cluster_name)
 
 
@@ -76,7 +77,6 @@ class VmwareApi(object):
             raise ResourceNotFound("Couldn't find the Datacenter with the provided name "
                                    "'{}'".format(datacenter_name))
 
-        self.cluster = None
         if cluster_name:
             self.cluster = self.get_vc_object(vim.ClusterComputeResource, cluster_name,
                                                self.content.rootFolder)
@@ -89,6 +89,10 @@ class VmwareApi(object):
             self.cluster = next(iter(clusters), None)
             if not self.cluster:
                 raise ResourceNotFound("Couldn't find any compute clusters")
+
+        self.storage_manager = self.content.storageResourceManager
+        if not self.storage_manager:
+            raise ResourceNotFound("Couldn't find Storage Resource Manager")
 
 
     def get_vc_object(self, vimtype, name, folder=None):
@@ -237,40 +241,37 @@ def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, operat
     storage_spec.type = operation_type
     return storage_spec
 
-def get_vm_pod_selection_spec(api, storage_pod_name):
-    storage_pod = _get_storage_pod(api, storage_pod_name)
+def get_vm_pod_selection_spec(api, datastore_cluster_name):
+    datastore_cluster = _get_datastore_cluster(api, datastore_cluster_name)
+    if not datastore_cluster:
+        raise ResourceNotFound("Couldn't find the datastore cluster with provided name"
+                                "'{}'".format(datastore_cluster_name))
+
     pod_selection_spec = vim.storageDrs.PodSelectionSpec()
-    pod_selection_spec.storagePod = storage_pod
+    pod_selection_spec.storagePod = datastore_cluster
     return pod_selection_spec
 
 
-def _get_storage_pod(api, storage_pod_name):
-    storage_pod = api.get_vc_object(vim.StoragePod, storage_pod_name)
-    return storage_pod
+def _get_datastore_cluster(api, datastore_cluster_name):
+    datastore_cluster = api.get_vc_object(vim.StoragePod, datastore_cluster_name)
+    return datastore_cluster
 
 
-def get_apply_storage_recommendation_task(api, storage_spec):
-    storage_manager = _get_storage_resource_manager(api)
-    recommendation_key = _get_recommended_datastore_key(storage_manager, storage_spec)
+def clone_template_to_datastore_cluster(api, storage_spec):
+    storage_manager = api.storage_manager
+    recommendation_key = _get_recommendation_key(api, storage_spec)
     task = storage_manager.ApplyStorageDrsRecommendation_Task(key = recommendation_key)
     return task
 
 
-def _get_storage_resource_manager(api):
-    storage_manager = api.content.storageResourceManager
-    return storage_manager
-
-
-def _get_recommended_datastore_key(storage_manager, storage_spec):
-    recommended_datastore = _get_recommended_datastore(storage_manager, storage_spec)
-    recommendation_key = recommended_datastore.key
-    return recommendation_key
-
-
-def _get_recommended_datastore(storage_manager, storage_spec):
+def _get_recommendation_key(api, storage_spec):
+    storage_manager = api.storage_manager
     recommended_datastores = storage_manager.RecommendDatastores(storageSpec = storage_spec)
-    recommended_datastore = recommended_datastores.recommendations[0]
-    return recommended_datastore
+    recommendations = recommended_datastores.recommendations
+    if not recommendations:
+        raise ResourceNotFound("Couldn't find any SDRS recommendation to apply")
+    
+    return recommendations[0].key
 
 
 def get_connection_params(args):
