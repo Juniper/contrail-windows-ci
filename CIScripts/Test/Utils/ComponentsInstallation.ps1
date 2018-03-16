@@ -19,8 +19,6 @@ function Invoke-MsiExec {
             throw "Installation of $Using:Path failed with $($Result.ExitCode)"
         }
 
-        [System.GC]::Collect()
-
         # Refresh Path
         $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
     }
