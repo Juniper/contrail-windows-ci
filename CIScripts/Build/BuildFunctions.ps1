@@ -213,22 +213,14 @@ function Invoke-AgentBuild {
         Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
     })
 
-    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
-    $BuildModeOption = "--optimization=" + $BuildMode
-
-    $Job.Step("Building API", {
-        Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption controller/src/vnsw/contrail_vrouter_api:sdist | Tee-Object -FilePath $LogsPath/build_api.log
-        }
-    })
-
     $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
         if(Test-Path Env:AGENT_BUILD_THREADS) {
             $Threads = $Env:AGENT_BUILD_THREADS
         } else {
             $Threads = 1
         }
-        $AgentBuildCommand = "scons -j {0} {1} contrail-vrouter-agent.msi" -f $Threads, $BuildModeOption
+        $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
+        $AgentBuildCommand = "scons -j {0} --optimization={1} contrail-vrouter-agent.msi" -f $Threads, $BuildMode
         Invoke-NativeCommand -ScriptBlock {
             Invoke-Expression $AgentBuildCommand | Tee-Object -FilePath $LogsPath/build_agent.log
         }
@@ -243,9 +235,6 @@ function Invoke-AgentBuild {
                      -MSIPath $agentMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
-        $vRouterApiPath = "build\noarch\contrail-vrouter-api\dist\contrail-vrouter-api-1.0.tar.gz"
-
-        Copy-Item $vRouterApiPath $OutputPath -Recurse -Container
         Copy-Item $agentMSI $OutputPath -Recurse -Container
     })
 
@@ -256,7 +245,7 @@ function Copy-DebugDlls {
     Param ([Parameter(Mandatory = $true)] [string] $OutputPath)
 
     $Job.Step("Copying dlls to $OutputPath", {
-        foreach ($Lib in @("ucrtbased.dll", "vcruntime140d.dll")) {
+        foreach ($Lib in @("ucrtbased.dll", "vcruntime140d.dll", "msvcp140d.dll")) {
             Copy-Item "C:\Windows\System32\$Lib" $OutputPath
         }
     })
