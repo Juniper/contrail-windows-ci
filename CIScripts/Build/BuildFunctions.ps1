@@ -213,13 +213,14 @@ function Invoke-AgentBuild {
         Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
     })
 
+    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
+
     $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
         if(Test-Path Env:AGENT_BUILD_THREADS) {
             $Threads = $Env:AGENT_BUILD_THREADS
         } else {
             $Threads = 1
         }
-        $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
         $AgentBuildCommand = "scons -j {0} --optimization={1} contrail-vrouter-agent.msi" -f $Threads, $BuildMode
         Invoke-NativeCommand -ScriptBlock {
             Invoke-Expression $AgentBuildCommand | Tee-Object -FilePath $LogsPath/build_agent.log
