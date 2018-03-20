@@ -22,11 +22,11 @@ $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 Describe "vRouter Agent service" {
     
     Context "disabling" {
-        It "is disabled" {
+        It "is disabled" -Pending {
             Get-AgentServiceStatus -Session $Session | Should Be "Stopped"
         }
 
-        It "does not restart" {
+        It "does not restart" -Pending {
             Consistently {
                 Get-AgentServiceStatus -Session $Session | Should Be "Stopped"
             } -Duration 3
@@ -42,7 +42,7 @@ Describe "vRouter Agent service" {
     }
 
     Context "given vRouter Forwarding Extension is NOT running" {
-        It "crashes" {
+        It "crashes" -Pending {
             Eventually {
                 Read-SyslogForAgentCrash -Session $Session -After $BeforeCrash | Should Not BeNullOrEmpty
             } -Duration 60
@@ -59,7 +59,7 @@ Describe "vRouter Agent service" {
     }
 
     Context "given vRouter Forwarding Extension is running" {
-        It "runs correctly" {
+        It "runs correctly" -Pending {
             Eventually {
                 Get-AgentServiceStatus -Session $Session | Should Be "Running"
             } -Duration 30
@@ -71,7 +71,7 @@ Describe "vRouter Agent service" {
     }
     
     Context "vRouter Forwarding Extension was disabled while Agent was running" {
-        It "crashes" {
+        It "crashes" -Pending {
             Eventually {
                 Read-SyslogForAgentCrash -Session $Session -After $BeforeCrash `
                     | Should Not BeNullOrEmpty
