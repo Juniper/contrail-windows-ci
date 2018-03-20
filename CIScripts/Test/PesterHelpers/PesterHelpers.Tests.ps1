@@ -50,10 +50,18 @@ Describe "PesterHelpers" {
 
         It "exception contains the same info as normal Pester exception" {
             try {
-                Consistently { $true | Should Not Be $true } -Duration 3
+                "Foo" | Should Be "Bar"
+            }
+            catch {
+                $OriginalMessage = $_.Exception.Message
+            }
+
+            try {
+                Consistently { "Foo" | Should Be "Bar" } -Duration 3
             } catch {
-                $_.Exception.Message | `
-                    Should Be "Expected {True} to be different from the actual value, but got the same value."
+                $_.Exception.Message | Should Match "Foo"
+                $_.Exception.Message | Should Match "Bar"
+                $_.Exception.Message | Should Be $OriginalMessage
             }
         }
     }
@@ -103,10 +111,18 @@ Describe "PesterHelpers" {
 
         It "rethrows the last Pester exception in trivial case" {
             try {
-                Eventually { $true | Should Not Be $true } -Duration 3
+                "Foo" | Should Be "Bar"
+            }
+            catch {
+                $OriginalMessage = $_.Exception.Message
+            }
+
+            try {
+                Eventually { "Foo" | Should Be "Bar" } -Duration 3
             } catch {
-                $_.Exception.InnerException.Message | `
-                    Should Be "Expected {True} to be different from the actual value, but got the same value."
+                $_.Exception.InnerException.Message | Should Match "Foo"
+                $_.Exception.InnerException.Message | Should Match "Bar"
+                $_.Exception.InnerException.Message | Should Be $OriginalMessage
             }
         }
 
