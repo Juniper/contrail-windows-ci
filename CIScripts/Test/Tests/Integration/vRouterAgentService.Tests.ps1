@@ -1,8 +1,8 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$true)] [string] $ConfigFile
+    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
+. $PSScriptRoot\..\..\..\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\..\..\..\Common\Init.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
@@ -12,29 +12,18 @@ Param (
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
-. $ConfigFile
-$TestConf = Get-TestConfiguration
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
 $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+$TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
 
 Describe "vRouter Agent service" {
-    Context "enabling" {
-        It "is enabled" {
-            Get-AgentServiceStatus -Session $Session `
-                | Should Be "Running"
-        }
-
-        BeforeEach {
-            Enable-AgentService -Session $Session
-        }
-    }
     
     Context "disabling" {
         It "is disabled" {
-            Get-AgentServiceStatus -Session $Session `
-                | Should Be "Stopped"
+            Get-AgentServiceStatus -Session $Session | Should Be "Stopped"
         }
 
         It "does not restart" {
@@ -45,6 +34,9 @@ Describe "vRouter Agent service" {
 
         BeforeEach {
             Enable-AgentService -Session $Session
+            Invoke-UntilSucceeds {
+                (Get-AgentServiceStatus -Session $Session) -eq 'Running'
+            } -Duration 30
             Disable-AgentService -Session $Session
         }
     }
@@ -52,16 +44,13 @@ Describe "vRouter Agent service" {
     Context "given vRouter Forwarding Extension is NOT running" {
         It "crashes" {
             Eventually {
-                Read-SyslogForAgentCrash -Session $Session -After $BeforeCrash `
-                    | Should Not BeNullOrEmpty
+                Read-SyslogForAgentCrash -Session $Session -After $BeforeCrash | Should Not BeNullOrEmpty
             } -Duration 60
         }
 
         BeforeEach {
-            Disable-VRouterExtension -Session $Session `
-                -AdapterName $TestConf.AdapterName `
-                -VMSwitchName $TestConf.VMSwitchName `
-                -ForwardingExtensionName $TestConf.ForwardingExtensionName
+            Disable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
+
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
@@ -71,8 +60,9 @@ Describe "vRouter Agent service" {
 
     Context "given vRouter Forwarding Extension is running" {
         It "runs correctly" {
-            Get-AgentServiceStatus -Session $Session `
-                | Should Be "Running"
+            Eventually {
+                Get-AgentServiceStatus -Session $Session | Should Be "Running"
+            } -Duration 30
         }
 
         BeforeEach {
@@ -93,21 +83,23 @@ Describe "vRouter Agent service" {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
-            Disable-VRouterExtension -Session $Session `
-                -AdapterName $TestConf.AdapterName `
-                -VMSwitchName $TestConf.VMSwitchName `
-                -ForwardingExtensionName $TestConf.ForwardingExtensionName
+            Disable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
         }
     }
 
     BeforeEach {
-        Initialize-DriverAndExtension -Session $Session -TestConfiguration $TestConf `
+        Initialize-DriverAndExtension -Session $Session `
+            -TestbedConfig $TestbedConfig `
+            -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
-        New-AgentConfigFile -Session $Session -TestConfiguration $TestConf
+
+        New-AgentConfigFile -Session $Session `
+            -ControllerConfig $ControllerConfig `
+            -TestbedConfig $TestbedConfig
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -TestConfiguration $TestConf
+        Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
         if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
             Disable-AgentService -Session $Session
         }
