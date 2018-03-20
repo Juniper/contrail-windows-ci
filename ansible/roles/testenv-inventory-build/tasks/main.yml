@@ -5,9 +5,13 @@
     name: "{{ item.name }}"
     groups: testenv,controller
     type: controller
-    template: "{{ testenv_block.controller.template }}"
+    template: "{{ provisioning.vms.controller.template }}"
+    testenv_name: "{{ provisioning.name }}"
+    testenv_folder: "{{ provisioning.folder }}"
+    portgroup_mgmt: "{{ provisioning.portgroup_mgmt }}"
+    portgroup_contrail: "{{ provisioning.portgroup_contrail }}"
   with_items:
-    "{{ testenv_block.controller.nodes }}"
+    "{{ provisioning.vms.controller.nodes }}"
 
 - name: "Add Windows testbed VMs to ad-hoc inventory for testenv '{{ testenv_name }}'"
   add_host:
@@ -15,10 +19,14 @@
     groups: testenv,testbed,windows
     type: wintb
     ip: "{{ item.ip }}"
-    netmask: "{{ testenv_block.wintb.netmask }}"
-    template: "{{ testenv_block.wintb.template }}"
+    netmask: "{{ provisioning.vms.wintb.netmask }}"
+    template: "{{ provisioning.vms.wintb.template }}"
+    testenv_name: "{{ provisioning.name }}"
+    testenv_folder: "{{ provisioning.folder }}"
+    portgroup_mgmt: "{{ provisioning.portgroup_mgmt }}"
+    portgroup_contrail: "{{ provisioning.portgroup_contrail }}"
   with_items:
-    "{{ testenv_block.wintb.nodes }}"
+    "{{ provisioning.vms.wintb.nodes }}"
 
 - name: Display inventory for 'testenv' group
   debug:
