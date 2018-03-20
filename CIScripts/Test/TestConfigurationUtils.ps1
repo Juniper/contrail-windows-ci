@@ -129,6 +129,10 @@ function Enable-DockerDriver {
         Start-Job -ScriptBlock {
             Param($Arguments)
             & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments
+
+            # The `, $null` below is used to force passing $Arguments as an arguments'
+            # list element instead of an arguments list itself.
+            # @($Arguments) looks like it should work, but does not.
         } -ArgumentList $Arguments, $null
     }
 
@@ -393,7 +397,6 @@ function New-AgentConfigFile {
     $VHostIfName = $HNSTransparentAdapter.ifName
     $VHostIfIndex = $HNSTransparentAdapter.ifIndex
 
-    # TODO ???
     $TEST_NETWORK_GATEWAY = "10.7.3.1"
     $VHostGatewayIP = $TEST_NETWORK_GATEWAY
     $PhysIfName = $PhysicalAdapter.ifName
