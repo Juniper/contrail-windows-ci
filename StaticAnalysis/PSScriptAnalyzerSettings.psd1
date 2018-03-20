@@ -6,6 +6,6 @@
         "PSUseShouldProcessForStateChangingFunctions",      # We don't care about altering system state.
         "PSUseSingularNouns",           # We sometimes like using plural nouns.
         "PSAvoidUsingWMICmdlet",        # We tend to use WMI to access advanced Hyper-V features.
-        "PSAvoidUsingPlainTextForPassword"      # We use credentials in testenv as a plaintext
+        "PSAvoidUsingPlainTextForPassword"      # We use credentials in testenv as a plaintext.
     )
 }
