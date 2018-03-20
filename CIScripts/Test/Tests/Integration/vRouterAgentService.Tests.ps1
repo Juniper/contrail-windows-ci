@@ -17,7 +17,7 @@ $Session = $Sessions[0]
 
 $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
 $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-$TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
 Describe "vRouter Agent service" {
     
@@ -49,7 +49,7 @@ Describe "vRouter Agent service" {
         }
 
         BeforeEach {
-            Disable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
+            Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
@@ -83,23 +83,23 @@ Describe "vRouter Agent service" {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
-            Disable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
+            Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
         }
     }
 
     BeforeEach {
         Initialize-DriverAndExtension -Session $Session `
-            -TestbedConfig $TestbedConfig `
+            -SystemConfig $SystemConfig `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
         New-AgentConfigFile -Session $Session `
             -ControllerConfig $ControllerConfig `
-            -TestbedConfig $TestbedConfig
+            -SystemConfig $SystemConfig
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
+        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
             Disable-AgentService -Session $Session
         }

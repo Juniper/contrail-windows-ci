@@ -13,11 +13,11 @@ Param (
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
-$TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
 Describe "vTest scenarios" {
     It "passes all vtest scenarios" {
-        $VMSwitchName = $TestbedConfig.VMSwitchName()
+        $VMSwitchName = $SystemConfig.VMSwitchName()
         {
             Invoke-Command -Session $Session -ScriptBlock {
                 Push-Location C:\Artifacts\
@@ -31,11 +31,11 @@ Describe "vTest scenarios" {
     BeforeAll {
         Install-Extension -Session $Session
         Install-Utils -Session $Session
-        Enable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
+        Enable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
     }
 
     AfterAll {
-        Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
+        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         Uninstall-Utils -Session $Session
         Uninstall-Extension -Session $Session
     }

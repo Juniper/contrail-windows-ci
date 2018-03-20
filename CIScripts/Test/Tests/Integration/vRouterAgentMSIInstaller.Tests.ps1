@@ -18,7 +18,7 @@ Param (
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
 
-$TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
 Describe "vRouter Agent MSI installer" {
 
@@ -47,16 +47,16 @@ Describe "vRouter Agent MSI installer" {
 
         BeforeEach {
             Install-Extension -Session $Session
-            Enable-VRouterExtension -Session $Session -TestbedConfig $TestbedConfig
+            Enable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
         }
 
         AfterEach {
-            Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             Uninstall-Extension -Session $Session
         }
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
+        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
     }
 }

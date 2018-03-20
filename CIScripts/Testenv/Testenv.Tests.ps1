@@ -24,11 +24,11 @@ Describe "Testenv" {
         }
 
         It "can read testbed config from a .yaml file" {
-            $Testbed = Read-TestbedConfig -Path $YamlPath
-            $Testbed.AdapterName | Should Be "Eth1"
-            $Testbed.VMSwitchName() | Should Be "Layered Eth1"
-            $Testbed.ForwardingExtensionName | Should Be "MyExtension"
-            $Testbed.AgentConfigFilePath | Should Be "MyFile"
+            $System = Read-SystemConfig -Path $YamlPath
+            $System.AdapterName | Should Be "Eth1"
+            $System.VMSwitchName() | Should Be "Layered Eth1"
+            $System.ForwardingExtensionName | Should Be "MyExtension"
+            $System.AgentConfigFilePath | Should Be "MyFile"
         }
 
         It "can read locations and credentials of testbeds from .yaml file" {
@@ -55,7 +55,7 @@ controller:
   restApiPort: 8082
   defaultProject: ci_tests
 
-testbed:
+system:
   AdapterName: Eth1
   VHostName: vEth
   ForwardingExtensionName: MyExtension

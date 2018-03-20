@@ -16,7 +16,7 @@ $Session = $Sessions[0]
 
 $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
 $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-$TestbedConfig = Read-TestbedConfig -Path $TestenvConfFile
+$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
 Describe "Single compute node protocol tests with utils" {
 
@@ -48,11 +48,11 @@ Describe "Single compute node protocol tests with utils" {
 
             Write-Host "Getting VM NetAdapter Information"
             $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $TestbedConfig.AdapterName
+                -AdapterName $SystemConfig.AdapterName
 
             Write-Host "Getting vHost NetAdapter Information"
             $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $TestbedConfig.VHostName
+                -AdapterName $SystemConfig.VHostName
 
             Write-Host "Getting Containers NetAdapter Information"
             $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
@@ -110,7 +110,7 @@ Describe "Single compute node protocol tests with utils" {
         $ContrailNetwork = $ContrailNM.AddNetwork($null, $NetworkName, $Subnet)
 
         Initialize-DriverAndExtension -Session $Session `
-            -TestbedConfig $TestbedConfig `
+            -SystemConfig $SystemConfig `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
@@ -121,7 +121,7 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -TestbedConfig $TestbedConfig
+        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
         }

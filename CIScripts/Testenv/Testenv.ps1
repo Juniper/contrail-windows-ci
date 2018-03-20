@@ -20,7 +20,7 @@ class ControllerConfig {
     }
 }
 
-class TestbedConfig {
+class SystemConfig {
     [string] $AdapterName;
     [string] $VHostName;
     [string] $ForwardingExtensionName;
@@ -45,11 +45,11 @@ function Read-ControllerConfig {
     return [ControllerConfig] $Parsed.Controller
 }
 
-function Read-TestbedConfig {
+function Read-SystemConfig {
     Param ([Parameter(Mandatory=$true)] [string] $Path)
     $FileContents = Get-Content -Path $Path -Raw
     $Parsed = ConvertFrom-Yaml $FileContents
-    return [TestbedConfig] $Parsed.Testbed
+    return [SystemConfig] $Parsed.System
 }
 
 function Read-TestbedsConfig {
