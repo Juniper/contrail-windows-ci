@@ -9,12 +9,20 @@ Describe "Invoke-UntilSucceeds" {
         { {} | Invoke-UntilSucceeds -Duration 3 } | Should Throw
     }
 
+    It "succeeds if ScriptBlock doesn't return anything but -AssumeTrue is set" {
+        { {} | Invoke-UntilSucceeds -Duration 3 -AssumeTrue } | Should Not Throw
+    }
+
     It "fails if ScriptBlock never returns true" {
         { { return $false } | Invoke-UntilSucceeds -Duration 3 } | Should Throw
     }
 
     It "fails if ScriptBlock only throws all the time" {
         { { throw "abcd" } | Invoke-UntilSucceeds -Duration 3 } | Should Throw
+    }
+
+    It "fails if ScriptBlock only throws all the time and -AssumeTrue is set" {
+        { { throw "abcd" } | Invoke-UntilSucceeds -Duration 3 -AssumeTrue } | Should Throw
     }
 
     It "succeeds if ScriptBlock is immediately true" {
