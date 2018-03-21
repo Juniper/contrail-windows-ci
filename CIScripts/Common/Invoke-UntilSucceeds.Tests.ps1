@@ -155,6 +155,7 @@ Describe "Invoke-UntilSucceeds" {
             $Script:Counter -eq 2
         } -Duration 10 -Interval 5
 
+        $Script:Counter | Should Be 2
         ((Get-Date) - $StartDate).Seconds | Should Be 45
     }
 
