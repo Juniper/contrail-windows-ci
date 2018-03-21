@@ -193,10 +193,10 @@ pipeline {
                 script {
                     try {
                         unstash 'testReport'
-                        powershell script: './CIScripts/GenerateTestReport.ps1'
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
+                        powershell script: './CIScripts/GenerateTestReport.ps1'
                         stash name: 'testReport', includes: '*.xml,*.html', allowEmpty: true
                     }
                 }
