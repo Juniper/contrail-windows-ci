@@ -6,8 +6,8 @@ Param (
 
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
-Describe "Initialize-IisTcpTestDockerImageBuild" {
-    It "builds iis-tcptest image" {
-        Initialize-IisTcpTestDockerImageBuild -Session $Session
+Describe "Initialize-IisTcpTestDockerImage" {
+    It "Builds iis-tcptest image" {
+        Initialize-IisTcpTestDockerImage -Session $Session
     } | Should Be 0
 }

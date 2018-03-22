@@ -1,6 +1,6 @@
 . $PSScriptRoot\..\..\Common\Aliases.ps1
 $DockerfilePath = "$PSScriptRoot\..\..\DockerImages\iis-tcptest\Dockerfile"
-function Initialize-IisTcpTestDockerImageBuild  {
+function Initialize-IisTcpTestDockerImage  {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     $DockerImagesDir = "C:\DockerImages"
