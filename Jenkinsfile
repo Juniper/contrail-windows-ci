@@ -219,6 +219,7 @@ pipeline {
 
             node('master') {
                 script {
+                    deleteDir()
                     def logServer = [
                         addr: env.LOG_SERVER,
                         user: env.LOG_SERVER_USER,
@@ -226,9 +227,9 @@ pipeline {
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
-                    unstash 'processedTestReport'
+                    dir('to_publish') {
+                        unstash 'processedTestReport'
 
-                    dir('test_report') {
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
 
