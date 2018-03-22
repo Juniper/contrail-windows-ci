@@ -3,7 +3,7 @@ testenv_testbed_vmware_template: Template-testbed-201803050718
 testenv_controller_vmware_template: Template-CentOS-7.4
 
 # Testenv block definition
-provisioning:
+testenv_block:
   name: "{{ testenv_name }}"
   folder: "{{ testenv_vmware_folder }}"
   portgroup_mgmt: "{{ testenv_mgmt_network }}"
@@ -12,12 +12,12 @@ provisioning:
     controller:
       template: "{{ testenv_controller_vmware_template }}"
       nodes:
-      - name: "{{ testenv_name[:7] }}-controller"
+      - name: "{{ testenv_name }}-controller"
     wintb:
       template: "{{ testenv_testbed_vmware_template }}"
       netmask: 255.255.0.0
       nodes:
-      - name: "{{ testenv_name[:7] }}-wintb01"
+      - name: "{{ testenv_name }}-wintb01"
         ip: 172.16.0.2
-      - name: "{{ testenv_name[:7] }}-wintb02"
+      - name: "{{ testenv_name }}-wintb02"
         ip: 172.16.0.3

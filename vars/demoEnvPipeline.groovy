@@ -14,7 +14,7 @@ def call(playbookToRun) {
         }
 
         stages {
-            stage("Prepare environment") {
+            stage("Run Ansible playbook") {
                 steps {
                     script {
                         vmwareConfig = getVMwareConfig()
@@ -27,10 +27,7 @@ def call(playbookToRun) {
 
                         ansibleExtraVars = vmwareConfig + testenvConfig
                     }
-                }
-            }
-            stage("Run Ansible") {
-                steps {
+
                     dir('ansible') {
                         ansiblePlaybook inventory: 'inventory.testenv',
                                         extraVars: ansibleExtraVars,
