@@ -5,7 +5,7 @@ function Initialize-IisTcpTestDockerImage  {
 
     $DockerImagesDir = "C:\DockerImages"
     Invoke-Command -Session $Session -ScriptBlock {
-        New-Item -ItemType Directory -Force $DockerImagesDir | Out-Null
+        New-Item -ItemType Directory -Force $Using:DockerImagesDir | Out-Null
     }
 
     Write-Host "Copying iis-tcp-test image Dockerfile"
@@ -13,6 +13,7 @@ function Initialize-IisTcpTestDockerImage  {
 
     Write-Host "Building iis-tcptest Docker image"
     Invoke-Command -Session $Session -ScriptBlock {
-        docker build -t iis-tcptest $DockerImagesDir
+        docker build -t iis-tcptest $Using:DockerImagesDir
+        return $LASTEXITCODE
     }
 }
