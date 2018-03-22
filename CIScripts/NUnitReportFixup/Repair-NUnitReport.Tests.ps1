@@ -4,14 +4,14 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 Describe "Repair-NUnitReport" {
 
-    function NormalizeString {
+    function NormalizeXmlString {
         Param([Parameter(Mandatory = $true)] [string] $InputData)
-        return $InputData -Replace "`r`n", "" -Replace "    ",""
+        ([Xml] $InputData).OuterXml
     }
 
     Context "test-suite tag flattening" {
         It "doesn't change simplest case" {
-            $TestData = NormalizeString -InputData @"
+            $TestData = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="3">
 <results>
@@ -21,11 +21,11 @@ Describe "Repair-NUnitReport" {
 </test-results>
 "@
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            $ActualOutput | Should BeExactly $TestData
+            NormalizeXmlString $ActualOutput | Should BeExactly $TestData
         }
 
         It "works when there are no test-cases" {
-            $TestData = NormalizeString -InputData @"
+            $TestData = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="3">
 <results>
@@ -33,16 +33,16 @@ Describe "Repair-NUnitReport" {
 </test-suite>
 </test-results>
 "@
-            $ExpectedOutput = NormalizeString -InputData @"
+            $ExpectedOutput = NormalizeXmlString -InputData @"
 <test-results>
 </test-results>
 "@
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            $ActualOutput | Should BeExactly $ExpectedOutput
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
 
         It "works with deep nesting" {
-            $TestData = NormalizeString -InputData @"
+            $TestData = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="2">
 <results>
@@ -64,7 +64,7 @@ Describe "Repair-NUnitReport" {
 </test-suite>
 </test-results>
 "@
-            $ExpectedOutput = NormalizeString -InputData @"
+            $ExpectedOutput = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="5">
 <results>
@@ -75,12 +75,12 @@ Describe "Repair-NUnitReport" {
 </test-results>
 "@
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            $ActualOutput | Should BeExactly $ExpectedOutput
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
 
 
         It "removes case-less test suites when there is one with cases" {
-            $TestData = NormalizeString -InputData @"
+            $TestData = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="2">
 <results>
@@ -94,7 +94,7 @@ Describe "Repair-NUnitReport" {
 </test-suite>
 </test-results>
 "@
-            $ExpectedOutput = NormalizeString -InputData @"
+            $ExpectedOutput = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="3">
 <results>
@@ -105,11 +105,11 @@ Describe "Repair-NUnitReport" {
 </test-results>
 "@
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            $ActualOutput | Should BeExactly $ExpectedOutput
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
 
         It "removes case-less test suites when there are multiple with cases" {
-            $TestData = NormalizeString -InputData @"
+            $TestData = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="2">
 <results>
@@ -129,7 +129,7 @@ Describe "Repair-NUnitReport" {
 </test-suite>
 </test-results>
 "@
-            $ExpectedOutput = NormalizeString -InputData @"
+            $ExpectedOutput = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="3">
 <results>
@@ -146,11 +146,11 @@ Describe "Repair-NUnitReport" {
 </test-results>
 "@
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            $ActualOutput | Should BeExactly $ExpectedOutput
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
 
         It "removes all test-suite tags except direct parents of test-case tags" {
-            $TestData = NormalizeString -InputData @"
+            $TestData = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="1">
 <results>
@@ -179,7 +179,7 @@ Describe "Repair-NUnitReport" {
 </test-suite>
 </test-results>
 "@
-            $ExpectedOutput = NormalizeString -InputData @"
+            $ExpectedOutput = NormalizeXmlString -InputData @"
 <test-results>
 <test-suite name="3">
 <results>
@@ -201,11 +201,11 @@ Describe "Repair-NUnitReport" {
 </test-results>
 "@
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            $ActualOutput | Should BeExactly $ExpectedOutput
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
 
         It "preserves other tags" {
-            $TestData = NormalizeString -InputData @"
+            $TestData = NormalizeXmlString -InputData @"
 <?xml version="1.0"?>
 <test-results>
     <environment />
@@ -223,7 +223,7 @@ Describe "Repair-NUnitReport" {
 </test-results>
 "@
 
-$ExpectedOutput = NormalizeString -InputData @"
+            $ExpectedOutput = NormalizeXmlString -InputData @"
 <?xml version="1.0"?>
 <test-results>
     <environment />
@@ -238,14 +238,14 @@ $ExpectedOutput = NormalizeString -InputData @"
 "@
 
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            $ActualOutput | Should BeExactly $ExpectedOutput
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
 
     }
 
     Context "test name cleanup" {
         It "makes names of test-cases more readable" {
-            $TestData = NormalizeString -InputData @"
+            $TestData = NormalizeXmlString -InputData @"
 <?xml version="1.0"?>
 <test-results>
     <environment />
@@ -262,7 +262,7 @@ $ExpectedOutput = NormalizeString -InputData @"
 </test-results>
 "@
 
-$ExpectedOutput = NormalizeString -InputData @"
+            $ExpectedOutput = NormalizeXmlString -InputData @"
 <?xml version="1.0"?>
 <test-results>
     <environment />
@@ -276,7 +276,7 @@ $ExpectedOutput = NormalizeString -InputData @"
 "@
 
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            $ActualOutput | Should BeExactly $ExpectedOutput
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
     }
 }
