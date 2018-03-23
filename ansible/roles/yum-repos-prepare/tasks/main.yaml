@@ -1,12 +1,10 @@
 ---
 
-- name: 'Update yum config'
-  copy:
-      src: yum.conf
-      dest: /etc/yum.conf
-      mode: 0644
-      owner: root
-      group: root
+- name: 'Set up yum to use only IPv4'
+  lineinfile:
+    dest: "/etc/yum.conf"
+    regexp: "^ip_resolve="
+    line: "ip_resolve=IPv4"
   become: yes
   become_user: root
 
