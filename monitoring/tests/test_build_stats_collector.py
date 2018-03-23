@@ -30,14 +30,14 @@ class TestBuildStatsCollector(unittest.TestCase):
         self.assertEqual(build_stats.test_stats.total, self.example_test_stats.total)
         self.assertEqual(build_stats.test_stats.passed, self.example_test_stats.passed)
 
-    def test_collecting_raises_exception_when_build_stats_are_missing(self):
+    def test_collecting_raises_exception_when_build_stats_raises_exception(self):
         build_stats_collector = MagicMock()
         build_stats_collector.collect = MagicMock(side_effect=Exception)
 
         collector = BuildStatsCollector(build_stats_collector=build_stats_collector,
                                         test_stats_collector=self.example_test_stats_collector)
-        with self.assertRaises(BuildStatsMissingError):
-            build_stats = collector.collect()
+        with self.assertRaises(Exception):
+            collector.collect()
 
     def test_collecting_works_when_test_stats_are_missing(self):
         test_stats_collector = MagicMock()

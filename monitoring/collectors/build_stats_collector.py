@@ -8,11 +8,7 @@ class BuildStatsCollector(object):
         self.test_stats_collector = test_stats_collector
 
     def collect(self):
-        build_stats = None
-        try:
-            build_stats = self.build_stats_collector.collect()
-        except:
-            raise BuildStatsMissingError
+        build_stats = self.build_stats_collector.collect()
 
         try:
             build_stats.test_stats = self.test_stats_collector.collect()
