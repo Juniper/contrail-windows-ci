@@ -1,7 +1,6 @@
 ---
 
-- name: 'copy apache config'
-  register: apache_config
+- name: 'Update yum config'
   copy:
       src: yum.conf
       dest: /etc/yum.conf
