@@ -1,5 +1,16 @@
 ---
 
+- name: 'copy apache config'
+  register: apache_config
+  copy:
+      src: yum.conf
+      dest: /etc/yum.conf
+      mode: 0644
+      owner: root
+      group: root
+  become: yes
+  become_user: root
+
 - name: Remove the upstream yum repos
   yum_repository:
     name: "{{ item.name }}"
