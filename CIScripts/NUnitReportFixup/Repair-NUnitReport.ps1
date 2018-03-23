@@ -46,7 +46,7 @@ function Set-DescriptionAndNameTheSameFor {
     Param([Parameter(Mandatory = $true)] [AllowEmptyCollection()]
           [System.Xml.XmlElement[]] $Nodes)
     $Nodes | ForEach-Object {
-        if ($_.description) {
+        if ($_.Attributes['description']) {
             $_.name = $_.description
         }
     } | Out-Null

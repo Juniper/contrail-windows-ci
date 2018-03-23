@@ -2,6 +2,7 @@
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
+. $PSScriptRoot/../Common/Init.ps1
 Describe "Repair-NUnitReport" {
 
     function NormalizeXmlString {
