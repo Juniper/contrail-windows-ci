@@ -32,7 +32,7 @@ function Convert-TestReportToHtml {
     @{
         xml_reports = $Xmls
         html_report = "$PrettyDirName/Index.html"
-    } | ConvertTo-Json -Depth 10 | Out-File "$OutputDir/reports-locations.json"
+    } | ConvertTo-Json -Depth 10 | Out-File "$OutputDir/reports-locations.json" -Encoding "utf8"
 }
 
 if (Test-Path $XmlsDir) {
