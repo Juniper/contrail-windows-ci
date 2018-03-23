@@ -215,9 +215,9 @@ pipeline {
 
                     try {
                         unstash 'testReport'
-                        publishToLogServer(logServer, 'testReport.xml', destDir, false)
+                        publishToLogServer(logServer, 'reports-locations.json', destDir, false)
                         publishToLogServer(logServer, 'testReport.html', destDir, false)
-                        testXmlReportUrl = decideTestXmlReportUrl(logServer, 'testReport.xml', env.ZUUL_UUID)
+                        testReportsUrl = decideTestReportsUrl(logServer, 'reports-locations.json', env.ZUUL_UUID)
                     } catch (Exception err) {
                         echo "No test report to publish"
                     }
@@ -231,7 +231,7 @@ pipeline {
                       parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
                                    string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
                                    string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL),
-                                   string(name: 'TEST_XML_REPORT_URL', value: testXmlReportUrl)]
+                                   string(name: 'TEST_REPORTS_JSON_URL', value: testReportsUrl)]
             }
         }
     }

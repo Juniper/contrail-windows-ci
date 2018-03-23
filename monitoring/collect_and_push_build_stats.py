@@ -13,13 +13,13 @@ def parse_args():
     parser = MysqlCommonArgumentParser()
     parser.add_argument('--job-name', required=True)
     parser.add_argument('--build-url', required=True)
-    parser.add_argument('--report-xml-url', required=False)
+    parser.add_argument('--reports-json-url', required=False)
     return parser.parse_args()
 
 
 def get_test_stats_collector(args):
-    if args.report_xml_url:
-        return XmlReportCollector(url=args.report_xml_url)
+    if args.reports_json_url:
+        return XmlReportCollector(url=args.reports_json_url)
     else:
         return NullCollector()
 
