@@ -12,9 +12,7 @@ function Initialize-IisTcpTestDockerImage  {
     Copy-Item -ToSession $Session -Path $DockerfilePath -Destination $DockerImagesDir
 
     Write-Host "Building iis-tcptest Docker image"
-    $Res = Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-Command -Session $Session -ScriptBlock {
         docker build -t iis-tcptest $Using:DockerImagesDir
-        return $LASTEXITCODE
     }
-    return $Res
 }
