@@ -145,14 +145,14 @@ pipeline {
                             unstash 'Ansible'
 
                             def testEnvConfPath = "${env.WORKSPACE}/${env.TESTENV_CONF_FILE}"
-                            ansibleExtraVars = ansibleExtraVars + [
+                            def provisioningExtraVars = ansibleExtraVars + [
                                 testenv_conf_file: testEnvConfPath
                             ]
 
                             dir('ansible') {
                                 ansiblePlaybook inventory: 'inventory.testenv',
                                                 playbook: 'vmware-deploy-testenv.yml',
-                                                extraVars: ansibleExtraVars
+                                                extraVars: provisioningExtraVars
                             }
 
                             stash name: "TestenvConf", includes: "testenv-conf.yaml"
