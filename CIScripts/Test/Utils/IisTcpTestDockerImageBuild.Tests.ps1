@@ -10,4 +10,10 @@ Describe "Initialize-IisTcpTestDockerImage" {
     It "Builds iis-tcptest image" {
         { Initialize-IisTcpTestDockerImage -Session $Session } | Should Not Throw
     }
+    
+    It "iis-tcptest image appear in docker inspect" {
+        Invoke-Command -Session $Session {
+            { docker inspect iis-tcptest } | Should Not BeNullOrEmpty
+        }
+    }
 }
