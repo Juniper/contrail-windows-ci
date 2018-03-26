@@ -6,7 +6,7 @@
     Set-DescriptionAndNameTheSameFor -Nodes $CaseNodes
 
     $SuiteNodesWithCases = Get-DirectSuiteParentsOf -Nodes $CaseNodes
-    Move-NodesToRootResultsNode -Nodes $SuiteNodesWithCases
+    $SuiteNodesWithCases | Foreach-Object { $XML.'test-results'.AppendChild($_) } | Out-Null
 
     $SuiteNodesWithoutCases = Find-SuiteNodesWithoutCases -XML $XML
     Remove-Nodes -Nodes $SuiteNodesWithoutCases
@@ -32,14 +32,6 @@ function Get-DirectSuiteParentsOf {
         $_.ParentNode.ParentNode
     }
     return ,$Arr
-}
-
-function Move-NodesToRootResultsNode {
-    Param([Parameter(Mandatory = $true)] [AllowEmptyCollection()]
-          [System.Xml.XmlElement[]] $Nodes)
-    $Nodes | ForEach-Object {
-        $XML.'test-results'.AppendChild($_)
-    } | Out-Null
 }
 
 function Set-DescriptionAndNameTheSameFor {
