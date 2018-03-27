@@ -1,13 +1,4 @@
 ---
-
-- name: 'Set up yum to use only IPv4'
-  lineinfile:
-    dest: "/etc/yum.conf"
-    regexp: "^ip_resolve="
-    line: "ip_resolve=IPv4"
-  become: yes
-  become_user: root
-
 - name: Remove the upstream yum repos
   yum_repository:
     name: "{{ item.name }}"
