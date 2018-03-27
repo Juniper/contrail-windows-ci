@@ -6,14 +6,19 @@ Param (
 
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
+
 Describe "Initialize-IisTcpTestDockerImage" {
     It "Builds iis-tcptest image" {
         { Initialize-IisTcpTestDockerImage -Session $Session } | Should Not Throw
-    }
-    
-    It "iis-tcptest image appear in docker inspect" {
+
         Invoke-Command -Session $Session {
-            { docker inspect iis-tcptest } | Should Not BeNullOrEmpty
+            docker inspect iis-tcptest
+        } | Should Not BeNullOrEmpty
+    }
+
+    BeforeEach {
+        Invoke-Command -Session $Session {
+            docker image rm iis-tcptest -f
         }
     }
 }
