@@ -62,6 +62,11 @@ Describe "Invoke-NativeCommand" {
     Context "Remote machine" {
         BeforeAll {
             $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Session",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
             $Session = $Sessions[0]
         }
 
