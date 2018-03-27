@@ -231,7 +231,6 @@ pipeline {
                     def logServer = [
                         addr: env.LOG_SERVER,
                         user: env.LOG_SERVER_USER,
-                        folder: env.LOG_SERVER_FOLDER,
                         rootDir: env.LOG_ROOT_DIR
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
