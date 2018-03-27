@@ -262,7 +262,7 @@ function Invoke-AgentUnitTestRunner {
     Param ([Parameter(Mandatory = $true)] [String] $TestExecutable)
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
-        $NativeCommandReturn = Invoke-NativeCommand -AllowNonZero $true -ScriptBlock {
+        $NativeCommandReturn = Invoke-NativeCommand -AllowNonZero -ScriptBlock {
             Invoke-Expression $TestExecutable
         }
         $ExitCode = $NativeCommandReturn[-1]

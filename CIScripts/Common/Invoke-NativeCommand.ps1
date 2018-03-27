@@ -1,7 +1,7 @@
 function Invoke-NativeCommand {
     Param (
-        [Parameter(Mandatory = $false)] [Bool] $AllowNonZero = $false,
-        [Parameter(Mandatory = $true)] [ScriptBlock] $ScriptBlock
+        [Parameter(Mandatory = $true)] [ScriptBlock] $ScriptBlock,
+        [Switch] $AllowNonZero
     )
     # Utility wrapper.
     # We encountered issues when trying to run non-powershell commands in a script, when it's
