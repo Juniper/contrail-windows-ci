@@ -1,7 +1,8 @@
 function Invoke-NativeCommand {
     Param (
         [Parameter(Mandatory = $true)] [ScriptBlock] $ScriptBlock,
-        [Switch] $AllowNonZero
+        [Switch] $AllowNonZero,
+        [Switch] $CaptureOutput
     )
     # Utility wrapper.
     # We encountered issues when trying to run non-powershell commands in a script, when it's
@@ -19,11 +20,19 @@ function Invoke-NativeCommand {
     #
     # Note: The command has to return 0 exitcode to be considered successful.
 
+    # The wrapper returns a dictionary with a two optional fields:
+    # If -AllowNonZero is set, the .ExitCode contains an exitcode of a command.
+    # If -CaputerOutput is set, the .Output contains captured output
+    # (otherwise, it will be printed usint Write-Host)
+
     # If an executable in $ScriptBlock wouldn't be found then while checking $LastExitCode
     # we would be checking the exit code of a previous command. To avoid this we clear $LastExitCode.
     $Global:LastExitCode = $null
 
-    & {
+    $ReturnDict = @{}
+
+    $Output = @()
+    $Output += Invoke-Command {
         # Since we're redirecting stderr to stdout we shouldn't have to set ErrorActionPreference
         # but because of a bug in Powershell we have to.
         # https://github.com/PowerShell/PowerShell/issues/4002
@@ -31,7 +40,11 @@ function Invoke-NativeCommand {
 
         # We redirect stderr to stdout so nothing is added to $Error.
         # We do this to be compliant to durable-task-plugin 1.18.
-        & $ScriptBlock 2>&1
+        if ($CaptureOutput) {
+            & $ScriptBlock 2>&1
+        } else {
+            & $ScriptBlock 2>&1 | Write-Host
+        }
     }
 
     if ($AllowNonZero -eq $false -and $LastExitCode -ne 0) {
@@ -39,9 +52,15 @@ function Invoke-NativeCommand {
     }
 
     if ($AllowNonZero) {
-        Write-Output $LastExitCode
+        $ReturnDict.ExitCode = $LastExitCode
+    }
+
+    if ($CaptureOutput) {
+        $ReturnDict.Output = $Output
     }
 
     # We clear it to be compliant with durable-task-plugin up to 1.17
     $Global:LastExitCode = $null
+
+    return $ReturnDict
 }
