@@ -20,7 +20,7 @@ Describe "Initialize-IisTcpTestDockerImage" {
         # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
         Invoke-Command -Session $Session {
             Invoke-Command {
-                $ErrorActionPreference = 'SilentlyContinue'
+                $ErrorActionPreference = "SilentlyContinue"
                 docker image rm iis-tcptest -f 2>$null
             }
         }
