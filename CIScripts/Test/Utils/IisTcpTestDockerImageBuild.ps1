@@ -1,19 +1,21 @@
 . $PSScriptRoot\..\..\Common\Aliases.ps1
-$DockerfilePath = "$PSScriptRoot\..\..\DockerFiles\iis-tcptest\Dockerfile"
+$DockerfilesPath = "$PSScriptRoot\..\..\DockerFiles\"
 
-function Initialize-IisTcpTestDockerImage  {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+function Initialize-DockerImage  {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session
+           [Parameter(Mandatory = $true)] [string] $DockerImageName)
 
-    $DockerFilesDir = "C:\DockerFiles"
+    $DockerfilePath = $DockerfilesPath + $DockerImageName
+    $TestbedDockerfilesDir = "C:\DockerFiles\"
     Invoke-Command -Session $Session -ScriptBlock {
-        New-Item -ItemType Directory -Force $Using:DockerImagesDir | Out-Null
+        New-Item -ItemType Directory -Force $Using:TestbedDockerfilesDir | Out-Null
     }
 
-    Write-Host "Copying iis-tcp-test image Dockerfile"
-    Copy-Item -ToSession $Session -Path $DockerfilePath -Destination $DockerFilesDir
+    Write-Host "Copying directory with Dockerfile"
+    Copy-Item -ToSession $Session -Path $DockerfilePath -Destination $TestbedDockerfilesDir -Recurse -Force
 
     Write-Host "Building iis-tcptest Docker image"
     Invoke-Command -Session $Session -ScriptBlock {
-        docker build -t iis-tcptest $Using:DockerFilesDir
+        docker build -t $DockerImageName ($Using:TestbedDockerfilesDir + $Using:DockerImage)
     }
 }

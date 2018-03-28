@@ -9,7 +9,7 @@ $Session = $Sessions[0]
 
 Describe "Initialize-IisTcpTestDockerImage" {
     It "Builds iis-tcptest image" {
-        { Initialize-IisTcpTestDockerImage -Session $Session } | Should Not Throw
+        Initialize-DockerImage -Session $Session
 
         Invoke-Command -Session $Session {
             docker inspect iis-tcptest
