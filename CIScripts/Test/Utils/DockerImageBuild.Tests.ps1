@@ -2,17 +2,18 @@ Param (
     [Parameter(Mandatory=$true)] [string] $TestenvConfFile
 )
 
-. $PSScriptRoot\IisTcpTestDockerImageBuild.ps1
+. $PSScriptRoot\DockerImageBuild.ps1
 
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
+$DockerImageName = iis-tcptest
 
-Describe "Initialize-IisTcpTestDockerImage" {
+Describe "Initialize-DockerImage" {
     It "Builds iis-tcptest image" {
-        Initialize-DockerImage -Session $Session
-
+        Initialize-DockerImage -Session $Session -DockerImageName $DockerImageName
+        
         Invoke-Command -Session $Session {
-            docker inspect iis-tcptest
+            docker inspect $Using:DockerImageName
         } | Should Not BeNullOrEmpty
     }
 
@@ -21,7 +22,7 @@ Describe "Initialize-IisTcpTestDockerImage" {
         Invoke-Command -Session $Session {
             Invoke-Command {
                 $ErrorActionPreference = "SilentlyContinue"
-                docker image rm iis-tcptest -f 2>$null
+                docker image rm $Using:DockerImageName -f 2>$null
             }
         }
     }

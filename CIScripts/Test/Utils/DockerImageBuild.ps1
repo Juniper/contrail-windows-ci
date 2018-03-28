@@ -16,6 +16,6 @@ function Initialize-DockerImage  {
 
     Write-Host "Building iis-tcptest Docker image"
     Invoke-Command -Session $Session -ScriptBlock {
-        docker build -t $DockerImageName ($Using:TestbedDockerfilesDir + $Using:DockerImage)
+        docker build -t $DockerImageName ($Using:TestbedDockerfilesDir + $Using:DockerImageName)
     }
 }
