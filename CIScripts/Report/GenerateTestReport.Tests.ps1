@@ -9,6 +9,11 @@ Describe "Generating test report" {
 
     BeforeAll {
         $InputDir = Join-Path $TestDrive "testReportInput"
+        [
+            Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "OutputDir",
+            Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+        ]
         $OutputDir = Join-Path $TestDrive "testReportOutput"
         New-Item -Type Directory $InputDir | Out-Null
 
@@ -25,38 +30,44 @@ Describe "Generating test report" {
                 </test-suite>
             </test-results>
         ' | Set-Content -Path (Join-Path $InputDir "foo.xml")
-        
-        Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
     }
 
-    It "creates appropriate subdirectories" {
-        Join-Path $OutputDir "raw_NUnit" | Should Exist
-        Join-Path $OutputDir "pretty_test_report" | Should Exist
-    }
+    Context "generates html and json" {
+        BeforeAll {
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
+        }
 
-    It "creates appropriate files" {
-        Join-Path $OutputDir "raw_NUnit/foo.xml" | Should Exist
-        Join-Path $OutputDir "pretty_test_report/Index.html" | Should Exist
-        Join-Path $OutputDir "reports-locations.json" | Should Exist
-    }
+        It "creates appropriate subdirectories" {
+            Join-Path $OutputDir "raw_NUnit" | Should Exist
+            Join-Path $OutputDir "pretty_test_report" | Should Exist
+        }
 
-    It "flattens the xml files" {
-        $ExpectedXml = NormalizeXmlString '
-            <test-results>
-                <test-suite name="inner_suite">
-                    <results>
-                        <test-case name="test" />
-                    </results>
-                </test-suite>
-            </test-results>
-        '
+        It "creates appropriate files" {
+            Join-Path $OutputDir "raw_NUnit/foo.xml" | Should Exist
+            Join-Path $OutputDir "pretty_test_report/Index.html" | Should Exist
+            Join-Path $OutputDir "reports-locations.json" | Should Exist
+        }
 
-        $FileContents = Get-Content -Raw (Join-Path $OutputDir "raw_NUnit/foo.xml")
-        NormalizeXmlString $FileContents | Should BeExactly $ExpectedXml
+        It "flattens the xml files" {
+            $ExpectedXml = NormalizeXmlString '
+                <test-results>
+                    <test-suite name="inner_suite">
+                        <results>
+                            <test-case name="test" />
+                        </results>
+                    </test-suite>
+                </test-results>
+            '
+
+            $FileContents = Get-Content -Raw (Join-Path $OutputDir "raw_NUnit/foo.xml")
+            NormalizeXmlString $FileContents | Should BeExactly $ExpectedXml
+        }
     }
 
     Context "json" {
         BeforeAll {
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
+
             [
                 Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "Json",
@@ -71,6 +82,34 @@ Describe "Generating test report" {
 
         It "contains valid path to html report" {
             $Json.'html_report' | Should BeExactly './pretty_test_report/Index.html'
+        }
+    }
+
+    Context "multiple test reports" {
+        BeforeAll {
+            '
+                <test-results>
+                    <test-suite name="bar_suite">
+                        <results>
+                            <test-case name="bar_test" />
+                        </results>
+                    </test-suite>
+                </test-results>
+            ' | Set-Content -Path (Join-Path $InputDir "bar.xml")
+
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
+
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Json",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
+            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
+        }
+
+        It 'generates flat list for xml_reports' {
+            $Json.'xml_reports'[0] | Should BeExactly './raw_NUnit/bar.xml'
+            $Json.'xml_reports'[1] | Should BeExactly './raw_NUnit/foo.xml'
         }
     }
 }
