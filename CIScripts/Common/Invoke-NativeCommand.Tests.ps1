@@ -9,9 +9,25 @@ Param (
 . $PSScriptRoot/Invoke-NativeCommand.ps1
 
 Describe "Invoke-NativeCommand" {
+    BeforeAll {
+        Mock Write-Host {
+            param([Parameter(ValueFromPipeline = $true)] $Object)
+            $Script:WriteHostOutput += $Object
+        }
+
+        function Get-WriteHostOutput {
+            $Script:WriteHostOutput
+        }
+    }
+
+    BeforeEach {
+        $Script:WriteHostOutput = @()
+    }
+
     Context "Local machine" {
-        It "does not throw on successful command" {
+        It "works on a simple case" {
             Invoke-NativeCommand { whoami.exe }
+            Get-WriteHostOutput | Should BeLike '*\*'
         }
 
         It "can accept the scriptblock also as an explicit parameter" {
