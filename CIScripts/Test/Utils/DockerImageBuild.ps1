@@ -2,8 +2,9 @@
 $DockerfilesPath = "$PSScriptRoot\..\..\DockerFiles\"
 
 function Initialize-DockerImage  {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session
-           [Parameter(Mandatory = $true)] [string] $DockerImageName)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+           [Parameter(Mandatory = $true)] [string] $DockerImageName
+    )
 
     $DockerfilePath = $DockerfilesPath + $DockerImageName
     $TestbedDockerfilesDir = "C:\DockerFiles\"
@@ -14,8 +15,9 @@ function Initialize-DockerImage  {
     Write-Host "Copying directory with Dockerfile"
     Copy-Item -ToSession $Session -Path $DockerfilePath -Destination $TestbedDockerfilesDir -Recurse -Force
 
-    Write-Host "Building iis-tcptest Docker image"
+    Write-Host "Building Docker image"
+    $TestbedDockerfilePath = $TestbedDockerfilesDir + $DockerImageName
     Invoke-Command -Session $Session -ScriptBlock {
-        docker build -t $DockerImageName ($Using:TestbedDockerfilesDir + $Using:DockerImageName)
+        docker build -t $Using:DockerImageName $Using:TestbedDockerfilePath
     }
 }
