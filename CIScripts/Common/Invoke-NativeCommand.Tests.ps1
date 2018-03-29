@@ -8,6 +8,11 @@ Param (
 
 . $PSScriptRoot/Invoke-NativeCommand.ps1
 
+
+$Testbed = (Read-TestbedsConfig -Path $TestenvConfFile)[0]
+$Sessions = New-RemoteSessions -VMs $Testbed
+$Session = $Sessions[0]
+
 Describe "Invoke-NativeCommand" {
     BeforeAll {
         Mock Write-Host {
@@ -22,6 +27,28 @@ Describe "Invoke-NativeCommand" {
 
     BeforeEach {
         $Script:WriteHostOutput = @()
+    }
+
+    Context "Examples" {
+        It "works on a simple case" {
+            Invoke-NativeCommand { whoami.exe }
+            Get-WriteHostOutput | Should BeLike '*\*'
+        }
+
+        It "can be used on remote session" {
+            Invoke-NativeCommand -Session $Session { whoami.exe }
+            Get-WriteHostOutput | Should BeLike "*\$( $Testbed.Username )"
+        }
+
+        It "can capture the exitcode" {
+            $Command = Invoke-NativeCommand -AllowNonZero { whoami.exe /invalid_parameter }
+            $Command.ExitCode | Should BeGreaterThan 0
+        }
+
+        It "can capture the output" {
+            $Command = Invoke-NativeCommand -CaptureOutput { whoami.exe }
+            $Command.Output | Should BeLike '*\*'
+        }
     }
 
     Context "Local machine" {
@@ -76,16 +103,6 @@ Describe "Invoke-NativeCommand" {
     }
 
     Context "Remote machine" {
-        BeforeAll {
-            $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-            [
-                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "Session",
-                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
-            ]
-            $Session = $Sessions[0]
-        }
-
         It "does not throw on successful command" {
             Invoke-NativeCommand -Session $Session { whoami.exe }
         }
