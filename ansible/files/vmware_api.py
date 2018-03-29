@@ -2,6 +2,8 @@ import os
 import ssl
 import getpass
 import argparse
+import random
+import re
 from pyVmomi import vim
 
 
@@ -107,6 +109,15 @@ class VmwareApi(object):
             folder = self.content.rootFolder
         container = self.content.viewManager.CreateContainerView(folder, [vimtype], True)
         return list(container.view)
+
+    def select_destination_host_and_datastore(self):
+        datastores = [d for d in self.datacenter.datastore if re.match(r'^ci-\w+-ssd3$', d.name)]
+        if len(datastores) == 0:
+            return None, None
+        random.shuffle(datastores)
+        chosen_datastore = datastores[0]
+        chosen_host = chosen_datastore.host[0].key
+        return chosen_host, chosen_datastore
 
 
 def _get_vm_network_interfaces(vm):
@@ -215,19 +226,23 @@ def get_vm_customization_spec(template, name, org, username, password, data_ip_a
     return customization_spec
 
 
-def get_vm_relocate_spec(cluster):
+def get_vm_relocate_spec(cluster, host, datastore):
     relocate_spec = vim.vm.RelocateSpec()
     relocate_spec.pool = cluster.resourcePool
+    relocate_spec.host = host
+    relocate_spec.datastore = datastore
+    relocate_spec.diskMoveType = 'createNewChildDiskBacking'
     return relocate_spec
 
 
-def get_vm_clone_spec(config_spec, customization_spec, relocate_spec):
+def get_vm_clone_spec(template, config_spec, customization_spec, relocate_spec):
     clone_spec = vim.vm.CloneSpec()
     clone_spec.powerOn = True
     clone_spec.template = False
     clone_spec.config = config_spec
     clone_spec.customization = customization_spec
     clone_spec.location = relocate_spec
+    clone_spec.snapshot = template.snapshot.rootSnapshotList[0].snapshot
     return clone_spec
 
 
