@@ -27,39 +27,44 @@ function Invoke-NativeCommand {
     # If -CaputerOutput is set, the .Output contains captured output
     # (otherwise, it will be printed usint Write-Host)
 
-    function Invoke-CommandLocalOrRemote {
-        Param(
-            [parameter(Mandatory=$true)] [AllowNull()] [PSSessionT] $Session,
-            [parameter(Mandatory=$true)] [ScriptBlock] $ScriptBlock
-        )
+    # Helpers -------------------------------------------------------------------------------------
 
+    function Invoke-CommandOnExecutor([ScriptBlock] $ScriptBlock) {
         if ($Session) {
             Invoke-Command -Session $Session -ScriptBlock $ScriptBlock
         } else {
             Invoke-Command -ScriptBlock $ScriptBlock
         }
     }
-
-    Invoke-CommandLocalOrRemote -Session $Session -ScriptBlock {
-        # If an executable in $ScriptBlock wouldn't be found then while checking $LastExitCode
-        # we would be checking the exit code of a previous command. To avoid this we clear $LastExitCode.
-        $Global:LastExitCode = $null
+    function Push-RemoteErrorActionPreference([String] $ErrorAction) {
+        Invoke-Command -Session $Session {
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments", "",
+                Justification="It's actually used in Pop-RemoteErrorActionPreference"
+            )]
+            $InvokeNativeCommandSavedErrorAction = $ErrorActionPreference
+            $ErrorActionPreference = $Using:ErrorAction
+        }
     }
 
-    # We need to backup only the ErrorActionPreference only in remote case,
-    # as all changes of this variable locally are scoped to a function,
-    # but when using Invoke-Comand -Session $Session, their scope is
-    # for a whole lifetime of a session.
-    if ($Session) {
-        $OldRemoteErrorAction = Invoke-Command -Session $Session { $ErrorActionPreference }
+    function Pop-RemoteErrorActionPreference {
+        Invoke-Command -Session $Session {
+            $ErrorActionPreference = $InvokeNativeCommandSavedErrorAction
+        }
     }
+
+    # End helpers ---------------------------------------------------------------------------------
+
+    # If an executable in $ScriptBlock wouldn't be found then while checking $LastExitCode
+    # we would be checking the exit code of a previous command. To avoid this we clear $LastExitCode.
+    Invoke-CommandOnExecutor { $Global:LastExitCode = $null }
 
     # Since we're redirecting stderr to stdout we shouldn't have to set ErrorActionPreference
     # but because of a bug in Powershell we have to.
     # https://github.com/PowerShell/PowerShell/issues/4002
-    if ($Session) {
-        Invoke-Command -Session $Session { $ErrorActionPreference = "Continue" }
-    }
+    if ($Session) { Push-RemoteErrorActionPreference "Continue" }
+    # Local ErrorActionPreference is local to a function,
+    # so it doesn't need to be saved and restored.
     $ErrorActionPreference = "Continue"
 
     try {
@@ -67,24 +72,21 @@ function Invoke-NativeCommand {
         # We do this to be compliant to durable-task-plugin 1.18.
         if ($CaptureOutput) {
             $Output = @()
-            $Output += Invoke-CommandLocalOrRemote -Session $Session -ScriptBlock $ScriptBlock 2>&1
+            $Output += Invoke-CommandOnExecutor -ScriptBlock $ScriptBlock 2>&1
         } else {
-            Invoke-CommandLocalOrRemote -Session $Session -ScriptBlock $ScriptBlock 2>&1 | Write-Host
+            Invoke-CommandOnExecutor -ScriptBlock $ScriptBlock 2>&1 | Write-Host
         }
     }
     finally {
-        if ($Session) {
-            Invoke-Command -Session $Session { $ErrorActionPreference = $Using:OldRemoteErrorAction }
-        }
+        if ($Session) { Pop-RemoteErrorActionPreference }
         $ErrorActionPreference = "Stop"
     }
 
-    $ExitCode = Invoke-CommandLocalOrRemote -Session $Session {
-        $ExitCode = $Global:LastExitCode
-        # We clear it to be compliant with durable-task-plugin up to 1.17
-        $Global:LastExitCode = $null
-        $ExitCode
-    }
+    $ExitCode = Invoke-CommandOnExecutor { $Global:LastExitCode }
+
+    # We clear it to be compliant with durable-task-plugin up to 1.17
+    # (that's needed to be done only on the local machine)
+    $Global:LastExitCode = $null
 
     if ($AllowNonZero -eq $false -and $ExitCode -ne 0) {
         throw "Command ``$ScriptBlock`` failed with exitcode: $ExitCode"
@@ -92,13 +94,8 @@ function Invoke-NativeCommand {
 
     $ReturnDict = @{}
 
-    if ($AllowNonZero) {
-        $ReturnDict.ExitCode = $ExitCode
-    }
-
-    if ($CaptureOutput) {
-        $ReturnDict.Output = $Output
-    }
+    if ($AllowNonZero) { $ReturnDict.ExitCode = $ExitCode }
+    if ($CaptureOutput) { $ReturnDict.Output = $Output }
 
     return $ReturnDict
 }

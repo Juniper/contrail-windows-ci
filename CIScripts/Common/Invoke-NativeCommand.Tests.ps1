@@ -93,6 +93,11 @@ Describe "Invoke-NativeCommand" {
             INC { Write-Error "simulated stderr"; whoami.exe }
             (Get-WriteHostOutput)[0] | Should BeLike '*stderr*'
         }
+
+        It "doesn't leave a trace of LastExitCode" {
+            INC -ScriptBlock { whoami.exe }
+            $LastExitCode | Should BeNullOrEmpty
+        }
     }
 
     Context "Local machine" {
