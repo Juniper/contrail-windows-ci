@@ -262,7 +262,7 @@ function Invoke-AgentUnitTestRunner {
     Param ([Parameter(Mandatory = $true)] [String] $TestExecutable)
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
-        $NativeCommandReturn = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
+        $Command = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
             Invoke-Expression $TestExecutable
         }
 
@@ -271,11 +271,11 @@ function Invoke-AgentUnitTestRunner {
         # Even if all tests actually pass, test executables can sometimes
         # return non-zero exit code.
         # TODO: It should be removed once the bug is fixed (JW-1110).
-        $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $NativeCommandReturn.Output
-        if ($NativeCommandReturn.ExitCode -eq 0 -or $SeemsLegitimate) {
+        $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $Command.Output
+        if ($Command.ExitCode -eq 0 -or $SeemsLegitimate) {
             return 0
         } else {
-            return $ExitCode
+            return $Command.ExitCode
         }
     }
 
