@@ -51,104 +51,92 @@ Describe "Invoke-NativeCommand" {
         }
     }
 
-    Context "Local machine" {
-        It "works on a simple case" {
-            Invoke-NativeCommand { whoami.exe }
-            Get-WriteHostOutput | Should BeLike '*\*'
-        }
+    # The following tests use the INC wrapper for Invoke-NativeCommand,
+    # so the functional tests suite can be easily run both remotely and locally.
 
+    function Invoke-FunctionalTests {
         It "can accept the scriptblock also as an explicit parameter" {
-            Invoke-NativeCommand -CaptureOutput -ScriptBlock { whoami.exe }
+            INC -CaptureOutput -ScriptBlock { whoami.exe }
         }
 
         It "throws on failed command" {
-            { Invoke-NativeCommand { whoami.exe /invalid_parameter } } | Should Throw
+            { INC { whoami.exe /invalid_parameter } } | Should Throw
         }
 
         It "throws on nonexisting command" {
-            { Invoke-NativeCommand { asdfkljasdsdf.exe } } | Should Throw
+            { INC { asdfkljasdsdf.exe } } | Should Throw
         }
 
-        It "captures the exitcode of successful command" {
-            $Result = Invoke-NativeCommand -AllowNonZero { whoami.exe }
+        It "captures the exitcode of a successful command" {
+            $Result = INC -AllowNonZero { whoami.exe }
             $Result.ExitCode | Should Be 0
         }
 
         It "captures the exitcode a failed command" {
-            (Invoke-NativeCommand -AllowNonZero { whoami.exe /invalid }).ExitCode | Should Not Be 0
+            (INC -AllowNonZero { whoami.exe /invalid }).ExitCode | Should Not Be 0
         }
 
         It "can capture the output of a command" {
-            (Invoke-NativeCommand -CaptureOutput { whoami.exe }).Output | Should BeLike '*\*'
+            (INC -CaptureOutput { whoami.exe }).Output | Should BeLike '*\*'
+            Get-WriteHostOutput | Should BeNullOrEmpty
         }
 
         It "can capture multiline output" {
-            (Invoke-NativeCommand -CaptureOutput { whoami.exe /? }).Output.Count | Should BeGreaterThan 1
+            (INC -CaptureOutput { whoami.exe /? }).Output.Count | Should BeGreaterThan 1
         }
 
         It "does not capture the output by default" {
-            Invoke-NativeCommand { whoami.exe } | Should BeNullOrEmpty
+            INC { whoami.exe } | Should BeNullOrEmpty
         }
 
-        It "can use variables it scriptblock" {
-            $Command = "whoami.exe"
-            (Invoke-NativeCommand -CaptureOutput -AllowNonZero { & $Command }).ExitCode | Should Be 0
-        }
-
-        It "preserves the ErrorActionPreference" {
-            $ErrorActionPreference = "Stop"
-            Invoke-NativeCommand -CaptureOutput { whoami.exe } | Out-Null
-            $ErrorActionPreference | Should Be "Stop"
+        It "allows the successful command to print on stderr" {
+            INC { Write-Error "simulated stderr"; whoami.exe }
+            (Get-WriteHostOutput)[0] | Should BeLike '*stderr*'
         }
     }
 
-    Context "Remote machine" {
-        It "does not throw on successful command" {
-            Invoke-NativeCommand -Session $Session { whoami.exe }
+    Context "Local machine" {
+        function INC {
+            Invoke-NativeCommand @args
         }
 
-        It "can accept the scriptblock also as an explicit parameter" {
-            Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock { whoami.exe }
-        }
-
-        It "throws on failed command" {
-            { Invoke-NativeCommand -Session $Session { whoami.exe /invalid_parameter } } | Should Throw
-        }
-
-        It "throws on nonexisting command" {
-            { Invoke-NativeCommand -Session $Session { asdfkljasdsdf.exe } } | Should Throw
-        }
-
-        It "captures the exitcode of successful command" {
-            $Result = Invoke-NativeCommand -Session $Session -AllowNonZero { whoami.exe }
-            $Result.ExitCode | Should Be 0
-        }
-
-        It "captures the exitcode a failed command" {
-            (Invoke-NativeCommand -Session $Session -AllowNonZero { whoami.exe /invalid }).ExitCode | Should Not Be 0
-        }
-
-        It "can capture the output of a command" {
-            (Invoke-NativeCommand -Session $Session -CaptureOutput { whoami.exe }).Output | Should BeLike '*\*'
-        }
-
-        It "can capture multiline output" {
-            (Invoke-NativeCommand -Session $Session -CaptureOutput { whoami.exe /? }).Output.Count | Should BeGreaterThan 1
-        }
-
-        It "does not capture the output by default" {
-            Invoke-NativeCommand -Session $Session { whoami.exe } | Should BeNullOrEmpty
-        }
-
-        It "can use variables it scriptblock" {
+        It "can use variables in scriptblock" {
+            # This test also makes sure that we're not running it on remote machine,
+            # as the variable won't work there
             $Command = "whoami.exe"
-            (Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero { & $Using:Command }).ExitCode | Should Be 0
+            (INC -CaptureOutput -AllowNonZero { & $Command }).ExitCode | Should Be 0
+        }
+
+        $ErrorActions = @("Stop", "Continue") | Foreach-Object { @{ErrorAction = $_ } }
+        It "preserves the <ErrorAction> ErrorActionPreference" -TestCases $ErrorActions {
+            Param($ErrorAction)
+
+            $ErrorActionPreference = $ErrorAction
+            INC -CaptureOutput { whoami.exe } | Out-Null
+            $ErrorActionPreference | Should Be $ErrorAction
+        }
+
+        Invoke-FunctionalTests
+    }
+
+    Context "Remote machine" {
+        function INC {
+            Invoke-NativeCommand -Session $Session @args
+        }
+
+        It "can use variables in scriptblock" {
+            # This test also makes sure that the mock's working and
+            # we're not running it on local machine, as Using works only on remote.
+            $Command = "whoami.exe"
+            (INC -CaptureOutput -AllowNonZero { & $Using:Command }).ExitCode | Should Be 0
         }
 
         It "preserves the ErrorActionPreference" {
-            $OldEA = Invoke-Command -Session $Session { $ErrorActionPreference }
-            Invoke-NativeCommand -Session $Session -CaptureOutput { whoami.exe } | Out-Null
-            Invoke-Command -Session $Session { $ErrorActionPreference } | Should Be $OldEA
+            $OldEA = Invoke-Command { $ErrorActionPreference }
+            INC -CaptureOutput { whoami.exe } | Out-Null
+            Invoke-Command { $ErrorActionPreference } | Should Be $OldEA
         }
+
+        Invoke-FunctionalTests
     }
 }
