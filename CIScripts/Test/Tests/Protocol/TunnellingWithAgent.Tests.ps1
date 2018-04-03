@@ -9,7 +9,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testbed.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
@@ -72,7 +72,7 @@ function Test-TCP {
 
     Write-Host "Container $SrcContainerName is sending HTTP request to $DstContainerName..."
     $Res = Invoke-Command -Session $Session -ScriptBlock {
-        docker exec $Using:SrcContainerName powershell "Invoke-WebRequest -Uri http://${Using:DstContainerIP}:8080/ -ErrorAction Continue; `$LASTEXITCODE"
+        docker exec $Using:SrcContainerName powershell "Invoke-WebRequest -Uri http://${Using:DstContainerIP}:8080/ -UseBasicParsing -ErrorAction Continue; `$LASTEXITCODE"
     }
     $Output = $Res[0..($Res.length - 2)]
     Write-Host "Web request output: $Output"
@@ -139,6 +139,114 @@ function Test-MPLSoUDP {
     }
 }
 
+function Start-UDPEchoServerInContainer {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$true)] [String] $ContainerName,
+        [Parameter(Mandatory=$true)] [Int16] $ServerPort,
+        [Parameter(Mandatory=$true)] [Int16] $ClientPort
+    )
+    $UDPEchoServerCommand = ( `
+    '$SendPort = {0};' + `
+    '$RcvPort = {1};' + `
+    '$IPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, $RcvPort);' + `
+    '$UDPSocket = New-Object System.Net.Sockets.UdpClient($IPEndpoint);' + `
+    '$RemoteIPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, 0);' + `
+    'while($true) {{' + `
+    '    $Payload = $UDPSocket.Receive([ref]$RemoteIPEndpoint);' + `
+    '    $RemoteIPEndpoint.Port = $SendPort;' + `
+    '    $Message = [Text.Encoding]::UTF8.GetString($Payload);' + `
+    '    $UDPSocket.Send($Payload, $Payload.Length, $RemoteIPEndpoint);' + `
+    '}}') -f $ClientPort, $ServerPort
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "UDPEchoServerJob",
+            Justification="It's actually used."
+        )]
+        $UDPEchoServerJob = Start-Job -ScriptBlock {
+            param($ContainerName, $UDPEchoServerCommand)
+            docker exec $ContainerName powershell "$UDPEchoServerCommand"
+        } -ArgumentList $Using:ContainerName, $Using:UDPEchoServerCommand
+    }
+}
+
+function Stop-EchoServerInContainer {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+    )
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        $UDPEchoServerJob | Stop-Job | Out-Null
+    }
+}
+
+function Start-UDPListenerInContainer {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$true)] [String] $ContainerName,
+        [Parameter(Mandatory=$true)] [Int16] $ListenerPort
+    )
+
+    $UDPListenerCommand = ( `
+    '$RemoteIPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, 0);' + `
+    '$UDPRcvSocket = New-Object System.Net.Sockets.UdpClient {0};' + `
+    '$Payload = $UDPRcvSocket.Receive([ref]$RemoteIPEndpoint);' + `
+    '$Message = [Text.Encoding]::UTF8.GetString($Payload);' + `
+    'return $Message') -f $ListenerPort
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "UDPListenerJob",
+            Justification="It's actually used."
+        )]
+        $UDPListenerJob = Start-Job -ScriptBlock {
+            param($ContainerName, $UDPListenerCommand)
+            & docker exec $ContainerName powershell "$UDPListenerCommand"
+        } -ArgumentList $Using:ContainerName, $Using:UDPListenerCommand
+    }
+}
+
+function Stop-UDPListenerInContainerAndFetchResult {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+    )
+
+    $ReceivedMessage = Invoke-Command -Session $Session -ScriptBlock {
+        $UDPListenerJob | Wait-Job -Timeout 5
+        $ReceivedMessage = Receive-Job -Job $UDPListenerJob
+        return $ReceivedMessage
+    }
+    return $ReceivedMessage
+}
+
+function Send-UDPFromContainer {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$true)] [String] $ContainerName,
+        [Parameter(Mandatory=$true)] [String] $Message,
+        [Parameter(Mandatory=$true)] [String] $ListenerIP,
+        [Parameter(Mandatory=$true)] [Int16] $ListenerPort,
+        [Parameter(Mandatory=$true)] [Int16] $NumberOfAttempts,
+        [Parameter(Mandatory=$true)] [Int16] $WaitSeconds
+    )
+    $UDPSendCommand = (
+    '$EchoServerAddress = New-Object System.Net.IPEndPoint([IPAddress]::Parse(\"{0}\"), {1});' + `
+    '$UDPSenderSocket = New-Object System.Net.Sockets.UdpClient 0;' + `
+    '$Payload = [Text.Encoding]::UTF8.GetBytes(\"{2}\");' + `
+    '1..{3} | ForEach-Object {{' + `
+    '    $UDPSenderSocket.Send($Payload, $Payload.Length, $EchoServerAddress);' + `
+    '    Start-Sleep -Seconds {4};' + `
+    '}}') -f $ListenerIP, $ListenerPort, $Message, $NumberOfAttempts, $WaitSeconds
+
+    $Output = Invoke-Command -Session $Session -ScriptBlock {
+        docker exec $Using:ContainerName powershell "$Using:UDPSendCommand"
+    }
+    Write-Host "Send UDP output from remote session: $Output"
+}
+
 Describe "Tunnelling with Agent tests" {
     Context "Tunneling" {
         It "ICMP: Ping between containers on separate compute nodes succeeds" {
@@ -171,8 +279,45 @@ Describe "Tunnelling with Agent tests" {
             # Test-MPLSoGRE -Session $Sessions[1] | Should Be $true
         }
 
-        It "UDP" -Pending {
-            # TODO
+        It "UDP" {
+            $MyMessage = "We are Tungsten Fabric. We come in peace."
+            $UDPServerPort = 1905
+            $UDPClientPort = 1983
+
+            Write-Host "Starting UDP Echo server on container $Container1ID ..."
+            Start-UDPEchoServerInContainer `
+                -Session $Sessions[0] `
+                -ContainerName $Container1ID `
+                -ServerPort $UDPServerPort `
+                -ClientPort $UDPClientPort
+
+            Write-Host "Starting UDP listener on container $Container2ID..."
+            Start-UDPListenerInContainer `
+                -Session $Sessions[1] `
+                -ContainerName $Container2ID `
+                -ListenerPort $UDPClientPort
+
+            Write-Host "Sending UDP packet from container $Container2ID..."
+            Send-UDPFromContainer `
+                -Session $Sessions[1] `
+                -ContainerName $Container2ID `
+                -Message $MyMessage `
+                -ListenerIP $Container1NetInfo.IPAddress `
+                -ListenerPort $UDPServerPort `
+                -NumberOfAttempts 3 `
+                -WaitSeconds 1
+
+            Write-Host "Fetching results from listener job..."
+            $ReceivedMessage = Stop-UDPListenerInContainerAndFetchResult -Session $Sessions[1]
+            Stop-EchoServerInContainer -Session $Sessions[0]
+
+            Write-Host "Sent message: $MyMessage"
+            Write-Host "Received message: $ReceivedMessage"
+            $ReceivedMessage | Should Be $MyMessage
+
+            # TODO: Uncomment these checks once we can actually control tunneling type.
+            # Test-MPLSoGRE -Session $Sessions[0] | Should Be $true
+            # Test-MPLSoGRE -Session $Sessions[1] | Should Be $true
         }
     }
 
@@ -290,7 +435,8 @@ Describe "Tunnelling with Agent tests" {
         New-Container `
             -Session $Sessions[1] `
             -NetworkName $NetworkName `
-            -Name $Container2ID
+            -Name $Container2ID `
+            -Image "microsoft/windowsservercore"
 
         Write-Host "Getting containers' NetAdapter Information"
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
