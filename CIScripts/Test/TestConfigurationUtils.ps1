@@ -407,6 +407,7 @@ function New-AgentConfigFile {
         $PhysIfName = $Using:PhysIfName
 
         $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
+        $PrefixLength = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).PrefixLength
 
         $ConfigFileContent = @"
 [DEFAULT]
@@ -420,7 +421,7 @@ servers=$ControllerIP
 
 [VIRTUAL-HOST-INTERFACE]
 name=$VHostIfName
-ip=$VHostIP/24
+ip=$VHostIP/$PrefixLength
 physical_interface=$PhysIfName
 "@
 
@@ -463,14 +464,17 @@ function Remove-DockerNetwork {
 function New-Container {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
-           [Parameter(Mandatory = $false)] [string] $Name)
-
+           [Parameter(Mandatory = $false)] [string] $Name,
+           [Parameter(Mandatory = $false)] [string] $Image)
+    if (-not $Image) {
+        $Image = "microsoft/nanoserver"
+    }
     $ContainerID = Invoke-Command -Session $Session -ScriptBlock {
         if ($Using:Name) {
-            return $(docker run --name $Using:Name --network $Using:NetworkName -id microsoft/nanoserver powershell)
+            return $(docker run --name $Using:Name --network $Using:NetworkName -id $Using:Image powershell)
         }
         else {
-            return $(docker run --network $Using:NetworkName -id microsoft/nanoserver powershell)
+            return $(docker run --network $Using:NetworkName -id $Using:Image powershell)
         }
     }
 
