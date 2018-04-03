@@ -73,3 +73,17 @@ def assert_report_matches_test_stats(test_case, report, test_stats):
     test_case.assertEqual(report.skipped, test_stats.skipped)
     test_case.assertEqual(report.invalid, test_stats.invalid)
     test_case.assertEqual(report.report_url, test_stats.report_url)
+
+
+def assert_test_stats_equal(test_case, stats, expected):
+    test_case.assertIsNotNone(stats)
+    test_case.assertEqual(stats.total, expected.total)
+    test_case.assertEqual(stats.passed, expected.passed)
+    test_case.assertEqual(stats.errors, expected.errors)
+    test_case.assertEqual(stats.failures, expected.failures)
+    test_case.assertEqual(stats.not_run, expected.not_run)
+    test_case.assertEqual(stats.inconclusive, expected.inconclusive)
+    test_case.assertEqual(stats.ignored, expected.ignored)
+    test_case.assertEqual(stats.skipped, expected.skipped)
+    test_case.assertEqual(stats.invalid, expected.invalid)
+    test_case.assertEqual(stats.report_url, expected.report_url)

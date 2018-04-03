@@ -1,4 +1,3 @@
-import re
 import requests
 import json
 from collections import Counter
@@ -84,14 +83,11 @@ class XmlReportCollector(object):
 
         counts = {}
         try:
-            counts['total'] = int(root.attrib['total'])
-            counts['errors'] = int(root.attrib['errors'])
-            counts['failures'] = int(root.attrib['failures'])
-            counts['not_run'] = int(root.attrib['not-run'])
-            counts['inconclusive'] = int(root.attrib['inconclusive'])
-            counts['ignored'] = int(root.attrib['ignored'])
-            counts['skipped'] = int(root.attrib['skipped'])
-            counts['invalid'] = int(root.attrib['invalid'])
+            xml_keys = ['total', 'errors', 'failures', 'not-run', 'inconclusive',
+                        'ignored', 'skipped', 'invalid']
+            for xml_key in xml_keys:
+                counts_key = xml_key.replace('-', '_')
+                counts[counts_key] = int(root.attrib[xml_key])
         except KeyError:
             raise MissingXmlAttributeError()
 

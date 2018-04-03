@@ -3,7 +3,8 @@ import unittest
 from unittest.mock import MagicMock
 
 from collectors.build_stats_collector import BuildStatsCollector, BuildStatsMissingError
-from tests.common import get_test_build_stats, EXAMPLE_TESTS_STATS
+from tests.common import (get_test_build_stats, assert_build_matches_build_stats,
+                          assert_test_stats_equal, EXAMPLE_TESTS_STATS)
 
 
 class TestBuildStatsCollector(unittest.TestCase):
@@ -21,14 +22,8 @@ class TestBuildStatsCollector(unittest.TestCase):
         collector = BuildStatsCollector(build_stats_collector=self.example_build_stats_collector,
                                         test_stats_collector=self.example_test_stats_collector)
         build_stats = collector.collect()
-        self.assertIsNotNone(build_stats)
-
-        self.assertEqual(build_stats.build_id, self.example_build_stats.build_id)
-        self.assertEqual(build_stats.job_name, self.example_build_stats.job_name)
-
-        self.assertIsNotNone(build_stats.test_stats)
-        self.assertEqual(build_stats.test_stats.total, self.example_test_stats.total)
-        self.assertEqual(build_stats.test_stats.passed, self.example_test_stats.passed)
+        assert_build_matches_build_stats(self, build_stats, self.example_build_stats)
+        assert_test_stats_equal(self, build_stats.test_stats, self.example_test_stats)
 
     def test_collecting_raises_exception_when_build_stats_raises_exception(self):
         build_stats_collector = MagicMock()
@@ -46,10 +41,7 @@ class TestBuildStatsCollector(unittest.TestCase):
         collector = BuildStatsCollector(build_stats_collector=self.example_build_stats_collector,
                                         test_stats_collector=test_stats_collector)
         build_stats = collector.collect()
-        self.assertIsNotNone(build_stats)
-
-        self.assertEqual(build_stats.build_id, self.example_build_stats.build_id)
-        self.assertEqual(build_stats.job_name, self.example_build_stats.job_name)
+        assert_build_matches_build_stats(self, build_stats, self.example_build_stats)
 
         self.assertIsNone(build_stats.test_stats)
 

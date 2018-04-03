@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
+import json
 import unittest
 import requests_mock
 from datetime import datetime, timezone
 from collectors.jenkins_collector_adapter import JenkinsCollectorAdapter, InvalidResponseCodeError
 from collectors.xml_report_collector import XmlReportCollector, MissingXmlAttributeError, \
     InvalidJsonFormatError, EmptyXmlReportsListError
-from stats import BuildStats, StageStats
+from stats import BuildStats, StageStats, TestStats
 from xml.etree.ElementTree import ParseError
 from json import JSONDecodeError
+from tests.common import assert_test_stats_equal
 
 
 class TestJenkinsCollector(unittest.TestCase):
@@ -107,75 +109,90 @@ class TestJenkinsCollector(unittest.TestCase):
 
 
 class TestXmlReportCollector(unittest.TestCase):
+    def setUp(self):
+        self.example_json_url = 'http://1.2.3.4/build/1/test.json'
+        self.example_report1_xml_url = 'http://1.2.3.4/build/1/reports/report1.xml'
+        self.example_report2_xml_url = 'http://1.2.3.4/build/1/reports/report2.xml'
+        self.example_report_html_url = 'http://1.2.3.4/build/1/report.html'
+
+        self.example_json_empty = json.dumps({
+            "xml_reports": [],
+            "html_report": ""
+        })
+        self.example_json_one_report = json.dumps({
+            "xml_reports": ["reports/report1.xml"],
+            "html_report": "report.html"
+        })
+        self.example_json_two_reports = json.dumps({
+            "xml_reports": ["reports/report1.xml", "reports/report2.xml"],
+            "html_report": "report.html"
+        })
+
     def test_raises_error_when_json_does_not_exist(self):
         with requests_mock.mock() as m:
-            m.get('http://1.2.3.4/build/1/test.json', status_code=404)
+            m.get(self.example_json_url, status_code=404)
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            collector = XmlReportCollector(url=self.example_json_url)
             with self.assertRaises(InvalidResponseCodeError):
                 collector.collect()
 
     def test_raises_error_when_json_has_invalid_format(self):
         with requests_mock.mock() as m:
             response_text = 'Invalid JSON'
-            m.get('http://1.2.3.4/build/1/test.json', text=response_text)
+            m.get(self.example_json_url, text=response_text)
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            collector = XmlReportCollector(url=self.example_json_url)
             with self.assertRaises(JSONDecodeError):
                 collector.collect()
 
     def test_raises_error_when_json_has_invalid_structure(self):
         with requests_mock.mock() as m:
             response_text = '{}'
-            m.get('http://1.2.3.4/build/1/test.json', text=response_text)
+            m.get(self.example_json_url, text=response_text)
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            collector = XmlReportCollector(url=self.example_json_url)
             with self.assertRaises(InvalidJsonFormatError):
                 collector.collect()
 
     def test_raises_error_when_xml_reports_empty(self):
         with requests_mock.mock() as m:
-            response_text = '{ "xml_reports": [], "html_report": "" }'
-            m.get('http://1.2.3.4/build/1/test.json', text=response_text)
+            m.get(self.example_json_url, text=self.example_json_empty)
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            collector = XmlReportCollector(url=self.example_json_url)
             with self.assertRaises(EmptyXmlReportsListError):
                 collector.collect()
 
     def test_raises_error_when_stats_do_not_exist(self):
         with requests_mock.mock() as m:
-            response_text = '{ "xml_reports": ["test1.xml", "test2.xml"], "html_report": "report.html" }'
-            m.get('http://1.2.3.4/build/1/test.json', text=response_text)
-            m.get('http://1.2.3.4/build/1/test1.xml', text='')
-            m.get('http://1.2.3.4/build/1/test2.xml', status_code=404)
+            m.get(self.example_json_url, text=self.example_json_two_reports)
+            m.get(self.example_report1_xml_url, text='')
+            m.get(self.example_report2_xml_url, status_code=404)
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            collector = XmlReportCollector(url=self.example_json_url)
             with self.assertRaises(InvalidResponseCodeError):
                 collector.collect()
 
     def test_raises_error_when_some_fields_do_not_exist(self):
         with requests_mock.mock() as m:
-            response_text = '{ "xml_reports": ["report.xml"], "html_report": "report.html" }'
-            m.get('http://1.2.3.4/build/1/test.json', text=response_text)
+            m.get(self.example_json_url, text=self.example_json_one_report)
             response_text = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
             <test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                           xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Tests"
                           total="4">
             </test-results>
             """
-            m.get('http://1.2.3.4/build/1/report.xml', text=response_text)
+            m.get(self.example_report1_xml_url, text=response_text)
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            collector = XmlReportCollector(url=self.example_json_url)
             with self.assertRaises(MissingXmlAttributeError):
                 collector.collect()
 
     def test_raises_error_when_xml_does_not_parse(self):
         with requests_mock.mock() as m:
-            response_text = '{ "xml_reports": ["reports/report.xml"], "html_report": "report.html" }'
-            m.get('http://1.2.3.4/build/1/test.json', text=response_text)
-            m.get('http://1.2.3.4/build/1/reports/report.xml', text="this-should-not-parse")
+            m.get(self.example_json_url, text=self.example_json_one_report)
+            m.get(self.example_report1_xml_url, text="this-should-not-parse")
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            collector = XmlReportCollector(url=self.example_json_url)
             with self.assertRaises(ParseError):
                 collector.collect()
 
@@ -189,23 +206,17 @@ class TestXmlReportCollector(unittest.TestCase):
                           skipped="0" invalid="0">
             </test-results>
             """
-            m.get('http://1.2.3.4/build/1/reports/report.xml', text=response_text)
-            response_text = '{ "xml_reports": ["reports/report.xml"], "html_report": "pretty/report.html" }'
-            m.get('http://1.2.3.4/build/1/test.json', text=response_text)
+            m.get(self.example_report1_xml_url, text=response_text)
+            m.get(self.example_json_url, text=self.example_json_one_report)
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            expected_stats = TestStats(total=1, passed=1, errors=0, failures=0, not_run=0,
+                                       inconclusive=0, ignored=0, skipped=0, invalid=0,
+                                       report_url=self.example_report_html_url)
+
+            collector = XmlReportCollector(url=self.example_json_url)
             test_stats = collector.collect()
             self.assertIsNotNone(test_stats)
-            self.assertEqual(test_stats.total, 1)
-            self.assertEqual(test_stats.passed, 1)
-            self.assertEqual(test_stats.errors, 0)
-            self.assertEqual(test_stats.failures, 0)
-            self.assertEqual(test_stats.not_run, 0)
-            self.assertEqual(test_stats.inconclusive, 0)
-            self.assertEqual(test_stats.ignored, 0)
-            self.assertEqual(test_stats.skipped, 0)
-            self.assertEqual(test_stats.invalid, 0)
-            self.assertEqual(test_stats.report_url, 'http://1.2.3.4/build/1/pretty/report.html')
+            assert_test_stats_equal(self, test_stats, expected_stats)
 
     def test_collects_multiple_stats_with_some_errors(self):
         with requests_mock.mock() as m:
@@ -217,7 +228,7 @@ class TestXmlReportCollector(unittest.TestCase):
                           skipped="0" invalid="0">
             </test-results>
             """
-            m.get('http://1.2.3.4/build/1/report1.xml', text=response_text)
+            m.get(self.example_report1_xml_url, text=response_text)
             response_text = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
             <test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                           xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Tests"
@@ -226,23 +237,17 @@ class TestXmlReportCollector(unittest.TestCase):
                           skipped="1" invalid="1">
             </test-results>
             """
-            m.get('http://1.2.3.4/build/1/report2.xml', text=response_text)
-            response_text = '{ "xml_reports": ["report1.xml", "report2.xml"], "html_report": "report.html" }'
-            m.get('http://1.2.3.4/build/1/test.json', text=response_text)
+            m.get(self.example_report2_xml_url, text=response_text)
+            m.get(self.example_json_url, text=self.example_json_two_reports)
 
-            collector = XmlReportCollector(url='http://1.2.3.4/build/1/test.json')
+            expected_stats = TestStats(total=11, passed=4, errors=3, failures=2, not_run=0,
+                                       inconclusive=0, ignored=0, skipped=1, invalid=1,
+                                       report_url=self.example_report_html_url)
+
+            collector = XmlReportCollector(url=self.example_json_url)
             test_stats = collector.collect()
             self.assertIsNotNone(test_stats)
-            self.assertEqual(test_stats.total, 11)
-            self.assertEqual(test_stats.passed, 4)
-            self.assertEqual(test_stats.errors, 3)
-            self.assertEqual(test_stats.failures, 2)
-            self.assertEqual(test_stats.not_run, 0)
-            self.assertEqual(test_stats.inconclusive, 0)
-            self.assertEqual(test_stats.ignored, 0)
-            self.assertEqual(test_stats.skipped, 1)
-            self.assertEqual(test_stats.invalid, 1)
-            self.assertEqual(test_stats.report_url, 'http://1.2.3.4/build/1/report.html')
+            assert_test_stats_equal(self, test_stats, expected_stats)
 
 
 if __name__ == '__main__':
