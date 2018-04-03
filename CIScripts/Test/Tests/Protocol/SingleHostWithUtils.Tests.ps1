@@ -103,10 +103,14 @@ Describe "Single compute node protocol tests with utils" {
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
-        Write-Host "Creating containers"
-        $Container1ID, $Container2ID = Invoke-Command -Session $Session -ScriptBlock {
+        Write-Host "Creating container 1"
+        $Container1ID = Invoke-Command -Session $Session -ScriptBlock {
             docker run --network $Using:NetworkName -d iis-tcptest
-            docker run --network $Using:NetworkName -d microsoft/nanoserver ping -t localhost
+        }
+
+        Write-Host "Creating container 2"
+        $Container2ID = Invoke-Command -Session $Session -ScriptBlock {
+            docker run --network $Using:NetworkName -d microsoft/nanoserver
         }
 
         Write-Host "Getting VM NetAdapter Information"
@@ -130,9 +134,22 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Write-Host "Removing containers"
-        if (Get-Variable Container1ID -ErrorAction SilentlyContinue) {
+        function Test-IfVariableAndContainerExist {
+            Param ([Parameter(Mandatory=$true)] $ContainerID)
+
+            return $(
+                $(Get-Variable $ContainerID -ErrorAction SilentlyContinue) -and
+                $(docker ps -aq | Select-String $(Get-Variable $ContainerID))
+            )
+        }
+
+        Write-Host "Removing container 1"
+        if (Test-IfVariableAndContainerExist Container1ID) {
             Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container1ID } | Out-Null
+        }
+
+        Write-Host "Removing container 2"
+        if (Test-IfVariableAndContainerExist Container2ID) {
             Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container2ID } | Out-Null
         }
 
