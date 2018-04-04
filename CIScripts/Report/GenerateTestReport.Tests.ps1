@@ -36,22 +36,6 @@ Describe "Generating test report" {
             Remove-Item -Recurse -Force $_
         }
     }
-    
-    BeforeEach {
-        # $InputDir = Join-Path $TestDrive "testReportInput"
-        # [
-        #     Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-        #     "OutputDir",
-        #     Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
-        # ]
-        # $OutputDir = Join-Path $TestDrive "testReportOutput"
-        # New-Item -Type Directory $InputDir | Out-Null
-    }
-
-    AfterEach {
-        # Remove-Item -Recurse -Force $InputDir
-        # Remove-Item -Recurse -Force $OutputDir
-    }
 
     Context "single xml file" {
         BeforeAll {
