@@ -4,7 +4,8 @@
 function Convert-TestReportsToHtml {
     param (
         [Parameter(Mandatory = $true)] [String] $XmlReportsDir,
-        [Parameter(Mandatory = $true)] [string] $OutputDir
+        [Parameter(Mandatory = $true)] [string] $OutputDir,
+        [Parameter(Mandatory = $false)] $GeneratorFunc = (Get-Item function:Invoke-RealReportunit)
     )
 
     $FixedReportsDir = "$OutputDir/raw_NUnit"
@@ -13,9 +14,7 @@ function Convert-TestReportsToHtml {
     New-Item -Type Directory -Force $FixedReportsDir | Out-Null
     New-FixedTestReports -OriginalReportsDir $XmlReportsDir -FixedReportsDir $FixedReportsDir
 
-    Invoke-NativeCommand -ScriptBlock {
-        ReportUnit.exe $FixedReportsDir
-    }
+    & $GeneratorFunc -NUnitDir $FixedReportsDir
     New-Item -Type Directory -Force $PrettyDir | Out-Null
     Move-Item "$FixedReportsDir/*.html" $PrettyDir
 
@@ -29,6 +28,13 @@ function Convert-TestReportsToHtml {
     }
 
     New-ReportsLocationsJson -OutputDir $OutputDir
+}
+
+function Invoke-RealReportunit {
+    param([Parameter(Mandatory = $true)] [string] $NUnitDir)
+    Invoke-NativeCommand -ScriptBlock {
+        ReportUnit.exe $NUnitDir
+    }
 }
 
 function New-FixedTestReports {

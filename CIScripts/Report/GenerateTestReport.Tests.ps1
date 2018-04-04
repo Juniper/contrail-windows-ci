@@ -37,18 +37,45 @@ Describe "Generating test report" {
         }
     }
 
+    function Invoke-FakeReportunit {
+        param([string] $NUnitDir)
+        $Files = Get-ChildItem -Path $NUnitDir -File
+        if ($Files.length -eq 0) {
+            throw "Empty directory"
+        }
+        if ($Files.length -gt 1) {
+            New-Item -Type File -Path (Join-Path $NUnitDir "Index.html")
+        }
+        $Files | ForEach-Object {
+            New-Item -Type File -Path (Join-Path $NUnitDir ($_.BaseName + ".html"))
+        }
+    }
+
+    function Test-JsonFileForMonitoring {
+        It "json file for monitoring contains valid path to xml report" {
+            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
+            './raw_NUnit/foo.xml' | Should -BeIn $Json.'xml_reports'[0]
+        }
+
+        It "json file for monitoring contains valid path to html report" {
+            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
+            './pretty_test_report/Index.html' | Should -BeIn $Json.'html_report'
+        }
+    }
+
     Context "single xml file" {
         BeforeAll {
             $InputDir, $OutputDir = New-TemporaryDirs
             New-DummyFile -Path (Join-Path $InputDir "foo.xml")
-            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
         }
-
+        
         AfterAll {
             Clear-TemporaryDirs -Dirs @($InputDir, $OutputDir)
         }
-
+        
         It "creates appropriate subdirectories" {
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir `
+                -GeneratorFunc (Get-Item function:Invoke-FakeReportunit)
             Join-Path $OutputDir "raw_NUnit" | Should Exist
             Join-Path $OutputDir "pretty_test_report" | Should Exist
         }
@@ -71,8 +98,9 @@ Describe "Generating test report" {
             $FileContents = Get-Content -Raw (Join-Path $OutputDir "raw_NUnit/foo.xml")
             NormalizeXmlString $FileContents | Should BeExactly $ExpectedXml
         }
-    }
 
+        Test-JsonFileForMonitoring
+    }
 
     Context "multiple xml files" {
         BeforeAll {
@@ -80,7 +108,8 @@ Describe "Generating test report" {
             New-DummyFile -Path (Join-Path $InputDir "foo.xml")
             New-DummyFile -Path (Join-Path $InputDir "bar.xml")
             New-DummyFile -Path (Join-Path $InputDir "baz.xml")
-            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir `
+                -GeneratorFunc (Get-Item function:Invoke-FakeReportunit)
         }
 
         AfterAll {
@@ -97,28 +126,7 @@ Describe "Generating test report" {
             Join-Path $OutputDir "pretty_test_report/baz.html" | Should Exist
             Join-Path $OutputDir "reports-locations.json" | Should Exist
         }
-    }
 
-
-    Context "providing a json file to be used by monitoring" {
-        BeforeAll {
-            $InputDir, $OutputDir = New-TemporaryDirs
-            New-DummyFile -Path (Join-Path $InputDir "foo.xml")
-            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
-        }
-
-        AfterAll {
-            Clear-TemporaryDirs -Dirs @($InputDir, $OutputDir)
-        }
-        
-        It "contains valid path to xml report" {
-            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
-            $Json.'xml_reports'[0] | Should BeExactly './raw_NUnit/foo.xml'
-        }
-
-        It "contains valid path to html report" {
-            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
-            $Json.'html_report' | Should BeExactly './pretty_test_report/Index.html'
-        }
+        Test-JsonFileForMonitoring
     }
 }
