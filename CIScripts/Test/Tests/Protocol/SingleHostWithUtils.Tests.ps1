@@ -104,14 +104,16 @@ Describe "Single compute node protocol tests with utils" {
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
         Write-Host "Creating container 1"
-        $Container1ID = Invoke-Command -Session $Session -ScriptBlock {
+        $Cmd1 = Invoke-NativeCommand -Session $Session -CaptureOutput {
             docker run --network $Using:NetworkName -d iis-tcptest
         }
+        $Container1ID = $Cmd1.Output
 
         Write-Host "Creating container 2"
-        $Container2ID = Invoke-Command -Session $Session -ScriptBlock {
+        $Cmd2 = Invoke-NativeCommand -Session $Session -CaptureOutput {
             docker run --network $Using:NetworkName -d microsoft/nanoserver
         }
+        $Container2ID = $Cmd2.Output
 
         Write-Host "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
@@ -134,21 +136,18 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        function Test-IfVariableAndContainerExist {
-            Param ([Parameter(Mandatory=$true)] $ContainerIdVarName)
-
-            $idVar = Get-Variable $ContainerIdVarName -ErrorAction SilentlyContinue
-            return $idVar -and (docker ps -aqf "id=$($idVar.Value)")
-        }
-
         Write-Host "Removing container 1"
-        if (Test-IfVariableAndContainerExist "Container1ID") {
-            Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container1ID } | Out-Null
+        if (Get-Variable "Container1ID" -ErrorAction SilentlyContinue) {
+            Invoke-NativeCommand -Session $Session {
+                docker rm -f $Using:Container1ID
+            }
         }
 
         Write-Host "Removing container 2"
-        if (Test-IfVariableAndContainerExist "Container2ID") {
-            Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container2ID } | Out-Null
+        if (Get-Variable "Container2ID" -ErrorAction SilentlyContinue) {
+            Invoke-NativeCommand -Session $Session {
+                docker rm -f $Using:Container2ID
+            }
         }
 
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
