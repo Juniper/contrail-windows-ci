@@ -135,21 +135,19 @@ Describe "Single compute node protocol tests with utils" {
 
     AfterEach {
         function Test-IfVariableAndContainerExist {
-            Param ([Parameter(Mandatory=$true)] $ContainerID)
+            Param ([Parameter(Mandatory=$true)] $ContainerIdVarName)
 
-            return $(
-                $(Get-Variable $ContainerID -ErrorAction SilentlyContinue) -and
-                $(docker ps -aq | Select-String $(Get-Variable $ContainerID))
-            )
+            $idVar = Get-Variable $ContainerIdVarName -ErrorAction SilentlyContinue
+            return $idVar -and (docker ps -aqf "id=$($idVar.Value)")
         }
 
         Write-Host "Removing container 1"
-        if (Test-IfVariableAndContainerExist Container1ID) {
+        if (Test-IfVariableAndContainerExist "Container1ID") {
             Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container1ID } | Out-Null
         }
 
         Write-Host "Removing container 2"
-        if (Test-IfVariableAndContainerExist Container2ID) {
+        if (Test-IfVariableAndContainerExist "Container2ID") {
             Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container2ID } | Out-Null
         }
 
