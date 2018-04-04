@@ -4,6 +4,7 @@ Param (
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\Common\Init.ps1
+. $PSScriptRoot\..\..\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
