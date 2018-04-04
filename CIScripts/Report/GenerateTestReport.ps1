@@ -51,7 +51,7 @@ function Get-GeneratedHTMLFiles {
 
 function Test-IndexHtmlExists {
     param([Parameter(Mandatory = $true)] [System.IO.FileSystemInfo[]] $Files)
-    $JustFilenames = $Files | Select -ExpandProperty Name
+    $JustFilenames = $Files | Select-Object -ExpandProperty Name
     return $JustFilenames -contains "Index.html"
 }
 
