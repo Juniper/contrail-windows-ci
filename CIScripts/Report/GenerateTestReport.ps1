@@ -19,6 +19,15 @@ function Convert-TestReportsToHtml {
     New-Item -Type Directory -Force $PrettyDir | Out-Null
     Move-Item "$FixedReportsDir/*.html" $PrettyDir
 
+    $GeneratedHTMLFiles = Get-GeneratedHTMLFiles -Dir $PrettyDir
+    if (-not $GeneratedHTMLFiles) {
+        throw "Generation failed, not a single html file was generated."
+    }
+    
+    if(-not (Test-IndexHtmlExists -Files $GeneratedHTMLFiles)) {
+        Repair-LackOfIndexHtml -Files $GeneratedHTMLFiles
+    }
+
     New-ReportsLocationsJson -OutputDir $OutputDir
 }
 
@@ -33,6 +42,29 @@ function New-FixedTestReports {
         $FixedContent = Repair-NUnitReport -InputData $Content
         $FixedContent | Out-File "$FixedReportsDir/$($ReportFile.Name)" -Encoding "utf8"
     }
+}
+
+function Get-GeneratedHTMLFiles {
+    param([Parameter(Mandatory = $true)] [string] $Dir)
+    Get-ChildItem -Path $Dir -File
+}
+
+function Test-IndexHtmlExists {
+    param([Parameter(Mandatory = $true)] [System.IO.FileSystemInfo[]] $Files)
+    $JustFilenames = $Files | Select -ExpandProperty Name
+    return $JustFilenames -contains "Index.html"
+}
+
+function Repair-LackOfIndexHtml {
+    param([Parameter(Mandatory = $true)] [System.IO.FileSystemInfo[]] $Files)
+    # ReportUnit 1.5.0 won't generate Index.html if there is only one input xml file.
+    # We need Index.html to use in Monitoring to provide link to logs.
+    # To fix this, rename a file to Index.html
+    $RenameFrom = $Files[0].FullName
+    $BaseDir = Split-Path $RenameFrom
+    $RenameTo = (Join-Path $BaseDir "Index.html")
+    Write-Host "Index.html not found, renaming $RenameFrom to $RenameTo"
+    Rename-Item $RenameFrom $RenameTo
 }
 
 function New-ReportsLocationsJson {
