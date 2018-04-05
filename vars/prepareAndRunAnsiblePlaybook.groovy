@@ -2,6 +2,7 @@ def call(Map params) {
   def prepareHardwareConfig = params.config
   def playbook = params.playbook
   def vm_role = params.vm_role
+  def vmware_folder = params.vmware_folder
   def vmWareConfig
   pipeline {
     agent none
@@ -11,6 +12,7 @@ def call(Map params) {
       // strip credentials from logs in all child scopes (all stages).
       // Please do not move to `Prepare environment` stage.
       VC = credentials('vcenter')
+      VC_FOLDER = vmware_folder
     }
 
     stages {
