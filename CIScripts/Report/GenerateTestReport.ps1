@@ -18,7 +18,7 @@ function Convert-TestReportsToHtml {
     New-Item -Type Directory -Force $PrettyDir | Out-Null
     Move-Item "$FixedReportsDir/*.html" $PrettyDir
 
-    $GeneratedHTMLFiles = Get-GeneratedHTMLFiles -Dir $PrettyDir
+    $GeneratedHTMLFiles = Get-ChildItem $PrettyDir -File
     if (-not $GeneratedHTMLFiles) {
         throw "Generation failed, not a single html file was generated."
     }
@@ -48,11 +48,6 @@ function New-FixedTestReports {
         $FixedContent = Repair-NUnitReport -InputData $Content
         $FixedContent | Out-File "$FixedReportsDir/$($ReportFile.Name)" -Encoding "utf8"
     }
-}
-
-function Get-GeneratedHTMLFiles {
-    param([Parameter(Mandatory = $true)] [string] $Dir)
-    Get-ChildItem -Path $Dir -File
 }
 
 function Test-IndexHtmlExists {
