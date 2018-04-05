@@ -142,6 +142,7 @@ Describe "Single compute node protocol tests with utils" {
             Invoke-NativeCommand -Session $Session -CaptureOutput {
                 docker rm -f $Using:Container1ID
             }
+            Remove-Variable "Container1ID"
         }
 
         Write-Host "Removing container 2"
@@ -149,11 +150,13 @@ Describe "Single compute node protocol tests with utils" {
             Invoke-NativeCommand -Session $Session -CaptureOutput {
                 docker rm -f $Using:Container2ID
             }
+            Remove-Variable "Container2ID"
         }
 
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
+        if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
+            Remove-Variable "ContrailNetwork"
         }
     }
 
