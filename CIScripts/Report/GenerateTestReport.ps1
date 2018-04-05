@@ -1,5 +1,6 @@
 . $PSScriptRoot\Repair-NUnitReport.ps1
 . $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\Common\Invoke-CommandInLocation.ps1
 
 function Convert-TestReportsToHtml {
     param (
@@ -79,9 +80,7 @@ function New-ReportsLocationsJson {
         [Parameter(Mandatory = $true)] [string] $OutputDir
     )
 
-    Push-Location $OutputDir
-
-    try {
+    Invoke-CommandInLocation $OutputDir {
         function ConvertTo-RelativePath([string] $FullPath) {
             (Resolve-Path -Relative $FullPath).split('\') -join '/'
         }
@@ -95,8 +94,5 @@ function New-ReportsLocationsJson {
             xml_reports = , $XmlPaths
             html_report = ConvertTo-RelativePath $IndexHtml.FullName
         } | ConvertTo-Json -Depth 10 | Out-File "reports-locations.json" -Encoding "utf8"
-    }
-    finally {
-        Pop-Location
     }
 }
