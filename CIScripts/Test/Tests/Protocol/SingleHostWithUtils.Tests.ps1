@@ -108,13 +108,13 @@ Describe "Single compute node protocol tests with utils" {
         $Cmd1 = Invoke-NativeCommand -Session $Session -CaptureOutput {
             docker run --network $Using:NetworkName -d iis-tcptest
         }
-        $Container1ID = $Cmd1.Output
+        $Container1ID = $Cmd1.Output[0]
 
         Write-Host "Creating container 2"
         $Cmd2 = Invoke-NativeCommand -Session $Session -CaptureOutput {
-            docker run --network $Using:NetworkName -d microsoft/nanoserver
+            docker run --network $Using:NetworkName -dt microsoft/nanoserver
         }
-        $Container2ID = $Cmd2.Output
+        $Container2ID = $Cmd2.Output[0]
 
         Write-Host "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
@@ -139,14 +139,14 @@ Describe "Single compute node protocol tests with utils" {
     AfterEach {
         Write-Host "Removing container 1"
         if (Get-Variable "Container1ID" -ErrorAction SilentlyContinue) {
-            Invoke-NativeCommand -Session $Session {
+            Invoke-NativeCommand -Session $Session -CaptureOutput {
                 docker rm -f $Using:Container1ID
             }
         }
 
         Write-Host "Removing container 2"
         if (Get-Variable "Container2ID" -ErrorAction SilentlyContinue) {
-            Invoke-NativeCommand -Session $Session {
+            Invoke-NativeCommand -Session $Session -CaptureOutput {
                 docker rm -f $Using:Container2ID
             }
         }
