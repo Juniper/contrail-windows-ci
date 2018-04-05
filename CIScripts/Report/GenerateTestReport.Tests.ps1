@@ -73,6 +73,9 @@ Describe "Generating test report" {
         BeforeAll {
             $InputDir, $OutputDir = New-TemporaryDirs
             New-DummyFile -Path (Join-Path $InputDir "foo.xml")
+            # TODO split this tests to unit & integration test, and use
+            # -GeneratorFunc (Get-Item function:Invoke-FakeReportunit)
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
         }
         
         AfterAll {
@@ -80,9 +83,6 @@ Describe "Generating test report" {
         }
         
         It "creates appropriate subdirectories" {
-            # TODO split this tests to unit & integration test, and use
-            # -GeneratorFunc (Get-Item function:Invoke-FakeReportunit)
-            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
             Join-Path $OutputDir "raw_NUnit" | Should Exist
             Join-Path $OutputDir "pretty_test_report" | Should Exist
         }
