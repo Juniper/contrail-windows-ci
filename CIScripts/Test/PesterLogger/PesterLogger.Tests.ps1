@@ -60,6 +60,83 @@ Describe "PesterLogger" {
         }
     }
 
+    Context "Move-Logs" {
+        It "appends collected logs to correct output file" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Write-Log "first message"
+            Move-Logs -From $SourcePath
+            $Content = Get-Content "TestDrive:\PesterLogger.Move-Logs.appends collected logs to correct output file.log"
+            "first message" | Should -BeIn $Content
+            "remote log text" | Should -BeIn $Content
+        }
+
+        It "cleans logs in source directory" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Move-Logs -From $SourcePath
+            Test-Path $SourcePath | Should -Be $false
+        }
+
+        It "doesn't clean logs in source directory if DontCleanUp flag passed" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Move-Logs -From $SourcePath -DontCleanUp
+            Test-Path $SourcePath | Should -Be $true
+        }
+
+        It "adds a prefix describing source directory" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Write-Log "first message"
+            Move-Logs -From $SourcePath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.adds a prefix describing source directory.log"
+            $ContentRaw | Should -BeLike "*$SourcePath*"
+            $ComputerName = $Sessions[0].ComputerName
+            $ContentRaw | Should -BeLike "*$ComputerName*"
+        }
+
+        It "works with multiple sessions" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1, $Sess2)
+            Write-Log "first message"
+            Move-Logs -From $SourcePath -DontCleanUp
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works with multiple sessions.log"
+            $ContentRaw | Should -BeLike "first message*$SourcePath*$SourcePath*"
+            $ContentRaw | Should -BeLike "*remote log text*remote log text*"
+            $ComputerName1 = $Sessions[0].ComputerName
+            $ComputerName2 = $Sessions[1].ComputerName
+            $ContentRaw | Should -BeLike "*$ComputerName1*$ComputerName2*"
+            # Write-Host ($ContentRaw) would yield:
+            # hihi
+            # -----------------------------------------------------------------------------------------------------
+            # Logs from localhost:C:\Users\mk\AppData\Local\Temp\aa0795ea-db6b-43d7-b1f4-d41adc8bf807\remote.log :
+            # remote log text
+            # -----------------------------------------------------------------------------------------------------
+            # Logs from 127.0.0.1:C:\Users\mk\AppData\Local\Temp\aa0795ea-db6b-43d7-b1f4-d41adc8bf807\remote.log :
+            # remote log text
+        }
+
+        BeforeEach {
+            $Sess1 = New-PSSession -ComputerName localhost
+            $Sess2 = New-PSSession -ComputerName "127.0.0.1"
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Sessions",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
+            $Sessions = @($Sess1, $Sess2)
+            "remote log text" | Out-File "TestDrive:\remote.log"
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "SourcePath",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
+            $SourcePath = ((Get-Item $TestDrive).FullName) + "\remote.log"
+        }
+
+        AfterEach {
+            $Sessions | ForEach-Object {
+                Remove-PSSession $_
+            }
+        }
+    }
+
     Context "Initializing in BeforeEach" {
         It "registers Write-Log correctly" {
             Write-Log "hi"
