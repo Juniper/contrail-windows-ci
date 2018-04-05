@@ -18,8 +18,6 @@ def call(Map params) {
         agent { label 'ansible' }
         steps {
           dir('ansible') {
-            createCommonVars env.SHARED_DRIVE_IP, env.JENKINS_MASTER_IP
-            createAnsibleConfig env.ANSIBLE_VAULT_KEY_FILE
             sh 'cp inventory.sample inventory'
             script {
               vmWareConfig = getVMwareConfig(vm_role)
