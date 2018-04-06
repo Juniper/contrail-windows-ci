@@ -31,14 +31,14 @@ Describe "Generating test report" {
     }
 
     function Clear-TemporaryDirs {
-        param([string[]] $Dirs)
+        Param([Parameter(Mandatory = $true)] [string[]] $Dirs)
         $Dirs | ForEach-Object {
             Remove-Item -Recurse -Force $_
         }
     }
 
     function Invoke-FakeReportunit {
-        param([string] $NUnitDir)
+        Param([Parameter(Mandatory = $true)] [string] $NUnitDir)
         $Files = Get-ChildItem -Path $NUnitDir -File
         if ($Files.length -eq 0) {
             throw "Empty directory"
@@ -51,7 +51,9 @@ Describe "Generating test report" {
         }
     }
 
-    function Test-JsonFileForMonitoring([String[]] $Xmls) {
+    function Test-JsonFileForMonitoring {
+        Param([Parameter(Mandatory = $true)] [String[]] $Xmls)
+
         $TestCases = $Xmls | Foreach-Object { @{ Filename = $_ } }
 
         Context "json file for monitoring" {
