@@ -4,6 +4,10 @@ Param (
 )
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
+
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+Initialize-PesterLogger -OutDir $LogDir
 
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
@@ -27,7 +31,8 @@ function Start-DockerDriverUnitTest {
         $Res = Invoke-Command -ScriptBlock {
             if (Test-Path $Using:TestFilePath) {
                 $ErrorActionPreference = "SilentlyContinue"
-                Invoke-Expression -Command $Using:Command | Write-Host
+                $Output = Invoke-Expression -Command $Using:Command
+                Write-Log $Output
                 return $LASTEXITCODE
             } else {
                 return 1
