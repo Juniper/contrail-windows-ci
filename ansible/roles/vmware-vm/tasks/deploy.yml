@@ -1,6 +1,5 @@
 ---
-
-- name: Deploy controller VMs for testenv '{{ testenv_name }}' using API directly
+- name: Deploy testenv VMs
   delegate_to: localhost
   shell: >
     '{{ script_path.path }}/provision_vm.py'
@@ -14,5 +13,9 @@
     --name '{{ inventory_hostname_short }}'
     --mgmt-network '{{ portgroup_mgmt }}'
     --data-network '{{ portgroup_contrail }}'
-    --data-ip-address '172.16.0.1'
-    --data-netmask '255.255.0.0'
+    --data-ip-address '{{ hostvars[inventory_hostname].ip }}'
+    --data-netmask '{{ hostvars[inventory_hostname].netmask }}'
+    {{ hostvars[inventory_hostname].provision_options }}
+
+- name: Include common post-deploy tasks
+  include_tasks: "post_deploy.yml"
