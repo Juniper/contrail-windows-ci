@@ -12,7 +12,7 @@ def call(Map params) {
       // strip credentials from logs in all child scopes (all stages).
       // Please do not move to `Prepare environment` stage.
       VC = credentials('vcenter')
-      VC_FOLDER = vmware_folder
+      VC_FOLDER = vmware_folder.toString()
     }
 
     stages {
@@ -32,7 +32,7 @@ def call(Map params) {
         agent { label 'ansible' }
         steps {
           dir('ansible') {
-            ansiblePlaybook extras: '-e @vm.vars -e @common.vars', \
+            ansiblePlaybook extras: '-e @vm.vars', \
                             inventory: 'inventory', \
                             playbook: playbook, \
                             sudoUser: 'ubuntu', \
