@@ -63,26 +63,24 @@ function Get-RemoteContainerNetAdapterInformation {
            [Parameter(Mandatory = $true)] [string] $ContainerID)
 
     $NetAdapterInformation = Invoke-Command -Session $Session -ScriptBlock {
-        $NetAdapterCommand = "(Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]"
 
-        $IfIndex = docker exec $Using:ContainerID powershell "${NetAdapterCommand}.IfIndex"
-        $IfName = docker exec $Using:ContainerID powershell "${NetAdapterCommand}.IfName"
-        $AdapterFullName = docker exec $Using:ContainerID powershell "${NetAdapterCommand}.Name"
-        $AdapterShortName = [regex]::new("vEthernet \((.*)\)").Replace($AdapterFullName, "`$1")
-        $MACAddressWindows = docker exec $Using:ContainerID powershell "${NetAdapterCommand}.MacAddress.ToLower()"
-        $MACAddress = $MACAddressWindows.Replace("-", ":")
-        $IPAddress = docker exec $Using:ContainerID powershell "(Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias '${AdapterFullName}').IPAddress"
+        $RemoteCommand = {
+            $Adapter = (Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]
+            @{
+                IfIndex = $Adapter.IfIndex;
+                IfName = $Adapter.IfName;
+                AdapterFullName = $Adapter.Name;
+                AdapterShortName = [regex]::new('vEthernet \((.*)\)').Replace($Adapter.Name, '$1')
+                MacAddressWindows = $Adapter.MacAddress.ToLower();
+                MacAddress = $Adapter.MacAddress.ToLower().Replace('-', ':')
+                IPAddress = ($Adapter | Get-NetIPAddress -AddressFamily IPv4).IPAddress
+            } | ConvertTo-Json
+        }.toString()
 
-        return @{
-            IfIndex = $IfIndex;
-            IfName = $IfName;
-            AdapterShortName = $AdapterShortName;
-            AdapterFullName = $AdapterFullName;
-            MACAddress = $MACAddress;
-            MACAddressWindows = $MACAddressWindows;
-            IPAddress = $IPAddress;
-        }
+        docker exec $Using:ContainerID powershell $RemoteCommand
     }
+
+    $NetAdapterInformation = $NetAdapterInformation | ConvertFrom-Json
 
     return [ContainerNetAdapterInformation] $NetAdapterInformation
 }
