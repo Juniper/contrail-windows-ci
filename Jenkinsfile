@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        stage ('Checkout projects') {
+        stage('Checkout projects') {
             agent { label 'builder' }
             environment {
                 DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
@@ -48,6 +48,16 @@ pipeline {
                 unstash "SourceCode"
                 unstash "CIScripts"
                 powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
+            }
+        }
+
+        stage('Ansible linter') {
+            agent { label 'linux' }
+            steps {
+                deleteDir()
+                unstash "StaticAnalysis"
+                unstash "Ansible"
+                sh "StaticAnalysis/ansible-linter.py"
             }
         }
 
