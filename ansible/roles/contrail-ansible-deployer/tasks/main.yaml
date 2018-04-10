@@ -21,7 +21,7 @@
     src: instances.j2
     dest: "{{ docker_provision_dir }}/config/instances.yaml"
 
-- name: Provision Contrail with deploy.yml playbook
+- name: Configure instances with configure_instances.yml playbook
   command: ansible-playbook -i inventory/ playbooks/configure_instances.yml -v
   args:
     chdir: "{{ docker_provision_dir }}"
@@ -30,7 +30,7 @@
     ANSIBLE_STDOUT_CALLBACK: debug
   become: True
 
-- name: Provision Contrail with deploy.yml playbook
+- name: Provision instances with install_contrail.yml playbook
   command: ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/install_contrail.yml
   args:
     chdir: "{{ docker_provision_dir }}"
