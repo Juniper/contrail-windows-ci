@@ -57,7 +57,7 @@ pipeline {
                 deleteDir()
                 unstash "StaticAnalysis"
                 unstash "Ansible"
-                sh "StaticAnalysis/ansible-linter.py"
+                sh "StaticAnalysis/ansible_linter.py"
             }
         }
 
