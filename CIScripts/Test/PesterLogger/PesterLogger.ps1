@@ -30,16 +30,27 @@ function Initialize-PesterLogger {
         Param([Parameter(Mandatory = $true)] [string] $From,
               [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
         $Script:Sessions | ForEach-Object {
-            $Content = Invoke-Command -Session $_ {
-                Get-Content -Raw $Using:From
-            }
-            $Prefix = "Logs from $($_.ComputerName):$From : "
-            Write-Log ((@("-") * $Prefix.Length) -join "")
-            Write-Log $Prefix
-            Write-Log $Content
-            if (-not $DontCleanUp) {
-                Invoke-Command -Session $_ {
-                    Remove-Item $Using:From
+            $Session = $_
+            $ComputerNamePrefix = "Logs from $($_.ComputerName): "
+            Write-Log ((@("=") * $ComputerNamePrefix.Length) -join "")
+            Write-Log $ComputerNamePrefix
+
+            $Files = Get-ChildItem -Path $From
+            $Files | ForEach-Object {
+                $CurrentSourceFile = $_
+                $SourceFilenamePrefix = "Contents of $($_.FullName):"
+                Write-Log ((@("-") * $SourceFilenamePrefix.Length) -join "")
+                Write-Log $SourceFilenamePrefix
+
+                $Content = Invoke-Command -Session $Session {
+                    Get-Content -Raw $Using:CurrentSourceFile
+                }
+                Write-Log $Content
+
+                if (-not $DontCleanUp) {
+                    Invoke-Command -Session $Session {
+                        Remove-Item $Using:CurrentSourceFile
+                    }
                 }
             }
         }

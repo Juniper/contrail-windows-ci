@@ -93,12 +93,31 @@ Describe "PesterLogger" {
         }
     
         It "works with multiple lines in remote logs" {
-            "second line" | Add-Content "TestDrive:\remote.log"
-            "third line" | Add-Content "TestDrive:\remote.log"
+            "second line" | Add-Content "TestDrive:\remotelog.txt"
+            "third line" | Add-Content "TestDrive:\remotelog.txt"
             Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
             Move-Logs -From $SourcePath -DontCleanUp
             $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works with multiple lines in remote logs.log"
             $ContentRaw | Should -BeLike "*remote log text*second line*third line*"
+        }
+
+        It "works when specifying a wildcard path" {
+            $SecondFileSourcePath = ((Get-Item $TestDrive).FullName) + "\remotelog_second.txt"
+            "another file content" | Add-Content $SecondFileSourcePath
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Move-Logs -From "TestDrive:\*.txt" -DontCleanUp
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works when specifying a wildcard path.log"
+            $ContentRaw | Should -BeLike "*$SourcePath*remote log text*$SecondFileSourcePath*another file content*"
+            # Write-Host ($ContentRaw) yields:
+            # =====================
+            # Logs from localhost:
+            # ----------------------------------------------------------------------------------------------
+            # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog.txt:
+            # remote log text
+            
+            # -----------------------------------------------------------------------------------------------------
+            # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog_second.txt:
+            # another file content
         }
 
         It "works with multiple sessions" {
@@ -111,28 +130,47 @@ Describe "PesterLogger" {
             $ComputerName1 = $Sess1.ComputerName
             $ComputerName2 = $Sess2.ComputerName
             $ContentRaw | Should -BeLike "*$ComputerName1*$ComputerName2*"
-            # Write-Host ($ContentRaw) would yield:
-            # hihi
-            # -----------------------------------------------------------------------------------------------------
-            # Logs from localhost:C:\Users\mk\AppData\Local\Temp\aa0795ea-db6b-43d7-b1f4-d41adc8bf807\remote.log :
+            # Write-Host ($ContentRaw) yields:
+            # first message
+            # =====================
+            # Logs from localhost:
+            # ----------------------------------------------------------------------------------------------
+            # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog.txt:
             # remote log text
-            # -----------------------------------------------------------------------------------------------------
-            # Logs from 127.0.0.1:C:\Users\mk\AppData\Local\Temp\aa0795ea-db6b-43d7-b1f4-d41adc8bf807\remote.log :
+            
+            # =====================
+            # Logs from 127.0.0.1:
+            # ----------------------------------------------------------------------------------------------
+            # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog.txt:
             # remote log text
         }
 
         BeforeEach {
-            "remote log text" | Out-File "TestDrive:\remote.log"
+            "remote log text" | Out-File "TestDrive:\remotelog.txt"
             [
                 Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "SourcePath",
                 Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
             ]
-            $SourcePath = ((Get-Item $TestDrive).FullName) + "\remote.log"
+            $SourcePath = ((Get-Item $TestDrive).FullName) + "\remotelog.txt"
+        }
+
+        AfterEach {
+            Remove-Item "TestDrive:/*" 
         }
 
         BeforeAll {
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Sess1",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
             $Sess1 = New-PSSession -ComputerName localhost
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Sess2",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
             $Sess2 = New-PSSession -ComputerName "127.0.0.1"
         }
 
