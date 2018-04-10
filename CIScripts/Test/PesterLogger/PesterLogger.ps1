@@ -49,7 +49,8 @@ function Initialize-PesterLogger {
 }
 
 function Add-ContentForce {
-    Param([string] $Path, [string] $Value)
+    Param([Parameter(Mandatory = $true)] [string] $Path,
+          [Parameter(Mandatory = $true)] [string] $Value)
     if (-not (Test-Path $Path)) {
         New-Item -Force -Path $Path -Type File | Out-Null
     }
@@ -57,7 +58,8 @@ function Add-ContentForce {
 }
 
 function Register-NewFunc {
-    Param([string] $Name, $Func)
+    Param([Parameter(Mandatory = $true)] [string] $Name,
+          [Parameter(Mandatory = $true)] [ScriptBlock] $Func)
     if (Get-Item function:$Name -ErrorAction SilentlyContinue) {
         Remove-Item function:$Name
     }
