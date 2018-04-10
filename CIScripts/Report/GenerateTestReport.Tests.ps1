@@ -56,18 +56,16 @@ Describe "Generating test report" {
 
         $TestCases = $Xmls | Foreach-Object { @{ Filename = $_ } }
 
-        Context "json file for monitoring" {
-            It "contains valid path to <Filename> report" -TestCases $TestCases {
-                Param($Filename)
-                $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
-                "./raw_NUnit/$Filename" | Should BeIn $Json.'xml_reports'
-                $Json.'xml_reports'[0].GetType().Name | Should Be 'string'
-            }
+        It "json file for monitoring contains valid path to <Filename> report" -TestCases $TestCases {
+            Param($Filename)
+            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
+            "./raw_NUnit/$Filename" | Should BeIn $Json.'xml_reports'
+            $Json.'xml_reports'[0].GetType().Name | Should Be 'string'
+        }
 
-            It "contains valid path to html report" {
-                $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
-                $Json.'html_report' | Should BeExactly './pretty_test_report/Index.html'
-            }
+        It "json file for monitoring contains valid path to html report" {
+            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
+            $Json.'html_report' | Should BeExactly './pretty_test_report/Index.html'
         }
     }
 
