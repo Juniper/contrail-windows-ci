@@ -35,7 +35,10 @@ function Initialize-PesterLogger {
             Write-Log ((@("=") * $ComputerNamePrefix.Length) -join "")
             Write-Log $ComputerNamePrefix
 
-            $Files = Get-ChildItem -Path $From
+            $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
+            if (-not $Files) {
+                Write-Log "!!!! Warning: FILES AT $FROM NOT FOUND"
+            }
             $Files | ForEach-Object {
                 $CurrentSourceFile = $_
                 $SourceFilenamePrefix = "Contents of $($_.FullName):"

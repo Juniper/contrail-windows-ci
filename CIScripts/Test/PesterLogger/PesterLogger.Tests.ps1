@@ -96,7 +96,7 @@ Describe "PesterLogger" {
             "second line" | Add-Content "TestDrive:\remotelog.txt"
             "third line" | Add-Content "TestDrive:\remotelog.txt"
             Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
-            Move-Logs -From $SourcePath -DontCleanUp
+            Move-Logs -From $SourcePath
             $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works with multiple lines in remote logs.log"
             $ContentRaw | Should -BeLike "*remote log text*second line*third line*"
         }
@@ -105,7 +105,8 @@ Describe "PesterLogger" {
             $SecondFileSourcePath = ((Get-Item $TestDrive).FullName) + "\remotelog_second.txt"
             "another file content" | Add-Content $SecondFileSourcePath
             Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
-            Move-Logs -From "TestDrive:\*.txt" -DontCleanUp
+            $WildcardPath = "TestDrive:\*.txt"
+            Move-Logs -From $WildcardPath
             $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works when specifying a wildcard path.log"
             $ContentRaw | Should -BeLike "*$SourcePath*remote log text*$SecondFileSourcePath*another file content*"
             # Write-Host ($ContentRaw) yields:
@@ -143,6 +144,23 @@ Describe "PesterLogger" {
             # ----------------------------------------------------------------------------------------------
             # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog.txt:
             # remote log text
+        }
+
+        It "inserts warning message if filepath was not found" {
+            Remove-Item $SourcePath
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1, $Sess2)
+            Move-Logs -From $SourcePath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.inserts warning message if filepath was not found.log"
+            $ContentRaw | Should -BeLike "*$SourcePath*NOT FOUND*"
+        }
+
+        It "inserts warning message if wildcard matched nothing" {
+            Remove-Item $SourcePath
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1, $Sess2)
+            $WildcardPath = "TestDrive:\*.txt"
+            Move-Logs -From $WildcardPath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.inserts warning message if wildcard matched nothing.log"
+            $ContentRaw | Should -BeLike "*$WildcardPath*NOT FOUND*"
         }
 
         BeforeEach {
