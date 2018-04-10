@@ -88,7 +88,7 @@ Describe "PesterLogger" {
             Move-Logs -From $SourcePath
             $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.adds a prefix describing source directory.log"
             $ContentRaw | Should -BeLike "*$SourcePath*"
-            $ComputerName = $Sessions[0].ComputerName
+            $ComputerName = $Sess1.ComputerName
             $ContentRaw | Should -BeLike "*$ComputerName*"
         }
 
@@ -99,8 +99,8 @@ Describe "PesterLogger" {
             $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works with multiple sessions.log"
             $ContentRaw | Should -BeLike "first message*$SourcePath*$SourcePath*"
             $ContentRaw | Should -BeLike "*remote log text*remote log text*"
-            $ComputerName1 = $Sessions[0].ComputerName
-            $ComputerName2 = $Sessions[1].ComputerName
+            $ComputerName1 = $Sess1.ComputerName
+            $ComputerName2 = $Sess2.ComputerName
             $ContentRaw | Should -BeLike "*$ComputerName1*$ComputerName2*"
             # Write-Host ($ContentRaw) would yield:
             # hihi
@@ -125,18 +125,11 @@ Describe "PesterLogger" {
         BeforeAll {
             $Sess1 = New-PSSession -ComputerName localhost
             $Sess2 = New-PSSession -ComputerName "127.0.0.1"
-            [
-                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "Sessions",
-                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
-            ]
-            $Sessions = @($Sess1, $Sess2)
         }
 
         AfterAll {
-            $Sessions | ForEach-Object {
-                Remove-PSSession $_
-            }
+            Remove-PSSession $Sess1
+            Remove-PSSession $Sess2
         }
     }
 
