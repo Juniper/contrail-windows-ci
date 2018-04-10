@@ -12,11 +12,12 @@
     template: "{{ item.template }}"
     ip: "{{ item.ip }}"
     netmask: "{{ item.netmask }}"
-    provision_options: "{{ item.provision_options | default('') }}"
     testenv_name: "{{ testenv_block.name }}"
     testenv_folder: "{{ testenv_block.folder }}"
     portgroup_mgmt: "{{ testenv_block.portgroup_mgmt }}"
     portgroup_contrail: "{{ testenv_block.portgroup_contrail }}"
+    vm_username: "{{ item.vm_username | default(None) }}"
+    vm_password: "{{ item.vm_password | default(None) }}"
   with_items:
     "{{ testenv_block.vms }}"
   no_log: true
