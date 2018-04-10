@@ -31,7 +31,7 @@ function Initialize-PesterLogger {
               [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
         $Script:Sessions | ForEach-Object {
             $Content = Invoke-Command -Session $_ {
-                Get-Content $Using:From
+                Get-Content -Raw $Using:From
             }
             $Prefix = "Logs from $($_.ComputerName):$From : "
             Write-Log ((@("-") * $Prefix.Length) -join "")

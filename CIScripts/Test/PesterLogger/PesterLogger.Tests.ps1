@@ -91,6 +91,15 @@ Describe "PesterLogger" {
             $ComputerName = $Sess1.ComputerName
             $ContentRaw | Should -BeLike "*$ComputerName*"
         }
+    
+        It "works with multiple lines in remote logs" {
+            "second line" | Add-Content "TestDrive:\remote.log"
+            "third line" | Add-Content "TestDrive:\remote.log"
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Move-Logs -From $SourcePath -DontCleanUp
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works with multiple lines in remote logs.log"
+            $ContentRaw | Should -BeLike "*remote log text*second line*third line*"
+        }
 
         It "works with multiple sessions" {
             Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1, $Sess2)
