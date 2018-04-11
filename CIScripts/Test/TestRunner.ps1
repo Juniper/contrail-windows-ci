@@ -36,6 +36,8 @@ function Invoke-TestScenarios {
         $Results = Invoke-Pester -PassThru -Script $PesterScript `
             -OutputFormat NUnitXml -OutputFile $TestReportOutputPath
 
+        Write-Host $Results
+
         $TotalResults.PassedCount += $Results.PassedCount
         $TotalResults.FailedCount += $Results.FailedCount
     }
