@@ -18,7 +18,7 @@ def lint(targets):
     success = True
 
     for target in targets:
-        print('Running ansible-lint on {}...'.format(target))
+        print('Running ansible-lint on {}...'.format(target), flush=True)
         if subprocess.call(['ansible-lint', target]) != 0:
             success = False
 
