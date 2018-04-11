@@ -86,22 +86,13 @@ function New-ReportsLocationsJson {
         }
 
         $Xmls = Get-ChildItem -Recurse -Filter '*.xml'
-        $XmlPaths = $Xmls | Foreach-Object { ConvertTo-RelativePath $_.FullName }
-
-        $XmlPathsList = @()
-        $XmlPaths | Foreach-Object {
-            [
-                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "XmlPathsList",
-                Justification="PSAnalyzer doesn't understand using variable outside blocks")
-            ]
-            $XmlPathsList += $_
-        } | Out-Null
+        $XmlPaths = @()
+        $XmlPaths += $Xmls | Foreach-Object { ConvertTo-RelativePath $_.FullName }
 
         $IndexHtml = Get-ChildItem -Recurse -Filter 'Index.html'
 
         @{
-            xml_reports = $XmlPathsList
+            xml_reports = $XmlPaths
             html_report = ConvertTo-RelativePath $IndexHtml.FullName
         } | ConvertTo-Json -Depth 10 | Out-File "reports-locations.json" -Encoding "utf8"
     }
