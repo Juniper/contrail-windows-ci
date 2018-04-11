@@ -5,6 +5,7 @@ Param (
 . $PSScriptRoot\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\Common\VMUtils.ps1
+. $PSScriptRoot\Utils\ComponentsInstallation.ps1
 
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
