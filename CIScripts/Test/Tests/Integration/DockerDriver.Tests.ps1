@@ -63,8 +63,8 @@ Describe "Docker Driver" {
     $modules | ForEach-Object {
         Context "Tests for module $_" {
             It "Tests are invoked" {
-                $Result = Start-DockerDriverUnitTest -Session $Session -Component $_
-                $Result | Should Be 0
+                $TestResult = Start-DockerDriverUnitTest -Session $Session -Component $_
+                $TestResult | Should Be 0
             }
 
             AfterEach {
