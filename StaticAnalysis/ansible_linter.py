@@ -19,7 +19,14 @@ def lint(targets):
 
     for target in targets:
         print('Running ansible-lint on {}...'.format(target), flush=True)
-        if subprocess.call(['ansible-lint', target]) != 0:
+
+        cmd = [
+            'ansible-lint',
+            target,
+            '--exclude=/var/lib/jenkins/.ansible/roles/'
+        ]
+
+        if subprocess.call(cmd) != 0:
             success = False
 
     return success
