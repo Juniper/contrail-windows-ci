@@ -7,36 +7,81 @@ Describe "Generating test report" {
         ([Xml] $InputData).OuterXml
     }
 
-    BeforeAll {
-        $InputDir = Join-Path $TestDrive "testReportInput"
-        [
-            Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "OutputDir",
-            Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
-        ]
-        $OutputDir = Join-Path $TestDrive "testReportOutput"
-        New-Item -Type Directory $InputDir | Out-Null
-
-        '
-            <test-results>
-                <test-suite name="outer_suite">
-                    <results>
-                        <test-suite name="inner_suite">
-                            <results>
-                                <test-case name="test" />
-                            </results>
-                        </test-suite>
-                    </results>
-                </test-suite>
-            </test-results>
-        ' | Set-Content -Path (Join-Path $InputDir "foo.xml")
+    function New-DummyFile {
+        Param([Parameter(Mandatory = $true)] [string] $Path)
+        '<test-results failures="0" inconclusive="0" skipped="0" date="2018-01-01" time="15:00:00">
+            <test-suite name="outer_suite" type="TestFixture" result="Success">
+                <results>
+                    <test-suite name="inner_suite" type="TestFixture" result="Success">
+                        <results>
+                            <test-case name="test" result="Success" />
+                        </results>
+                    </test-suite>
+                </results>
+            </test-suite>
+        </test-results>
+        ' | Set-Content -Path $Path
     }
 
-    Context "generates html and json" {
-        BeforeAll {
-            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
+    function New-TemporaryDirs {
+        $InputDir = Join-Path $TestDrive "testReportInput"
+        $OutputDir = Join-Path $TestDrive "testReportOutput"
+        New-Item -Type Directory $InputDir | Out-Null
+        return $InputDir, $OutputDir
+    }
+
+    function Clear-TemporaryDirs {
+        Param([Parameter(Mandatory = $true)] [string[]] $Dirs)
+        $Dirs | ForEach-Object {
+            Remove-Item -Recurse -Force $_
+        }
+    }
+
+    function Invoke-FakeReportunit {
+        Param([Parameter(Mandatory = $true)] [string] $NUnitDir)
+        $Files = Get-ChildItem -Path $NUnitDir -File
+        if ($Files.length -eq 0) {
+            throw "Empty directory"
+        }
+        if ($Files.length -gt 1) {
+            New-Item -Type File -Path (Join-Path $NUnitDir "Index.html")
+        }
+        $Files | ForEach-Object {
+            New-Item -Type File -Path (Join-Path $NUnitDir ($_.BaseName + ".html"))
+        }
+    }
+
+    function Test-JsonFileForMonitoring {
+        Param([Parameter(Mandatory = $true)] [String[]] $Xmls)
+
+        $TestCases = $Xmls | Foreach-Object { @{ Filename = $_ } }
+
+        It "json file for monitoring contains valid path to <Filename> report" -TestCases $TestCases {
+            Param($Filename)
+            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
+            "./raw_NUnit/$Filename" | Should BeIn $Json.'xml_reports'
+            $Json.'xml_reports'[0].GetType().Name | Should Be 'string'
         }
 
+        It "json file for monitoring contains valid path to html report" {
+            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
+            $Json.'html_report' | Should BeExactly './pretty_test_report/Index.html'
+        }
+    }
+
+    Context "single xml file" {
+        BeforeAll {
+            $InputDir, $OutputDir = New-TemporaryDirs
+            New-DummyFile -Path (Join-Path $InputDir "foo.xml")
+            # TODO split this tests to unit & integration test, and use
+            # -GeneratorFunc (Get-Item function:Invoke-FakeReportunit)
+            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
+        }
+        
+        AfterAll {
+            Clear-TemporaryDirs -Dirs @($InputDir, $OutputDir)
+        }
+        
         It "creates appropriate subdirectories" {
             Join-Path $OutputDir "raw_NUnit" | Should Exist
             Join-Path $OutputDir "pretty_test_report" | Should Exist
@@ -50,66 +95,47 @@ Describe "Generating test report" {
 
         It "flattens the xml files" {
             $ExpectedXml = NormalizeXmlString '
-                <test-results>
-                    <test-suite name="inner_suite">
-                        <results>
-                            <test-case name="test" />
-                        </results>
-                    </test-suite>
-                </test-results>
-            '
-
+            <test-results failures="0" inconclusive="0" skipped="0" date="2018-01-01" time="15:00:00">
+                <test-suite name="inner_suite" type="TestFixture" result="Success">
+                    <results>
+                        <test-case name="test" result="Success" />
+                    </results>
+                </test-suite>
+            </test-results>'
             $FileContents = Get-Content -Raw (Join-Path $OutputDir "raw_NUnit/foo.xml")
             NormalizeXmlString $FileContents | Should BeExactly $ExpectedXml
         }
+
+        Test-JsonFileForMonitoring "foo.xml"
     }
 
-    Context "json" {
+    Context "multiple xml files" {
         BeforeAll {
+            $InputDir, $OutputDir = New-TemporaryDirs
+            New-DummyFile -Path (Join-Path $InputDir "foo.xml")
+            New-DummyFile -Path (Join-Path $InputDir "bar.xml")
+            New-DummyFile -Path (Join-Path $InputDir "baz.xml")
+            # TODO split this tests to unit & integration test, and use
+            # -GeneratorFunc (Get-Item function:Invoke-FakeReportunit)
             Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
-
-            [
-                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "Json",
-                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
-            ]
-            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
         }
 
-        It "contains valid path to xml report" {
-            $Json.'xml_reports'[0] | Should BeExactly './raw_NUnit/foo.xml'
+        AfterAll {
+            Clear-TemporaryDirs -Dirs @($InputDir, $OutputDir)
         }
 
-        It "contains valid path to html report" {
-            $Json.'html_report' | Should BeExactly './pretty_test_report/Index.html'
-        }
-    }
-
-    Context "multiple test reports" {
-        BeforeAll {
-            '
-                <test-results>
-                    <test-suite name="bar_suite">
-                        <results>
-                            <test-case name="bar_test" />
-                        </results>
-                    </test-suite>
-                </test-results>
-            ' | Set-Content -Path (Join-Path $InputDir "bar.xml")
-
-            Convert-TestReportsToHtml -XmlReportsDir $InputDir -OutputDir $OutputDir
-
-            [
-                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "Json",
-                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
-            ]
-            $Json = Get-Content -Raw -Path (Join-Path $OutputDir "reports-locations.json") | ConvertFrom-Json
+        It "creates appropriate files" {
+            Join-Path $OutputDir "raw_NUnit/foo.xml" | Should Exist
+            Join-Path $OutputDir "raw_NUnit/bar.xml" | Should Exist
+            Join-Path $OutputDir "raw_NUnit/baz.xml" | Should Exist
+            Join-Path $OutputDir "pretty_test_report/Index.html" | Should Exist
+            Join-Path $OutputDir "pretty_test_report/foo.html" | Should Exist
+            Join-Path $OutputDir "pretty_test_report/bar.html" | Should Exist
+            Join-Path $OutputDir "pretty_test_report/baz.html" | Should Exist
+            Join-Path $OutputDir "reports-locations.json" | Should Exist
         }
 
-        It 'generates flat list for xml_reports' {
-            $Json.'xml_reports'[0] | Should BeExactly './raw_NUnit/bar.xml'
-            $Json.'xml_reports'[1] | Should BeExactly './raw_NUnit/foo.xml'
-        }
+        # TODO(sodar) enable the test after fixing it:
+        Test-JsonFileForMonitoring "foo.xml", "bar.xml", "baz.xml"
     }
 }
