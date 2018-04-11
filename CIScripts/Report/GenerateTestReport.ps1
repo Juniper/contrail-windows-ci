@@ -86,8 +86,7 @@ function New-ReportsLocationsJson {
         }
 
         $Xmls = Get-ChildItem -Recurse -Filter '*.xml'
-        $XmlPaths = @()
-        $XmlPaths += $Xmls | Foreach-Object { ConvertTo-RelativePath $_.FullName }
+        [String[]] $XmlPaths = $Xmls | Foreach-Object { ConvertTo-RelativePath $_.FullName }
 
         $IndexHtml = Get-ChildItem -Recurse -Filter 'Index.html'
 
