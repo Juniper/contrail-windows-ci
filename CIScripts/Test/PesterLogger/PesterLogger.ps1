@@ -1,10 +1,11 @@
 . $PSScriptRoot/../../Common/Aliases.ps1
 
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
+. $PSScriptRoot/RemoteLogCollector.ps1
 
 function Initialize-PesterLogger {
     Param([Parameter(Mandatory = $true)] [string] $Outdir,
-          [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
+          [Parameter(Mandatory = $false)] [System.Collections.Hashtable[]] $LogSources)
 
     # Closures don't capture functions, so we need to capture them as variables.
     $WriterFunc = Get-Item function:Add-ContentForce
@@ -27,39 +28,32 @@ function Initialize-PesterLogger {
     Register-NewFunc -Name "Write-Log" -Func $WriteLogFunc
 
     $MoveLogsFunc = {
-        Param([Parameter(Mandatory = $true)] [string] $From,
-              [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
-        $Script:Sessions | ForEach-Object {
-            $Session = $_
-            $ComputerNamePrefix = "Logs from $($_.ComputerName): "
+        Param([Parameter(Mandatory = $false)] [switch] $DontCleanUp)
+
+        $Script:LogSources | ForEach-Object {
+            $LogSource = $_
+            $ComputerNamePrefix = "Logs from $($LogSource.SourceHost): "
             Write-Log ((@("=") * $ComputerNamePrefix.Length) -join "")
             Write-Log $ComputerNamePrefix
 
-            $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
-            if (-not $Files) {
-                Write-Log "!!!! Warning: FILES AT $FROM NOT FOUND"
-            }
-            $Files | ForEach-Object {
-                $CurrentSourceFile = $_
-                $SourceFilenamePrefix = "Contents of $($_.FullName):"
+            $Logs = & $LogSource.ContentGetter
+            $Logs.Keys | ForEach-Object {
+                $Filename = $_
+                $Content = $Logs[$Filename]
+                $SourceFilenamePrefix = "Contents of $($Filename):"
+
                 Write-Log ((@("-") * $SourceFilenamePrefix.Length) -join "")
                 Write-Log $SourceFilenamePrefix
-
-                $Content = Invoke-Command -Session $Session {
-                    Get-Content -Raw $Using:CurrentSourceFile
-                }
                 Write-Log $Content
-
-                if (-not $DontCleanUp) {
-                    Invoke-Command -Session $Session {
-                        Remove-Item $Using:CurrentSourceFile
-                    }
-                }
+            }
+            
+            if (-not $DontCleanUp) {
+                & $LogSource.LogCleaner 
             }
         }
     }.GetNewClosure()
 
-    Register-NewFunc -Name "Move-Logs" -Func $MoveLogsFunc
+    Register-NewFunc -Name "Merge-TrackedLogs" -Func $MoveLogsFunc
 }
 
 function Add-ContentForce {
