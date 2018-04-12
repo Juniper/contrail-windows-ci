@@ -10,7 +10,7 @@ def get_linter_targets():
 
     yamls_dir = './ansible'
     yamls = [os.path.join(yamls_dir, o) for o in os.listdir(yamls_dir)
-                if o.endswith('.yml')]
+                if os.path.splitext(o)[1] == '.yml']
 
     return roles + yamls
 

@@ -63,7 +63,7 @@ pipeline {
                     }
                 }
 
-                stage('Linux-test') {
+                stage('CI test') {
                     when { expression { env.ghprbPullId } }
                     agent { label 'linux' }
                     options {

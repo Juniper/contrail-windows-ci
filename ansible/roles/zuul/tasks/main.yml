@@ -37,7 +37,11 @@
     name: apache2
     state: restarted
   tags:
-    - skip_ansible_lint # TODO: Try to rewrite using `notify`
+    - skip_ansible_lint # ANSIBLE0016: Tasks that run when changed should likely be handlers
+                        # TODO: Try to rewrite using `notify`.
+                        # For now we are disabling linter here because
+                        # refactoring probably needs rethinking some design
+                        # decisions and deep testing of new solution.
 
 
 - name: 'install pip'
@@ -89,7 +93,11 @@
   systemd:
     daemon_reload: yes
   tags:
-    - skip_ansible_lint # TODO: Try to rewrite using `notify`
+    - skip_ansible_lint # ANSIBLE0016: Tasks that run when changed should likely be handlers
+                        # TODO: Try to rewrite using `notify`.
+                        # For now we are disabling linter here because
+                        # refactoring probably needs rethinking some design
+                        # decisions and deep testing of new solution.
 
 - name: 'add zuul group'
   group:
@@ -146,7 +154,11 @@
     - zuul-server
     - zuul-merger
   tags:
-    - skip_ansible_lint # TODO: Try to rewrite using `notify`
+    - skip_ansible_lint # ANSIBLE0016: Tasks that run when changed should likely be handlers
+                        # TODO: Try to rewrite using `notify`.
+                        # For now we are disabling linter here because
+                        # refactoring probably needs rethinking some design
+                        # decisions and deep testing of new solution.
 
 - name: 'enable zuul services'
   service:
@@ -161,4 +173,8 @@
     name: zuul-server
     state: reloaded
   tags:
-    - skip_ansible_lint # TODO: Try to rewrite using `notify`
+    - skip_ansible_lint # ANSIBLE0016: Tasks that run when changed should likely be handlers
+                        # TODO: Try to rewrite using `notify`.
+                        # For now we are disabling linter here because
+                        # refactoring probably needs rethinking some design
+                        # decisions and deep testing of new solution.
