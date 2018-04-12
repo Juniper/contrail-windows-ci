@@ -1,7 +1,3 @@
-Param (
-    [Parameter(Mandatory=$false)] [switch] $IntegrationTest=$false
-)
-
 . $PSScriptRoot/PesterLogger.ps1
 
 Describe "RemoteLogCollector" {
@@ -140,6 +136,8 @@ Describe "RemoteLogCollector" {
     BeforeAll {
         $Sess1 = $null
         $Sess2 = $null
+        $IntegrationTest=$false # TODO: for now I'd keep it like this
+                                # - I'm thinking about splitting unit & integration tests.
         if ($IntegrationTest) {
             $Sess1 = New-PSSession -ComputerName localhost
             $Sess2 = New-PSSession -ComputerName localhost
