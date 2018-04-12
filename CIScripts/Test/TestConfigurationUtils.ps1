@@ -1,4 +1,5 @@
 . $PSScriptRoot\..\Testenv\Testenv.ps1
+. $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
