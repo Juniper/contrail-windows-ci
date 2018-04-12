@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
@@ -9,11 +9,6 @@ Param (
 . $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
-
-$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-$Session = $Sessions[0]
-
-$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
 Describe "vTest scenarios" {
     It "passes all vtest scenarios" {
@@ -29,6 +24,11 @@ Describe "vTest scenarios" {
     }
 
     BeforeAll {
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Session = $Sessions[0]
+
+        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
         Install-Extension -Session $Session
         Install-Utils -Session $Session
         Enable-VRouterExtension -Session $Session -SystemConfig $SystemConfig

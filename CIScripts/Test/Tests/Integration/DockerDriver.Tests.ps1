@@ -1,11 +1,8 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile
 )
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
-
-$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-$Session = $Sessions[0]
 
 $TestsPath = "C:\Artifacts\"
 
@@ -54,6 +51,15 @@ function Save-DockerDriverUnitTestReport {
 $modules = @("agent")
 
 Describe "Docker Driver" {
+    BeforeAll {
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "Session",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $Session = $Sessions[0]
+    }
+
     $modules | ForEach-Object {
         Context "Tests for module $_" {
             It "Tests are invoked" {
