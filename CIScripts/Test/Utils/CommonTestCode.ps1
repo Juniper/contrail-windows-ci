@@ -62,27 +62,30 @@ function Get-RemoteContainerNetAdapterInformation {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $ContainerID)
 
-    $NetAdapterInformation = Invoke-Command -Session $Session -ScriptBlock {
+    $Adapter = Invoke-Command -Session $Session -ScriptBlock {
 
         $RemoteCommand = {
+            $GetIPAddress = { ($_ | Get-NetIPAddress -AddressFamily IPv4).IPAddress }
+            $Fields = 'ifIndex', 'ifName', 'Name', 'MacAddress', @{L='IPAddress'; E=$GetIPAddress}
             $Adapter = (Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]
-            @{
-                IfIndex = $Adapter.IfIndex;
-                IfName = $Adapter.IfName;
-                AdapterFullName = $Adapter.Name;
-                AdapterShortName = [regex]::new('vEthernet \((.*)\)').Replace($Adapter.Name, '$1')
-                MacAddressWindows = $Adapter.MacAddress.ToLower();
-                MacAddress = $Adapter.MacAddress.ToLower().Replace('-', ':')
-                IPAddress = ($Adapter | Get-NetIPAddress -AddressFamily IPv4).IPAddress
-            } | ConvertTo-Json
+            $Adapter | Select-Object $Fields | ConvertTo-Json
         }.toString()
 
         docker exec $Using:ContainerID powershell $RemoteCommand
+    } | ConvertFrom-Json
+
+    $Ret = @{
+        ifIndex = $Adapter.ifIndex
+        ifName = $Adapter.ifName
+        AdapterFullName = $Adapter.Name
+        AdapterShortName = [regex]::new('vEthernet \((.*)\)').Replace($Adapter.Name, '$1')
+        MacAddressWindows = $Adapter.MacAddress.ToLower()
+        IPAddress = $Adapter.IPAddress
     }
 
-    $NetAdapterInformation = $NetAdapterInformation | ConvertFrom-Json
+    $Ret.MacAddress = $Ret.MacAddressWindows.Replace('-', ':')
 
-    return [ContainerNetAdapterInformation] $NetAdapterInformation
+    return [ContainerNetAdapterInformation] $Ret
 }
 
 function Initialize-MPLSoGRE {
