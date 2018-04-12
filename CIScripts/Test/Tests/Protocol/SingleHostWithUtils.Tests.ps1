@@ -187,3 +187,5 @@ Describe "Single compute node protocol tests with utils" {
         Uninstall-Utils -Session $Session
     }
 }
+
+Remove-PSSession $Sessions

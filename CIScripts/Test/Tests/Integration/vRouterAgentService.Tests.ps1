@@ -119,3 +119,5 @@ Describe "vRouter Agent service" {
         Uninstall-Utils -Session $Session
     }
 }
+
+Remove-PSSession $Sessions

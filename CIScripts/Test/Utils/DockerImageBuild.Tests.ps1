@@ -27,3 +27,5 @@ Describe "Initialize-DockerImage" {
         }
     }
 }
+
+Remove-PSSession $Sessions
