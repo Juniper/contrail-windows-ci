@@ -1,2 +1,2 @@
 graphite_addr: "10.84.12.52:2003"
-telegraf_conf_path: "C:\Program Files\telegraf\telegraf.conf"
+telegraf_conf_path: "C:\telegraf\telegraf.conf"

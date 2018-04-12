@@ -5,6 +5,10 @@
     name: telegraf
     state: present
 
+- name: Create a directiory for Telegraf config
+  file:
+    path: "{{ telegraf_conf_path }}"
+
 - name: Copy Telegraf config file
   template:
     src: telegraf.conf.j2
