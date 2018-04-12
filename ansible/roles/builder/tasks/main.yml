@@ -280,4 +280,8 @@
   tags:
       - ssh
 
+- name: Include telegraf role
+  include_role:
+    name: telegraf
+
 ...
