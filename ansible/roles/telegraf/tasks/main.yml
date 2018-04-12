@@ -1,0 +1,16 @@
+---
+
+- name: Install Telegraf
+  win_chocolatey:
+    name: telegraf
+    state: present
+
+- name: Copy Telegraf config file
+  template:
+    src: telegraf.conf.j2
+    dest: "{{ telegraf_conf_path }}"
+    force: yes
+
+- name: Install Telegraf as Windows Service
+  win_shell: |
+    telegraf.exe --service install --config "{{ telegraf_conf_path }}"
