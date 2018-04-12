@@ -73,7 +73,7 @@ pipeline {
                         deleteDir()
                         unstash "Monitoring"
                         dir("monitoring") {
-                            sh "python3 -m tests.monitoring_tests"
+                            sh "python3 -m tests.monitoring_testsinvalid"
                         }
                         runHelpersTests()
                     }
