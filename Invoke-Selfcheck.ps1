@@ -6,11 +6,13 @@ Param (
 
 # NOTE TO DEVELOPERS
 # ------------------
-# The idea behind this tool is that anyone can run the basic set of tests without ANY preparation.
-# A new developer should be able to run .\Invoke-Selfcheck.ps1 and it should pass 100% of the time,
+# The idea behind this tool is that anyone can run the basic set of tests without ANY preparation 
+# (except Pester).
+# A new developer should be able to run `.\Invoke-Selfcheck.ps1` and it should pass 100% of the time,
 # without any special requirements, like libraries, testbed machines etc.
 # Special flags may be passed to invoke more complicated tests (that have requirements), but
 # the default should require nothing.
+
 
 $nl = [Environment]::NewLine
 

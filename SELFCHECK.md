@@ -2,6 +2,10 @@
 
 CI has a set of unit and integration tests, called 'selfcheck'.
 
+## Requirements
+
+Requires PowerShell test framework: `Pester 4.2.0`. See [this link](https://github.com/pester/Pester/wiki/Installation-and-Update) for installation instructions.
+
 ## To run unit tests and static analysis of CI:
 
 ```
@@ -37,7 +41,8 @@ Note: to make sure that system tests pass, some requirements must be met.
 
 ## Note to developers
 
-The idea behind this tool is that anyone can run the basic set of tests without ANY preparation.
+The idea behind this tool is that anyone can run the basic set of tests without ANY preparation 
+(except Pester).
 A new developer should be able to run `.\Invoke-Selfcheck.ps1` and it should pass 100% of the time,
 without any special requirements, like libraries, testbed machines etc.
 Special flags may be passed to invoke more complicated tests (that have requirements), but
