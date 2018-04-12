@@ -12,6 +12,6 @@
         sleep: 5
         timeout: 900
 
-- hosts: "{{ vm_role }}"
-  roles:
-    - wurbanski.jenkins-swarm-agent
+# - hosts: "{{ vm_role }}"
+#   roles:
+#     - wurbanski.jenkins-swarm-agent
