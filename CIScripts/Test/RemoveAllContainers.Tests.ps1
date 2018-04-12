@@ -65,13 +65,6 @@ Describe "Remove-AllContainers" {
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
-            "ContrailNM",
-            Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
-        )]
-        $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
             "ContrailNetwork",
             Justification="It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
@@ -90,14 +83,22 @@ Describe "Remove-AllContainers" {
 
     AfterEach {
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
+        if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
+            Remove-Variable "ContrailNetwork"
         }
     }
 
     BeforeAll {
         Install-DockerDriver -Session $Session
         Install-Extension -Session $Session
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "ContrailNM",
+            Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
+        )]
+        $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
     }
 
     AfterAll {

@@ -472,6 +472,7 @@ function Remove-Container {
             if($Containers) {
                 docker rm -f $Containers | Out-Null
             }
+            Remove-Variable "Containers"
         }
     }
 }
