@@ -45,7 +45,6 @@ function Save-DockerDriverUnitTestReport {
         [Parameter(Mandatory=$true)] [string] $Component
     )
 
-    # TODO Are these junit files actually created?
     # TODO Where are these files copied to?
     Copy-Item -FromSession $Session -Path ($TestsPath + $Component + "_junit.xml") -ErrorAction SilentlyContinue
 }
