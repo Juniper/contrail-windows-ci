@@ -104,7 +104,7 @@ Describe "RemoteLogCollector" {
         Merge-Logs -LogSources @($Source1)
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.inserts warning message if filepath was not found.log"
-        $ContentRaw | Should -BeLike "*$DummyLog1*NOT FOUND*"
+        $ContentRaw | Should -BeLike "*$DummyLog1*<FILE NOT FOUND>*"
     }
 
     It "inserts warning message if wildcard matched nothing" {
@@ -117,7 +117,7 @@ Describe "RemoteLogCollector" {
         Merge-Logs -LogSources @($WildcardSource)
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.inserts warning message if wildcard matched nothing.log"
-        $ContentRaw | Should -BeLike "*$WildcardPath*NOT FOUND*"
+        $ContentRaw | Should -BeLike "*$WildcardPath*<FILE NOT FOUND>*"
     }
 
     It "inserts a message if log file was empty" {
@@ -148,8 +148,7 @@ Describe "RemoteLogCollector" {
     BeforeAll {
         $Sess1 = $null
         $Sess2 = $null
-        $IntegrationTest=$false # TODO: for now I'd keep it like this
-                                # - I'm thinking about splitting unit & integration tests.
+        $IntegrationTest=$false # TODO: Will change when selfcheck PR is merged.
         if ($IntegrationTest) {
             $Sess1 = New-PSSession -ComputerName localhost
             $Sess2 = New-PSSession -ComputerName localhost

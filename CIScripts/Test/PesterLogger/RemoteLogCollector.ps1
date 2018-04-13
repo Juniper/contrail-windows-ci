@@ -15,7 +15,7 @@ function New-LogSource {
 function Invoke-CommandRemoteOrLocal {
     param([ScriptBlock] $Func, [PSSessionT] $Session, [Object[]] $Arguments) 
     if ($Session) {
-        Invoke-Command -Session $Script:Session $Func -ArgumentList $Arguments
+        Invoke-Command -Session $Session $Func -ArgumentList $Arguments
     } else {
         Invoke-Command $Func -ArgumentList $Arguments
     }
@@ -28,11 +28,15 @@ function Get-LogContent {
         $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
         $Logs = @{}
         if (-not $Files) {
-            $Logs[$From] = "WARNING: FILE NOT FOUND"
+            $Logs[$From] = "<FILE NOT FOUND>"
         } else {
             $Files | ForEach-Object {
                 $Content = Get-Content -Raw $_
-                $Logs[$_.FullName] = $Content
+                $Logs[$_.FullName] = if ($Content) {
+                    $Content
+                } else {
+                    "<FILE WAS EMPTY>"
+                }
             }
         }
         return $Logs
@@ -60,7 +64,7 @@ function Merge-Logs {
         $LogSource = $_
 
         $SourceHost = if ($LogSource.Session) {
-            $Session.ComputerName
+            $LogSource.Session.ComputerName
         } else {
             "localhost"
         }
@@ -71,11 +75,7 @@ function Merge-Logs {
         $Logs = Get-LogContent -LogSource $LogSource
         $Logs.Keys | ForEach-Object {
             $Filename = $_
-            $Content = if ($Logs[$Filename]) {
-                $Logs[$Filename]
-            } else {
-                "<FILE WAS EMPTY>"
-            }
+            $Content = $Logs[$Filename]
             $SourceFilenamePrefix = "Contents of $($Filename):"
 
             Write-Log ((@("-") * $SourceFilenamePrefix.Length) -join "")
