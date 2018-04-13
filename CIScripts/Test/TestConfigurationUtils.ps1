@@ -284,23 +284,16 @@ function Remove-AllUnusedDockerNetworks {
 
 function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [Int] $ifIndex)
+           [Parameter(Mandatory = $true)] [String] $AdapterName)
 
-    Invoke-Command -Session $Session -ScriptBlock {
-        $WAIT_TIME_FOR_DHCP_IN_SECONDS = 60
-
-        foreach ($i in 1..$WAIT_TIME_FOR_DHCP_IN_SECONDS) {
-            $Address = Get-NetIPAddress -InterfaceIndex $Using:ifIndex -ErrorAction SilentlyContinue `
+    Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
+        Invoke-Command -Session $Session {
+            Get-NetAdapter -Name $Using:AdapterName `
+                | Get-NetIPAddress -ErrorAction SilentlyContinue `
                 | Where-Object AddressFamily -eq IPv4 `
                 | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
-            if ($Address) {
-                return
-            }
-            Start-Sleep -Seconds 1
         }
-
-        throw "Waiting for IP on interface $($Using:ifIndex) timed out after $WAIT_TIME_FOR_DHCP_IN_SECONDS seconds"
-    }
+    } | Out-Null
 }
 
 function Initialize-DriverAndExtension {
@@ -346,10 +339,7 @@ function Initialize-TestConfiguration {
                 Test-IsDockerDriverEnabled -Session $Session
             } | Invoke-UntilSucceeds -Duration 600 -Interval 5 -Precondition $TestProcessRunning
 
-            $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
-                    -Session $Session `
-                    -AdapterName $SystemConfig.VHostName
-            Wait-RemoteInterfaceIP -Session $Session -ifIndex $HNSTransparentAdapter.ifIndex
+            Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
 
             break
         }
