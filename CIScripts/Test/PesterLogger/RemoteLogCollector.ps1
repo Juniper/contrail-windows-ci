@@ -1,71 +1,90 @@
-function New-TrackedLogSource {
+. $PSScriptRoot/PesterLogger.ps1
+
+function New-LogSource {
     Param([Parameter(Mandatory = $true)] [string] $Path,
           [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
 
-    $Sources = @()
-
-    $Sessions | ForEach-Object {
-        $Session = $_
-
-        if ($Session) {
-            $SourceHost = $Session.ComputerName
-        } else {
-            $SourceHost = "localhost"
+    return $Sessions | ForEach-Object {
+        @{
+            Session = $_
+            Path = $Path
         }
-
-        $ContentGetterBody = {
-            Param([Parameter(Mandatory = $true)] [string] $From)
-            $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
-            $Logs = @{}
-            if (-not $Files) {
-                $Logs[$From] = "WARNING: FILE NOT FOUND"
-            } else {
-                $Files | ForEach-Object {
-                    $Content = Get-Content -Raw $_
-                    $Logs[$_.FullName] = $Content
-                }
-            }
-            return $Logs
-        }
-        $ContentGetter = New-RemoteOrLocalClosure -Func $ContentGetterBody -Session $Session -Arguments $Path
-
-        $LogCleanerBody = {
-            Param([Parameter(Mandatory = $true)] [string] $What)
-            $Files = Get-ChildItem -Path $What -ErrorAction SilentlyContinue
-            $Files | ForEach-Object {
-                Remove-Item $What
-            }
-        }
-        $LogCleaner = New-RemoteOrLocalClosure -Func $LogCleanerBody -Session $Session -Arguments $Path
-
-        $SingleSource = @{
-            ContentGetter = $ContentGetter
-            LogCleaner = $LogCleaner
-            SourceHost = $SourceHost
-            SourcePath = $Path
-        }
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "Sources",
-            Justification="Seems like ForEach block messes up static analysis here - this var is" +
-                "already declared before the loop"
-        )]
-        $Sources += $SingleSource
     }
-
-    return $Sources
 }
 
-function New-RemoteOrLocalClosure {
+function Invoke-CommandRemoteOrLocal {
     param([ScriptBlock] $Func, [PSSessionT] $Session, [Object[]] $Arguments) 
     if ($Session) {
-        $Closure = {
-            Invoke-Command -Session $Script:Session $Func -ArgumentList $Arguments
-        }.GetNewClosure()
+        Invoke-Command -Session $Script:Session $Func -ArgumentList $Arguments
     } else {
-        $Closure = {
-            Invoke-Command $Func -ArgumentList $Arguments
-        }.GetNewClosure()
+        Invoke-Command $Func -ArgumentList $Arguments
     }
-    return $Closure
+}
+
+function Get-LogContent {
+    param([System.Collections.Hashtable] $LogSource)
+    $ContentGetterBody = {
+        Param([Parameter(Mandatory = $true)] [string] $From)
+        $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
+        $Logs = @{}
+        if (-not $Files) {
+            $Logs[$From] = "WARNING: FILE NOT FOUND"
+        } else {
+            $Files | ForEach-Object {
+                $Content = Get-Content -Raw $_
+                $Logs[$_.FullName] = $Content
+            }
+        }
+        return $Logs
+    }
+    Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $LogSource.Session -Arguments $LogSource.Path
+}
+
+function Clear-LogContent {
+    param([System.Collections.Hashtable] $LogSource)
+    $LogCleanerBody = {
+        Param([Parameter(Mandatory = $true)] [string] $What)
+        $Files = Get-ChildItem -Path $What -ErrorAction SilentlyContinue
+        foreach ($File in $Files) {
+            Remove-Item $File
+        }
+    }
+    Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $LogSource.Session -Arguments $LogSource.Path
+}
+
+function Merge-Logs {
+    Param([Parameter(Mandatory = $true)] [System.Collections.Hashtable[]] $LogSources,
+          [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
+
+    $LogSources | ForEach-Object {
+        $LogSource = $_
+
+        $SourceHost = if ($LogSource.Session) {
+            $Session.ComputerName
+        } else {
+            "localhost"
+        }
+        $ComputerNamePrefix = "Logs from $($SourceHost): "
+        Write-Log ((@("=") * $ComputerNamePrefix.Length) -join "")
+        Write-Log $ComputerNamePrefix
+
+        $Logs = Get-LogContent -LogSource $LogSource
+        $Logs.Keys | ForEach-Object {
+            $Filename = $_
+            $Content = if ($Logs[$Filename]) {
+                $Logs[$Filename]
+            } else {
+                "<FILE WAS EMPTY>"
+            }
+            $SourceFilenamePrefix = "Contents of $($Filename):"
+
+            Write-Log ((@("-") * $SourceFilenamePrefix.Length) -join "")
+            Write-Log $SourceFilenamePrefix
+            Write-Log $Content
+        }
+        
+        if (-not $DontCleanUp) {
+            Clear-LogContent -LogSource $LogSource
+        }
+    }
 }

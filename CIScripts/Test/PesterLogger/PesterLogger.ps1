@@ -1,11 +1,9 @@
 . $PSScriptRoot/../../Common/Aliases.ps1
 
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
-. $PSScriptRoot/RemoteLogCollector.ps1
 
 function Initialize-PesterLogger {
-    Param([Parameter(Mandatory = $true)] [string] $Outdir,
-          [Parameter(Mandatory = $false)] [System.Collections.Hashtable[]] $LogSources)
+    Param([Parameter(Mandatory = $true)] [string] $Outdir)
 
     # Closures don't capture functions, so we need to capture them as variables.
     $WriterFunc = Get-Item function:Add-ContentForce
@@ -26,34 +24,6 @@ function Initialize-PesterLogger {
     }.GetNewClosure()
 
     Register-NewFunc -Name "Write-Log" -Func $WriteLogFunc
-
-    $MoveLogsFunc = {
-        Param([Parameter(Mandatory = $false)] [switch] $DontCleanUp)
-
-        $Script:LogSources | ForEach-Object {
-            $LogSource = $_
-            $ComputerNamePrefix = "Logs from $($LogSource.SourceHost): "
-            Write-Log ((@("=") * $ComputerNamePrefix.Length) -join "")
-            Write-Log $ComputerNamePrefix
-
-            $Logs = & $LogSource.ContentGetter
-            $Logs.Keys | ForEach-Object {
-                $Filename = $_
-                $Content = $Logs[$Filename]
-                $SourceFilenamePrefix = "Contents of $($Filename):"
-
-                Write-Log ((@("-") * $SourceFilenamePrefix.Length) -join "")
-                Write-Log $SourceFilenamePrefix
-                Write-Log $Content
-            }
-            
-            if (-not $DontCleanUp) {
-                & $LogSource.LogCleaner 
-            }
-        }
-    }.GetNewClosure()
-
-    Register-NewFunc -Name "Merge-TrackedLogs" -Func $MoveLogsFunc
 }
 
 function Add-ContentForce {
