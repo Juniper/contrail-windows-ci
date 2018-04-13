@@ -304,20 +304,6 @@ function Initialize-DriverAndExtension {
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
 
-    Initialize-TestConfiguration -Session $Session `
-        -SystemConfig $SystemConfig `
-        -OpenStackConfig $OpenStackConfig `
-        -ControllerConfig $ControllerConfig
-}
-
-function Initialize-TestConfiguration {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
-        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
-    )
-
     Write-Host "Initializing Test Configuration"
 
     $NRetries = 3;
@@ -429,7 +415,7 @@ function Initialize-ComputeServices {
             [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
         )
 
-        Initialize-TestConfiguration -Session $Session `
+        Initialize-DriverAndExtension -Session $Session `
             -SystemConfig $SystemConfig `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
