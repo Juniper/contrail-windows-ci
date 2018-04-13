@@ -88,14 +88,14 @@ function Test-IsVRouterExtensionEnabled {
     return $($Ext.Enabled -and $Ext.Running)
 }
 
-function Enable-DockerDriver {
+function Start-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName,
            [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
            [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
-    Write-Host "Enabling Docker Driver"
+    Write-Host "Starting Docker Driver"
 
     $Arguments = @(
         "-forceAsInteractive",
@@ -139,10 +139,10 @@ function Enable-DockerDriver {
     Start-Sleep -s $WaitTime
 }
 
-function Disable-DockerDriver {
+function Stop-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Host "Disabling Docker Driver"
+    Write-Host "Stopping Docker Driver"
 
     Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
 
@@ -331,7 +331,7 @@ function Initialize-TestConfiguration {
     foreach ($i in 1..$NRetries) {
         # DockerDriver automatically enables Extension, so there is no need to enable it manually
 
-        Enable-DockerDriver -Session $Session `
+        Start-DockerDriver -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig `
@@ -372,7 +372,7 @@ function Clear-TestConfiguration {
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session
-    Disable-DockerDriver -Session $Session
+    Stop-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 }
 
