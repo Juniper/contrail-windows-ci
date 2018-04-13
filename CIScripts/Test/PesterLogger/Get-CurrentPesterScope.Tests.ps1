@@ -9,7 +9,7 @@ function ItBlockOutsideOfDescribe() {
     }
 }
 
-Describe "Get-CurrentPesterScope" -Tags CI_Unit {
+Describe "Get-CurrentPesterScope" -Tags CI, Unit {
     Context "when inside Context block" {
         It "getting Pester scope works" {
             Get-CurrentPesterScope | Should -BeExactly @("Get-CurrentPesterScope",

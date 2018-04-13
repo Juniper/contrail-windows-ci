@@ -25,10 +25,10 @@ Note: to make sure that system tests pass, some requirements must be met.
 * testenvconf.yaml
 * Reportunit 1.5.0-beta present in PATH
 
-## Disabling static analysis
+## Skip static analysis
 
 ```
-.\Invoke-Selfcheck.ps1 -NoStaticAnalysis
+.\Invoke-Selfcheck.ps1 -SkipStaticAnalysis
 ```
 
 ## Skip unit tests

@@ -1,7 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [switch] $SkipUnit,
-    [switch] $NoStaticAnalysis
+    [switch] $SkipStaticAnalysis
 )
 
 # NOTE TO DEVELOPERS
@@ -16,31 +16,29 @@ Param (
 
 $nl = [Environment]::NewLine
 
-function Get-Separator {
-    $nl + ((@("=") * 80) -join "") + $nl
-}
-
 function Write-VisibleMessage {
     param([string] $Message)
-    Write-Host "$(Get-Separator)[Selfcheck] $Message$(Get-Separator)"
+    Write-Host "$('='*80)$nl [Selfcheck] $Message$nl$('='*80)"
 }
+
+$IncludeTags = @("CI")
+$ExcludeTags = @()
 
 if ($SkipUnit) {
     Write-VisibleMessage "-SkipUnit flag set, skipping unit tests"
-} else {
-    Write-VisibleMessage "performing unit tests"
-    Invoke-Pester -Tags CI_Unit
+    $ExcludeTags += "Unit"
 }
 
-if ($TestenvConfFile) {
-    Write-VisibleMessage "performing system tests"
-    Invoke-Pester -Tags CI_Systest -Script @{Path="."; Parameters=@{TestenvConfFile=$TestenvConfFile};}
-} else {
+if (-not $TestenvConfFile) {
     Write-VisibleMessage "testenvconf file not provided, skipping system tests"
+    $ExcludeTags += "Systest"
 }
 
-if ($NoStaticAnalysis) {
-    Write-VisibleMessage "-NoStaticAnalysis switch set, skipping static analysis"
+Write-VisibleMessage "Including tags: $IncludeTags; Excluding tags: $ExcludeTags"
+Invoke-Pester -Tags $IncludeTags -ExcludeTag $ExcludeTags -Script @{Path="."; Parameters=@{TestenvConfFile=$TestenvConfFile};}
+
+if ($SkipStaticAnalysis) {
+    Write-VisibleMessage "-SkipStaticAnalysis switch set, skipping static analysis"
 } elseif (-not (Get-Module PSScriptAnalyzer)) {
     Write-VisibleMessage "PSScriptAnalyzer module not found. Skipping static analysis.
         You can install it by running `Install-Module -Name PSScriptAnalyzer`."

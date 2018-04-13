@@ -4,7 +4,7 @@ Param (
 
 . $PSScriptRoot\DockerImageBuild.ps1
 
-Describe "Initialize-DockerImage" -Tags CI_Systest {
+Describe "Initialize-DockerImage" -Tags CI, Systest {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
