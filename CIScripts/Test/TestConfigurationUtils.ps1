@@ -346,22 +346,24 @@ function Initialize-TestConfiguration {
                 Test-IsDockerDriverEnabled -Session $Session
             } | Invoke-UntilSucceeds -Duration 600 -Interval 5 -Precondition $TestProcessRunning
 
+            $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
+                    -Session $Session `
+                    -AdapterName $SystemConfig.VHostName
+            Wait-RemoteInterfaceIP -Session $Session -ifIndex $HNSTransparentAdapter.ifIndex
+
             break
         }
         catch {
+            Write-Host $_
+
             if ($i -eq $NRetries) {
                 throw "Docker driver was not enabled."
             } else {
                 Write-Host "Docker driver was not enabled, retrying."
-                Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
+                Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             }
         }
     }
-
-    $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
-            -Session $Session `
-            -AdapterName $SystemConfig.VHostName
-    Wait-RemoteInterfaceIP -Session $Session -ifIndex $HNSTransparentAdapter.ifIndex
 }
 
 function Clear-TestConfiguration {
