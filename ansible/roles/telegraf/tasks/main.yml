@@ -5,16 +5,23 @@
     name: telegraf
     state: present
 
-- name: Create a directiory for Telegraf config
-  file:
-    path: "{{ telegraf_conf_path }}"
+- name: Create a directory for Telegraf config
+  win_file:
+    path: '{{ telegraf_conf_path }}'
+    state: directory
 
 - name: Copy Telegraf config file
-  template:
+  win_template:
     src: telegraf.conf.j2
-    dest: "{{ telegraf_conf_path }}"
+    dest: '{{ telegraf_conf_path }}\telegraf.conf'
     force: yes
+
+- name: Add telegraf to PATH
+  win_path:
+    elements:
+    - 'C:\Program Files\telegraf'
+    state: present
 
 - name: Install Telegraf as Windows Service
   win_shell: |
-    telegraf.exe --service install --config "{{ telegraf_conf_path }}"
+    telegraf.exe --service install --config '{{ telegraf_conf_path }}\telegraf.conf'
