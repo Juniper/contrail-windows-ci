@@ -40,8 +40,8 @@ Describe "RemoteLogCollector" {
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.adds a prefix describing source directory.log"
         $ContentRaw | Should -BeLike "*$DummyLog1*"
-        $ComputerName = $Sess1.ComputerName
-        $ContentRaw | Should -BeLike "*$ComputerName*"
+        $ComputerName = "localhost"
+        $ContentRaw | Should -BeLike "*localhost*"
     }
 
     It "works with multiple lines in remote logs" {
@@ -78,9 +78,7 @@ Describe "RemoteLogCollector" {
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.works with multiple sessions in single log source.log"
         $ContentRaw | Should -BeLike "first message*$DummyLog1*$DummyLog1*"
         $ContentRaw | Should -BeLike "*remote log text*remote log text*"
-        $ComputerName1 = "localhost"
-        $ComputerName2 = "localhost"
-        $ContentRaw | Should -BeLike "*$ComputerName1*$ComputerName2*"
+        $ContentRaw | Should -BeLike "*localhost*localhost*"
     }
 
     It "works with multiple log sources" {
