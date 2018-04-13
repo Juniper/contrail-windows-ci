@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        stage ('Checkout projects') {
+        stage('Checkout projects') {
             agent { label 'builder' }
             environment {
                 DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
@@ -40,30 +40,44 @@ pipeline {
             }
         }
 
-        stage('Static analysis') {
-            agent { label 'builder' }
-            steps {
-                deleteDir()
-                unstash "StaticAnalysis"
-                unstash "SourceCode"
-                unstash "CIScripts"
-                powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
-            }
-        }
-
-        stage('Linux-test') {
-            when { expression { env.ghprbPullId } }
-            agent { label 'linux' }
-            options {
-                timeout time: 5, unit: 'MINUTES'
-            }
-            steps {
-                deleteDir()
-                unstash "Monitoring"
-                dir("monitoring") {
-                    sh "python3 -m tests.monitoring_tests"
+        stage('Static analysis ans tests') {
+            parallel {
+                stage('Static analysis on Windows') {
+                    agent { label 'builder' }
+                    steps {
+                        deleteDir()
+                        unstash "StaticAnalysis"
+                        unstash "SourceCode"
+                        unstash "CIScripts"
+                        powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
+                    }
                 }
-                runHelpersTests()
+
+                stage('Static analysis on Linux') {
+                    agent { label 'linux' }
+                    steps {
+                        deleteDir()
+                        unstash "StaticAnalysis"
+                        unstash "Ansible"
+                        sh "StaticAnalysis/ansible_linter.py"
+                    }
+                }
+
+                stage('CI test') {
+                    when { expression { env.ghprbPullId } }
+                    agent { label 'linux' }
+                    options {
+                        timeout time: 5, unit: 'MINUTES'
+                    }
+                    steps {
+                        deleteDir()
+                        unstash "Monitoring"
+                        dir("monitoring") {
+                            sh "python3 -m tests.monitoring_tests"
+                        }
+                        runHelpersTests()
+                    }
+                }
             }
         }
 
@@ -184,6 +198,9 @@ pipeline {
                                     -TestReportDir ${env.WORKSPACE}/test_report/"""
                             } finally {
                                 stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
+                                dir('test_report/detailed') {
+                                    stash name: 'detailedLogs', allowEmpty: true
+                                }
                             }
                         }
                     }
@@ -195,6 +212,7 @@ pipeline {
     environment {
         LOG_SERVER = "logs.opencontrail.org"
         LOG_SERVER_USER = "zuul-win"
+        LOG_SERVER_FOLDER = "winci"
         LOG_ROOT_DIR = "/var/www/logs/winci"
     }
 
@@ -226,6 +244,7 @@ pipeline {
                     def logServer = [
                         addr: env.LOG_SERVER,
                         user: env.LOG_SERVER_USER,
+                        folder: env.LOG_SERVER_FOLDER,
                         rootDir: env.LOG_ROOT_DIR
                     ]
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
@@ -233,17 +252,26 @@ pipeline {
                     dir('to_publish') {
                         unstash 'processedTestReport'
 
+                        dir('detailed_logs') {
+                            try {
+                                unstash 'detailedLogs'
+                            } catch (Exception err) {
+                            }
+                        }
+
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
 
                         publishToLogServer(logServer, ".", destDir)
                     }
-                }
 
-                build job: 'WinContrail/gather-build-stats', wait: false,
-                      parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
-                                   string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
-                                   string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL)]
+                    def testReportsUrl = decideTestReportsUrl(logServer, 'reports-locations.json', env.ZUUL_UUID)
+                    build job: 'WinContrail/gather-build-stats', wait: false,
+                        parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
+                                     string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
+                                     string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL),
+                                     string(name: 'TEST_REPORTS_JSON_URL', value: testReportsUrl)]
+                }
             }
         }
     }
