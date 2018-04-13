@@ -40,7 +40,6 @@ Describe "RemoteLogCollector" {
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.adds a prefix describing source directory.log"
         $ContentRaw | Should -BeLike "*$DummyLog1*"
-        $ComputerName = "localhost"
         $ContentRaw | Should -BeLike "*localhost*"
     }
 
