@@ -12,7 +12,7 @@
         sleep: 5
         timeout: 900
 
--hosts:  "{{ vm_role }}"
+- hosts:  "{{ vm_role }}"
   gather_facts: no
   tasks:
     - name: "Start Telegraf service"
