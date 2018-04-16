@@ -6,6 +6,7 @@ Param (
 . $PSScriptRoot\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\Common\VMUtils.ps1
 . $PSScriptRoot\Utils\ComponentsInstallation.ps1
+. $PSScriptRoot\Utils\ContrailUtils.ps1
 
 $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
 $Session = $Sessions[0]
@@ -18,13 +19,13 @@ Describe "Remove-AllContainers" {
     It "Removes single container if exists" {
         New-Container -Session $Session -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -aq
+            docker ps -q
         } | Should Not BeNullOrEmpty
 
         Remove-AllContainers -Session $Session
 
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -aq
+            docker ps -q
         } | Should BeNullOrEmpty
     }
 
@@ -33,13 +34,13 @@ Describe "Remove-AllContainers" {
         New-Container -Session $Session -NetworkName $NetworkName
         New-Container -Session $Session -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -aq
+            docker ps -q
         } | Should Not BeNullOrEmpty
 
         Remove-AllContainers -Session $Session
 
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -aq
+            docker ps -q
         } | Should BeNullOrEmpty
     }
 
@@ -47,7 +48,7 @@ Describe "Remove-AllContainers" {
         Remove-AllContainers -Session $Session
 
         Invoke-Command -Session $Session -ScriptBlock {
-            docker ps -aq
+            docker ps -q
         } | Should BeNullOrEmpty
     }
 
@@ -61,7 +62,7 @@ Describe "Remove-AllContainers" {
         )
 
         Write-Host "Creating ContrailNetwork"
-        $NetworkName = "testnet"
+        $NetworkName = "Testnet"
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
@@ -107,3 +108,4 @@ Describe "Remove-AllContainers" {
     }
 
 }
+Remove-PSSession $Sessions

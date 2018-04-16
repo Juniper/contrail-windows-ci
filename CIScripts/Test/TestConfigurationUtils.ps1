@@ -463,16 +463,17 @@ function Remove-Container {
     Invoke-Command -Session $Session -ScriptBlock {
         docker rm -f $Using:NameOrId | Out-Null
     }
+}
 
-    function Remove-AllContainers {
-        Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-    
-        Invoke-Command -Session $Session -ScriptBlock {
-            $Containers = docker ps -aq
-            if($Containers) {
-                docker rm -f $Containers | Out-Null
-            }
-            Remove-Variable "Containers"
+function Remove-AllContainers {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        $Containers = docker ps -q
+        if($Containers) {
+            docker rm -f $Containers | Out-Null
         }
+        Remove-Variable "Containers"
     }
 }
+

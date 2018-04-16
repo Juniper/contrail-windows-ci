@@ -70,7 +70,6 @@ class ContrailNetworkManager {
         Remove-ContrailVirtualNetwork `
             -ContrailUrl $this.ContrailUrl `
             -AuthToken $this.AuthToken `
-            -NetworkUuid $Uuid `
-            -Force $true
+            -NetworkUuid $Uuid
     }
 }
