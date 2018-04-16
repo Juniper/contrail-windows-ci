@@ -42,5 +42,3 @@ Describe "Initialize-DockerImage" -Tags CI, Systest {
         }
     }
 }
-
-Remove-PSSession $Sessions
