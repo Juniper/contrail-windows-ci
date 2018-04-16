@@ -36,8 +36,6 @@ foreach ($Directory in $Directories) {
 $ComponentsToBuild = Get-ComponentsToBuild
 
 
-
-
 if ("DockerDriver" -In $ComponentsToBuild) {
     Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
         -SigntoolPath $Env:SIGNTOOL_PATH `
