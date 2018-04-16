@@ -1,4 +1,3 @@
-. $PSScriptRoot\..\Common\Aliases.ps1
 . $PSScriptRoot\..\Common\Credentials.ps1
 . $PSScriptRoot\Testenv.ps1
 

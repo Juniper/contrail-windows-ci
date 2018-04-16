@@ -1,5 +1,9 @@
 . $PSScriptRoot\Aliases.ps1
 
+# Create PSCredentialT alias
+$AccelPSCredentialT = [PowerShell].Assembly.GetType("System.Management.Automation.TypeAccelerators")
+$AccelPSCredentialT::add("PSCredentialT", "System.Management.Automation.PSCredential")
+
 function Get-UsernameInWorkgroup {
     Param ([Parameter(Mandatory = $true)] [string] $Username)
     return "WORKGROUP\{0}" -f $Username
