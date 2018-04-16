@@ -42,3 +42,5 @@ Describe "vTest scenarios" {
         Remove-PSSession $Sessions
     }
 }
+
+Remove-PSSession $Sessions

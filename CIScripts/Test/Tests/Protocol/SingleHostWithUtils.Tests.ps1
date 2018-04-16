@@ -193,3 +193,5 @@ Describe "Single compute node protocol tests with utils" {
         Remove-PSSession $Sessions
     }
 }
+
+Remove-PSSession $Sessions

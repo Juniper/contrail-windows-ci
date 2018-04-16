@@ -133,3 +133,5 @@ Describe "vRouter Agent service" {
         Remove-PSSession $Sessions
     }
 }
+
+Remove-PSSession $Sessions

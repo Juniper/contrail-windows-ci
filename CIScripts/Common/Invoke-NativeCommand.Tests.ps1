@@ -176,3 +176,5 @@ Describe "Invoke-NativeCommand - System tests" -Tags CI, Systest {
         Invoke-FunctionalTests
     }
 }
+
+Remove-PSSession $Sessions
