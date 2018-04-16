@@ -140,6 +140,10 @@ Describe "Invoke-NativeCommand - System tests" -Tags CI, Systest {
         }
     }
 
+    AfterAll {
+        Remove-PSSession $Sessions
+    }
+
     BeforeEach {
         $Script:WriteHostOutput = @()
     }

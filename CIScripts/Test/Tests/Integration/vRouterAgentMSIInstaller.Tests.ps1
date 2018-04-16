@@ -25,6 +25,10 @@ Describe "vRouter Agent MSI installer" {
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
     }
 
+    AfterAll {
+        Remove-PSSession $Sessions
+    }
+
     function Test-AgentMSIBehaviourCorrect {
         Install-Agent -Session $Session
         Eventually {

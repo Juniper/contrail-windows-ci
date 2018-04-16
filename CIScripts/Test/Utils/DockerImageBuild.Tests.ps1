@@ -20,6 +20,10 @@ Describe "Initialize-DockerImage" -Tags CI, Systest {
         $DockerImageName = "iis-tcptest"
     }
 
+    AfterAll {
+        Remove-PSSession $Sessions
+    }
+
     It "Builds iis-tcptest image" {
         Initialize-DockerImage -Session $Session -DockerImageName $DockerImageName
         

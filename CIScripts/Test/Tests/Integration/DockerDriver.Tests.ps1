@@ -59,6 +59,10 @@ Describe "Docker Driver" {
         $Session = $Sessions[0]
     }
 
+    AfterAll {
+        Remove-PSSession $Sessions
+    }
+
     foreach ($Module in $Modules) {
         Context "Tests for module $Module" {
             It "Tests are invoked" {

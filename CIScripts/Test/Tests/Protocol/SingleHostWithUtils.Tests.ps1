@@ -189,5 +189,7 @@ Describe "Single compute node protocol tests with utils" {
         Uninstall-DockerDriver -Session $Session
         Uninstall-Extension -Session $Session
         Uninstall-Utils -Session $Session
+
+        Remove-PSSession $Sessions
     }
 }

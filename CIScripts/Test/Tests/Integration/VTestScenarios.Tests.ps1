@@ -39,5 +39,6 @@ Describe "vTest scenarios" {
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         Uninstall-Utils -Session $Session
         Uninstall-Extension -Session $Session
+        Remove-PSSession $Sessions
     }
 }
