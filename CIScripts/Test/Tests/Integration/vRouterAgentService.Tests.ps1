@@ -126,6 +126,7 @@ Describe "vRouter Agent service" {
     }
 
     AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
         Uninstall-DockerDriver -Session $Session
         Uninstall-Agent -Session $Session
         Uninstall-Extension -Session $Session

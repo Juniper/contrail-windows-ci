@@ -60,6 +60,7 @@ Describe "Docker Driver" {
     }
 
     AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
         Remove-PSSession $Sessions
     }
 

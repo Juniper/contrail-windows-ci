@@ -21,6 +21,7 @@ Describe "Initialize-DockerImage" -Tags CI, Systest {
     }
 
     AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
         Remove-PSSession $Sessions
     }
 

@@ -181,6 +181,8 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
+
         Write-Host "Removing iis-tcptest image from testbed"
         Invoke-Command -Session $Session {
             docker image rm $Using:IisTcpTestDockerImage -f 2>$null
