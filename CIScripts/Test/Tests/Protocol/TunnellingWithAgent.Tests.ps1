@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile
 )
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
@@ -13,11 +13,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
 
-$VMs = Read-TestbedsConfig -Path $TestenvConfFile
-$Sessions = New-RemoteSessions -VMs $VMs
-$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-$ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 $IisTcpTestDockerImage = "iis-tcptest"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -187,6 +182,18 @@ Describe "Tunnelling with Agent tests" {
     }
 
     BeforeAll {
+        $VMs = Read-TestbedsConfig -Path $TestenvConfFile
+        $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+        $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "ContrailNetwork",
+            Justification="It's actually used."
+        )]
+        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        $Sessions = New-RemoteSessions -VMs $VMs
+
         Write-Host "Installing iis-tcptest docker image on testbed..."
         Initialize-DockerImage -Session $Sessions[0] -DockerImageName $IisTcpTestDockerImage
 
@@ -225,6 +232,8 @@ Describe "Tunnelling with Agent tests" {
     }
 
     AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
+
         Write-Host "Removing iis-tcptest docker image from testbed..."
         Remove-IISDockerImage -Session $Sessions[0]
 
@@ -247,6 +256,8 @@ Describe "Tunnelling with Agent tests" {
         if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
         }
+
+        Remove-PSSession $Sessions
     }
 
     BeforeEach {
@@ -298,5 +309,3 @@ Describe "Tunnelling with Agent tests" {
         Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
     }
 }
-
-Remove-PSSession $Sessions
