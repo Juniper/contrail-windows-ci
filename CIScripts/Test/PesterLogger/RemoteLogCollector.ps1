@@ -30,9 +30,9 @@ function Get-LogContent {
         if (-not $Files) {
             $Logs[$From] = "<FILE NOT FOUND>"
         } else {
-            $Files | ForEach-Object {
-                $Content = Get-Content -Raw $_
-                $Logs[$_.FullName] = if ($Content) {
+            foreach ($File in $Files) {
+                $Content = Get-Content -Raw $File
+                $Logs[$File.FullName] = if ($Content) {
                     $Content
                 } else {
                     "<FILE WAS EMPTY>"
@@ -60,27 +60,22 @@ function Merge-Logs {
     Param([Parameter(Mandatory = $true)] [System.Collections.Hashtable[]] $LogSources,
           [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
 
-    $LogSources | ForEach-Object {
-        $LogSource = $_
-
+    foreach ($LogSource in $LogSources) {
         $SourceHost = if ($LogSource.Session) {
             $LogSource.Session.ComputerName
         } else {
             "localhost"
         }
         $ComputerNamePrefix = "Logs from $($SourceHost): "
-        Write-Log ((@("=") * $ComputerNamePrefix.Length) -join "")
+        Write-Log ("=" * 100)
         Write-Log $ComputerNamePrefix
 
         $Logs = Get-LogContent -LogSource $LogSource
-        $Logs.Keys | ForEach-Object {
-            $Filename = $_
-            $Content = $Logs[$Filename]
-            $SourceFilenamePrefix = "Contents of $($Filename):"
-
-            Write-Log ((@("-") * $SourceFilenamePrefix.Length) -join "")
+        foreach ($Log in $Logs.GetEnumerator()) {
+            $SourceFilenamePrefix = "Contents of $($Log.Key):"
+            Write-Log ("-" * 100)
             Write-Log $SourceFilenamePrefix
-            Write-Log $Content
+            Write-Log $Log.Value
         }
         
         if (-not $DontCleanUp) {

@@ -4,11 +4,11 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 Describe "RemoteLogCollector" {
     It "appends collected logs to correct output file" {
-        $Source1 = New-LogSource -Sessions @($Sess1) -Path $DummyLog1
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
-        Merge-Logs -LogSources @($Source1)
+        Merge-Logs -LogSources $Source1
 
         $Content = Get-Content "TestDrive:\RemoteLogCollector.appends collected logs to correct output file.log"
         "first message" | Should -BeIn $Content
@@ -16,29 +16,29 @@ Describe "RemoteLogCollector" {
     }
 
     It "cleans logs in source directory" {
-        $Source1 = New-LogSource -Sessions @($Sess1) -Path $DummyLog1
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        Merge-Logs -LogSources @($Source1)
+        Merge-Logs -LogSources $Source1
 
         Test-Path $DummyLog1 | Should -Be $false
     }
 
     It "doesn't clean logs in source directory if DontCleanUp flag passed" {
-        $Source1 = New-LogSource -Sessions @($Sess1) -Path $DummyLog1
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        Merge-Logs -DontCleanUp -LogSources @($Source1)
+        Merge-Logs -DontCleanUp -LogSources $Source1
 
         Test-Path $DummyLog1 | Should -Be $true
     }
 
     It "adds a prefix describing source directory" {
-        $Source1 = New-LogSource -Sessions @($Sess1) -Path $DummyLog1
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
-        Merge-Logs -LogSources @($Source1)
+        Merge-Logs -LogSources $Source1
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.adds a prefix describing source directory.log"
         $ContentRaw | Should -BeLike "*$DummyLog1*"
@@ -48,10 +48,10 @@ Describe "RemoteLogCollector" {
     It "works with multiple lines in remote logs" {
         "second line" | Add-Content $DummyLog1
         "third line" | Add-Content $DummyLog1
-        $Source1 = New-LogSource -Sessions @($Sess1) -Path $DummyLog1
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        Merge-Logs -LogSources @($Source1)
+        Merge-Logs -LogSources $Source1
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.works with multiple lines in remote logs.log"
         $ContentRaw | Should -BeLike "*remote log text*second line*third line*"
@@ -59,10 +59,10 @@ Describe "RemoteLogCollector" {
 
     It "works when specifying a wildcard path" {
         $WildcardPath = ((Get-Item $TestDrive).FullName) + "\*.txt"
-        $WildcardSource = New-LogSource -Sessions @($Sess1) -Path $WildcardPath
+        $WildcardSource = New-LogSource -Sessions $Sess1 -Path $WildcardPath
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        Merge-Logs -LogSources @($WildcardSource)
+        Merge-Logs -LogSources $WildcardSource
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.works when specifying a wildcard path.log"
         $ContentRaw | Should -BeLike "*$DummyLog1*remote log*"
@@ -75,7 +75,7 @@ Describe "RemoteLogCollector" {
         Write-Log "first message"
 
         # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
-        Merge-Logs -DontCleanUp -LogSources @($Source2)
+        Merge-Logs -DontCleanUp -LogSources $Source2
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.works with multiple sessions in single log source.log"
         $ContentRaw | Should -BeLike "first message*$DummyLog1*$DummyLog1*"
@@ -84,8 +84,8 @@ Describe "RemoteLogCollector" {
     }
 
     It "works with multiple log sources" {
-        $Source1 = New-LogSource -Sessions @($Sess1) -Path $DummyLog1
-        $Source2 = New-LogSource -Sessions @($Sess1) -Path $DummyLog2
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
+        $Source2 = New-LogSource -Sessions $Sess1 -Path $DummyLog2
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
@@ -98,10 +98,10 @@ Describe "RemoteLogCollector" {
 
     It "inserts warning message if filepath was not found" {
         Remove-Item $DummyLog1
-        $Source1 = New-LogSource -Sessions @($Sess1) -Path $DummyLog1
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        Merge-Logs -LogSources @($Source1)
+        Merge-Logs -LogSources $Source1
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.inserts warning message if filepath was not found.log"
         $ContentRaw | Should -BeLike "*$DummyLog1*<FILE NOT FOUND>*"
@@ -111,10 +111,10 @@ Describe "RemoteLogCollector" {
         Remove-Item $DummyLog1
         Remove-Item $DummyLog2
         $WildcardPath = ((Get-Item $TestDrive).FullName) + "\*.txt"
-        $WildcardSource = New-LogSource -Sessions @($Sess1) -Path $WildcardPath
+        $WildcardSource = New-LogSource -Sessions $Sess1 -Path $WildcardPath
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        Merge-Logs -LogSources @($WildcardSource)
+        Merge-Logs -LogSources $WildcardSource
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.inserts warning message if wildcard matched nothing.log"
         $ContentRaw | Should -BeLike "*$WildcardPath*<FILE NOT FOUND>*"
@@ -122,10 +122,10 @@ Describe "RemoteLogCollector" {
 
     It "inserts a message if log file was empty" {
         Clear-Content $DummyLog1
-        $Source1 = New-LogSource -Sessions @($Sess1) -Path $DummyLog1
+        $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        Merge-Logs -LogSources @($Source1)
+        Merge-Logs -LogSources $Source1
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.inserts a message if log file was empty.log"
         $ContentRaw | Should -BeLike "*$DummyLog1*<FILE WAS EMPTY>*"
