@@ -2,7 +2,7 @@
 
 . $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
-. $PSScriptRoot\Build\ComponentsToBuild.ps1
+. $PSScriptRoot\Common\Components.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
 
 
