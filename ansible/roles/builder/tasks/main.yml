@@ -25,6 +25,12 @@
     version: 2.7.13
     state: present
 
+- name: Install Python 3.6.5
+  win_chocolatey:
+    name: python3
+    version: 3.6.5
+    state: present
+
 - name: Install VC for Python 2.7
   win_chocolatey:
     name: vcpython27
@@ -32,17 +38,25 @@
     state: present
 
 - name: Install wheel support to python
-  win_command: pip install wheel
+  win_command: 'py -2 -m pip install wheel'
   args:
-    creates: C:\Python27\Scripts\wheel.exe
+    creates: 'C:\Python27\Scripts\wheel.exe'
 
-- name: Copy windows-builder-requirements.txt file to builder
+- name: Copy windows-builder-py2-requirements.txt file to builder
   win_copy:
-    src: windows-builder-requirements.txt
-    dest: 'C:\requirements.txt'
+    src: 'windows-builder-py2-requirements.txt'
+    dest: 'C:\py2-requirements.txt'
 
 - name: Install required Python packages
-  win_command: 'pip install -r C:\requirements.txt'
+  win_command: 'py -2 -m pip install -r C:\py2-requirements.txt'
+
+- name: Copy windows-builder-py3-requirements.txt file to builder
+  win_copy:
+    src: 'windows-builder-py3-requirements.txt'
+    dest: 'C:\py3-requirements.txt'
+
+- name: Install required Python packages
+  win_command: 'py -3 -m pip install -r C:\py3-requirements.txt'
 
 - name: Install gnuwin32-coreutils
   win_chocolatey:
