@@ -4,7 +4,6 @@
 
 function Invoke-TestScenarios {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
@@ -18,17 +17,20 @@ function Invoke-TestScenarios {
         FailedCount = 0;
     }
 
+    $DetailedLogDir = Join-Path $TestReportOutputDirectory "detailed"
+
     $TestPaths = Get-ChildItem -Recurse -Filter "*.Tests.ps1"
     $WhitelistedTestPaths = $TestPaths | Where-Object { !($_.Name -in $TestsBlacklist) }
-    $WhitelistedTestPaths | ForEach-Object {
+    foreach ($TestPath in $WhitelistedTestPaths) {
         $PesterScript = @{
-            Path=$_.FullName;
+            Path=$TestPath.FullName;
             Parameters= @{
-                TestenvConfFile=$TestenvConfFile
-            }; 
-            Arguments=@()
+                TestenvConfFile=$TestenvConfFile;
+                LogDir=$DetailedLogDir;
+            };
+            Arguments=@();
         }
-        $Basename = $_.Basename
+        $Basename = $TestPath.Basename
         $TestReportOutputPath = "$TestReportOutputDirectory\$Basename.xml"
         $Results = Invoke-Pester -PassThru -Script $PesterScript `
             -OutputFormat NUnitXml -OutputFile $TestReportOutputPath
@@ -45,35 +47,8 @@ function Invoke-TestScenarios {
     }
 }
 
-function Get-Logs {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
-
-    foreach ($Session in $Sessions) {
-        if ($Session.State -eq "Opened") {
-            Write-Host
-            Write-Host "Displaying logs from $($Session.ComputerName)"
-
-            Invoke-Command -Session $Session {
-                $LogPaths = @(
-                    "$Env:ProgramData/ContrailDockerDriver/log.txt",
-                    "$Env:ProgramData/ContrailDockerDriver/log.old.txt"
-                )
-
-                foreach ($Path in $LogPaths) {
-                    if (Test-Path $Path) {
-                        Write-Host
-                        Write-Host "Contents of ${Path}:"
-                        Get-Content $Path
-                    }
-                }
-            }
-        }
-    }
-}
-
 function Invoke-IntegrationAndFunctionalTests {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,
         [Parameter(Mandatory = $true)] [String] $TestenvConfFile,
         [Parameter(Mandatory = $true)] [String] $TestReportOutputDirectory
     )
@@ -83,7 +58,7 @@ function Invoke-IntegrationAndFunctionalTests {
     $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
     $ContrailNM.EnsureProject($null)
 
-    Invoke-TestScenarios -Sessions $Sessions `
+    Invoke-TestScenarios `
         -TestenvConfFile $TestenvConfFile `
         -TestReportOutputDirectory $TestReportOutputDirectory
 }
