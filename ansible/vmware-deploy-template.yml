@@ -12,13 +12,6 @@
         sleep: 5
         timeout: 900
 
-- hosts:  "{{ vm_role }}"
-  gather_facts: no
-  tasks:
-    - name: "Start Telegraf service"
-      win_shell: |
-        net start telegraf
-
-# - hosts: "{{ vm_role }}"
-#   roles:
-#     - wurbanski.jenkins-swarm-agent
+- hosts: "{{ vm_role }}"
+  roles:
+    - wurbanski.jenkins-swarm-agent
