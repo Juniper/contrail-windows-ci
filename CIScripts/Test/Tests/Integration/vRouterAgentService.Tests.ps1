@@ -98,8 +98,7 @@ Describe "vRouter Agent service" {
         if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
             Disable-AgentService -Session $Session
         }
-        Move-Logs -From "C:/ProgramData/Contrail/var/log/contrail/*.log"
-        Move-Logs -From "C:/ProgramData/ContrailDockerDriver/log.txt"
+        Merge-Logs -LogSources @($DriverLogs, $AgentLogs)
     }
 
     BeforeAll {
@@ -121,6 +120,16 @@ Describe "vRouter Agent service" {
             Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "AgentLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $AgentLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "DriverLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
+        Initialize-PesterLogger -OutDir $LogDir
 
         Install-DockerDriver -Session $Session
         Install-Agent -Session $Session

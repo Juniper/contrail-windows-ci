@@ -152,6 +152,8 @@ Describe "Single compute node protocol tests with utils" {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
             Remove-Variable "ContrailNetwork"
         }
+
+        Merge-Logs -LogSources @($DriverLogs, $AgentLogs)
     }
 
     BeforeAll {
@@ -166,6 +168,16 @@ Describe "Single compute node protocol tests with utils" {
         )]
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
         $IisTcpTestDockerImage = "iis-tcptest"
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "AgentLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $AgentLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "DriverLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
+        Initialize-PesterLogger -OutDir $LogDir
 
         Initialize-DockerImage -Session $Session -DockerImageName $IisTcpTestDockerImage
 

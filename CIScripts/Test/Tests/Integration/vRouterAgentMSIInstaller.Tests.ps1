@@ -22,8 +22,14 @@ Describe "vRouter Agent MSI installer" {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         $Session = $Sessions[0]
-        
+
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "AgentLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $AgentLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
+        Initialize-PesterLogger -OutDir $LogDir
     }
 
     AfterAll {
@@ -67,7 +73,6 @@ Describe "vRouter Agent MSI installer" {
 
     AfterEach {
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        Move-Logs -From "C:/ProgramData/Contrail/var/log/contrail/*.log"
-        Move-Logs -From "C:/ProgramData/ContrailDockerDriver/log.txt"
+        Merge-Logs -LogSources $AgentLogs
     }
 }

@@ -8,9 +8,6 @@ Param (
 . $PSScriptRoot\..\..\..\Common\Invoke-NativeCommand.ps1
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
-Initialize-PesterLogger -OutDir $LogDir
-
-Initialize-PesterLogger -OutDir $LogDir -Sessions $Sessions
 
 $TestsPath = "C:\Artifacts\"
 
@@ -54,11 +51,16 @@ $Modules = @("agent")
 Describe "Docker Driver" {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "Session",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "Session", Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
         $Session = $Sessions[0]
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "DriverLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
+        Initialize-PesterLogger -OutDir $LogDir
     }
 
     AfterAll {
@@ -80,6 +82,6 @@ Describe "Docker Driver" {
     }
 
     AfterEach {
-        Move-Logs -From "C:/ProgramData/ContrailDockerDriver/log.txt"
+        Merge-Logs -LogSources $DriverLogs
     }
 }
