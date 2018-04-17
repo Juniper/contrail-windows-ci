@@ -152,6 +152,7 @@ Describe "Single compute node protocol tests with utils" {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
             Remove-Variable "ContrailNetwork"
         }
+    }
 
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
