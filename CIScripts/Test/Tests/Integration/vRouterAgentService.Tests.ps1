@@ -12,6 +12,7 @@ Param (
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 
 Describe "vRouter Agent service" {
     
@@ -97,6 +98,8 @@ Describe "vRouter Agent service" {
         if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
             Disable-AgentService -Session $Session
         }
+        Move-Logs -From "C:/ProgramData/Contrail/var/log/contrail/*.log"
+        Move-Logs -From "C:/ProgramData/ContrailDockerDriver/log.txt"
     }
 
     BeforeAll {

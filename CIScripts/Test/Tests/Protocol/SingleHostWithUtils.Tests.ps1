@@ -12,6 +12,7 @@ Param (
 . $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1 # Get-RemoteNetAdapterInformation
 . $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1 
 
@@ -26,7 +27,7 @@ Describe "Single compute node protocol tests with utils" {
             [Parameter(Mandatory = $true)] [PSSessionT] $Session
         )
 
-        Write-Host $("Setting a connection between " + $Container1NetInfo.MACAddress + `
+        Write-Log $("Setting a connection between " + $Container1NetInfo.MACAddress + `
         " and " + $Container2NetInfo.MACAddress + "...")
 
         Invoke-Command -Session $Session -ScriptBlock {
@@ -77,7 +78,7 @@ Describe "Single compute node protocol tests with utils" {
             "10.0.0.200"
         )
 
-        Write-Host "Creating ContrailNetwork"
+        Write-Log "Creating ContrailNetwork"
         $NetworkName = "testnet"
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -109,15 +110,15 @@ Describe "Single compute node protocol tests with utils" {
         }
         $Container2ID = $Cmd2.Output[0]
 
-        Write-Host "Getting VM NetAdapter Information"
+        Write-Log "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
             -AdapterName $SystemConfig.AdapterName
 
-        Write-Host "Getting vHost NetAdapter Information"
+        Write-Log "Getting vHost NetAdapter Information"
         $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
             -AdapterName $SystemConfig.VHostName
 
-        Write-Host "Getting Containers NetAdapter Information"
+        Write-Log "Getting Containers NetAdapter Information"
         $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
             -Session $Session -ContainerID $Container1ID
         $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
@@ -151,7 +152,6 @@ Describe "Single compute node protocol tests with utils" {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
             Remove-Variable "ContrailNetwork"
         }
-    }
 
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)

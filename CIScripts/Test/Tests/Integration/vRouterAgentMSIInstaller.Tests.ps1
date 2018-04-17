@@ -15,6 +15,7 @@ Param (
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 
 Describe "vRouter Agent MSI installer" {
 
@@ -66,5 +67,7 @@ Describe "vRouter Agent MSI installer" {
 
     AfterEach {
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+        Move-Logs -From "C:/ProgramData/Contrail/var/log/contrail/*.log"
+        Move-Logs -From "C:/ProgramData/ContrailDockerDriver/log.txt"
     }
 }

@@ -60,6 +60,144 @@ Describe "PesterLogger" -Tags CI, Unit {
         }
     }
 
+    Context "Move-Logs" {
+        It "appends collected logs to correct output file" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Write-Log "first message"
+            Move-Logs -From $SourcePath
+            $Content = Get-Content "TestDrive:\PesterLogger.Move-Logs.appends collected logs to correct output file.log"
+            "first message" | Should -BeIn $Content
+            "remote log text" | Should -BeIn $Content
+        }
+
+        It "cleans logs in source directory" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Move-Logs -From $SourcePath
+            Test-Path $SourcePath | Should -Be $false
+        }
+
+        It "doesn't clean logs in source directory if DontCleanUp flag passed" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Move-Logs -From $SourcePath -DontCleanUp
+            Test-Path $SourcePath | Should -Be $true
+        }
+
+        It "adds a prefix describing source directory" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Write-Log "first message"
+            Move-Logs -From $SourcePath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.adds a prefix describing source directory.log"
+            $ContentRaw | Should -BeLike "*$SourcePath*"
+            $ComputerName = $Sess1.ComputerName
+            $ContentRaw | Should -BeLike "*$ComputerName*"
+        }
+    
+        It "works with multiple lines in remote logs" {
+            "second line" | Add-Content "TestDrive:\remotelog.txt"
+            "third line" | Add-Content "TestDrive:\remotelog.txt"
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            Move-Logs -From $SourcePath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works with multiple lines in remote logs.log"
+            $ContentRaw | Should -BeLike "*remote log text*second line*third line*"
+        }
+
+        It "works when specifying a wildcard path" {
+            $SecondFileSourcePath = ((Get-Item $TestDrive).FullName) + "\remotelog_second.txt"
+            "another file content" | Add-Content $SecondFileSourcePath
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1)
+            $WildcardPath = "TestDrive:\*.txt"
+            Move-Logs -From $WildcardPath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works when specifying a wildcard path.log"
+            $ContentRaw | Should -BeLike "*$SourcePath*remote log text*$SecondFileSourcePath*another file content*"
+            # Write-Host ($ContentRaw) yields:
+            # =====================
+            # Logs from localhost:
+            # ----------------------------------------------------------------------------------------------
+            # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog.txt:
+            # remote log text
+            
+            # -----------------------------------------------------------------------------------------------------
+            # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog_second.txt:
+            # another file content
+        }
+
+        It "works with multiple sessions" {
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1, $Sess2)
+            Write-Log "first message"
+            Move-Logs -From $SourcePath -DontCleanUp
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.works with multiple sessions.log"
+            $ContentRaw | Should -BeLike "first message*$SourcePath*$SourcePath*"
+            $ContentRaw | Should -BeLike "*remote log text*remote log text*"
+            $ComputerName1 = $Sess1.ComputerName
+            $ComputerName2 = $Sess2.ComputerName
+            $ContentRaw | Should -BeLike "*$ComputerName1*$ComputerName2*"
+            # Write-Host ($ContentRaw) yields:
+            # first message
+            # =====================
+            # Logs from localhost:
+            # ----------------------------------------------------------------------------------------------
+            # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog.txt:
+            # remote log text
+            
+            # =====================
+            # Logs from 127.0.0.1:
+            # ----------------------------------------------------------------------------------------------
+            # Contents of C:\Users\mk\AppData\Local\Temp\4538acd8-0e72-427e-be27-10cd6eec6760\remotelog.txt:
+            # remote log text
+        }
+
+        It "inserts warning message if filepath was not found" {
+            Remove-Item $SourcePath
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1, $Sess2)
+            Move-Logs -From $SourcePath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.inserts warning message if filepath was not found.log"
+            $ContentRaw | Should -BeLike "*$SourcePath*NOT FOUND*"
+        }
+
+        It "inserts warning message if wildcard matched nothing" {
+            Remove-Item $SourcePath
+            Initialize-PesterLogger -OutDir "TestDrive:\" -Sessions @($Sess1, $Sess2)
+            $WildcardPath = "TestDrive:\*.txt"
+            Move-Logs -From $WildcardPath
+            $ContentRaw = Get-Content -Raw "TestDrive:\PesterLogger.Move-Logs.inserts warning message if wildcard matched nothing.log"
+            $ContentRaw | Should -BeLike "*$WildcardPath*NOT FOUND*"
+        }
+
+        BeforeEach {
+            "remote log text" | Out-File "TestDrive:\remotelog.txt"
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "SourcePath",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
+            $SourcePath = ((Get-Item $TestDrive).FullName) + "\remotelog.txt"
+        }
+
+        AfterEach {
+            Remove-Item "TestDrive:/*" 
+        }
+
+        BeforeAll {
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Sess1",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
+            $Sess1 = New-PSSession -ComputerName localhost
+            [
+                Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+                "Sess2",
+                Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
+            ]
+            $Sess2 = New-PSSession -ComputerName "127.0.0.1"
+        }
+
+        AfterAll {
+            Remove-PSSession $Sess1
+            Remove-PSSession $Sess2
+        }
+    }
+
     Context "Initializing in BeforeEach" {
         It "registers Write-Log correctly" {
             Write-Log "hi"

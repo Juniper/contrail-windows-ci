@@ -3,7 +3,8 @@
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
 
 function Initialize-PesterLogger {
-    Param([Parameter(Mandatory = $true)] [string] $Outdir)
+    Param([Parameter(Mandatory = $true)] [string] $Outdir,
+          [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
 
     # Closures don't capture functions, so we need to capture them as variables.
     $WriterFunc = Get-Item function:Add-ContentForce

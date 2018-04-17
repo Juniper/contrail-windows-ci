@@ -3,6 +3,7 @@ Param (
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
+. $PSScriptRoot\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\DockerImageBuild.ps1
 
 Describe "Initialize-DockerImage" -Tags CI, Systest {

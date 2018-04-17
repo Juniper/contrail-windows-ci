@@ -10,6 +10,8 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 Initialize-PesterLogger -OutDir $LogDir
 
+Initialize-PesterLogger -OutDir $LogDir -Sessions $Sessions
+
 $TestsPath = "C:\Artifacts\"
 
 function Invoke-DockerDriverUnitTest {
@@ -75,5 +77,9 @@ Describe "Docker Driver" {
                 Save-DockerDriverUnitTestReport -Session $Session -Component $Module
             }
         }
+    }
+
+    AfterEach {
+        Move-Logs -From "C:/ProgramData/ContrailDockerDriver/log.txt"
     }
 }
