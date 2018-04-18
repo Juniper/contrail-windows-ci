@@ -141,7 +141,6 @@ function Test-MPLSoUDP {
 
 Describe "Tunnelling with Agent tests" {
     Context "MPLSoGRE" {
-        # TODO: Enable this test once Agent is actually working again.
         It "ICMP: Ping between containers on separate compute nodes succeeds (MPLSoGRE)" -Pending {
             Test-Ping `
                 -Session $Sessions[0] `
@@ -159,7 +158,6 @@ Describe "Tunnelling with Agent tests" {
             Test-MPLSoGRE -Session $Sessions[1] | Should Be $true
         }
 
-        # TODO: Enable this test once Agent is actually working again.
         It "TCP: HTTP connection between containers on separate compute nodes succeeds (MPLSoGRE)" -Pending {
             Test-TCP `
                 -Session $Sessions[1] `
@@ -177,8 +175,32 @@ Describe "Tunnelling with Agent tests" {
     }
 
     Context "MPLSoUDP" {
-        It "ICMP: Ping between containers on separate compute nodes succeeds (MPLSoUDP)" -Pending {
-            # TODO
+        It "ICMP: Ping between containers on separate compute nodes succeeds (MPLSoUDP)" {
+            Test-Ping `
+                -Session $Sessions[0] `
+                -SrcContainerName $Container1ID `
+                -DstContainerName $Container2ID `
+                -DstContainerIP $Container2NetInfo.IPAddress | Should Be 0
+
+            Test-Ping `
+                -Session $Sessions[1] `
+                -SrcContainerName $Container2ID `
+                -DstContainerName $Container1ID `
+                -DstContainerIP $Container1NetInfo.IPAddress | Should Be 0
+
+            Test-MPLSoUDP -Session $Sessions[0] | Should Be $true
+            Test-MPLSoUDP -Session $Sessions[1] | Should Be $true
+        }
+
+        It "TCP: HTTP connection between containers on separate compute nodes succeeds (MPLSoUDP)" {
+            Test-TCP `
+                -Session $Sessions[1] `
+                -SrcContainerName $Container2ID `
+                -DstContainerName $Container1ID `
+                -DstContainerIP $Container1NetInfo.IPAddress | Should Be 0
+
+            Test-MPLSoUDP -Session $Sessions[0] | Should Be $true
+            Test-MPLSoUDP -Session $Sessions[1] | Should Be $true
         }
     }
 
