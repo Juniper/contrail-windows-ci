@@ -15,7 +15,9 @@ Param (
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 Describe "vRouter Agent MSI installer" {
 

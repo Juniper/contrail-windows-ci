@@ -12,9 +12,11 @@ Param (
 . $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\Common\VMUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
-. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1 # Get-RemoteNetAdapterInformation
-. $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1 
+. $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
+
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 Describe "Single compute node protocol tests with utils" {
 

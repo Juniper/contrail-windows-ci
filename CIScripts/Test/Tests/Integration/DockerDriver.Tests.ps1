@@ -8,6 +8,7 @@ Param (
 . $PSScriptRoot\..\..\..\Common\Invoke-NativeCommand.ps1
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 $TestsPath = "C:\Artifacts\"
 
