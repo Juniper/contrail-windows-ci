@@ -1,3 +1,12 @@
+Param (
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
+)
+
+. $PSScriptRoot/../../Common/Init.ps1
+. $PSScriptRoot/../../Common/VMUtils.ps1
+. $PSScriptRoot/../../Testenv/Testenv.ps1
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
@@ -173,20 +182,21 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 }
 
-Describe "RemoteLogCollector - Localhost tests" -Tags CI, Systest {
+Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
     BeforeAll {
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "Sess1", Justification="Pester blocks are handled incorrectly by analyzer.")]
-        $Sess1 = New-PSSession -ComputerName localhost
+        $Sess1 = $Sessions[0]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "Sess2", Justification="Pester blocks are handled incorrectly by analyzer.")]
-        $Sess2 = New-PSSession -ComputerName localhost
+        $Sess2 = $Sessions[1]
     }
 
     AfterAll {
-        Remove-PSSession $Sess1
-        Remove-PSSession $Sess2
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
+        Remove-PSSession $Sessions
     }
 
     BeforeEach {
@@ -203,5 +213,5 @@ Describe "RemoteLogCollector - Localhost tests" -Tags CI, Systest {
         }
     }
 
-    Test-MultipleSourcesAndSessions -DescribeName "RemoteLogCollector - Localhost tests"
+    Test-MultipleSourcesAndSessions -DescribeName "RemoteLogCollector - with actual Testbeds"
 }
