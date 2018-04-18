@@ -37,17 +37,15 @@
     version: 9.0.0.30729
     state: present
 
-- name: Install wheel support to python
-  win_command: 'py -2 -m pip install wheel'
-  args:
-    creates: 'C:\Python27\Scripts\wheel.exe'
+- name: Install wheel support to Python 3
+  win_command: 'py -3 -m pip install wheel'
 
 - name: Copy windows-builder-py2-requirements.txt file to builder
   win_copy:
     src: 'windows-builder-py2-requirements.txt'
     dest: 'C:\py2-requirements.txt'
 
-- name: Install required Python packages
+- name: Install required Python 2 packages
   win_command: 'py -2 -m pip install -r C:\py2-requirements.txt'
 
 - name: Copy windows-builder-py3-requirements.txt file to builder
@@ -55,7 +53,7 @@
     src: 'windows-builder-py3-requirements.txt'
     dest: 'C:\py3-requirements.txt'
 
-- name: Install required Python packages
+- name: Install required Python 3 packages
   win_command: 'py -3 -m pip install -r C:\py3-requirements.txt'
 
 - name: Install gnuwin32-coreutils
