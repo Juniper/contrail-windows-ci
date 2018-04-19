@@ -95,7 +95,7 @@ function Start-DockerDriver {
            [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
            [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
 
-    Write-Host "Starting Docker Driver"
+    Write-Log "Starting Docker Driver"
 
     $Arguments = @(
         "-forceAsInteractive",
@@ -142,7 +142,7 @@ function Start-DockerDriver {
 function Stop-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Host "Stopping Docker Driver"
+    Write-Log "Stopping Docker Driver"
 
     Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
 
@@ -304,7 +304,7 @@ function Initialize-DriverAndExtension {
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
 
-    Write-Host "Initializing Test Configuration"
+    Write-Log "Initializing Test Configuration"
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {

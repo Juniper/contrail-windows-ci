@@ -65,7 +65,7 @@ Describe "Single compute node protocol tests with utils" {
     It "TCP connection works" {
         Invoke-Command -Session $Session -ScriptBlock {
             $Container1IP = $Using:Container1NetInfo.IPAddress
-            docker exec $Using:Container2ID powershell "Invoke-WebRequest -Uri http://${Container1IP}:8080/ -ErrorAction Continue" | Write-Host
+            docker exec $Using:Container2ID powershell "Invoke-WebRequest -Uri http://${Container1IP}:8080/ -ErrorAction Continue" | Out-Null
             return $LASTEXITCODE
         } | Should Be 0
 
@@ -100,13 +100,13 @@ Describe "Single compute node protocol tests with utils" {
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
-        Write-Host "Creating container 1"
+        Write-Log "Creating container 1"
         $Cmd1 = Invoke-NativeCommand -Session $Session -CaptureOutput {
             docker run --network $Using:NetworkName -d iis-tcptest
         }
         $Container1ID = $Cmd1.Output[0]
 
-        Write-Host "Creating container 2"
+        Write-Log "Creating container 2"
         $Cmd2 = Invoke-NativeCommand -Session $Session -CaptureOutput {
             docker run --network $Using:NetworkName -dt microsoft/nanoserver
         }
@@ -133,7 +133,7 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Write-Host "Removing container 1"
+        Write-Log "Removing container 1"
         if (Get-Variable "Container1ID" -ErrorAction SilentlyContinue) {
             Invoke-NativeCommand -Session $Session -CaptureOutput {
                 docker rm -f $Using:Container1ID
@@ -141,7 +141,7 @@ Describe "Single compute node protocol tests with utils" {
             Remove-Variable "Container1ID"
         }
 
-        Write-Host "Removing container 2"
+        Write-Log "Removing container 2"
         if (Get-Variable "Container2ID" -ErrorAction SilentlyContinue) {
             Invoke-NativeCommand -Session $Session -CaptureOutput {
                 docker rm -f $Using:Container2ID
@@ -198,7 +198,7 @@ Describe "Single compute node protocol tests with utils" {
     AfterAll {
         if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
 
-        Write-Host "Removing iis-tcptest image from testbed"
+        Write-Log "Removing iis-tcptest image from testbed"
         Invoke-Command -Session $Session {
             docker image rm $Using:IisTcpTestDockerImage -f 2>$null
         }
