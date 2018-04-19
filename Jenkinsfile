@@ -9,7 +9,7 @@ pipeline {
     options {
         timeout time: 5, unit: 'HOURS'
         timestamps()
-        lock resource: 'testenv_pool', quantity: 1
+        lock label: 'testenv_pool', quantity: 1
     }
 
     stages {
