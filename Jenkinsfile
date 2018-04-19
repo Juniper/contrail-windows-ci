@@ -43,44 +43,40 @@ pipeline {
 
         stage('Build and test env preperation') {
             parallel {
-                stage('Static analysis ans tests') {
-                    parallel {
-                        stage('Static analysis on Windows') {
-                            agent { label 'builder-pm' }
-                            steps {
-                                deleteDir()
-                                unstash "StaticAnalysis"
-                                unstash "SourceCode"
-                                unstash "CIScripts"
-                                powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
-                            }
-                        }
+                stage('Static analysis on Windows') {
+                    agent { label 'builder-pm' }
+                    steps {
+                        deleteDir()
+                        unstash "StaticAnalysis"
+                        unstash "SourceCode"
+                        unstash "CIScripts"
+                        powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
+                    }
+                }
 
-                        stage('Static analysis on Linux') {
-                            agent { label 'linux' }
-                            steps {
-                                deleteDir()
-                                unstash "StaticAnalysis"
-                                unstash "Ansible"
-                                sh "StaticAnalysis/ansible_linter.py"
-                            }
-                        }
+                stage('Static analysis on Linux') {
+                    agent { label 'linux' }
+                    steps {
+                        deleteDir()
+                        unstash "StaticAnalysis"
+                        unstash "Ansible"
+                        sh "StaticAnalysis/ansible_linter.py"
+                    }
+                }
 
-                        stage('CI test') {
-                            when { expression { env.ghprbPullId } }
-                            agent { label 'linux' }
-                            options {
-                                timeout time: 5, unit: 'MINUTES'
-                            }
-                            steps {
-                                deleteDir()
-                                unstash "Monitoring"
-                                dir("monitoring") {
-                                    sh "python3 -m tests.monitoring_tests"
-                                }
-                                runHelpersTests()
-                            }
+                stage('CI test') {
+                    when { expression { env.ghprbPullId } }
+                    agent { label 'linux' }
+                    options {
+                        timeout time: 5, unit: 'MINUTES'
+                    }
+                    steps {
+                        deleteDir()
+                        unstash "Monitoring"
+                        dir("monitoring") {
+                            sh "python3 -m tests.monitoring_tests"
                         }
+                        runHelpersTests()
                     }
                 }
 
@@ -203,15 +199,16 @@ pipeline {
                 deleteDir()
                 unstash 'CIScripts'
                 unstash 'TestenvConf'
-
-                try {
-                    powershell script: """./CIScripts/Test.ps1 `
-                        -TestenvConfFile testenv-conf.yaml `
-                        -TestReportDir ${env.WORKSPACE}/test_report/"""
-                } finally {
-                    stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
-                    dir('test_report/detailed') {
-                        stash name: 'detailedLogs', allowEmpty: true
+                script {
+                    try {
+                        powershell script: """./CIScripts/Test.ps1 `
+                            -TestenvConfFile testenv-conf.yaml `
+                            -TestReportDir ${env.WORKSPACE}/test_report/"""
+                    } finally {
+                        stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
+                        dir('test_report/detailed') {
+                            stash name: 'detailedLogs', allowEmpty: true
+                        }
                     }
                 }
             }
