@@ -15,7 +15,6 @@ pipeline {
     stages {
         stage('Preparation') {
             agent { label 'ansible' }
-
             steps {
                 deleteDir()
 
@@ -42,101 +41,109 @@ pipeline {
             }
         }
 
-        stage('Static analysis ans tests') {
+        stage('Build and test env preperation') {
             parallel {
-                stage('Static analysis on Windows') {
-                    agent { label 'builder-pm' }
-                    steps {
-                        deleteDir()
-                        unstash "StaticAnalysis"
-                        unstash "SourceCode"
-                        unstash "CIScripts"
-                        powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
-                    }
-                }
-
-                stage('Static analysis on Linux') {
-                    agent { label 'linux' }
-                    steps {
-                        deleteDir()
-                        unstash "StaticAnalysis"
-                        unstash "Ansible"
-                        sh "StaticAnalysis/ansible_linter.py"
-                    }
-                }
-
-                stage('CI test') {
-                    when { expression { env.ghprbPullId } }
-                    agent { label 'linux' }
-                    options {
-                        timeout time: 5, unit: 'MINUTES'
-                    }
-                    steps {
-                        deleteDir()
-                        unstash "Monitoring"
-                        dir("monitoring") {
-                            sh "python3 -m tests.monitoring_tests"
-                        }
-                        runHelpersTests()
-                    }
-                }
-            }
-        }
-
-        stage('Build-Cleanup-Provision-Deploy-Test') {
-            agent none
-            when { environment name: "DONT_CREATE_TESTBEDS", value: null }
-
-            environment {
-                VC = credentials('vcenter')
-                TESTBED = credentials('win-testbed')
-                TESTBED_TEMPLATE = "Template-testbed-201804050628"
-                CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
-                TESTENV_MGMT_NETWORK = "VLAN_501_Management"
-                VC_FOLDER = "WINCI/testenvs"
-
-                THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
-                DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
-                BUILD_IN_RELEASE_MODE = "false"
-                SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
-                CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
-                CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
-                COMPONENTS_TO_BUILD = "DockerDriver,Extension,Agent"
-
-                MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
-                WINCIDEV = credentials('winci-drive')
-            }
-
-            steps {
-                script {
-                        def vmwareConfig = getVMwareConfig()
-                        def testNetwork = getLockedNetworkName()
-                        def testEnvName = getTestEnvName(testNetwork)
-                        def testEnvConfig = [
-                            testenv_name: testEnvName,
-                            testenv_vmware_folder: env.VC_FOLDER,
-                            testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
-                            testenv_data_network: testNetwork,
-                            testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
-                            testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
-                        ]
-
-                        ansibleExtraVars = vmwareConfig + testEnvConfig
-
-                        parallel build: {
-                            // 'Build' stage
-                            node(label: 'builder-pm') {
+                stage('Static analysis ans tests') {
+                    parallel {
+                        stage('Static analysis on Windows') {
+                            agent { label 'builder-pm' }
+                            steps {
                                 deleteDir()
-
-                                unstash "CIScripts"
+                                unstash "StaticAnalysis"
                                 unstash "SourceCode"
-
-                                powershell script: './CIScripts/BuildStage.ps1'
-
-                                stash name: "Artifacts", includes: "output/**/*"
+                                unstash "CIScripts"
+                                powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
                             }
-                        },
-                        provision: {
+                        }
+
+                        stage('Static analysis on Linux') {
+                            agent { label 'linux' }
+                            steps {
+                                deleteDir()
+                                unstash "StaticAnalysis"
+                                unstash "Ansible"
+                                sh "StaticAnalysis/ansible_linter.py"
+                            }
+                        }
+
+                        stage('CI test') {
+                            when { expression { env.ghprbPullId } }
+                            agent { label 'linux' }
+                            options {
+                                timeout time: 5, unit: 'MINUTES'
+                            }
+                            steps {
+                                deleteDir()
+                                unstash "Monitoring"
+                                dir("monitoring") {
+                                    sh "python3 -m tests.monitoring_tests"
+                                }
+                                runHelpersTests()
+                            }
+                        }
+                    }
+                }
+
+                stage('Build') {
+                    agent { label 'builder-pm' }
+                    environment {
+                        THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
+                        DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
+                        BUILD_IN_RELEASE_MODE = "false"
+                        SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
+                        CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
+                        CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
+                        COMPONENTS_TO_BUILD = "DockerDriver,Extension,Agent"
+
+                        MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
+                        WINCIDEV = credentials('winci-drive')
+                    }
+                    steps {
+                        deleteDir()
+
+                        unstash "CIScripts"
+                        unstash "SourceCode"
+
+                        powershell script: './CIScripts/BuildStage.ps1'
+
+                        stash name: "Artifacts", includes: "output/**/*"
+                    }
+                    post {
+                        always {
+                            deleteDir()
+                        }
+                    }
+                }
+
+                stage('Cleanup-Provision') {
+                    agent none
+                    when { environment name: "DONT_CREATE_TESTBEDS", value: null }
+
+                    environment {
+                        VC = credentials('vcenter')
+                        TESTBED = credentials('win-testbed')
+                        TESTBED_TEMPLATE = "Template-testbed-201804050628"
+                        CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
+                        TESTENV_MGMT_NETWORK = "VLAN_501_Management"
+                        VC_FOLDER = "WINCI/testenvs"
+                    }
+
+                    steps {
+                        script {
+                            def vmwareConfig = getVMwareConfig()
+                            def testNetwork = getLockedNetworkName()
+                            def testEnvName = getTestEnvName(testNetwork)
+                            def testEnvConfig = [
+                                testenv_name: testEnvName,
+                                testenv_vmware_folder: env.VC_FOLDER,
+                                testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
+                                testenv_data_network: testNetwork,
+                                testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
+                                testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
+                            ]
+
+                            ansibleExtraVars = vmwareConfig + testEnvConfig
+
                             // 'Cleanup' stage
                             node(label: 'ansible') {
                                 deleteDir()
@@ -168,37 +175,44 @@ pipeline {
                                 stash name: "TestenvConf", includes: "testenv-conf.yaml"
                             }
                         }
+                    }
+                }
+            }
+        }
 
-                        // 'Deploy' stage
-                        node(label: 'tester') {
-                            deleteDir()
+        stage('Deploy') {
+            agent { label 'tester' }
+            when { environment name: "DONT_CREATE_TESTBEDS", value: null }
+            steps {
+                deleteDir()
 
-                            unstash 'CIScripts'
-                            unstash 'Artifacts'
-                            unstash 'TestenvConf'
+                unstash 'CIScripts'
+                unstash 'Artifacts'
+                unstash 'TestenvConf'
 
-                            powershell script: """./CIScripts/Deploy.ps1 `
-                                -TestenvConfFile testenv-conf.yaml `
-                                -ArtifactsDir output"""
-                        }
+                powershell script: """./CIScripts/Deploy.ps1 `
+                    -TestenvConfFile testenv-conf.yaml `
+                    -ArtifactsDir output"""
+            }
+        }
 
-                        // 'Test' stage
-                        node(label: 'tester') {
-                            deleteDir()
-                            unstash 'CIScripts'
-                            unstash 'TestenvConf'
+        stage('Test') {
+            agent { label 'tester' }
+            when { environment name: "DONT_CREATE_TESTBEDS", value: null }
+            steps {
+                deleteDir()
+                unstash 'CIScripts'
+                unstash 'TestenvConf'
 
-                            try {
-                                powershell script: """./CIScripts/Test.ps1 `
-                                    -TestenvConfFile testenv-conf.yaml `
-                                    -TestReportDir ${env.WORKSPACE}/test_report/"""
-                            } finally {
-                                stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
-                                dir('test_report/detailed') {
-                                    stash name: 'detailedLogs', allowEmpty: true
-                                }
-                            }
-                        }
+                try {
+                    powershell script: """./CIScripts/Test.ps1 `
+                        -TestenvConfFile testenv-conf.yaml `
+                        -TestReportDir ${env.WORKSPACE}/test_report/"""
+                } finally {
+                    stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
+                    dir('test_report/detailed') {
+                        stash name: 'detailedLogs', allowEmpty: true
+                    }
                 }
             }
         }
