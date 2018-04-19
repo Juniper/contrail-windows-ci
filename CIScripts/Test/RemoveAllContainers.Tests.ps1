@@ -5,7 +5,7 @@ Param (
 
 . $PSScriptRoot\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\Testenv\Testbed.ps1
 . $PSScriptRoot\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\Utils\ContrailUtils.ps1
 
