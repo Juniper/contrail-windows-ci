@@ -27,7 +27,7 @@ pipeline {
         }
 
         stage('Checkout projects') {
-            agent { label 'builder-pm' }
+            agent { label 'builder' }
             environment {
                 DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
             }
@@ -42,7 +42,7 @@ pipeline {
         stage('Build, testenv preperation and sanity checks') {
             parallel {
                 stage('Static analysis on Windows') {
-                    agent { label 'builder-pm' }
+                    agent { label 'builder' }
                     steps {
                         deleteDir()
                         unstash "StaticAnalysis"
@@ -79,7 +79,7 @@ pipeline {
                 }
 
                 stage('Build') {
-                    agent { label 'builder-pm' }
+                    agent { label 'builder' }
                     environment {
                         THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
                         DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
