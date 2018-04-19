@@ -39,7 +39,7 @@ pipeline {
             }
         }
 
-        stage('Build, testenv preperation and sanity checks') {
+        stage('Build, testenv provisioning and sanity checks') {
             parallel {
                 stage('Static analysis on Windows') {
                     agent { label 'builder' }
@@ -109,7 +109,7 @@ pipeline {
                     }
                 }
 
-                stage('Cleanup-Provision') {
+                stage('Testenv provisioning') {
                     agent { label 'ansible' }
                     when { environment name: "DONT_CREATE_TESTBEDS", value: null }
 
@@ -142,6 +142,7 @@ pipeline {
                             unstash 'Ansible'
 
                             dir('ansible') {
+                                // Cleanup testenv before making a new one
                                 ansiblePlaybook inventory: 'inventory.testenv',
                                                 playbook: 'vmware-destroy-testenv.yml',
                                                 extraVars: ansibleExtraVars
