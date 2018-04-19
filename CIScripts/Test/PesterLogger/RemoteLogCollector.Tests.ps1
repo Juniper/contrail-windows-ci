@@ -7,22 +7,24 @@ Param (
 . $PSScriptRoot/../../Common/VMUtils.ps1
 . $PSScriptRoot/../../Testenv/Testenv.ps1
 
+. $PSScriptRoot/Get-CurrentPesterScope.ps1
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
 function Test-MultipleSourcesAndSessions {
-    Param([string] $DescribeName)
     It "works with multiple log sources and sessions" {
         $Source1 = New-LogSource -Sessions $Sess1 -Path $DummyLog1
         $Source2 = New-LogSource -Sessions $Sess1 -Path $DummyLog2
         $Source3 = New-LogSource -Sessions $Sess2 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
-
+        
         # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
         Merge-Logs -DontCleanUp -LogSources @($Source1, $Source2, $Source3)
-
-        $ContentRaw = Get-Content -Raw "TestDrive:\$DescribeName.works with multiple log sources and sessions.log"
+        
+        $DescribeBlockName = (Get-CurrentPesterScope)[0]
+        $ContentRaw = Get-Content -Raw "TestDrive:\$DescribeBlockName.works with multiple log sources and sessions.log"
         $ContentRaw | Should -BeLike "*$DummyLog1*$DummyLog2*$DummyLog1*"
     }
 }
@@ -156,7 +158,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         $ContentRaw | Should -BeLike "*$DummyLog1*<FILE WAS EMPTY>*"
     }
 
-    Test-MultipleSourcesAndSessions -DescribeName "RemoteLogCollector"
+    Test-MultipleSourcesAndSessions
 
     BeforeEach {
         $DummyLog1 = ((Get-Item $TestDrive).FullName) + "\remotelog.txt"
@@ -213,5 +215,5 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
         }
     }
 
-    Test-MultipleSourcesAndSessions -DescribeName "RemoteLogCollector - with actual Testbeds"
+    Test-MultipleSourcesAndSessions
 }
