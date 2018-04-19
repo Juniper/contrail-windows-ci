@@ -57,10 +57,6 @@ Describe "Docker Driver" {
         )]
         $Session = $Sessions[0]
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "DriverLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
         Initialize-PesterLogger -OutDir $LogDir
     }
 
@@ -83,6 +79,7 @@ Describe "Docker Driver" {
     }
 
     AfterEach {
+        $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
         Merge-Logs -LogSources $DriverLogs
     }
 }

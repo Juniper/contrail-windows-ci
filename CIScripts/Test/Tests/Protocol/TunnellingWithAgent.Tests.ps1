@@ -14,6 +14,9 @@ Param (
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
 
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
 $IisTcpTestDockerImage = "iis-tcptest"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -42,7 +45,7 @@ function Initialize-ComputeNode {
         -Name $NetworkName `
         -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
-    Write-Host "Created network id: $NetworkID"
+    Write-Log "Created network id: $NetworkID"
 }
 
 function Test-Ping {
@@ -53,12 +56,12 @@ function Test-Ping {
         [Parameter(Mandatory=$true)] [String] $DstContainerIP
     )
 
-    Write-Host "Container $SrcContainerName is pinging $DstContainerName..."
+    Write-Log "Container $SrcContainerName is pinging $DstContainerName..."
     $Res = Invoke-Command -Session $Session -ScriptBlock {
         docker exec $Using:SrcContainerName powershell "ping $Using:DstContainerIP; `$LASTEXITCODE;"
     }
     $Output = $Res[0..($Res.length - 2)]
-    Write-Host "Ping output: $Output"
+    Write-Log "Ping output: $Output"
     return $Res[-1]
 }
 
@@ -70,12 +73,12 @@ function Test-TCP {
         [Parameter(Mandatory=$true)] [String] $DstContainerIP
     )
 
-    Write-Host "Container $SrcContainerName is sending HTTP request to $DstContainerName..."
+    Write-Log "Container $SrcContainerName is sending HTTP request to $DstContainerName..."
     $Res = Invoke-Command -Session $Session -ScriptBlock {
         docker exec $Using:SrcContainerName powershell "Invoke-WebRequest -Uri http://${Using:DstContainerIP}:8080/ -ErrorAction Continue; `$LASTEXITCODE"
     }
     $Output = $Res[0..($Res.length - 2)]
-    Write-Host "Web request output: $Output"
+    Write-Log "Web request output: $Output"
     return $Res[-1]
 }
 
@@ -118,7 +121,7 @@ function Test-MPLSoGRE {
 
     $VrfStats = Get-VrfStats -Session $Session
     if (($VrfStats.MplsGrePktCount -eq 0) -or ($VrfStats.MplsUdpPktCount -ne 0) -or ($VrfStats.VxlanPktCount -ne 0)) {
-        Write-Host "Tunnel usage statistics: Udp = $($VrfStats.MplsUdpPktCount), Gre = $($VrfStats.MplsGrePktCount), Vxlan = $($VrfStats.VxlanPktCount)"
+        Write-Log "Tunnel usage statistics: Udp = $($VrfStats.MplsUdpPktCount), Gre = $($VrfStats.MplsGrePktCount), Vxlan = $($VrfStats.VxlanPktCount)"
         return $false
     } else {
         return $true
@@ -132,7 +135,7 @@ function Test-MPLSoUDP {
 
     $VrfStats = Get-VrfStats -Session $Session
     if (($VrfStats.MplsGrePktCount -ne 0) -or ($VrfStats.MplsUdpPktCount -eq 0) -or ($VrfStats.VxlanPktCount -ne 0)) {
-        Write-Host "Tunnel usage statistics: Udp = $($VrfStats.MplsUdpPktCount), Gre = $($VrfStats.MplsGrePktCount), Vxlan = $($VrfStats.VxlanPktCount)"
+        Write-Log "Tunnel usage statistics: Udp = $($VrfStats.MplsUdpPktCount), Gre = $($VrfStats.MplsGrePktCount), Vxlan = $($VrfStats.VxlanPktCount)"
         return $false
     } else {
         return $true
@@ -195,35 +198,31 @@ Describe "Tunnelling with Agent tests" {
 
         $Sessions = New-RemoteSessions -VMs $VMs
 
-        Write-Host "Installing iis-tcptest docker image on testbed..."
+        Initialize-PesterLogger -OutDir $LogDir
+
+        Write-Log "Installing iis-tcptest docker image on testbed..."
         Initialize-DockerImage -Session $Sessions[0] -DockerImageName $IisTcpTestDockerImage
 
-        Write-Host "Installing components on testbeds..."
+        Write-Log "Installing components on testbeds..."
         Install-Components -Session $Sessions[0]
         Install-Components -Session $Sessions[1]
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "ContrailNM",
-            Justification="It's actually used."
-        )]
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-
         $ContrailNM.EnsureProject($ControllerConfig.DefaultProject)
 
         $Testbed1Address = $VMs[0].Address
         $Testbed1Name = $VMs[0].Name
-        Write-Host "Creating virtual router. Name: $Testbed1Name; Address: $Testbed1Address"
+        Write-Log "Creating virtual router. Name: $Testbed1Name; Address: $Testbed1Address"
         $VRouter1Uuid = $ContrailNM.AddVirtualRouter($Testbed1Name, $Testbed1Address)
-        Write-Host "Reported UUID of new virtual router: $VRouter1Uuid"
+        Write-Log "Reported UUID of new virtual router: $VRouter1Uuid"
 
         $Testbed2Address = $VMs[1].Address
         $Testbed2Name = $VMs[1].Name
-        Write-Host "Creating virtual router. Name: $Testbed2Name; Address: $Testbed2Address"
+        Write-Log "Creating virtual router. Name: $Testbed2Name; Address: $Testbed2Address"
         $VRouter2Uuid = $ContrailNM.AddVirtualRouter($Testbed2Name, $Testbed2Address)
-        Write-Host "Reported UUID of new virtual router: $VRouter2Uuid"
+        Write-Log "Reported UUID of new virtual router: $VRouter2Uuid"
 
-        Write-Host "Creating virtual network: $NetworkName"
+        Write-Log "Creating virtual network: $NetworkName"
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "ContrailNetwork",
@@ -235,25 +234,25 @@ Describe "Tunnelling with Agent tests" {
     AfterAll {
         if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
 
-        Write-Host "Removing iis-tcptest docker image from testbed..."
+        Write-Log "Removing iis-tcptest docker image from testbed..."
         Remove-IISDockerImage -Session $Sessions[0]
 
         if(Get-Variable "VRouter1Uuid" -ErrorAction SilentlyContinue) {
-            Write-Host "Removing virtual router: $VRouter1Uuid"
+            Write-Log "Removing virtual router: $VRouter1Uuid"
             $ContrailNM.RemoveVirtualRouter($VRouter1Uuid)
             Remove-Variable "VRouter1Uuid"
         }
         if(Get-Variable "VRouter2Uuid" -ErrorAction SilentlyContinue) {
-            Write-Host "Removing virtual router: $VRouter2Uuid"
+            Write-Log "Removing virtual router: $VRouter2Uuid"
             $ContrailNM.RemoveVirtualRouter($VRouter2Uuid)
             Remove-Variable "VRouter2Uuid"
         }
 
-        Write-Host "Uninstalling components from testbeds..."
+        Write-Log "Uninstalling components from testbeds..."
         Uninstall-Components -Session $Sessions[0]
         Uninstall-Components -Session $Sessions[1]
 
-        Write-Host "Deleting virtual network"
+        Write-Log "Deleting virtual network"
         if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
             $ContrailNM.RemoveNetwork($ContrailNetwork)
         }
@@ -265,20 +264,20 @@ Describe "Tunnelling with Agent tests" {
         Initialize-ComputeNode -Session $Sessions[0] -Subnet $Subnet
         Initialize-ComputeNode -Session $Sessions[1] -Subnet $Subnet
 
-        Write-Host "Creating containers"
-        Write-Host "Creating container: $Container1ID"
+        Write-Log "Creating containers"
+        Write-Log "Creating container: $Container1ID"
         New-Container `
             -Session $Sessions[0] `
             -NetworkName $NetworkName `
             -Name $Container1ID `
             -Image $IisTcpTestDockerImage
-        Write-Host "Creating container: $Container2ID"
+        Write-Log "Creating container: $Container2ID"
         New-Container `
             -Session $Sessions[1] `
             -NetworkName $NetworkName `
             -Name $Container2ID
 
-        Write-Host "Getting containers' NetAdapter Information"
+        Write-Log "Getting containers' NetAdapter Information"
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "Container1NetInfo",
@@ -287,7 +286,7 @@ Describe "Tunnelling with Agent tests" {
         $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
             -Session $Sessions[0] -ContainerID $Container1ID
         $IP = $Container1NetInfo.IPAddress
-        Write-Host "IP of ${Container1ID}: $IP"
+        Write-Log "IP of ${Container1ID}: $IP"
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "Container2NetInfo",
@@ -296,17 +295,23 @@ Describe "Tunnelling with Agent tests" {
         $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
             -Session $Sessions[1] -ContainerID $Container2ID
             $IP = $Container2NetInfo.IPAddress
-            Write-Host "IP of ${Container2ID}: $IP"
+            Write-Log "IP of ${Container2ID}: $IP"
     }
 
     AfterEach {
-        Write-Host "Removing container $Container1ID..."
-        Remove-Container -Session $Sessions[0] -NameOrId $Container1ID
-
-        Write-Host "Removing container $Container2ID..."
-        Remove-Container -Session $Sessions[1] -NameOrId $Container2ID
-
-        Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
-        Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
+        try {
+            Write-Log "Removing container $Container1ID..."
+            Remove-Container -Session $Sessions[0] -NameOrId $Container1ID
+    
+            Write-Log "Removing container $Container2ID..."
+            Remove-Container -Session $Sessions[1] -NameOrId $Container2ID
+    
+            Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
+            Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
+        } finally {
+            $AgentLogs = New-LogSource -Sessions $Sessions -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
+            $DriverLogs = New-LogSource -Sessions $Sessions -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
+            Merge-Logs -LogSources @($DriverLogs, $AgentLogs)
+        }
     }
 }

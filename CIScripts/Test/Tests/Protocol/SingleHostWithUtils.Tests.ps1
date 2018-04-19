@@ -133,29 +133,33 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Write-Log "Removing container 1"
-        if (Get-Variable "Container1ID" -ErrorAction SilentlyContinue) {
-            Invoke-NativeCommand -Session $Session -CaptureOutput {
-                docker rm -f $Using:Container1ID
+        try {
+            Write-Log "Removing container 1"
+            if (Get-Variable "Container1ID" -ErrorAction SilentlyContinue) {
+                Invoke-NativeCommand -Session $Session -CaptureOutput {
+                    docker rm -f $Using:Container1ID
+                }
+                Remove-Variable "Container1ID"
             }
-            Remove-Variable "Container1ID"
-        }
-
-        Write-Log "Removing container 2"
-        if (Get-Variable "Container2ID" -ErrorAction SilentlyContinue) {
-            Invoke-NativeCommand -Session $Session -CaptureOutput {
-                docker rm -f $Using:Container2ID
+    
+            Write-Log "Removing container 2"
+            if (Get-Variable "Container2ID" -ErrorAction SilentlyContinue) {
+                Invoke-NativeCommand -Session $Session -CaptureOutput {
+                    docker rm -f $Using:Container2ID
+                }
+                Remove-Variable "Container2ID"
             }
-            Remove-Variable "Container2ID"
+    
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+            if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
+                $ContrailNM.RemoveNetwork($ContrailNetwork)
+                Remove-Variable "ContrailNetwork"
+            }
+        } finally {
+            $AgentLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
+            $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
+            Merge-Logs -LogSources @($DriverLogs, $AgentLogs)
         }
-
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
-            $ContrailNM.RemoveNetwork($ContrailNetwork)
-            Remove-Variable "ContrailNetwork"
-        }
-
-        Merge-Logs -LogSources @($DriverLogs, $AgentLogs)
     }
 
     BeforeAll {
@@ -171,14 +175,6 @@ Describe "Single compute node protocol tests with utils" {
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
         $IisTcpTestDockerImage = "iis-tcptest"
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "AgentLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $AgentLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "DriverLogs", Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
         Initialize-PesterLogger -OutDir $LogDir
 
         Initialize-DockerImage -Session $Session -DockerImageName $IisTcpTestDockerImage
