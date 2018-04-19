@@ -81,38 +81,7 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            agent { label 'builder' }
-            environment {
-                THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
-                DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
-                BUILD_IN_RELEASE_MODE = "false"
-                SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
-                CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
-                CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
-                COMPONENTS_TO_BUILD = "DockerDriver,Extension,Agent"
-
-                MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
-                WINCIDEV = credentials('winci-drive')
-            }
-            steps {
-                deleteDir()
-
-                unstash "CIScripts"
-                unstash "SourceCode"
-
-                powershell script: './CIScripts/BuildStage.ps1'
-
-                stash name: "Artifacts", includes: "output/**/*"
-            }
-            post {
-                always {
-                    deleteDir()
-                }
-            }
-        }
-
-        stage('Cleanup-Provision-Deploy-Test') {
+        stage('Build-Cleanup-Provision-Deploy-Test') {
             agent none
             when { environment name: "DONT_CREATE_TESTBEDS", value: null }
 
@@ -123,6 +92,17 @@ pipeline {
                 CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
                 TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                 VC_FOLDER = "WINCI/testenvs"
+
+                HIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
+                DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
+                BUILD_IN_RELEASE_MODE = "false"
+                SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
+                CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
+                CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
+                COMPONENTS_TO_BUILD = "DockerDriver,Extension,Agent"
+
+                MSBUILD = "C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
+                WINCIDEV = credentials('winci-drive')
             }
 
             steps {
@@ -142,35 +122,50 @@ pipeline {
 
                         ansibleExtraVars = vmwareConfig + testEnvConfig
 
-                        // 'Cleanup' stage
-                        node(label: 'ansible') {
-                            deleteDir()
-                            unstash 'Ansible'
+                        parallel build: {
+                            // 'Build' stage
+                            node(label: 'builder-pm') {
+                                deleteDir()
 
-                            dir('ansible') {
-                                ansiblePlaybook inventory: 'inventory.testenv',
-                                                playbook: 'vmware-destroy-testenv.yml',
-                                                extraVars: ansibleExtraVars
+                                unstash "CIScripts"
+                                unstash "SourceCode"
+
+                                powershell script: './CIScripts/BuildStage.ps1'
+
+                                stash name: "Artifacts", includes: "output/**/*"
                             }
-                        }
+                        },
+                        provision: {
+                            // 'Cleanup' stage
+                            node(label: 'ansible') {
+                                deleteDir()
+                                unstash 'Ansible'
 
-                        // 'Provision' stage
-                        node(label: 'ansible') {
-                            deleteDir()
-                            unstash 'Ansible'
-
-                            def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
-                            def provisioningExtraVars = ansibleExtraVars + [
-                                testenv_conf_file: testEnvConfPath
-                            ]
-
-                            dir('ansible') {
-                                ansiblePlaybook inventory: 'inventory.testenv',
-                                                playbook: 'vmware-deploy-testenv.yml',
-                                                extraVars: provisioningExtraVars
+                                dir('ansible') {
+                                    ansiblePlaybook inventory: 'inventory.testenv',
+                                                    playbook: 'vmware-destroy-testenv.yml',
+                                                    extraVars: ansibleExtraVars
+                                }
                             }
 
-                            stash name: "TestenvConf", includes: "testenv-conf.yaml"
+                            // 'Provision' stage
+                            node(label: 'ansible') {
+                                deleteDir()
+                                unstash 'Ansible'
+
+                                def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
+                                def provisioningExtraVars = ansibleExtraVars + [
+                                    testenv_conf_file: testEnvConfPath
+                                ]
+
+                                dir('ansible') {
+                                    ansiblePlaybook inventory: 'inventory.testenv',
+                                                    playbook: 'vmware-deploy-testenv.yml',
+                                                    extraVars: provisioningExtraVars
+                                }
+
+                                stash name: "TestenvConf", includes: "testenv-conf.yaml"
+                            }
                         }
 
                         // 'Deploy' stage
