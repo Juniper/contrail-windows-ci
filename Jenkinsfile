@@ -9,11 +9,13 @@ pipeline {
     options {
         timeout time: 5, unit: 'HOURS'
         timestamps()
+        lock resource: 'testenv_pool', quantity: 1
     }
 
     stages {
         stage('Preparation') {
             agent { label 'ansible' }
+
             steps {
                 deleteDir()
 
@@ -107,7 +109,6 @@ pipeline {
 
             steps {
                 script {
-                    lock(label: 'testenv_pool', quantity: 1) {
                         def vmwareConfig = getVMwareConfig()
                         def testNetwork = getLockedNetworkName()
                         def testEnvName = getTestEnvName(testNetwork)
@@ -198,7 +199,6 @@ pipeline {
                                 }
                             }
                         }
-                    }
                 }
             }
         }
