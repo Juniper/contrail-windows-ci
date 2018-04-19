@@ -28,7 +28,7 @@ pipeline {
         }
 
         stage('Checkout projects') {
-            agent { label 'builder' }
+            agent { label 'builder-pm' }
             environment {
                 DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
             }
@@ -43,7 +43,7 @@ pipeline {
         stage('Static analysis ans tests') {
             parallel {
                 stage('Static analysis on Windows') {
-                    agent { label 'builder' }
+                    agent { label 'builder-pm' }
                     steps {
                         deleteDir()
                         unstash "StaticAnalysis"
