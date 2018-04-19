@@ -1,6 +1,7 @@
 . $PSScriptRoot\..\Testenv\Testenv.ps1
 . $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\Utils\DockerImageBuild.ps1
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
 $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
@@ -445,9 +446,14 @@ function New-Container {
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name,
            [Parameter(Mandatory = $false)] [string] $Image)
-    if (-not $Image) {
+           
+    if ($Image) {
+        Initialize-DockerImage -Session $Session -DockerImageName $Image
+    }
+    else {
         $Image = "microsoft/nanoserver"
     }
+
     $ContainerID = Invoke-Command -Session $Session -ScriptBlock {
         if ($Using:Name) {
             return $(docker run --name $Using:Name --network $Using:NetworkName -id $Using:Image powershell)
