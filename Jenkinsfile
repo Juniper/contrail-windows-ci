@@ -123,41 +123,40 @@ pipeline {
                     }
 
                     steps {
-                        def vmwareConfig = getVMwareConfig()
-                        def testNetwork = getLockedNetworkName()
-                        def testEnvName = getTestEnvName(testNetwork)
-                        def testEnvConfig = [
-                            testenv_name: testEnvName,
-                            testenv_vmware_folder: env.VC_FOLDER,
-                            testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
-                            testenv_data_network: testNetwork,
-                            testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
-                            testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
-                        ]
+                        script {
+                            def vmwareConfig = getVMwareConfig()
+                            def testNetwork = getLockedNetworkName()
+                            def testEnvName = getTestEnvName(testNetwork)
+                            def testEnvConfig = [
+                                testenv_name: testEnvName,
+                                testenv_vmware_folder: env.VC_FOLDER,
+                                testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
+                                testenv_data_network: testNetwork,
+                                testenv_testbed_vmware_template: env.TESTBED_TEMPLATE,
+                                testenv_controller_vmware_template: env.CONTROLLER_TEMPLATE
+                            ]
 
-                        def ansibleExtraVars = vmwareConfig + testEnvConfig
+                            def ansibleExtraVars = vmwareConfig + testEnvConfig
 
-                        deleteDir()
-                        unstash 'Ansible'
+                            deleteDir()
+                            unstash 'Ansible'
 
-                        dir('ansible') {
-                            ansiblePlaybook inventory: 'inventory.testenv',
-                                            playbook: 'vmware-destroy-testenv.yml',
-                                            extraVars: ansibleExtraVars
+                            dir('ansible') {
+                                ansiblePlaybook inventory: 'inventory.testenv',
+                                                playbook: 'vmware-destroy-testenv.yml',
+                                                extraVars: ansibleExtraVars
+
+                                def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
+                                def provisioningExtraVars = ansibleExtraVars + [
+                                    testenv_conf_file: testEnvConfPath
+                                ]
+                                ansiblePlaybook inventory: 'inventory.testenv',
+                                                playbook: 'vmware-deploy-testenv.yml',
+                                                extraVars: provisioningExtraVars
+                            }
+
+                            stash name: "TestenvConf", includes: "testenv-conf.yaml"
                         }
-
-                        def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
-                        def provisioningExtraVars = ansibleExtraVars + [
-                            testenv_conf_file: testEnvConfPath
-                        ]
-
-                        dir('ansible') {
-                            ansiblePlaybook inventory: 'inventory.testenv',
-                                            playbook: 'vmware-deploy-testenv.yml',
-                                            extraVars: provisioningExtraVars
-                        }
-
-                        stash name: "TestenvConf", includes: "testenv-conf.yaml"
                     }
                 }
             }
