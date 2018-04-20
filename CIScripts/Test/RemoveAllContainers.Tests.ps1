@@ -8,6 +8,7 @@ Param (
 . $PSScriptRoot\..\Testenv\Testbed.ps1
 . $PSScriptRoot\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\Utils\ContrailUtils.ps1
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 
 Describe "Remove-AllContainers" {
     It "Removes single container if exists" {
