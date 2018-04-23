@@ -445,13 +445,10 @@ function New-Container {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name,
-           [Parameter(Mandatory = $false)] [string] $Image)
+           [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver")
            
-    if ($Image) {
+    if (Test-Dockerfile $Image) {
         Initialize-DockerImage -Session $Session -DockerImageName $Image
-    }
-    else {
-        $Image = "microsoft/nanoserver"
     }
 
     $ContainerID = Invoke-Command -Session $Session -ScriptBlock {
@@ -486,4 +483,3 @@ function Remove-AllContainers {
         Remove-Variable "Containers"
     }
 }
-
