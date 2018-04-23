@@ -448,7 +448,7 @@ function New-Container {
            [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver")
            
     if (Test-Dockerfile $Image) {
-        Initialize-DockerImage -Session $Session -DockerImageName $Image
+        Initialize-DockerImage -Session $Session -DockerImageName $Image | Out-Host
     }
 
     $Arguments = "run", "-di"
