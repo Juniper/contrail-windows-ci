@@ -1,0 +1,15 @@
+---
+
+- name: Power Off Template-{{ vm_role }}
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ validate_certs }}"
+    name: "{{ new_vm.instance.hw_name }}"
+    uuid: "{{ new_vm.instance.hw_product_uuid }}"
+    state: shutdownguest
+
+- name: Give VM some time to shutdown
+  wait_for:
+    timeout: 30

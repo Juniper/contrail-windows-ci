@@ -18,4 +18,8 @@
 
 - hosts: localhost
   roles:
+    - { role: vmware-template, stage: snapshot }
+
+- hosts: localhost
+  roles:
     - { role: vmware-template, stage: template }
