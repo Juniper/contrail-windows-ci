@@ -33,14 +33,4 @@ Describe "Initialize-DockerImage" -Tags CI, Systest {
             docker inspect $Using:DockerImageName
         } | Should Not BeNullOrEmpty
     }
-
-    BeforeEach {
-        # Invoke-Command used as a workaround for temporary ErrorActionPreference modification
-        Invoke-Command -Session $Session {
-            Invoke-Command {
-                $ErrorActionPreference = "SilentlyContinue"
-                docker image rm $Using:DockerImageName -f 2>$null
-            }
-        }
-    }
 }

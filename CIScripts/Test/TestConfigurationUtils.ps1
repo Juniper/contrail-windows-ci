@@ -451,14 +451,11 @@ function New-Container {
         Initialize-DockerImage -Session $Session -DockerImageName $Image
     }
 
-    $ContainerID = Invoke-Command -Session $Session -ScriptBlock {
-        if ($Using:Name) {
-            return $(docker run --name $Using:Name --network $Using:NetworkName -id $Using:Image powershell)
-        }
-        else {
-            return $(docker run --network $Using:NetworkName -id $Using:Image powershell)
-        }
-    }
+    $Arguments = "run", "-di"
+    if ($Name) { $Arguments += "--name", $Name }
+    $Arguments += "--network", $NetworkName, $Image
+
+    $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
 
     return $ContainerID
 }
