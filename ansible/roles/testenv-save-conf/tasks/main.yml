@@ -25,3 +25,4 @@
   fetch:
     src: "{{ testenv_conf_tempfile.path }}"
     dest: "{{ testenv_conf_tempfile.path | basename }}"
+    flat: yes
