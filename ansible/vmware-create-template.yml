@@ -18,7 +18,8 @@
 
 - hosts: localhost
   tasks:
-    - include_role:
+    - name: Create snapshot
+      include_role:
         name: vmware-template
       vars:
         stage: snapshot
