@@ -155,8 +155,8 @@ function Start-UDPEchoServerInContainer {
     'while($true) {{' + `
     '    $Payload = $UDPSocket.Receive([ref]$RemoteIPEndpoint);' + `
     '    $RemoteIPEndpoint.Port = $SendPort;' + `
-    '    $Message = [Text.Encoding]::UTF8.GetString($Payload);' + `
     '    $UDPSocket.Send($Payload, $Payload.Length, $RemoteIPEndpoint);' + `
+    '    \"Received message and sent it to: $RemoteIPEndpoint.\" | Out-String;' + `
     '}}') -f $ClientPort, $ServerPort
 
     Invoke-Command -Session $Session -ScriptBlock {
@@ -177,9 +177,13 @@ function Stop-EchoServerInContainer {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session
     )
 
-    Invoke-Command -Session $Session -ScriptBlock {
+    $Output = Invoke-Command -Session $Session -ScriptBlock {
         $UDPEchoServerJob | Stop-Job | Out-Null
+        $Output = Receive-Job -Job $UDPEchoServerJob
+        return $Output
     }
+
+    Write-Host "Output from UDP echo server running in remote session: $Output"
 }
 
 function Start-UDPListenerInContainer {
@@ -188,13 +192,11 @@ function Start-UDPListenerInContainer {
         [Parameter(Mandatory=$true)] [String] $ContainerName,
         [Parameter(Mandatory=$true)] [Int16] $ListenerPort
     )
-
     $UDPListenerCommand = ( `
     '$RemoteIPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, 0);' + `
     '$UDPRcvSocket = New-Object System.Net.Sockets.UdpClient {0};' + `
     '$Payload = $UDPRcvSocket.Receive([ref]$RemoteIPEndpoint);' + `
-    '$Message = [Text.Encoding]::UTF8.GetString($Payload);' + `
-    'return $Message') -f $ListenerPort
+    '[Text.Encoding]::UTF8.GetString($Payload)') -f $ListenerPort
 
     Invoke-Command -Session $Session -ScriptBlock {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -214,12 +216,13 @@ function Stop-UDPListenerInContainerAndFetchResult {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session
     )
 
-    $ReceivedMessage = Invoke-Command -Session $Session -ScriptBlock {
-        $UDPListenerJob | Wait-Job -Timeout 5
+    $Message = Invoke-Command -Session $Session -ScriptBlock {
+        $UDPListenerJob | Wait-Job -Timeout 30 | Out-Null
         $ReceivedMessage = Receive-Job -Job $UDPListenerJob
         return $ReceivedMessage
     }
-    return $ReceivedMessage
+    Write-Host "UDP listener output from remote session: $Message"
+    return $Message
 }
 
 function Send-UDPFromContainer {
@@ -304,7 +307,7 @@ Describe "Tunnelling with Agent tests" {
                 -Message $MyMessage `
                 -ListenerIP $Container1NetInfo.IPAddress `
                 -ListenerPort $UDPServerPort `
-                -NumberOfAttempts 3 `
+                -NumberOfAttempts 5 `
                 -WaitSeconds 1
 
             Write-Host "Fetching results from listener job..."
