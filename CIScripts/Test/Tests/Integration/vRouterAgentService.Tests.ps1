@@ -102,9 +102,8 @@ Describe "vRouter Agent service" {
                 Disable-AgentService -Session $Session
             }
         } finally {
-            $AgentLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
-            $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
-            Merge-Logs -LogSources @($DriverLogs, $AgentLogs)
+            $Logs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
+            Merge-Logs -LogSources $Logs
         }
     }
 

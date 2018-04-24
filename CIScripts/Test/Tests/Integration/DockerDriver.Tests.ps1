@@ -79,7 +79,7 @@ Describe "Docker Driver" {
     }
 
     AfterEach {
-        $DriverLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/ContrailDockerDriver/log.txt"
-        Merge-Logs -LogSources $DriverLogs
+        $Logs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
+        Merge-Logs -LogSources $Logs
     }
 }
