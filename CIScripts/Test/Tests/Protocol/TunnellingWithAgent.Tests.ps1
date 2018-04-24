@@ -144,7 +144,7 @@ function Test-MPLSoUDP {
 
 Describe "Tunnelling with Agent tests" {
     Context "Tunneling" {
-        It "ICMP: Ping between containers on separate compute nodes succeeds" {
+        It "ICMP - Ping between containers on separate compute nodes succeeds" {
             Test-Ping `
                 -Session $Sessions[0] `
                 -SrcContainerName $Container1ID `
@@ -162,7 +162,7 @@ Describe "Tunnelling with Agent tests" {
             # Test-MPLSoGRE -Session $Sessions[1] | Should Be $true
         }
 
-        It "TCP: HTTP connection between containers on separate compute nodes succeeds" {
+        It "TCP - HTTP connection between containers on separate compute nodes succeeds" {
             Test-TCP `
                 -Session $Sessions[1] `
                 -SrcContainerName $Container2ID `
@@ -181,7 +181,7 @@ Describe "Tunnelling with Agent tests" {
 
     Context "MPLSoUDP" {
         # TODO: Enable this test once we can actually control tunneling type.
-        It "ICMP: Ping between containers on separate compute nodes succeeds (MPLSoUDP)" -Pending {
+        It "ICMP - Ping between containers on separate compute nodes succeeds (MPLSoUDP)" -Pending {
             Test-Ping `
                 -Session $Sessions[0] `
                 -SrcContainerName $Container1ID `

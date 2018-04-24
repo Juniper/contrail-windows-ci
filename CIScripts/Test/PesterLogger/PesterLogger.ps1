@@ -2,6 +2,11 @@
 
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
 
+class UnsupportedPesterTestNameException : System.Exception {
+    UnsupportedPesterTestNameException([string] $msg) : base($msg) {}
+    UnsupportedPesterTestNameException([string] $msg, [System.Exception] $inner) : base($msg, $inner) {}
+}
+
 function Initialize-PesterLogger {
     Param([Parameter(Mandatory = $true)] [string] $Outdir)
 
@@ -28,6 +33,10 @@ function Initialize-PesterLogger {
 
 function Add-ContentForce {
     Param([string] $Path, [object] $Value)
+    if ($Path -Like "*:*:*") {
+        # We check for more than one ":" character. (There is always one, after drive letter)
+        throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':'"
+    }
     if (-not (Test-Path $Path)) {
         New-Item -Force -Path $Path -Type File | Out-Null
     }
