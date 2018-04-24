@@ -27,8 +27,8 @@ pipeline {
 
                 dir('ansible') {
                     ansiblePlaybook inventory: 'inventory.testenv',
-                                    extraVars: testenvConfig,
-                                    playbook: playbookToRun
+                                    playbook: 'vmware-deploy-testenv.yml',
+                                    extraVars: testenvConfig
                 }
             }
         }
