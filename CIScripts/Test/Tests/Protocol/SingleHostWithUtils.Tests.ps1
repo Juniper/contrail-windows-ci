@@ -98,16 +98,10 @@ Describe "Single compute node protocol tests with utils" {
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
         Write-Host "Creating container 1"
-        $Cmd1 = Invoke-NativeCommand -Session $Session -CaptureOutput {
-            docker run --network $Using:NetworkName -d iis-tcptest
-        }
-        $Container1ID = $Cmd1.Output[0]
+        $Container1ID = New-Container -Session $Session -NetworkName $NetworkName -Image iis-tcptest
 
         Write-Host "Creating container 2"
-        $Cmd2 = Invoke-NativeCommand -Session $Session -CaptureOutput {
-            docker run --network $Using:NetworkName -dt microsoft/nanoserver
-        }
-        $Container2ID = $Cmd2.Output[0]
+        $Container2ID = New-Container -Session $Session -NetworkName $NetworkName
 
         Write-Host "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
@@ -130,21 +124,8 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Write-Host "Removing container 1"
-        if (Get-Variable "Container1ID" -ErrorAction SilentlyContinue) {
-            Invoke-NativeCommand -Session $Session -CaptureOutput {
-                docker rm -f $Using:Container1ID
-            }
-            Remove-Variable "Container1ID"
-        }
-
-        Write-Host "Removing container 2"
-        if (Get-Variable "Container2ID" -ErrorAction SilentlyContinue) {
-            Invoke-NativeCommand -Session $Session -CaptureOutput {
-                docker rm -f $Using:Container2ID
-            }
-            Remove-Variable "Container2ID"
-        }
+        Write-Host "Removing containers"
+        Remove-AllContainers -Session $Session
 
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
@@ -164,9 +145,6 @@ Describe "Single compute node protocol tests with utils" {
             Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
-        $IisTcpTestDockerImage = "iis-tcptest"
-
-        Initialize-DockerImage -Session $Session -DockerImageName $IisTcpTestDockerImage
 
         Install-DockerDriver -Session $Session
         Install-Extension -Session $Session
@@ -182,11 +160,6 @@ Describe "Single compute node protocol tests with utils" {
 
     AfterAll {
         if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-
-        Write-Host "Removing iis-tcptest image from testbed"
-        Invoke-Command -Session $Session {
-            docker image rm $Using:IisTcpTestDockerImage -f 2>$null
-        }
 
         Uninstall-DockerDriver -Session $Session
         Uninstall-Extension -Session $Session
