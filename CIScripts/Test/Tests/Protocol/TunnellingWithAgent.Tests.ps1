@@ -250,6 +250,55 @@ function Send-UDPFromContainer {
     Write-Host "Send UDP output from remote session: $Output"
 }
 
+function Test-UDP {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session1,
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session2,
+        [Parameter(Mandatory=$true)] [String] $Container1Name,
+        [Parameter(Mandatory=$true)] [String] $Container2Name,
+        [Parameter(Mandatory=$true)] [String] $Container1IP,
+        [Parameter(Mandatory=$true)] [String] $Container2IP,
+        [Parameter(Mandatory=$true)] [String] $Message,
+        [Parameter(Mandatory=$true)] [Int16] $UDPServerPort,
+        [Parameter(Mandatory=$true)] [Int16] $UDPClientPort
+    )
+
+    Write-Host "Starting UDP Echo server on container $Container1Name ..."
+    Start-UDPEchoServerInContainer `
+        -Session $Session1 `
+        -ContainerName $Container1Name `
+        -ServerPort $UDPServerPort `
+        -ClientPort $UDPClientPort
+
+    Write-Host "Starting UDP listener on container $Container2Name..."
+    Start-UDPListenerInContainer `
+        -Session $Session2 `
+        -ContainerName $Container2Name `
+        -ListenerPort $UDPClientPort
+
+    Write-Host "Sending UDP packet from container $Container2Name..."
+    Send-UDPFromContainer `
+        -Session $Session2 `
+        -ContainerName $Container2Name `
+        -Message $Message `
+        -ListenerIP $Container1IP `
+        -ListenerPort $UDPServerPort `
+        -NumberOfAttempts 10 `
+        -WaitSeconds 1
+
+    Write-Host "Fetching results from listener job..."
+    $ReceivedMessage = Stop-UDPListenerInContainerAndFetchResult -Session $Session2
+    Stop-EchoServerInContainer -Session $Session1
+
+    Write-Host "Sent message: $Message"
+    Write-Host "Received message: $ReceivedMessage"
+    if ($ReceivedMessage -eq $Message) {
+        return $true
+    } else {
+        return $false
+    }
+}
+
 Describe "Tunnelling with Agent tests" {
     Context "Tunneling" {
         It "ICMP: Ping between containers on separate compute nodes succeeds" {
@@ -287,36 +336,16 @@ Describe "Tunnelling with Agent tests" {
             $UDPServerPort = 1905
             $UDPClientPort = 1983
 
-            Write-Host "Starting UDP Echo server on container $Container1ID ..."
-            Start-UDPEchoServerInContainer `
-                -Session $Sessions[0] `
-                -ContainerName $Container1ID `
-                -ServerPort $UDPServerPort `
-                -ClientPort $UDPClientPort
-
-            Write-Host "Starting UDP listener on container $Container2ID..."
-            Start-UDPListenerInContainer `
-                -Session $Sessions[1] `
-                -ContainerName $Container2ID `
-                -ListenerPort $UDPClientPort
-
-            Write-Host "Sending UDP packet from container $Container2ID..."
-            Send-UDPFromContainer `
-                -Session $Sessions[1] `
-                -ContainerName $Container2ID `
+            Test-UDP `
+                -Session1 $Sessions[0] `
+                -Session2 $Sessions[1] `
+                -Container1Name $Container1ID `
+                -Container2Name $Container2ID `
+                -Container1IP $Container1NetInfo.IPAddress `
+                -Container2IP $Container2NetInfo.IPAddress `
                 -Message $MyMessage `
-                -ListenerIP $Container1NetInfo.IPAddress `
-                -ListenerPort $UDPServerPort `
-                -NumberOfAttempts 5 `
-                -WaitSeconds 1
-
-            Write-Host "Fetching results from listener job..."
-            $ReceivedMessage = Stop-UDPListenerInContainerAndFetchResult -Session $Sessions[1]
-            Stop-EchoServerInContainer -Session $Sessions[0]
-
-            Write-Host "Sent message: $MyMessage"
-            Write-Host "Received message: $ReceivedMessage"
-            $ReceivedMessage | Should Be $MyMessage
+                -UDPServerPort $UDPServerPort `
+                -UDPClientPort $UDPClientPort | Should Be $true
 
             # TODO: Uncomment these checks once we can actually control tunneling type.
             # Test-MPLSoGRE -Session $Sessions[0] | Should Be $true
