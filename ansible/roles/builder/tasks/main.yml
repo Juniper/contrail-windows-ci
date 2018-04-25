@@ -13,12 +13,6 @@
     name: NET-Framework-Core
     state: present
 
-- name: Install Python launcher
-  win_package:
-    path: 'https://www.python.org/ftp/python/3.6.5/amd64/launcher.msi'
-    product_id: '{7A43CBD7-66F2-4BEB-9003-76EEE401947C}'
-    arguments: /Quiet ALLUSERS=1
-
 - name: Install python 2.7.13
   win_chocolatey:
     name: python2
@@ -37,7 +31,7 @@
     version: 9.0.0.30729
     state: present
 
-- name: Make sure that python2 scons is not present
+- name: Make sure that scons is not present for Python2
   win_command: 'py -2 -m pip uninstall -y scons'
   ignore_errors: yes
 
