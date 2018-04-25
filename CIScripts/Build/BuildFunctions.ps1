@@ -66,7 +66,7 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Contrail-go-api source code generation", {
         Invoke-NativeCommand -ScriptBlock {
-            python src/contrail-api-client/generateds/generateDS.py -q -f `
+            py src/contrail-api-client/generateds/generateDS.py -q -f `
                                     -o $srcPath/vendor/github.com/Juniper/contrail-go-api/types/ `
                                     -g golang-api src/contrail-api-client/schema/vnc_cfg.xsd
 
