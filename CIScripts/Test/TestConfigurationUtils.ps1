@@ -474,7 +474,7 @@ function Remove-AllContainers {
 
     foreach ($Session in $Session) {
         Invoke-Command -Session $Session -ScriptBlock {
-            $Containers = docker ps -q
+            $Containers = docker ps -aq
                 if($Containers) {
                     docker rm -f $Containers | Out-Null
                 }
