@@ -102,8 +102,7 @@ Describe "vRouter Agent service" {
                 Disable-AgentService -Session $Session
             }
         } finally {
-            $Logs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
-            Merge-Logs -LogSources $Logs
+            Merge-Logs -LogSources (New-ContrailLogsSource -Sessions $Session)
         }
     }
 

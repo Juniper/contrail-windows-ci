@@ -12,6 +12,12 @@ function New-LogSource {
     }
 }
 
+function New-ContrailLogsSource {
+    Param([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
+
+    New-LogSource -Sessions $Sessions -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
+}
+
 function Invoke-CommandRemoteOrLocal {
     param([ScriptBlock] $Func, [PSSessionT] $Session, [Object[]] $Arguments) 
     if ($Session) {

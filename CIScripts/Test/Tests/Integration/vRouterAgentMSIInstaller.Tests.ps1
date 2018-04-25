@@ -73,8 +73,7 @@ Describe "vRouter Agent MSI installer" {
         try {
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         } finally {
-            $AgentLogs = New-LogSource -Sessions $Session -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
-            Merge-Logs -LogSources $AgentLogs
+            Merge-Logs -LogSources (New-ContrailLogsSource -Sessions $Session)
         }
     }
 }

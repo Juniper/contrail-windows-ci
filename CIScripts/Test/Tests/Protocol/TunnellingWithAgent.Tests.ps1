@@ -304,8 +304,7 @@ Describe "Tunnelling with Agent tests" {
             Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
             Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
         } finally {
-            $Logs = New-LogSource -Sessions $Sessions -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
-            Merge-Logs -LogSources $Logs
+            Merge-Logs -LogSources (New-ContrailLogsSource -Sessions $Sessions)
         }
     }
 }
