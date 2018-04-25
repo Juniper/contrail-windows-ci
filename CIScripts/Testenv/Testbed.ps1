@@ -1,6 +1,5 @@
 . $PSScriptRoot\..\Common\Credentials.ps1
 . $PSScriptRoot\Testenv.ps1
-. $PSScriptRoot\..\Test\PesterLogger\RemoteLogCollector.ps1
 
 function Get-TestbedCredential {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText",
@@ -47,8 +46,4 @@ function New-RemoteSessions {
     return $Sessions
 }
 
-function New-ContrailLogsSource {
-    Param([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
-
-    New-LogSource -Sessions $Sessions -Path "C:/ProgramData/Contrail/var/log/contrail/*.log"
-}
+function Get-ComputeLogsPath { "C:/ProgramData/Contrail/var/log/contrail/*.log" }
