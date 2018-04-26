@@ -7,6 +7,7 @@ Param (
 . $PSScriptRoot/../../Testenv/Testenv.ps1
 . $PSScriptRoot/../../Testenv/Testbed.ps1
 
+. $PSScriptRoot/PesterLogger.ps1
 . $PSScriptRoot/Get-CurrentPesterScope.ps1
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
