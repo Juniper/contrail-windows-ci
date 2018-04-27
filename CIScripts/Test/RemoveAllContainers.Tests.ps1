@@ -53,6 +53,10 @@ Describe "Remove-AllContainers" {
 
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
         $Session = $Sessions[0]
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
