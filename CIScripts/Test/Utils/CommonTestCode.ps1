@@ -1,5 +1,5 @@
 . $PSScriptRoot\..\..\Common\Aliases.ps1
-. $PSScriptRoot\..\Test\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\PesterLogger\PesterLogger.ps1
 
 class NetAdapterMacAddresses {
     [string] $MACAddress;
