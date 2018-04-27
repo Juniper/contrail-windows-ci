@@ -1,4 +1,5 @@
 . $PSScriptRoot\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\Test\PesterLogger\PesterLogger.ps1
 
 class NetAdapterMacAddresses {
     [string] $MACAddress;
@@ -142,19 +143,19 @@ function Initialize-MPLSoGRE {
         }
     }
 
-    Write-Host "Getting VM NetAdapter Information"
+    Write-Log "Getting VM NetAdapter Information"
     $VM1NetInfo = Get-RemoteNetAdapterInformation -Session $Session1 -AdapterName $SystemConfig.AdapterName
     $VM2NetInfo = Get-RemoteNetAdapterInformation -Session $Session2 -AdapterName $SystemConfig.AdapterName
 
-    Write-Host "Getting VM vHost NetAdapter Information"
+    Write-Log "Getting VM vHost NetAdapter Information"
     $VM1VHostInfo = Get-RemoteNetAdapterInformation -Session $Session1 -AdapterName $SystemConfig.VHostName
     $VM2VHostInfo = Get-RemoteNetAdapterInformation -Session $Session2 -AdapterName $SystemConfig.VHostName
 
-    Write-Host "Getting Containers NetAdapter Information"
+    Write-Log "Getting Containers NetAdapter Information"
     $Container1NetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session1 -ContainerID $Container1ID
     $Container2NetInfo = Get-RemoteContainerNetAdapterInformation -Session $Session2 -ContainerID $Container2ID
 
-    Write-Host "Initializing vRouter structures"
+    Write-Log "Initializing vRouter structures"
     # IPs of logical routers. They do not have to be IPs of the VMs.
     $VM1LogicalRouterIPAddress = "192.168.3.101"
     $VM2LogicalRouterIPAddress = "192.168.3.102"
@@ -167,7 +168,7 @@ function Initialize-MPLSoGRE {
         -ThisContainerNetInfo $Container2NetInfo -OtherContainerNetInfo $Container1NetInfo -ThisVHostInfo $VM2VHostInfo `
         -ThisIPAddress $VM2LogicalRouterIPAddress -OtherIPAddress $VM1LogicalRouterIPAddress
 
-    Write-Host "Executing netsh"
+    Write-Log "Executing netsh"
     Invoke-Command -Session $Session1 -ScriptBlock {
         $ContainerAdapterName = $Using:Container1NetInfo.AdapterFullName
         docker exec $Using:Container1ID netsh interface ipv4 add neighbors "$ContainerAdapterName" `
