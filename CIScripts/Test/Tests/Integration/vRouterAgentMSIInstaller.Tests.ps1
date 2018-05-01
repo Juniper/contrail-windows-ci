@@ -3,24 +3,37 @@
     "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
 
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
+. $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\..\Common\Aliases.ps1
-. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
-$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-$Session = $Sessions[0]
-
-$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 Describe "vRouter Agent MSI installer" {
+
+    BeforeAll {
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Session = $Sessions[0]
+
+        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        Initialize-PesterLogger -OutDir $LogDir
+    }
+
+    AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
+        Remove-PSSession $Sessions
+    }
 
     function Test-AgentMSIBehaviourCorrect {
         Install-Agent -Session $Session
@@ -57,6 +70,10 @@ Describe "vRouter Agent MSI installer" {
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+        try {
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+        } finally {
+            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+        }
     }
 }

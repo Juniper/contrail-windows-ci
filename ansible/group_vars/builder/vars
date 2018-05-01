@@ -1,5 +1,6 @@
 jenkins_agent_labels: "builder windows"
-jenkins_agent_num_executors: 4
+statistic_group: "builders"
+jenkins_agent_num_executors: 2
 # Jenkins slave vars
 win_base_jenkins_path: 'J:\Jenkins'
 

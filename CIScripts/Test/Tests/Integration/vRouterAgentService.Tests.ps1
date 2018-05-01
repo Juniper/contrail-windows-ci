@@ -1,23 +1,20 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
 . $PSScriptRoot\..\..\..\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\..\..\..\Common\Init.ps1
+. $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\..\Common\Aliases.ps1
-. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
-$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-$Session = $Sessions[0]
-
-$ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 Describe "vRouter Agent service" {
     
@@ -99,13 +96,38 @@ Describe "vRouter Agent service" {
     }
 
     AfterEach {
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
-            Disable-AgentService -Session $Session
+        try {
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+            if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
+                Disable-AgentService -Session $Session
+            }
+        } finally {
+            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
     BeforeAll {
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Session = $Sessions[0]
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        Initialize-PesterLogger -OutDir $LogDir
+
         Install-DockerDriver -Session $Session
         Install-Agent -Session $Session
         Install-Extension -Session $Session
@@ -113,9 +135,11 @@ Describe "vRouter Agent service" {
     }
 
     AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
         Uninstall-DockerDriver -Session $Session
         Uninstall-Agent -Session $Session
         Uninstall-Extension -Session $Session
         Uninstall-Utils -Session $Session
+        Remove-PSSession $Sessions
     }
 }

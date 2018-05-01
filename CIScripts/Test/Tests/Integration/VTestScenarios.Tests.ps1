@@ -1,19 +1,15 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
 . $PSScriptRoot\..\..\..\Common\Init.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
-
-$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-$Session = $Sessions[0]
-
-$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
 Describe "vTest scenarios" {
     It "passes all vtest scenarios" {
@@ -29,14 +25,21 @@ Describe "vTest scenarios" {
     }
 
     BeforeAll {
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Session = $Sessions[0]
+
+        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
         Install-Extension -Session $Session
         Install-Utils -Session $Session
         Enable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
     }
 
     AfterAll {
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
         Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         Uninstall-Utils -Session $Session
         Uninstall-Extension -Session $Session
+        Remove-PSSession $Sessions
     }
 }

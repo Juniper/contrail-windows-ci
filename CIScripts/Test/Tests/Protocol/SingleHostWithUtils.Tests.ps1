@@ -1,25 +1,22 @@
 Param (
-    [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
 )
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\Common\Init.ps1
+. $PSScriptRoot\..\..\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
-. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\..\Common\VMUtils.ps1
-. $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\Utils\CommonTestCode.ps1 # Get-RemoteNetAdapterInformation
 . $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1 
+. $PSScriptRoot\..\..\..\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
-$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
-$Session = $Sessions[0]
-
-$OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-$ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-$SystemConfig = Read-SystemConfig -Path $TestenvConfFile
-$IisTcpTestDockerImage = "iis-tcptest"
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 Describe "Single compute node protocol tests with utils" {
 
@@ -32,7 +29,7 @@ Describe "Single compute node protocol tests with utils" {
             [Parameter(Mandatory = $true)] [PSSessionT] $Session
         )
 
-        Write-Host $("Setting a connection between " + $Container1NetInfo.MACAddress + `
+        Write-Log $("Setting a connection between " + $Container1NetInfo.MACAddress + `
         " and " + $Container2NetInfo.MACAddress + "...")
 
         Invoke-Command -Session $Session -ScriptBlock {
@@ -68,7 +65,7 @@ Describe "Single compute node protocol tests with utils" {
     It "TCP connection works" {
         Invoke-Command -Session $Session -ScriptBlock {
             $Container1IP = $Using:Container1NetInfo.IPAddress
-            docker exec $Using:Container2ID powershell "Invoke-WebRequest -Uri http://${Container1IP}:8080/ -ErrorAction Continue" | Write-Host
+            docker exec $Using:Container2ID powershell "Invoke-WebRequest -Uri http://${Container1IP}:8080/ -ErrorAction Continue" | Out-Null
             return $LASTEXITCODE
         } | Should Be 0
 
@@ -83,7 +80,7 @@ Describe "Single compute node protocol tests with utils" {
             "10.0.0.200"
         )
 
-        Write-Host "Creating ContrailNetwork"
+        Write-Log "Creating ContrailNetwork"
         $NetworkName = "testnet"
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -103,21 +100,21 @@ Describe "Single compute node protocol tests with utils" {
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
-        Write-Host "Creating containers"
-        $Container1ID, $Container2ID = Invoke-Command -Session $Session -ScriptBlock {
-            docker run --network $Using:NetworkName -d iis-tcptest
-            docker run --network $Using:NetworkName -d microsoft/nanoserver ping -t localhost
-        }
+        Write-Log "Creating container 1"
+        $Container1ID = New-Container -Session $Session -NetworkName $NetworkName -Image iis-tcptest
 
-        Write-Host "Getting VM NetAdapter Information"
+        Write-Log "Creating container 2"
+        $Container2ID = New-Container -Session $Session -NetworkName $NetworkName
+
+        Write-Log "Getting VM NetAdapter Information"
         $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
             -AdapterName $SystemConfig.AdapterName
 
-        Write-Host "Getting vHost NetAdapter Information"
+        Write-Log "Getting vHost NetAdapter Information"
         $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
             -AdapterName $SystemConfig.VHostName
 
-        Write-Host "Getting Containers NetAdapter Information"
+        Write-Log "Getting Containers NetAdapter Information"
         $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
             -Session $Session -ContainerID $Container1ID
         $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
@@ -130,21 +127,33 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterEach {
-        Write-Host "Removing containers"
-        if (Get-Variable Container1ID -ErrorAction SilentlyContinue) {
-            Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container1ID } | Out-Null
-            Invoke-Command -Session $Session -ScriptBlock { docker rm -f $Using:Container2ID } | Out-Null
-        }
-
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-        if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-            $ContrailNM.RemoveNetwork($ContrailNetwork)
+        try {
+            Write-Log "Removing containers"
+            Remove-AllContainers -Session $Session
+    
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+            if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
+                $ContrailNM.RemoveNetwork($ContrailNetwork)
+                Remove-Variable "ContrailNetwork"
+            }
+        } finally {
+            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
-
     BeforeAll {
-        Initialize-DockerImage -Session $Session -DockerImageName $IisTcpTestDockerImage
+        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Session = $Sessions[0]
+
+        $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+        $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+
+        Initialize-PesterLogger -OutDir $LogDir
 
         Install-DockerDriver -Session $Session
         Install-Extension -Session $Session
@@ -159,13 +168,12 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     AfterAll {
-        Write-Host "Removing iis-tcptest image from testbed"
-        Invoke-Command -Session $Session {
-            docker image rm $Using:IisTcpTestDockerImage -f 2>$null
-        }
+        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
 
         Uninstall-DockerDriver -Session $Session
         Uninstall-Extension -Session $Session
         Uninstall-Utils -Session $Session
+
+        Remove-PSSession $Sessions
     }
 }

@@ -1,5 +1,35 @@
 ---
 - hosts: localhost
+  gather_facts: no
+  connection: local
+  vars_prompt:
+  - name: testenv_name
+    private: no
+  - name: testenv_folder
+    private: no
+  - name: testenv_mgmt_network
+    private: no
+  - name: testenv_data_network
+    private: no
+  - name: testenv_controller_template
+    private: no
+  - name: testenv_testbed_template
+    private: no
+  - name: vcenter_datastore_cluster
+    private: no
+  tasks:
+  - name: Preserve prompted parameters
+    set_fact:
+      testenv_name: "{{ testenv_name }}"
+      testenv_folder: "{{ testenv_folder }}"
+      testenv_mgmt_network: "{{ testenv_mgmt_network }}"
+      testenv_data_network: "{{ testenv_data_network }}"
+      testenv_controller_template: "{{ testenv_controller_template }}"
+      testenv_testbed_template: "{{ testenv_testbed_template }}"
+      vcenter_datastore_cluster: "{{ vcenter_datastore_cluster }}"
+
+- hosts: localhost
+  gather_facts: no
   connection: local
   roles:
   - testenv-inventory-build
@@ -15,8 +45,8 @@
     copy:
       src: "files/{{ item }}"
       dest: "{{ script_path.path }}"
-      owner: jenkins
-      group: jenkins
+      owner: "{{ ansible_user_id }}"
+      group: "{{ ansible_user_id }}"
       mode: 0755
       force: yes
     with_items:
@@ -34,7 +64,6 @@
 
 - hosts: testenv
   gather_facts: no
-  strategy: free
   any_errors_fatal: true
   roles:
   - role: vmware-vm
@@ -54,6 +83,7 @@
     - controller
 
 - hosts: localhost
+  gather_facts: no
   connection: local
   roles:
     - testenv-save-conf

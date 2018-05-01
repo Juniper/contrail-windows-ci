@@ -62,29 +62,47 @@ function Get-RemoteContainerNetAdapterInformation {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $ContainerID)
 
-    $NetAdapterInformation = Invoke-Command -Session $Session -ScriptBlock {
-        $NetAdapterCommand = "(Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]"
+    $Adapter = Invoke-Command -Session $Session -ScriptBlock {
 
-        $IfIndex = docker exec $Using:ContainerID powershell "${NetAdapterCommand}.IfIndex"
-        $IfName = docker exec $Using:ContainerID powershell "${NetAdapterCommand}.IfName"
-        $AdapterFullName = docker exec $Using:ContainerID powershell "${NetAdapterCommand}.Name"
-        $AdapterShortName = [regex]::new("vEthernet \((.*)\)").Replace($AdapterFullName, "`$1")
-        $MACAddressWindows = docker exec $Using:ContainerID powershell "${NetAdapterCommand}.MacAddress.ToLower()"
-        $MACAddress = $MACAddressWindows.Replace("-", ":")
-        $IPAddress = docker exec $Using:ContainerID powershell "(Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias '${AdapterFullName}').IPAddress"
+        $RemoteCommand = {
+            $GetIPAddress = { ($_ | Get-NetIPAddress -AddressFamily IPv4).IPAddress }
+            $Fields = 'ifIndex', 'ifName', 'Name', 'MacAddress', @{L='IPAddress'; E=$GetIPAddress}
+            $Adapter = (Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]
+            $Adapter | Select-Object $Fields | ConvertTo-Json
+        }.toString()
 
-        return @{
-            IfIndex = $IfIndex;
-            IfName = $IfName;
-            AdapterShortName = $AdapterShortName;
-            AdapterFullName = $AdapterFullName;
-            MACAddress = $MACAddress;
-            MACAddressWindows = $MACAddressWindows;
-            IPAddress = $IPAddress;
-        }
+        docker exec $Using:ContainerID powershell $RemoteCommand
+    } | ConvertFrom-Json
+
+    $Ret = @{
+        ifIndex = $Adapter.ifIndex
+        ifName = $Adapter.ifName
+        AdapterFullName = $Adapter.Name
+        AdapterShortName = [regex]::new('vEthernet \((.*)\)').Replace($Adapter.Name, '$1')
+        MacAddressWindows = $Adapter.MacAddress.ToLower()
+        IPAddress = $Adapter.IPAddress
     }
 
-    return [ContainerNetAdapterInformation] $NetAdapterInformation
+    $Ret.MacAddress = $Ret.MacAddressWindows.Replace('-', ':')
+
+    return [ContainerNetAdapterInformation] $Ret
+}
+
+function Get-VrfStats {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    $VrfStats = Invoke-Command -Session $Session -ScriptBlock {
+        $vrfstatsOutput = $(vrfstats --get 2)
+        $mplsUdpPktCount = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        $mplsGrePktCount = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        $vxlanPktCount = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        return @{
+            MplsUdpPktCount = $mplsUdpPktCount
+            MplsGrePktCount = $mplsGrePktCount
+            VxlanPktCount = $vxlanPktCount
+        }
+    }
+    return $VrfStats
 }
 
 function Initialize-MPLSoGRE {

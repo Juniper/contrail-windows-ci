@@ -1,0 +1,23 @@
+---
+
+- name: Install Telegraf
+  win_chocolatey:
+    name: telegraf
+    state: present
+
+- name: Copy Telegraf config file
+  win_template:
+    src: telegraf.conf.j2
+    dest: '{{ telegraf_path }}\telegraf.conf'
+    force: yes
+
+- name: Add telegraf to PATH
+  win_path:
+    elements:
+    - '{{ telegraf_path }}'
+    state: present
+
+- name: Start telegraf service
+  win_service:
+    name: telegraf
+    state: started
