@@ -11,7 +11,6 @@
     --vm-name "winci-{{ vm_role }}-"
 
 - name: "Deploy VM from Template: winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
-  register: new_vm
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
@@ -33,19 +32,32 @@
 
     networks: "{{ vm_networks }}"
 
-    wait_for_ip_address: yes
+- name: Wait for VMware tools to come up after cloning base template
+  vmware_guest_tools_wait:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ vcenter_validate_certs }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
 
-- name: Get correct IP address of new {{ vm_role }}
-  register: vm
+# NOTE: "Workaround". One way to check if customization has finished is to check hostname through
+#       VMware Tools, but vmware_guest_facts does not support this.
+#       Need to research it.
+- name: Wait for customization to finish (workaround by sleeping)
+  wait_for:
+    timeout: 900
+
+- name: Wait for correct IP address
   vmware_guest_facts:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
-
     datacenter: "{{ vcenter_datacenter }}"
-
-    uuid: "{{ new_vm.instance.hw_product_uuid }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
+  register: vm
   retries: 60
   delay: 15
   until: >
