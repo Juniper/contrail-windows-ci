@@ -6,8 +6,8 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
-    name: "{{ new_vm.instance.hw_name }}"
-    uuid: "{{ new_vm.instance.hw_product_uuid }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
     state: shutdownguest
 
 - name: Wait for Template-{{ vm_role }} to shutdown
@@ -17,10 +17,9 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
-
     datacenter: "{{ vcenter_datacenter }}"
-
-    uuid: "{{ new_vm.instance.hw_product_uuid }}"
+    folder: "{{ template_folder }}"
+    name: "{{ template_name }}"
   retries: 60
   delay: 5
   until: >

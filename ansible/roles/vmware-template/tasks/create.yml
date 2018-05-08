@@ -124,6 +124,8 @@
     template_vm_ip: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
     template_vm_uuid: "{{ vm.instance.hw_product_uuid }}"
 
+# TODO: Maybe add host to inventory before creating/provisiong template?
+#       Plays would be run for this host and vmware modules would delegated to localhost
 - name: Add host to inventory
   add_host:
     name: "{{ template_name }}"

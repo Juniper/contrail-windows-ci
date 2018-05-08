@@ -10,19 +10,23 @@
     --password '{{ vcenter_password }}'
     --vm-name "winci-{{ vm_role }}-"
 
-- name: "Deploy VM from Template: winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
+- name: Define slave VM variables
+  set_fact:
+    slave_vm_annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+    slave_vm_folder: "{{ vcenter_datacenter }}/vm/{{ vmware_folder }}"
+    slave_vm_name: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
+
+- name: "Deploy VM from Template: {{ slave_vm_name }}"
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
-
     datacenter: "{{ vcenter_datacenter }}"
     cluster: "{{ vcenter_cluster }}"
-    folder: "{{ vmware_folder }}"
-
-    name: "winci-{{ vm_role}}-{{ get_vm_id.stdout.strip() }}"
-    annotation: "Template for {{ vm_role }} created on {{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_date_time.epoch) }}"
+    folder: "{{ slave_vm_folder }}"
+    name: "{{ slave_vm_name }}"
+    annotation: "{{ slave_vm_annotation }}"
     template: "{{ vm_template }}"
     hardware: "{{ vm_hardware }}"
     state: poweredon
@@ -38,8 +42,8 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
-    folder: "{{ template_folder }}"
-    name: "{{ template_name }}"
+    folder: "{{ slave_vm_folder }}"
+    name: "{{ slave_vm_name }}"
 
 # NOTE: "Workaround". One way to check if customization has finished is to check hostname through
 #       VMware Tools, but vmware_guest_facts does not support this.
@@ -55,8 +59,8 @@
     password: "{{ vcenter_password }}"
     validate_certs: "{{ vcenter_validate_certs }}"
     datacenter: "{{ vcenter_datacenter }}"
-    folder: "{{ template_folder }}"
-    name: "{{ template_name }}"
+    folder: "{{ slave_vm_folder }}"
+    name: "{{ slave_vm_name }}"
   register: vm
   retries: 60
   delay: 15
@@ -68,6 +72,6 @@
 
 - name: Add host to inventory
   add_host:
-    name: "winci-{{ vm_role }}-{{ get_vm_id.stdout.strip() }}"
+    name: "{{ slave_vm_name }}"
     ansible_host: "{{ vm.instance.hw_eth0.ipaddresses | ipv4 | first }}"
     groups: "{{ vm_role }}"
