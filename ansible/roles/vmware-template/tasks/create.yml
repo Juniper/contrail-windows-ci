@@ -70,19 +70,15 @@
 
 - name: Add additional disks
   when: vm_hdd is defined
-  vmware_guest:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: "{{ vcenter_validate_certs }}"
-    datacenter: "{{ vcenter_datacenter }}"
-    folder: "{{ template_folder }}"
-    name: "{{ template_name }}"
-    disk:
-      - type: thin
-        size_gb: 40
-      - type: "{{ vm_hdd[0].type }}"
-        size_gb: "{{ vm_hdd[0].size }}"
+  script: >
+    add_disk_to_vm.py
+    --host '{{ vcenter_hostname }}'
+    --user '{{ vcenter_user }}'
+    --password '{{ vcenter_password }}'
+    --uuid "{{ vm.instance.hw_product_uuid }}"
+    --disk-type '{{ item.type }}'
+    --disk-size '{{ item.size }}'
+  with_items: "{{ vm_hdd }}"
 
 - name: Power on template VM
   vmware_guest:
