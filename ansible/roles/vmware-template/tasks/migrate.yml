@@ -10,5 +10,5 @@
     --host '{{ vcenter_hostname }}'
     --user '{{ vcenter_user }}'
     --password '{{ vcenter_password }}'
-    --uuid '{{ new_vm.instance.hw_product_uuid }}'
+    --uuid '{{ template_vm_uuid }}'
     --datastore '{{ vcenter_datastore_name }}'
