@@ -3,7 +3,6 @@ import ssl
 import getpass
 import argparse
 import random
-import re
 from pyVmomi import vim
 
 
@@ -71,6 +70,21 @@ class VmwareApi(object):
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
 
 
+    def select_destination_host_and_datastore(self):
+        datastores = self._get_datastores_from_cluster()
+        if len(datastores) == 0:
+            return None, None
+        random.shuffle(datastores)
+        chosen_datastore = datastores[0]
+        chosen_host = chosen_datastore.host[0].key
+        return chosen_host, chosen_datastore
+
+
+    def _get_datastores_from_cluster(self):
+        datastores = [d for d in self.datacenter.datastore if 'ssd' in d.name]
+        return datastores
+
+
     def _setup_common_objects(self, datacenter_name, cluster_name):
         self.content = self.si.RetrieveContent()
 
@@ -109,15 +123,6 @@ class VmwareApi(object):
             folder = self.content.rootFolder
         container = self.content.viewManager.CreateContainerView(folder, [vimtype], True)
         return list(container.view)
-
-    def select_destination_host_and_datastore(self):
-        datastores = [d for d in self.datacenter.datastore if re.match(r'^ci-\w+-ssd3$', d.name)]
-        if len(datastores) == 0:
-            return None, None
-        random.shuffle(datastores)
-        chosen_datastore = datastores[0]
-        chosen_host = chosen_datastore.host[0].key
-        return chosen_host, chosen_datastore
 
 
 def _get_vm_network_interfaces(vm):
@@ -244,49 +249,6 @@ def get_vm_clone_spec(template, config_spec, customization_spec, relocate_spec):
     clone_spec.location = relocate_spec
     clone_spec.snapshot = template.snapshot.rootSnapshotList[0].snapshot
     return clone_spec
-
-
-def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, operation_type):
-    storage_spec = vim.storageDrs.StoragePlacementSpec()
-    storage_spec.cloneName = name
-    storage_spec.folder = folder
-    storage_spec.podSelectionSpec = pod_selection_spec
-    storage_spec.vm = vm
-    storage_spec.cloneSpec = clone_spec
-    storage_spec.type = operation_type
-    return storage_spec
-
-def get_vm_pod_selection_spec(api, datastore_cluster_name):
-    datastore_cluster = _get_datastore_cluster(api, datastore_cluster_name)
-    if not datastore_cluster:
-        raise ResourceNotFound("Couldn't find the datastore cluster with provided name"
-                                "'{}'".format(datastore_cluster_name))
-
-    pod_selection_spec = vim.storageDrs.PodSelectionSpec()
-    pod_selection_spec.storagePod = datastore_cluster
-    return pod_selection_spec
-
-
-def _get_datastore_cluster(api, datastore_cluster_name):
-    datastore_cluster = api.get_vc_object(vim.StoragePod, datastore_cluster_name)
-    return datastore_cluster
-
-
-def clone_template_to_datastore_cluster(api, storage_spec):
-    storage_manager = api.storage_manager
-    recommendation_key = _get_recommendation_key(api, storage_spec)
-    task = storage_manager.ApplyStorageDrsRecommendation_Task(key = recommendation_key)
-    return task
-
-
-def _get_recommendation_key(api, storage_spec):
-    storage_manager = api.storage_manager
-    recommended_datastores = storage_manager.RecommendDatastores(storageSpec = storage_spec)
-    recommendations = recommended_datastores.recommendations
-    if not recommendations:
-        raise ResourceNotFound("Couldn't find any SDRS recommendation to apply")
-    
-    return recommendations[0].key
 
 
 def get_connection_params(args):
