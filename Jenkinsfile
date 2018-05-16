@@ -101,6 +101,7 @@ pipeline {
                         powershell script: './CIScripts/BuildStage.ps1'
 
                         stash name: "Artifacts", includes: "output/**/*"
+                        archiveArtifacts artifacts: "output/**/*"
                     }
                     post {
                         always {
