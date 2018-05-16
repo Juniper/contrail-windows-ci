@@ -19,7 +19,7 @@ function Invoke-DockerDriverUnitTest {
     )
 
     $TestFilePath = ".\" + $Component + ".test.exe"
-    $Command = @($TestFilePath, "--ginkgo.noisyPendings", "--ginkgo.failFast", "--ginkgo.progress", "--ginkgo.v", "--ginkgo.trace")
+    $Command = @($TestFilePath, "--ginkgo.succinct", "--ginkgo.failFast")
     $Command = $Command -join " "
 
     $Res = Invoke-NativeCommand -CaptureOutput -AllowNonZero -Session $Session {
@@ -79,6 +79,6 @@ Describe "Docker Driver" {
     }
 
     AfterEach {
-        Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+        Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
     }
 }

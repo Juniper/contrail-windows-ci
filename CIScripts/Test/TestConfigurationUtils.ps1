@@ -2,6 +2,7 @@
 . $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
+. $PSScriptRoot\PesterLogger\PesterLogger.ps1
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
 $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
@@ -332,12 +333,12 @@ function Initialize-DriverAndExtension {
             break
         }
         catch {
-            Write-Host $_
+            Write-Log $_
 
             if ($i -eq $NRetries) {
                 throw "Docker driver was not enabled."
             } else {
-                Write-Host "Docker driver was not enabled, retrying."
+                Write-Log "Docker driver was not enabled, retrying."
                 Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             }
         }

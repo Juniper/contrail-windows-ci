@@ -53,12 +53,14 @@ function Test-Ping {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [String] $SrcContainerName,
         [Parameter(Mandatory=$true)] [String] $DstContainerName,
-        [Parameter(Mandatory=$true)] [String] $DstContainerIP
+        [Parameter(Mandatory=$true)] [String] $DstContainerIP,
+        [Parameter(Mandatory=$false)] [Int] $BufferSize = 32
     )
 
     Write-Log "Container $SrcContainerName is pinging $DstContainerName..."
     $Res = Invoke-Command -Session $Session -ScriptBlock {
-        docker exec $Using:SrcContainerName powershell "ping $Using:DstContainerIP; `$LASTEXITCODE;"
+        docker exec $Using:SrcContainerName powershell `
+            "ping -l $Using:BufferSize $Using:DstContainerIP; `$LASTEXITCODE;"
     }
     $Output = $Res[0..($Res.length - 2)]
     Write-Log "Ping output: $Output"
@@ -176,7 +178,7 @@ function Stop-EchoServerInContainer {
         return $Output
     }
 
-    Write-Host "Output from UDP echo server running in remote session: $Output"
+    Write-Log "Output from UDP echo server running in remote session: $Output"
 }
 
 function Start-UDPListenerInContainer {
@@ -214,7 +216,7 @@ function Stop-UDPListenerInContainerAndFetchResult {
         $ReceivedMessage = Receive-Job -Job $UDPListenerJob
         return $ReceivedMessage
     }
-    Write-Host "UDP listener output from remote session: $Message"
+    Write-Log "UDP listener output from remote session: $Message"
     return $Message
 }
 
@@ -240,7 +242,7 @@ function Send-UDPFromContainer {
     $Output = Invoke-Command -Session $Session -ScriptBlock {
         docker exec $Using:ContainerName powershell "$Using:UDPSendCommand"
     }
-    Write-Host "Send UDP output from remote session: $Output"
+    Write-Log "Send UDP output from remote session: $Output"
 }
 
 function Test-UDP {
@@ -256,20 +258,20 @@ function Test-UDP {
         [Parameter(Mandatory=$true)] [Int16] $UDPClientPort
     )
 
-    Write-Host "Starting UDP Echo server on container $Container1Name ..."
+    Write-Log "Starting UDP Echo server on container $Container1Name ..."
     Start-UDPEchoServerInContainer `
         -Session $Session1 `
         -ContainerName $Container1Name `
         -ServerPort $UDPServerPort `
         -ClientPort $UDPClientPort
 
-    Write-Host "Starting UDP listener on container $Container2Name..."
+    Write-Log "Starting UDP listener on container $Container2Name..."
     Start-UDPListenerInContainer `
         -Session $Session2 `
         -ContainerName $Container2Name `
         -ListenerPort $UDPClientPort
 
-    Write-Host "Sending UDP packet from container $Container2Name..."
+    Write-Log "Sending UDP packet from container $Container2Name..."
     Send-UDPFromContainer `
         -Session $Session2 `
         -ContainerName $Container2Name `
@@ -279,12 +281,12 @@ function Test-UDP {
         -NumberOfAttempts 10 `
         -WaitSeconds 1
 
-    Write-Host "Fetching results from listener job..."
+    Write-Log "Fetching results from listener job..."
     $ReceivedMessage = Stop-UDPListenerInContainerAndFetchResult -Session $Session2
     Stop-EchoServerInContainer -Session $Session1
 
-    Write-Host "Sent message: $Message"
-    Write-Host "Received message: $ReceivedMessage"
+    Write-Log "Sent message: $Message"
+    Write-Log "Received message: $ReceivedMessage"
     if ($ReceivedMessage -eq $Message) {
         return $true
     } else {
@@ -363,6 +365,43 @@ Describe "Tunnelling with Agent tests" {
 
             Test-MPLSoUDP -Session $Sessions[0] | Should Be $true
             Test-MPLSoUDP -Session $Sessions[1] | Should Be $true
+        }
+    }
+
+    Context "IP fragmentation" {
+        # TODO: Enable this test once fragmentation is properly implemented in vRouter
+        It "ICMP - Ping with big buffer succeeds" -Pending {
+            Test-Ping `
+                -Session $Sessions[0] `
+                -SrcContainerName $Container1ID `
+                -DstContainerName $Container2ID `
+                -DstContainerIP $Container2NetInfo.IPAddress `
+                -BufferSize 1473 | Should Be 0
+
+            Test-Ping `
+                -Session $Sessions[1] `
+                -SrcContainerName $Container2ID `
+                -DstContainerName $Container1ID `
+                -DstContainerIP $Container1NetInfo.IPAddress `
+                -BufferSize 1473 | Should Be 0
+        }
+
+        # TODO: Enable this test once fragmentation is properly implemented in vRouter
+        It "UDP - sending big buffer succeeds" -Pending {
+            $MyMessage = "buffer" * 300
+            $UDPServerPort = 1111
+            $UDPClientPort = 2222
+
+            Test-UDP `
+                -Session1 $Sessions[0] `
+                -Session2 $Sessions[1] `
+                -Container1Name $Container1ID `
+                -Container2Name $Container2ID `
+                -Container1IP $Container1NetInfo.IPAddress `
+                -Container2IP $Container2NetInfo.IPAddress `
+                -Message $MyMessage `
+                -UDPServerPort $UDPServerPort `
+                -UDPClientPort $UDPClientPort | Should Be $true
         }
     }
 
@@ -476,13 +515,18 @@ Describe "Tunnelling with Agent tests" {
 
     AfterEach {
         try {
+            Merge-Logs -LogSources (
+                (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID),
+                (New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID)
+            )
+
             Write-Log "Removing all containers"
             Remove-AllContainers -Sessions $Sessions
     
             Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
             Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
         } finally {
-            Merge-Logs -LogSources (New-LogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
         }
     }
 }
