@@ -198,6 +198,7 @@ pipeline {
                         dir('test_report/detailed') {
                             stash name: 'detailedLogs', allowEmpty: true
                         }
+                        stash name: 'testReportsGo', includes: 'test_report/junit', allowEmpty: true
                     }
                 }
             }
@@ -246,7 +247,8 @@ pipeline {
 
                     dir('to_publish') {
                         unstash 'processedTestReport'
-
+                        unstash 'testReportsGo'
+                        
                         dir('detailed_logs') {
                             try {
                                 unstash 'detailedLogs'
