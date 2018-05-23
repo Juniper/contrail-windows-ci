@@ -62,7 +62,7 @@ function Save-DockerDriverUnitTestReport {
         New-Item -ItemType Directory -Path $LocalJUnitDir | Out-Null
     }
 
-    $FoundRemoteJUnitReports = Invoke-Command -FromSession $Session -ScriptBlock { 
+    $FoundRemoteJUnitReports = Invoke-Command -Session $Session -ScriptBlock { 
         Get-ChildItem -Filter "*_junit.xml" -Recurse -Path $Using:RemoteJUnitDir
     }
 

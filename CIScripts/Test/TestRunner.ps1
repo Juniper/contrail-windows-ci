@@ -13,6 +13,7 @@ function Invoke-TestScenarios {
     $AdditionalJUnitsDir = Join-Path $TestReportOutputDirectory "junit"
     # TODO: Maybe we should collect codecov statistics similarly in the future?
 
+    # TODO2: Changing AdditionalParams force us to modify all the tests that use it -> maybe find a better way to pass them?
     $AdditionalParams = @{
         TestenvConfFile=$TestenvConfFile;
         LogDir=$DetailedLogDir;
