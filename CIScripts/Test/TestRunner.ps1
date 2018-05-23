@@ -10,9 +10,13 @@ function Invoke-TestScenarios {
     )
 
     $DetailedLogDir = Join-Path $TestReportOutputDirectory "detailed"
+    $AdditionalJUnitsDir = Join-Path $TestReportOutputDirectory "junit"
+    # TODO: Maybe we should collect codecov statistics similarly in the future?
+
     $AdditionalParams = @{
         TestenvConfFile=$TestenvConfFile;
         LogDir=$DetailedLogDir;
+        AdditionalJUnitsDir=$AdditionalJUnitsDir;
     }
     $Results = Invoke-PesterTests -TestRootDir $pwd -ReportDir $TestReportOutputDirectory `
         -ExcludeTags CI -AdditionalParams $AdditionalParams
