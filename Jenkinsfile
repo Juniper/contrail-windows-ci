@@ -198,6 +198,8 @@ pipeline {
                         dir('test_report/detailed') {
                             stash name: 'detailedLogs', allowEmpty: true
                         }
+                        
+                        powershell script: "ls -Recurse"
                         stash name: 'testReportsGo', includes: 'test_report/junit', allowEmpty: true
                     }
                 }
