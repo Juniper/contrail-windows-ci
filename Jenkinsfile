@@ -199,7 +199,7 @@ pipeline {
                             stash name: 'detailedLogs', allowEmpty: true
                         }
                         
-                        powershell script: "ls -Recurse"
+                        powershell script: 'ls -Recurse'
                         stash name: 'testReportsGo', includes: 'test_report/junit', allowEmpty: true
                     }
                 }
