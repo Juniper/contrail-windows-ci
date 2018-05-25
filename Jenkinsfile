@@ -199,7 +199,6 @@ pipeline {
                             stash name: 'detailedLogs', allowEmpty: true
                         }
                         
-                        powershell script: "ls -Recurse"
                         dir('test_report/junit') {
                             stash name: 'testReportsGo', allowEmpty: true
                         }
@@ -251,7 +250,7 @@ pipeline {
 
                     dir('to_publish') {
                         unstash 'processedTestReport'
-                        
+
                         dir('detailed_logs') {
                             try {
                                 unstash 'detailedLogs'
