@@ -199,8 +199,10 @@ pipeline {
                             stash name: 'detailedLogs', allowEmpty: true
                         }
                         
-                        powershell script: 'ls -Recurse'
-                        stash name: 'testReportsGo', includes: 'test_report/junit', allowEmpty: true
+                        powershell script: "ls -Recurse"
+                        dir('test_report/junit') {
+                            stash name: 'testReportsGo', allowEmpty: true
+                        }
                     }
                 }
             }
@@ -249,11 +251,17 @@ pipeline {
 
                     dir('to_publish') {
                         unstash 'processedTestReport'
-                        unstash 'testReportsGo'
                         
                         dir('detailed_logs') {
                             try {
                                 unstash 'detailedLogs'
+                            } catch (Exception err) {
+                            }
+                        }
+
+                        dir('junit') {
+                            try {
+                                unstash 'testReportsGo'
                             } catch (Exception err) {
                             }
                         }
