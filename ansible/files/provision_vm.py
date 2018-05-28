@@ -16,6 +16,11 @@ def get_args():
                         action='store',
                         help='Cluster to use (if not provided, script will choose the first one available)')
 
+    parser.add_argument('--datastore-cluster',
+                        required=True,
+                        action='store',
+                        help='Datastore cluster to use')
+
     parser.add_argument('--template',
                         required=True,
                         action='store',
@@ -87,7 +92,7 @@ def provision_vm(api, args):
         raise ResourceNotFound("Couldn't find the folder with the provided path "
                                "'{}'".format(args.folder))
 
-    host, datastore = api.select_destination_host_and_datastore()
+    host, datastore = api.select_destination_host_and_datastore(args.datastore_cluster)
     if not host or not datastore:
         raise ResourceNotFound('Choosing appropriate host and datastore failed')
 

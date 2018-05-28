@@ -70,8 +70,8 @@ class VmwareApi(object):
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
 
 
-    def select_destination_host_and_datastore(self):
-        datastores = self._get_datastores_from_cluster()
+    def select_destination_host_and_datastore(self, datastore_cluster_name):
+        datastores = self._get_datastores_from_cluster(datastore_cluster_name)
         if len(datastores) == 0:
             return None, None
         random.shuffle(datastores)
@@ -80,8 +80,13 @@ class VmwareApi(object):
         return chosen_host, chosen_datastore
 
 
-    def _get_datastores_from_cluster(self):
-        datastores = [d for d in self.datacenter.datastore if 'ssd' in d.name]
+    def _get_datastores_from_cluster(self, datastore_cluster_name):
+        datastore_cluster = self.get_vc_object(vim.StoragePod, datastore_cluster_name)
+        if not datastore_cluster:
+            raise ResourceNotFound("Couldn't find the datastore cluster with provided name"
+                                   "'{}'".format(datastore_cluster_name))
+
+        datastores = list(datastore_cluster.childEntity)
         return datastores
 
 
