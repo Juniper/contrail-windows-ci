@@ -32,7 +32,7 @@
         name: vmware-template
       vars:
         stage: migrate
-        vcenter_datastore_name: "NFS-Datastore"
+        vcenter_datastore_name: "{{ vcenter_datastore_name }}"
       when: vm_role == "testbed"
 
 - hosts: localhost
