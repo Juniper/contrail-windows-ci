@@ -27,7 +27,7 @@ function Test-IsProcessRunning {
         return $(Get-Process $Using:ProcessName -ErrorAction SilentlyContinue)
     }
 
-    return $(if ($Proc) { $true } else { $false })
+    return [bool] $Proc
 }
 
 function Enable-VRouterExtension {
@@ -350,6 +350,9 @@ function Clear-TestConfiguration {
            [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig)
 
     Write-Log "Cleaning up test configuration"
+
+    Write-Log "Agent service status: $( Get-AgentServiceStatus -Session $Session )"
+    Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session
