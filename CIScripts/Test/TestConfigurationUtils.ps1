@@ -311,7 +311,7 @@ function Initialize-DriverAndExtension {
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
-        Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+        Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 
         # DockerDriver automatically enables Extension, so there is no need to enable it manually
         Start-DockerDriver -Session $Session `
