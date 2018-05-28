@@ -317,3 +317,7 @@ projects:
   - name: Juniper/vijava
     template:
       - name: ci-contrail-windows-other-projects-template
+
+  - name: tungstenfabric/contrail-ci-test
+    template:
+      - name: ci-contrail-windows-other-projects-template
