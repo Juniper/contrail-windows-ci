@@ -106,7 +106,7 @@ function Start-DockerDriver {
     # TODO: Remove this when after "no log file" option is supported.
     $OldLogPath = "NUL"
 
-    $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-windows-docker-driver.log"
+    $LogDir = Get-ComputeLogsDir
 
     $Arguments = @(
         "-forceAsInteractive",
@@ -125,13 +125,17 @@ function Start-DockerDriver {
 
         # Nested ScriptBlock variable passing workaround
         $Arguments = $Using:Arguments
-        $LogPath = $Using:LogPath
+        $LogDir = $Using:LogDir
 
         Start-Job -ScriptBlock {
-            Param($Arguments, $LogPath)
+            Param($Arguments, $LogDir)
+
+            New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+            $LogPath = Join-Path $LogDir "contrail-windows-docker-driver.log"
             $ErrorActionPreference = "Continue"
+
             & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments 2>> $LogPath
-        } -ArgumentList $Arguments, $LogPath
+        } -ArgumentList $Arguments, $LogDir
     }
 
     Start-Sleep -s $WaitTime
