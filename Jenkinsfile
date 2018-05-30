@@ -20,6 +20,7 @@ pipeline {
                 checkout scm
 
                 stash name: "CIScripts", includes: "CIScripts/**"
+                stash name: "CISelfcheck", includes: "Invoke-Selfcheck.ps1"
                 stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
@@ -41,7 +42,44 @@ pipeline {
 
         stage('Build, testenv provisioning and sanity checks') {
             parallel {
-                stage('Static analysis on Windows') {
+
+                stage('CI selfcheck - Windows') {
+                    agent { label 'tester' }
+                    steps {
+                        deleteDir()
+                        unstash "CIScripts"
+                        unstash "CISelfcheck"
+                        script {
+                            try {
+                                powershell script: """./Invoke-Selfcheck.ps1 `
+                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck"""
+                            } finally {
+                                stash name: 'testReportsCISelfcheck', includes: 'testReportsRaw/**', allowEmpty: true
+                            }
+                        }
+                    }
+                }
+
+                stage('CI selfcheck - Linux') {
+                    when { expression { env.ghprbPullId } }
+                    agent { label 'linux' }
+                    options {
+                        timeout time: 5, unit: 'MINUTES'
+                    }
+                    steps {
+                        deleteDir()
+                        unstash "CIScripts"
+
+                        unstash "Monitoring"
+                        dir("monitoring") {
+                            sh "python3 -m tests.monitoring_tests"
+                        }
+
+                        runHelpersTests()
+                    }
+                }
+
+                stage('Static analysis - Windows') {
                     agent { label 'builder' }
                     steps {
                         deleteDir()
@@ -52,17 +90,7 @@ pipeline {
                     }
                 }
 
-                stage('Static analysis on Linux') {
-                    agent { label 'linux' }
-                    steps {
-                        deleteDir()
-                        unstash "StaticAnalysis"
-                        unstash "Ansible"
-                        sh "StaticAnalysis/ansible_linter.py"
-                    }
-                }
-
-                stage('CI test') {
+                stage('Static analysis - Linux') {
                     when { expression { env.ghprbPullId } }
                     agent { label 'linux' }
                     options {
@@ -70,11 +98,10 @@ pipeline {
                     }
                     steps {
                         deleteDir()
-                        unstash "Monitoring"
-                        dir("monitoring") {
-                            sh "python3 -m tests.monitoring_tests"
-                        }
-                        runHelpersTests()
+
+                        unstash "StaticAnalysis"
+                        unstash "Ansible"
+                        sh "StaticAnalysis/ansible_linter.py"
                     }
                 }
 
@@ -115,8 +142,9 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201804050628"
-                        CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
+                        // TODO: change after creation of proper templates
+                        TESTBED_TEMPLATE = "Template-testbed-201805280222"
+                        CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin-LinkedClones"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"
                         VCENTER_DATASTORE_CLUSTER = "WinCI-Datastores-SSD"
@@ -192,8 +220,9 @@ pipeline {
                     try {
                         powershell script: """./CIScripts/Test.ps1 `
                             -TestenvConfFile testenv-conf.yaml `
-                            -TestReportDir ${env.WORKSPACE}/test_report/"""
+                            -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
+<<<<<<< HEAD
                         stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
                         dir('test_report/detailed') {
                             stash name: 'detailedLogs', allowEmpty: true
@@ -202,6 +231,9 @@ pipeline {
                         dir('test_report/docker_driver_test_logs') {
                             stash name: 'testReportsGo', allowEmpty: true
                         }
+=======
+                        stash name: 'testReportsWindowsCompute', includes: 'testReportsRaw/**', allowEmpty: true
+>>>>>>> 4f3519dd9441dd39d899f391c4d84705bf00702d
                     }
                 }
             }
@@ -222,17 +254,24 @@ pipeline {
                 unstash 'CIScripts'
                 script {
                     try {
-                        unstash 'testReport'
+                        unstash 'testReportsWindowsCompute'
+                        unstash 'testReportsCISelfcheck'
                     } catch (Exception err) {
                         echo "No test report to parse"
                     } finally {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir test_report `
-                            -OutputDir processed_reports'''
+                            -XmlsDir testReportsRaw/WindowsCompute `
+                            -OutputDir TestReports/WindowsCompute'''
 
-                        dir("processed_reports") {
-                            stash name: 'processedTestReport', allowEmpty: true
-                        }
+                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
+                            -XmlsDir testReportsRaw/CISelfcheck `
+                            -OutputDir TestReports/CISelfcheck'''
+
+                        // Using robocopy to workaround 260 chars path length limitation.
+                        // TODO: Similar method may be used when CISelfcheck generates detailed logs.
+                        robocopy("${pwd()}/testReportsRaw/WindowsCompute/detailed/", "${pwd()}/TestReports/WindowsCompute/detailedLogs", "*.log")
+
+                        stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
                 }
             }
@@ -249,6 +288,7 @@ pipeline {
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
                     dir('to_publish') {
+<<<<<<< HEAD
                         unstash 'processedTestReport'
 
                         dir('detailed_logs') {
@@ -265,19 +305,21 @@ pipeline {
                             }
                         }
 
+=======
+                        unstash 'processedTestReports'
+>>>>>>> 4f3519dd9441dd39d899f391c4d84705bf00702d
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
-
                         publishToLogServer(logServer, ".", destDir)
                     }
 
-                    def testReportsUrl = getLogsURL(logServer, env.ZUUL_UUID)
+                    def logsURL = getLogsURL(logServer, env.ZUUL_UUID)
 
                     if (isGithub()) {
-                        sendGithubComment("Full logs URL: ${testReportsUrl}")
+                        sendGithubComment("Full logs URL: ${logsURL}")
                     }
 
-                    def reportLocationsFile = "${testReportsUrl}/reports-locations.json"
+                    def reportLocationsFile = "${logsURL}/TestReports/WindowsCompute/reports-locations.json"
                     build job: 'WinContrail/gather-build-stats', wait: false,
                         parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
                                      string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),

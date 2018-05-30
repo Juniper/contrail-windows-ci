@@ -24,13 +24,13 @@ actually_used_projects = [
     "Juniper/contrail-vrouter",
     "Juniper/contrail-build",
     "Juniper/contrail-third-party",
-    "Juniper/contrail-sandesh",
     "Juniper/contrail-common",
+    "Juniper/contrail-windows-docker-driver",
 ]
 
 projects = []
 lines_to_preserve = []
-relevant_project_name_re = re.compile("Juniper/.*")
+relevant_project_name_re = re.compile("(Juniper|tungstenfabric)/.*")
 
 print("> Reading original layout file...")
 
