@@ -227,7 +227,7 @@ pipeline {
                             stash name: 'detailedLogs', allowEmpty: true
                         }
                         
-                        dir('test_report/docker_driver_test_logs') {
+                        dir('test_report/ddriver_junit_test_logs') {
                             stash name: 'testReportsGo', allowEmpty: true
                         }
                         stash name: 'testReportsWindowsCompute', includes: 'testReportsRaw/**', allowEmpty: true
@@ -294,7 +294,7 @@ pipeline {
                             }
                         }
 
-                        dir('docker_driver_test_logs') {
+                        dir('ddriver_junit_test_logs') {
                             try {
                                 unstash 'testReportsGo'
                             } catch (Exception err) {
