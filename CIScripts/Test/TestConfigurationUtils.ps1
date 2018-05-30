@@ -129,6 +129,7 @@ function Start-DockerDriver {
 
         Start-Job -ScriptBlock {
             Param($Arguments, $LogPath)
+            $ErrorActionPreference = "Continue"
             & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments 2>> $LogPath
         } -ArgumentList $Arguments, $LogPath
     }
