@@ -222,9 +222,6 @@ pipeline {
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-                        dir('test_report/ddriver_junit_test_logs') {
-                            stash name: 'testReportsGo', allowEmpty: true
-                        }
                         stash name: 'testReportsWindowsCompute', includes: 'testReportsRaw/**', allowEmpty: true
                     }
                 }
@@ -281,14 +278,6 @@ pipeline {
 
                     dir('to_publish') {
                         unstash 'processedTestReports'
-
-                        dir('ddriver_junit_test_logs') {
-                            try {
-                                unstash 'testReportsGo'
-                            } catch (Exception err) {
-                            }
-                        }
-
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
                         publishToLogServer(logServer, ".", destDir)
