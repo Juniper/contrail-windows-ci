@@ -222,7 +222,6 @@ pipeline {
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-<<<<<<< HEAD
                         stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
                         dir('test_report/detailed') {
                             stash name: 'detailedLogs', allowEmpty: true
@@ -231,9 +230,7 @@ pipeline {
                         dir('test_report/docker_driver_test_logs') {
                             stash name: 'testReportsGo', allowEmpty: true
                         }
-=======
                         stash name: 'testReportsWindowsCompute', includes: 'testReportsRaw/**', allowEmpty: true
->>>>>>> 4f3519dd9441dd39d899f391c4d84705bf00702d
                     }
                 }
             }
@@ -288,7 +285,6 @@ pipeline {
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
                     dir('to_publish') {
-<<<<<<< HEAD
                         unstash 'processedTestReport'
 
                         dir('detailed_logs') {
@@ -305,9 +301,6 @@ pipeline {
                             }
                         }
 
-=======
-                        unstash 'processedTestReports'
->>>>>>> 4f3519dd9441dd39d899f391c4d84705bf00702d
                         def logFilename = 'log.txt.gz'
                         obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
                         publishToLogServer(logServer, ".", destDir)
