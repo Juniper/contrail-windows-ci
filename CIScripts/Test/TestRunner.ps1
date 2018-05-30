@@ -10,7 +10,7 @@ function Invoke-TestScenarios {
     )
 
     $DetailedLogDir = Join-Path $TestReportOutputDirectory "detailed"
-    $AdditionalJUnitsDir = Join-Path $TestReportOutputDirectory "junit"
+    $AdditionalJUnitsDir = Join-Path $TestReportOutputDirectory "docker_driver_test_logs"
     # TODO: Maybe we should collect codecov statistics similarly in the future?
 
     # TODO2: Changing AdditionalParams force us to modify all the tests that use it -> maybe find a better way to pass them?

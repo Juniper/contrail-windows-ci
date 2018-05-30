@@ -199,7 +199,7 @@ pipeline {
                             stash name: 'detailedLogs', allowEmpty: true
                         }
                         
-                        dir('test_report/junit') {
+                        dir('test_report/docker_driver_test_logs') {
                             stash name: 'testReportsGo', allowEmpty: true
                         }
                     }
@@ -258,7 +258,7 @@ pipeline {
                             }
                         }
 
-                        dir('junit') {
+                        dir('docker_driver_test_logs') {
                             try {
                                 unstash 'testReportsGo'
                             } catch (Exception err) {
