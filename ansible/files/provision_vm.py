@@ -3,6 +3,7 @@ import argparse
 import getpass
 import signal
 import sys
+import time
 from pyVim.connect import SmartConnection
 from pyVim.task import WaitForTask
 from vmware_api import *
@@ -79,6 +80,15 @@ def get_args():
     return args
 
 
+def wait_until_vm_does_not_exist(api, vm_name, retries=100, delay=10):
+    for _ in range(retries):
+        vm = api.get_vm(vm_name)
+        if not vm:
+            return
+        time.sleep(delay)
+    raise WaitForResourceDeletionTimeout('Timed out while waiting for VM clone task to be canceled')
+
+
 def provision_vm(api, args):
     name = args.name
 
@@ -117,6 +127,7 @@ def provision_vm(api, args):
         if task is not None:
             # In this case we should at least try to cancel the task
             task.CancelTask()
+            wait_until_vm_does_not_exist(api, name)
         raise
 
 def signal_handler(_signo, _stack_frame):
