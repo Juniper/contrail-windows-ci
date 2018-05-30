@@ -222,11 +222,6 @@ pipeline {
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-                        stash name: 'testReport', includes: 'test_report/*.xml', allowEmpty: true
-                        dir('test_report/detailed') {
-                            stash name: 'detailedLogs', allowEmpty: true
-                        }
-                        
                         dir('test_report/ddriver_junit_test_logs') {
                             stash name: 'testReportsGo', allowEmpty: true
                         }
@@ -285,14 +280,7 @@ pipeline {
                     def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
 
                     dir('to_publish') {
-                        unstash 'processedTestReport'
-
-                        dir('detailed_logs') {
-                            try {
-                                unstash 'detailedLogs'
-                            } catch (Exception err) {
-                            }
-                        }
+                        unstash 'processedTestReports'
 
                         dir('ddriver_junit_test_logs') {
                             try {
