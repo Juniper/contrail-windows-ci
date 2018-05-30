@@ -5,7 +5,7 @@
     - name: 'Test connection'
       win_ping:
 
-- hosts: testbed
+- hosts: controller
   tasks:
     - name: 'Test connection'
       ping:
