@@ -6,6 +6,7 @@ import sys
 import time
 from pyVim.connect import SmartConnection
 from pyVim.task import WaitForTask
+from pyVmomi import vmodl
 from vmware_api import *
 
 
@@ -82,8 +83,15 @@ def get_args():
 
 def wait_until_vm_does_not_exist(api, vm_name, retries=100, delay=10):
     for _ in range(retries):
-        vm = api.get_vm(vm_name)
-        if not vm:
+        try:
+            vm = api.get_vm(vm_name)
+            if not vm:
+                return
+        except vmodl.fault.ManagedObjectNotFound as e:
+            # NOTE: When this happens VM does not exist FOR REAL (kind of)
+            # Caught error message:
+            #   The object 'vim.VirtualMachine:vm-IDHERE' has already been deleted or has not been completely created
+            print('vmodl.fault.ManagedObjectNotFound: {}'.format(e.msg))
             return
         time.sleep(delay)
     raise WaitForResourceDeletionTimeout('Timed out while waiting for VM clone task to be canceled')
