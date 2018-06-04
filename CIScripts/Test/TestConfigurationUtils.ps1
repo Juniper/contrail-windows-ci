@@ -301,7 +301,7 @@ function Wait-RemoteInterfaceIP {
             Get-NetAdapter -Name $Using:AdapterName `
                 | Get-NetIPAddress -ErrorAction SilentlyContinue `
                 | Where-Object AddressFamily -eq IPv4 `
-                | Select-IPFromDhcpOrManual
+                | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
         }
     } | Out-Null
 }

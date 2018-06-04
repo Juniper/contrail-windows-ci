@@ -20,14 +20,6 @@ class VMNetAdapterInformation : NetAdapterMacAddresses {
     [string] $GUID;
 }
 
-function Select-IPFromDhcpOrManual {
-    Param ([Parameter(Mandatory = $true, ValueFromPipeline = $true)] [CimInstance] $IPs)
-
-    return $IPs | Where-Object {
-        ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual")
-    }
-}
-
 function Get-RemoteNetAdapterInformation {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName)
