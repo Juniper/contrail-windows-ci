@@ -301,7 +301,7 @@ function Wait-RemoteInterfaceIP {
             Get-NetAdapter -Name $Using:AdapterName `
                 | Get-NetIPAddress -ErrorAction SilentlyContinue `
                 | Where-Object AddressFamily -eq IPv4 `
-                | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
+                | Select-IPFromDhcpOrManual
         }
     } | Out-Null
 }
@@ -460,7 +460,7 @@ function New-Container {
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name,
            [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver")
-           
+
     if (Test-Dockerfile $Image) {
         Initialize-DockerImage -Session $Session -DockerImageName $Image | Out-Null
     }

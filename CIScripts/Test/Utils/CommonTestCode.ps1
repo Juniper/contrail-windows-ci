@@ -20,6 +20,14 @@ class VMNetAdapterInformation : NetAdapterMacAddresses {
     [string] $GUID;
 }
 
+function Select-IPFromDhcpOrManual {
+    Param ([Parameter(Mandatory = $true, ValueFromPipeline = $true)] [CimInstance] $IPs)
+
+    return $IPs | Where-Object {
+        ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual")
+    }
+}
+
 function Get-RemoteNetAdapterInformation {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $AdapterName)
@@ -69,7 +77,7 @@ function Get-RemoteContainerNetAdapterInformation {
             $Fields = 'ifIndex', 'ifName', 'Name', 'MacAddress', @{L='IPAddress'; E=$GetIPAddress}
             $Adapter = (Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]
             $Adapter | Select-Object $Fields | ConvertTo-Json
-        }.toString()
+        }.ToString()
 
         docker exec $Using:ContainerID powershell $RemoteCommand
     } | ConvertFrom-Json
