@@ -134,7 +134,8 @@ function Start-DockerDriver {
             $LogPath = Join-Path $LogDir "contrail-windows-docker-driver.log"
             $ErrorActionPreference = "Continue"
 
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments 2>> $LogPath
+            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments 2>&1 |
+                Out-File -Append -Width 4096 $LogPath
         } -ArgumentList $Arguments, $LogDir
     }
 
