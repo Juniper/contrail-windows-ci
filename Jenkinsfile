@@ -54,7 +54,7 @@ pipeline {
                                 powershell script: """./Invoke-Selfcheck.ps1 `
                                     -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit"""
                             } finally {
-                                stash name: 'CISelfcheckNUnitLogs', includes: 'testReportsRaw/CISelfcheck/raw_NUnit', allowEmpty: true
+                                stash name: 'CISelfcheckNUnitLogs', includes: 'testReportsRaw/CISelfcheck/raw_NUnit/', allowEmpty: true
                             }
                         }
                     }
@@ -222,14 +222,14 @@ pipeline {
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-                        stash name: 'windowsComputeNUnitLogs', includes: 'testReportsRaw/WindowsCompute/raw_NUnit', allowEmpty: true
+                        stash name: 'windowsComputeNUnitLogs', includes: 'testReportsRaw/WindowsCompute/raw_NUnit/', allowEmpty: true
 
                         dir('testReportsRaw') {
                             stash name: 'ddriverJUnitLogs', includes:
-                            'WindowsCompute/ddriver_junit_test_logs', allowEmpty: true
+                            'WindowsCompute/ddriver_junit_test_logs/', allowEmpty: true
 
                             stash name: 'detailedLogs', includes:
-                            'WindowsCompute/detailed_logs', allowEmpty: true
+                            'WindowsCompute/detailed_logs/', allowEmpty: true
                             }
                         }
                     }
@@ -261,7 +261,7 @@ pipeline {
                             -OutputDir TestReports/WindowsCompute'''
 
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/CISelfcheck/raw_NUnit `
+                            -XmlsDir testReportsRaw/CISelfcheck `
                             -OutputDir TestReports/CISelfcheck'''
 
                         powershell script:
