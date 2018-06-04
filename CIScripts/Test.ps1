@@ -18,8 +18,8 @@ $DDriverJUnitLogsOutputDir = Join-Path $TestReportDir "ddriver_junit_test_logs"
 $NUnitsDir = Join-Path $TestReportDir "raw_NUnit"
 
 Invoke-IntegrationAndFunctionalTests -TestenvConfFile $TestenvConfFile `
-    -PesterLogsOutputDir $NUnitsDir`
-    -DetailedLogsOutputDir $DetailedLogsDir`
+    -PesterLogsOutputDir $NUnitsDir `
+    -DetailedLogsOutputDir $DetailedLogsDir `
     -AdditionalJUnitsDir $DDriverJUnitLogsOutputDir
 
 $Job.Done()
