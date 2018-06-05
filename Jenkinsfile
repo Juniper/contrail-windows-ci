@@ -231,8 +231,6 @@ pipeline {
                             stash name: 'detailedLogs', includes:
                             'WindowsCompute/detailed_logs/**', allowEmpty: true
                             }
-                        powershell script:
-                            'ls -Recurse'
                         }
                     }
                 }
@@ -265,11 +263,6 @@ pipeline {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
                             -XmlsDir testReportsRaw/CISelfcheck/raw_NUnit `
                             -OutputDir TestReports/CISelfcheck'''
-
-                        powershell script:
-                            'ls -Recurse'
-                        // Using robocopy to workaround 260 chars path length limitation.
-                        // TODO: Similar method may be used when CISelfcheck generates detailed logs.
 
                         stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
