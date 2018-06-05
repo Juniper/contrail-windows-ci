@@ -43,8 +43,15 @@ function Enable-VRouterExtension {
     $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
     $VMSwitchName = $SystemConfig.VMSwitchName()
 
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
+
     Invoke-Command -Session $Session -ScriptBlock {
         New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
+    }
+
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+
+    Invoke-Command -Session $Session -ScriptBlock {
         $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:ForwardingExtensionName | Where-Object Enabled
         if ($Extension) {
             Write-Warning "Extension already enabled on: $($Extension.SwitchName)"
@@ -359,6 +366,8 @@ function Clear-TestConfiguration {
     Disable-AgentService -Session $Session
     Stop-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
+
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
 
 function New-AgentConfigFile {
@@ -451,7 +460,7 @@ function New-Container {
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name,
            [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver")
-           
+
     if (Test-Dockerfile $Image) {
         Initialize-DockerImage -Session $Session -DockerImageName $Image | Out-Null
     }
