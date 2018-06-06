@@ -1,7 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [string] $AdditionalJUnitsDir = "AdditionalJUnitLogs"
+    [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
 . $PSScriptRoot\..\..\..\Common\Invoke-UntilSucceeds.ps1
