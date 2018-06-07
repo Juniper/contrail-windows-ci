@@ -1,8 +1,6 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [string] $AdditionalJUnitOutputDir = "ddriver_junit_logs_dir",
-    [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
+    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
 . $PSScriptRoot\DockerImageBuild.ps1
