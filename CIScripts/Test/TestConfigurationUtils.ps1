@@ -299,8 +299,9 @@ function Remove-AllUnusedDockerNetworks {
 function Select-ValidNetIPInterface {
     Param ([parameter(Mandatory=$true, ValueFromPipeline=$true)]$GetIPAddressOutput)
 
-    $FoundAdapter = $GetIPAddressOutput | Where-Object AddressFamily -eq "IPv4" `
-    | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
+    $FoundAdapter = $GetIPAddressOutput `
+        | Where-Object AddressFamily -eq "IPv4" `
+        | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
 
     $FoundAdapter
 }
