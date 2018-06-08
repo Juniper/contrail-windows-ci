@@ -20,14 +20,14 @@ Describe "Select-CorrectNetIPInterface unit tests" -Tags CI, Unit {
         }
 
         It "SuffixOrigin isn't matching" {
-            $MockedGetNetIPAddress.SuffixOrigin = "Well-Known"
+            $MockedGetNetIPAddress.SuffixOrigin = {"WellKnown", "Link", "Random"}
             $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
             $TestResult | Should BeNullOrEmpty
         }
 
         It "Both AddressFamily and SuffixOrigin aren't matching" {
             $MockedGetNetIPAddress.AddressFamily = "IPv6"
-            $MockedGetNetIPAddress.SuffixOrigin = "Well-Known"
+            $MockedGetNetIPAddress.SuffixOrigin = {"WellKnown", "Link", "Random"}
             
             $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
             $TestResult  | Should BeNullOrEmpty
