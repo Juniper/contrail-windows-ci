@@ -311,11 +311,12 @@ function Wait-RemoteInterfaceIP {
            [Parameter(Mandatory = $true)] [String] $AdapterName)
 
     Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
-        Invoke-Command -Session $Session {
+        $FoundAdapter = Invoke-Command -Session $Session {
             Get-NetAdapter -Name $Using:AdapterName `
-                | Get-NetIPAddress -ErrorAction SilentlyContinue `
-                | Select-ValidNetIPInterface
+                | Get-NetIPAddress -ErrorAction SilentlyContinue
         }
+
+        $FoundAdapter | Select-ValidNetIPInterface
     } | Out-Null
 }
 
