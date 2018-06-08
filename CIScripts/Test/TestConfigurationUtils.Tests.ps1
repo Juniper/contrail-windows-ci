@@ -1,14 +1,8 @@
 
-. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\TestConfigurationUtils.ps1
 
 Describe "Select-CorrectNetIPInterface unit tests" -Tags CI, Unit {
-        It "AddressFamily is matching and SuffixOrigin is 'Dhcp'" {
-            $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
-            $TestResult | Should -eq $MockedGetNetIPAddress
-        }
-
-        It "AddressFamily is matching and SuffixOrigin is 'Manual'" {
-            $MockedGetNetIPAddress.SuffixOrigin = "Dhcp"
+        It "Both AddressFamily and SuffixOrigin match values in Select-CorrectNetIPInterface" {
             $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
             $TestResult | Should -eq $MockedGetNetIPAddress
         }
@@ -20,18 +14,19 @@ Describe "Select-CorrectNetIPInterface unit tests" -Tags CI, Unit {
         }
 
         It "SuffixOrigin isn't matching" {
-            $MockedGetNetIPAddress.SuffixOrigin = {"WellKnown", "Link", "Random"}
+            $MockedGetNetIPAddress.SuffixOrigin = "WellKnown", "Link", "Random"
             $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
             $TestResult | Should BeNullOrEmpty
         }
 
-        It "Both AddressFamily and SuffixOrigin aren't matching" {
+        It "Both AddressFamily and SuffixOrigin do not match" {
             $MockedGetNetIPAddress.AddressFamily = "IPv6"
-            $MockedGetNetIPAddress.SuffixOrigin = {"WellKnown", "Link", "Random"}
+            $MockedGetNetIPAddress.SuffixOrigin = "WellKnown", "Link", "Random"
             
             $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
             $TestResult  | Should BeNullOrEmpty
         }
+
         It "Both AddressFamily and SuffixOrigin are empty strings" {
             $MockedGetNetIPAddress.AddressFamily = ""
             $MockedGetNetIPAddress.SuffixOrigin = ""
@@ -39,6 +34,7 @@ Describe "Select-CorrectNetIPInterface unit tests" -Tags CI, Unit {
             $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
             $TestResult | Should BeNullOrEmpty
         }
+
     BeforeEach {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
@@ -46,7 +42,7 @@ Describe "Select-CorrectNetIPInterface unit tests" -Tags CI, Unit {
         )]
         $MockedGetNetIPAddress = @{
             AddressFamily = "IPv4";
-            SuffixOrigin = "Dhcp"
+            SuffixOrigin = "Dhcp", "Manual"
         }
     }
 }
