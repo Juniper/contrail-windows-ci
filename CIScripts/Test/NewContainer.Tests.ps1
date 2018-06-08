@@ -44,13 +44,13 @@ Describe "New-Container" {
         Invoke-Command -Session $Session {
             $DockerThatSucceedsInSecondAttempt = @'
             if ($args[0] -eq "run") {{
-                $Hope = "HopeForSuccess"
-                if (Test-Path $Hope) {{
+                $TmpFlagFile = "HopeForSuccess"
+                if (Test-Path $TmpFlagFile) {{
                     Write-Output "{0}"
-                    Remove-Item $Hope
+                    Remove-Item $TmpFlagFile
                     exit 0
                 }} else {{
-                    Set-Content -Path $Hope -Value "New hope"
+                    Set-Content -Path $TmpFlagFile -Value "New hope"
                     Write-Output "{0}"
                     Write-Error "It's Docker here: CreateContainer: failure in a Windows system call. Try again. Good luck!"
                     exit 1
@@ -72,30 +72,30 @@ Describe "New-Container" {
 
     It "Throws exception when container creation fails in first attempt and reports unknown issue" {
         Invoke-Command -Session $Session {
-            $HopeStorage = "HopeForLuckyTry"
-            Remove-Item $HopeStorage -ErrorAction Ignore
+            $TmpFlagFile = "HopeForLuckyTry"
+            Remove-Item $TmpFlagFile -ErrorAction Ignore
             $DockerThatSucceedsInSecondAttempt = @'
             if ($args[0] -eq "run") {{
-                $Hope = "{1}"
-                if (Test-Path $Hope) {{
+                $TmpFlagFile = "{1}"
+                if (Test-Path $TmpFlagFile) {{
                     Write-Output "{0}"
-                    Remove-Item $Hope
+                    Remove-Item $TmpFlagFile
                     exit 0
                 }} else {{
-                    Set-Content -Path $Hope -Value "There's actually no hope."
+                    Set-Content -Path $TmpFlagFile -Value "There's actually no hope."
                     Write-Output "{0}"
-                    Write-Error "It's Docker here: Error code #190583. Shall you try again?"
+                    Write-Error "It's Docker here: unknown error."
                     exit 1
                 }}
             }} else {{
                 Write-Output "{0}"
                 exit 0
             }}
-'@ -f $Using:ContainerID,$HopeStorage
+'@ -f $Using:ContainerID,$TmpFlagFile
             Set-Content -Path "docker.ps1" -Value $DockerThatSucceedsInSecondAttempt
         }
 
-        $NewContainerID = New-Container `
+        New-Container `
             -Session $Session `
             -NetworkName "SoftwareDefinedNetwork" `
             -Name "jolly-lumberjack" | Should -Throw
