@@ -1,21 +1,21 @@
 
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
-Describe "Select-CorrectNetIPInterface unit tests" -Tags CI, Unit {
+Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
         It "Both AddressFamily and SuffixOrigin match values in Select-CorrectNetIPInterface" {
-            $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
+            $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
             $TestResult | Should -eq $MockedGetNetIPAddress
         }
 
         It "AddressFamily isn't matching" {
             $MockedGetNetIPAddress.AddressFamily = "IPv6"
-            $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
+            $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
             $TestResult | Should BeNullOrEmpty
         }
 
         It "SuffixOrigin isn't matching" {
             $MockedGetNetIPAddress.SuffixOrigin = "WellKnown", "Link", "Random"
-            $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
+            $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
             $TestResult | Should BeNullOrEmpty
         }
 
@@ -23,7 +23,7 @@ Describe "Select-CorrectNetIPInterface unit tests" -Tags CI, Unit {
             $MockedGetNetIPAddress.AddressFamily = "IPv6"
             $MockedGetNetIPAddress.SuffixOrigin = "WellKnown", "Link", "Random"
             
-            $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
+            $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
             $TestResult  | Should BeNullOrEmpty
         }
 
@@ -31,7 +31,7 @@ Describe "Select-CorrectNetIPInterface unit tests" -Tags CI, Unit {
             $MockedGetNetIPAddress.AddressFamily = ""
             $MockedGetNetIPAddress.SuffixOrigin = ""
 
-            $TestResult = $MockedGetNetIPAddress | Select-CorrectNetIPInterface
+            $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
             $TestResult | Should BeNullOrEmpty
         }
 
