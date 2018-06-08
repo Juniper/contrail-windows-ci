@@ -23,7 +23,7 @@ function Initialize-PesterLogger {
     $WriteLogFunc = {
         Param([Parameter(Mandatory = $true)] [object] $Message)
         $Scope = & $DeducerFunc
-        $Filename = ($Scope -join ".") + ".log"
+        $Filename = ($Scope -join ".") + ".txt"
         if (($Filename.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars())) -ne -1) {
             throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':', '/', etc."
         }
