@@ -314,7 +314,7 @@ function Wait-RemoteInterfaceIP {
         Invoke-Command -Session $Session {
             Get-NetAdapter -Name $Using:AdapterName `
                 | Get-NetIPAddress -ErrorAction SilentlyContinue `
-                | Select-CorrectNetIPInterface
+                | Select-ValidNetIPInterface
         }
     } | Out-Null
 }

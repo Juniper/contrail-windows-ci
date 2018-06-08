@@ -2,7 +2,7 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
 Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
-        It "Both AddressFamily and SuffixOrigin match values in Select-CorrectNetIPInterface" {
+        It "Both AddressFamily and SuffixOrigin match values in Select-ValidNetIPInterface" {
             $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
             $TestResult | Should -eq $MockedGetNetIPAddress
         }
