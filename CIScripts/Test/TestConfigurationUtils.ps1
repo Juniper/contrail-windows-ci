@@ -296,6 +296,15 @@ function Remove-AllUnusedDockerNetworks {
     }
 }
 
+function Select-ValidNetIPInterface {
+    Param ([parameter(Mandatory=$true, ValueFromPipeline=$true)]$GetIPAddressOutput)
+
+    $FoundAdapter = $GetIPAddressOutput | Where-Object AddressFamily -eq "IPv4" `
+    | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
+
+    $FoundAdapter
+}
+
 function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [String] $AdapterName)
@@ -304,8 +313,7 @@ function Wait-RemoteInterfaceIP {
         Invoke-Command -Session $Session {
             Get-NetAdapter -Name $Using:AdapterName `
                 | Get-NetIPAddress -ErrorAction SilentlyContinue `
-                | Where-Object AddressFamily -eq IPv4 `
-                | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
+                | Select-CorrectNetIPInterface
         }
     } | Out-Null
 }
