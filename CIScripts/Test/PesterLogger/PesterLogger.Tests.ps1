@@ -28,20 +28,13 @@ Describe "PesterLogger" -Tags CI, Unit {
             Initialize-PesterLogger -OutDir "TestDrive:\some_dir"
             "TestDrive:\some_dir" | Should -Exist
         }
-
     }
 
     Context "Write-Log" {
-        It "writes to correct file" {
-            Initialize-PesterLogger -OutDir "TestDrive:\"
-            Write-Log "msg"
-            Test-Path "TestDrive:\PesterLogger.Write-Log.writes to correct file.log" | Should -Be $true
-        }
-
         It "changing location doesn't change the output directory" {
             Invoke-CommandInLocation TestDrive:\ {
                 Initialize-PesterLogger -OutDir "."
-    
+
                 New-Item -ItemType directory TestDrive:\abcd
 
                 Invoke-CommandInLocation TestDrive:\abcd {
@@ -56,7 +49,28 @@ Describe "PesterLogger" -Tags CI, Unit {
             Initialize-PesterLogger -OutDir "TestDrive:\"
             Write-Log "msg1"
             Write-Log "msg2"
-            Get-Content "TestDrive:\PesterLogger.Write-Log.writes correct messages.log" | Should -Be @("msg1", "msg2")
+            Get-Content "TestDrive:\PesterLogger.Write-Log.writes correct messages.log" |
+                ConvertTo-LogWithoutTimestamps | Should -Be @("msg1", "msg2")
+        }
+
+        It "can write non-strings" {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            Write-Log $true
+            Get-Content "TestDrive:\PesterLogger.Write-Log.can write non-strings.log" |
+                ConvertTo-LogWithoutTimestamps | Should -Be "True"
+        }
+
+        It "can write arrays" {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            Write-Log ("foo", "bar")
+            Get-Content "TestDrive:\PesterLogger.Write-Log.can write arrays.log" |
+                ConvertTo-LogWithoutTimestamps | Should -Be ("foo", "bar")
+        }
+
+        It "writes to correct file" {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            Write-Log "msg"
+            Test-Path "TestDrive:\PesterLogger.Write-Log.writes to correct file.log" | Should -Be $true
         }
 
         It "errors if test name contains : " {
@@ -68,13 +82,35 @@ Describe "PesterLogger" -Tags CI, Unit {
             Initialize-PesterLogger -OutDir "TestDrive:\"
             { Write-Log "msg1" } | Should -Throw
         }
+
+        Context "Timestamps" {
+            $RealGetDate = Get-Command Get-Date -CommandType Cmdlet
+            Mock Get-Date {
+                & $RealGetDate `
+                    -Year 2018 `
+                    -Month 6 `
+                    -Day 8 `
+                    -Hour 14 `
+                    -Minute 46 `
+                    -Second 44 `
+                    -Millisecond 42 `
+                    @Args
+            }
+
+            It "are present in logs" {
+                Initialize-PesterLogger -OutDir "TestDrive:\"
+                Write-Log "foo"
+                Get-Content "TestDrive:\PesterLogger.Write-Log.Timestamps.are present in logs.log" |
+                    Should -Be "2018-06-08 14:46:44.042000 | foo"
+            }
+        }
     }
 
     Context "Initializing in BeforeEach" {
         It "registers Write-Log correctly" {
             Write-Log "hi"
             Get-Content "TestDrive:\PesterLogger.Initializing in BeforeEach.registers Write-Log correctly.log" `
-                | Should -Be @("hi")
+                | ConvertTo-LogWithoutTimestamps | Should -Be @("hi")
         }
         BeforeEach {
             Initialize-PesterLogger -OutDir "TestDrive:\"

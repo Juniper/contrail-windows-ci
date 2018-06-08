@@ -39,7 +39,9 @@ function Add-ContentForce {
     if (-not (Test-Path $Path)) {
         New-Item -Force -Path $Path -Type File | Out-Null
     }
-    Add-Content -Path $Path -Value $Value | Out-Null
+    $Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.ffffff | '
+    $TimestampedValue = $Value | ForEach-Object { $Timestamp + $_ }
+    Add-Content -Path $Path -Value $TimestampedValue | Out-Null
 }
 
 function Register-NewFunc {
@@ -57,5 +59,15 @@ function Write-Log {
         Write-LogImpl @Args # Analyzer: Allow Write-LogImpl
     } else {
         Write-Host @Args
+    }
+}
+function ConvertTo-LogWithoutTimestamps {
+    Param([Parameter(ValueFromPipeline, Mandatory=$true)] [AllowEmptyString()] [String[]] $Lines)
+    Process {
+        if ($_.Length -ge 29) {
+            $_.Substring(29)
+        } else {
+            $_
+        }
     }
 }

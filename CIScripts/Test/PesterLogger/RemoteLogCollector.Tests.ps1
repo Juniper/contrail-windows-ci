@@ -39,7 +39,8 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
         Merge-Logs -LogSources $Source1
 
-        $Content = Get-Content "TestDrive:\RemoteLogCollector.appends collected logs to correct output file.log"
+        $Content = Get-Content "TestDrive:\RemoteLogCollector.appends collected logs to correct output file.log" |
+            ConvertTo-LogWithoutTimestamps
         "first message" | Should -BeIn $Content
         "remote log text" | Should -BeIn $Content
     }
@@ -107,7 +108,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         Merge-Logs -DontCleanUp -LogSources $Source2
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.works with multiple sessions in single log source.log"
-        $ContentRaw | Should -BeLike "first message*$DummyLog1*$DummyLog1*"
+        $ContentRaw | Should -BeLike "*first message*$DummyLog1*$DummyLog1*"
         $ContentRaw | Should -BeLike "*remote log text*remote log text*"
         $ContentRaw | Should -BeLike "*localhost*localhost*"
     }
