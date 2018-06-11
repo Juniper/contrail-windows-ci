@@ -38,14 +38,14 @@ class FileLogSource : LogSource {
             $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
             $Logs = @()
             if (-not $Files) {
-                $Logs += [InvalidCollectedLog] @{
+                $Logs += @{
                     Name = $From
                     Err = "<FILE NOT FOUND>"
                 }
             } else {
                 foreach ($File in $Files) {
                     $Content = Get-Content -Raw $File
-                    $Logs += [ValidCollectedLog] @{
+                    $Logs += @{
                         Name = $File
                         Tag = $File.BaseName
                         Content = $Content
@@ -54,7 +54,14 @@ class FileLogSource : LogSource {
             }
             return $Logs
         }
-        return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $this.Session -Arguments $this.Path
+        return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $this.Session -Arguments $this.Path |
+            ForEach-Object {
+                if ($_['Err']) {
+                    [InvalidCollectedLog] $_
+                } else {
+                    [ValidCollectedLog] $_
+                }
+            }
     }
 
     ClearContent() {
@@ -83,7 +90,7 @@ class ContainerLogSource : LogSource {
         }
         $Name = "$( $this.Container ) container logs"
 
-        return if ($Command.ExitCode -eq 0) {
+        $Log = if ($Command.ExitCode -eq 0) {
             [ValidCollectedLog] @{
                 Name = $Name
                 Tag = $this.Container
@@ -95,6 +102,7 @@ class ContainerLogSource : LogSource {
                 Err = $Command.Output
             }
         }
+        return $Log
     }
 
     ClearContent() {
