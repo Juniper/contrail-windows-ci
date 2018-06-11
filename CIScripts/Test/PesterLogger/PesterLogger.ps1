@@ -21,27 +21,57 @@ function Initialize-PesterLogger {
     $ConstOutdir = Resolve-Path $Outdir
 
     $WriteLogFunc = {
-        Param([Parameter(Mandatory = $true)] [object] $Message)
+        Param(
+            [Parameter(Mandatory = $true)] [object] $Message,
+            [parameter(ValueFromRemainingArguments=$true)] $WriterArgs,
+            [Parameter(Mandatory=$false)] [string] $Tag = "tester",
+            [Switch] $NoTimestamps
+        )
+
         $Scope = & $DeducerFunc
         $Filename = ($Scope -join ".") + ".txt"
         if (($Filename.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars())) -ne -1) {
             throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':', '/', etc."
         }
         $Outpath = Join-Path $Script:ConstOutdir $Filename
-        & $WriterFunc -Path $Outpath -Value $Message
+        & $WriterFunc -Path $Outpath -Value $Message -Tag $Tag -UseTimestamps (-not $NoTimestamps)
     }.GetNewClosure()
 
     Register-NewFunc -Name "Write-LogImpl" -Func $WriteLogFunc
 }
 
 function Add-ContentForce {
-    Param([string] $Path, [object] $Value)
+    Param(
+        [Parameter(Mandatory=$true)] [string] $Path,
+        [Parameter(Mandatory=$true)] [object] $Value,
+        [Parameter(Mandatory=$true)] $UseTimestamps,
+        [Parameter(Mandatory=$false)] [string] $Tag
+    )
+
     if (-not (Test-Path $Path)) {
         New-Item -Force -Path $Path -Type File | Out-Null
     }
-    $Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.ffffff | '
-    $TimestampedValue = $Value | ForEach-Object { $Timestamp + $_ }
-    Add-Content -Path $Path -Value $TimestampedValue | Out-Null
+
+    $TimestampFormatString = 'yyyy-MM-dd HH:mm:ss.ffffff'
+
+    $Prefix = if ($UseTimestamps) {
+        Get-Date -Format $TimestampFormatString
+    } else {
+        " " * $TimestampFormatString.Length
+    }
+    $Prefix += " | " + $Tag + " | "
+
+    $PrefixedValue = $Value | ForEach-Object {
+        if ($_ -is [String]) {
+            $_.Split([Environment]::NewLine)
+        } else {
+            $_
+        }
+    } | ForEach-Object {
+        $Prefix + $_
+    }
+
+    Add-Content -Path $Path -Value $PrefixedValue | Out-Null
 }
 
 function Register-NewFunc {

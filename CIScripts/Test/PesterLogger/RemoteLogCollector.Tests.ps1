@@ -31,6 +31,9 @@ function Test-MultipleSourcesAndSessions {
     }
 }
 
+$DummyLog1Basename = "remotelog"
+$DummyLog2Basename = "remotelog_second"
+
 Describe "RemoteLogCollector" -Tags CI, Unit {
     It "appends collected logs to correct output file" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
@@ -41,8 +44,8 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
         $Content = Get-Content "TestDrive:\RemoteLogCollector.appends collected logs to correct output file.txt" |
             ConvertTo-LogWithoutTimestamps
-        "first message" | Should -BeIn $Content
-        "remote log text" | Should -BeIn $Content
+        "tester | first message" | Should -BeIn $Content
+        "$DummyLog1Basename | remote log text" | Should -BeIn $Content
     }
 
     It "cleans logs in source directory" {
@@ -158,7 +161,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         Merge-Logs -LogSources $Source1
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.inserts a message if log file was empty.txt"
-        $ContentRaw | Should -BeLike "*$DummyLog1*<FILE WAS EMPTY>*"
+        $ContentRaw | Should -BeLike "*$DummyLog1*<EMPTY>*"
     }
 
     Test-MultipleSourcesAndSessions
@@ -205,9 +208,10 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
     }
 
     BeforeEach {
-        $DummyLog1 = ((Get-Item $TestDrive).FullName) + "\remotelog.log"
+        $DummyLog1 = Join-Path ((Get-Item $TestDrive).FullName) ($DummyLog1Basename + ".log")
         "remote log text" | Out-File $DummyLog1
-        $DummyLog2 = ((Get-Item $TestDrive).FullName) + "\remotelog_second.log"
+
+        $DummyLog2 = Join-Path ((Get-Item $TestDrive).FullName) ($DummyLog2Basename + ".log")
         "another file content" | Out-File $DummyLog2
     }
 

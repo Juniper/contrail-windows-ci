@@ -3,10 +3,24 @@
 
 . $PSScriptRoot/PesterLogger.ps1
 
+class CollectedLog {
+    [String] $Name
+}
+
+class ValidCollectedLog : CollectedLog {
+    [String] $Name
+    [String] $Tag
+    [Object] $Content
+}
+
+class InvalidCollectedLog : CollectedLog {
+    [Object] $Err
+}
+
 class LogSource {
     [System.Management.Automation.Runspaces.PSSession] $Session
 
-    [Hashtable] GetContent() {
+    [CollectedLog[]] GetContent() {
         throw "LogSource is an abstract class, use specific log source instead"
     }
 
@@ -18,20 +32,23 @@ class LogSource {
 class FileLogSource : LogSource {
     [String] $Path
 
-    [Hashtable] GetContent() {
+    [CollectedLog[]] GetContent() {
         $ContentGetterBody = {
             Param([Parameter(Mandatory = $true)] [string] $From)
             $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
-            $Logs = @{}
+            $Logs = @()
             if (-not $Files) {
-                $Logs[$From] = "<FILE NOT FOUND>"
+                $Logs += [InvalidCollectedLog] @{
+                    Name = $From
+                    Err = "<FILE NOT FOUND>"
+                }
             } else {
                 foreach ($File in $Files) {
                     $Content = Get-Content -Raw $File
-                    $Logs[$File.FullName] = if ($Content) {
-                        $Content
-                    } else {
-                        "<FILE WAS EMPTY>"
+                    $Logs += [ValidCollectedLog] @{
+                        Name = $File
+                        Tag = $File.BaseName
+                        Content = $Content
                     }
                 }
             }
@@ -60,12 +77,23 @@ class FileLogSource : LogSource {
 class ContainerLogSource : LogSource {
     [String] $Container
 
-    [Hashtable] GetContent() {
+    [CollectedLog[]] GetContent() {
         $Command = Invoke-NativeCommand -Session $this.Session -CaptureOutput -AllowNonZero {
             docker logs $Using:this.Container
         }
-        return @{
-            "$( $this.Container ) container logs" = $Command.Output
+        $Name = "$( $this.Container ) container logs"
+
+        return if ($Command.ExitCode -eq 0) {
+            [ValidCollectedLog] @{
+                Name = $Name
+                Tag = $this.Container
+                Content = $Command.Output
+            }
+        } else {
+            [InvalidCollectedLog] @{
+                Name = $Name
+                Err = $Command.Output
+            }
         }
     }
 
@@ -125,12 +153,19 @@ function Merge-Logs {
         Write-Log ("=" * 100)
         Write-Log $ComputerNamePrefix
 
-        $Logs = $LogSource.GetContent()
-        foreach ($Log in $Logs.GetEnumerator()) {
-            $SourceFilenamePrefix = "Contents of $($Log.Key):"
-            Write-Log ("-" * 100)
-            Write-Log $SourceFilenamePrefix
-            Write-Log $Log.Value
+        foreach ($Log in $LogSources.GetContent()) {
+            if ($Log -is [ValidCollectedLog]) {
+                Write-Log ("-" * 100)
+                Write-Log "Contents of $( $Log.Name ):"
+                if ($Log.Content) {
+                    Write-Log -NoTimestamp -Tag $Log.Tag $Log.Content
+                } else {
+                    Write-Log "<EMPTY>"
+                }
+            } else {
+                Write-Log "Error retrieving $( $Log.Name ):"
+                Write-Log $Log.Err
+            }
         }
         
         if (-not $DontCleanUp) {

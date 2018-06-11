@@ -50,21 +50,21 @@ Describe "PesterLogger" -Tags CI, Unit {
             Write-Log "msg1"
             Write-Log "msg2"
             Get-Content "TestDrive:\PesterLogger.Write-Log.writes correct messages.txt" |
-                ConvertTo-LogWithoutTimestamps | Should -Be @("msg1", "msg2")
+                ConvertTo-LogWithoutTimestamps | Should -Be @("tester | msg1", "tester | msg2")
         }
 
         It "can write non-strings" {
             Initialize-PesterLogger -OutDir "TestDrive:\"
             Write-Log $true
             Get-Content "TestDrive:\PesterLogger.Write-Log.can write non-strings.txt" |
-                ConvertTo-LogWithoutTimestamps | Should -Be "True"
+                ConvertTo-LogWithoutTimestamps | Should -Be "tester | True"
         }
 
         It "can write arrays" {
             Initialize-PesterLogger -OutDir "TestDrive:\"
             Write-Log ("foo", "bar")
             Get-Content "TestDrive:\PesterLogger.Write-Log.can write arrays.txt" |
-                ConvertTo-LogWithoutTimestamps | Should -Be ("foo", "bar")
+                ConvertTo-LogWithoutTimestamps | Should -Be ("tester | foo", "tester | bar")
         }
 
         It "writes to correct file" {
@@ -101,7 +101,30 @@ Describe "PesterLogger" -Tags CI, Unit {
                 Initialize-PesterLogger -OutDir "TestDrive:\"
                 Write-Log "foo"
                 Get-Content "TestDrive:\PesterLogger.Write-Log.Timestamps.are present in logs.txt" |
-                    Should -Be "2018-06-08 14:46:44.042000 | foo"
+                    Should -Be "2018-06-08 14:46:44.042000 | tester | foo"
+            }
+
+            It "can be disabled" {
+                Initialize-PesterLogger -OutDir "TestDrive:\"
+                Write-Log -NoTimestamps "foo"
+                Get-Content "TestDrive:\PesterLogger.Write-Log.Timestamps.can be disabled.txt" |
+                    Should -Be "                           | tester | foo"
+            }
+        }
+
+        Context "Tags" {
+            It "default to tester" {
+                Initialize-PesterLogger -OutDir "TestDrive:\"
+                Write-Log "foo"
+                Get-Content "TestDrive:\PesterLogger.Write-Log.Tags.default to tester.txt" |
+                    ConvertTo-LogWithoutTimestamps | Should -Be "tester | foo"
+            }
+
+            It "can be set" {
+                Initialize-PesterLogger -OutDir "TestDrive:\"
+                Write-Log -Tag "testbed" "foo"
+                Get-Content "TestDrive:\PesterLogger.Write-Log.Tags.can be set.txt" |
+                    ConvertTo-LogWithoutTimestamps | Should -Be "testbed | foo"
             }
         }
     }
@@ -110,7 +133,7 @@ Describe "PesterLogger" -Tags CI, Unit {
         It "registers Write-Log correctly" {
             Write-Log "hi"
             Get-Content "TestDrive:\PesterLogger.Initializing in BeforeEach.registers Write-Log correctly.txt" `
-                | ConvertTo-LogWithoutTimestamps | Should -Be @("hi")
+                | ConvertTo-LogWithoutTimestamps | Should -Be @("tester | hi")
         }
         BeforeEach {
             Initialize-PesterLogger -OutDir "TestDrive:\"
