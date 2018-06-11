@@ -44,7 +44,7 @@ function Add-ContentForce {
     Param(
         [Parameter(Mandatory=$true)] [string] $Path,
         [Parameter(Mandatory=$true)] [object] $Value,
-        [Parameter(Mandatory=$true)] $UseTimestamps,
+        [Parameter(Mandatory=$true)] [bool] $UseTimestamps,
         [Parameter(Mandatory=$false)] [string] $Tag
     )
 
