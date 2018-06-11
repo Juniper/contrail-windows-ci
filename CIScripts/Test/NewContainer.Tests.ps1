@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
 . $PSScriptRoot\TestConfigurationUtils.ps1
@@ -44,7 +45,7 @@ Describe "New-Container" {
         Invoke-Command -Session $Session {
             $DockerThatSucceedsInSecondAttempt = @'
             if ($args[0] -eq "run") {{
-                $TmpFlagFile = "HopeForSuccess"
+                $TmpFlagFile = "TestDrive:\HopeForSuccess"
                 if (Test-Path $TmpFlagFile) {{
                     Write-Output "{0}"
                     Remove-Item $TmpFlagFile
@@ -72,7 +73,7 @@ Describe "New-Container" {
 
     It "Throws exception when container creation fails in first attempt and reports unknown issue" {
         Invoke-Command -Session $Session {
-            $TmpFlagFile = "HopeForLuckyTry"
+            $TmpFlagFile = "TestDrive:\HopeForLuckyTry"
             Remove-Item $TmpFlagFile -ErrorAction Ignore
             $DockerThatSucceedsInSecondAttempt = @'
             if ($args[0] -eq "run") {{
