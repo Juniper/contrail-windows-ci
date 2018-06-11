@@ -475,7 +475,7 @@ function New-Container {
     $Arguments += "--network", $NetworkName, $Image
 
     $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero { docker @Using:Arguments }
-    $ContainerID = $Result.Output.Split([Environment]::NewLine) | Select-Object -First 1
+    $ContainerID = $Result.Output[0]
     $OutputMessages = $Result.Output
 
     # Workaround for occasional failures of container creation in Docker for Windows.
@@ -486,7 +486,7 @@ function New-Container {
     if ($Result.Output -match "CreateContainer: failure in a Windows system call") {
         Write-Log "Container creation failed with the following output: $OutputMessages"
         Write-Log "Removing incorrectly created container (if exists)..."
-        Invoke-NativeCommand -Session $Session -AllowNonZero { docker rm -f $Using:ContainerID }
+        Invoke-NativeCommand -Session $Session -AllowNonZero { docker rm -f $Using:ContainerID } | Out-Null
         Write-Log "Retrying container creation..."
         $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
     } elseif ($Result.ExitCode -ne 0) {

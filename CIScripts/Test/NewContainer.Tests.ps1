@@ -19,10 +19,13 @@ Describe "New-Container" {
             Set-Content -Path "docker.ps1" -Value $DockerThatAlwaysSucceeds
         }
 
-        $NewContainerID = New-Container `
-            -Session $Session `
-            -NetworkName "BestNetwork" `
-            -Name "jolly-lumberjack" | Should -Not -Throw
+        {
+            $NewContainerID = New-Container `
+                -Session $Session `
+                -NetworkName "BestNetwork" `
+                -Name "jolly-lumberjack"
+            Set-Variable -Name "NewContainerID" -Value $NewContainerID -Scope 1
+        } | Should -Not -Throw
         $NewContainerID | Should -Be $ContainerID
     }
 
@@ -35,17 +38,21 @@ Describe "New-Container" {
             Set-Content -Path "docker.ps1" -Value $DockerThatAlwaysFails
         }
 
-        New-Container `
-            -Session $Session `
-            -NetworkName "NetworkOfFriends" `
-            -Name "jolly-lumberjack" | Should -Throw
+        {
+            New-Container `
+                -Session $Session `
+                -NetworkName "NetworkOfFriends" `
+                -Name "jolly-lumberjack"
+        } | Should -Throw
     }
 
     It "Reports container id when container creation succeeds in second attempt after failing because of known issue" {
         Invoke-Command -Session $Session {
+            $TmpFlagFile = "HopeForLuckyTry"
+            Remove-Item $TmpFlagFile -ErrorAction Ignore
             $DockerThatSucceedsInSecondAttempt = @'
             if ($args[0] -eq "run") {{
-                $TmpFlagFile = "TestDrive:\HopeForSuccess"
+                $TmpFlagFile = "{1}"
                 if (Test-Path $TmpFlagFile) {{
                     Write-Output "{0}"
                     Remove-Item $TmpFlagFile
@@ -60,20 +67,23 @@ Describe "New-Container" {
                 Write-Output "{0}"
                 exit 0
             }}
-'@ -f $Using:ContainerID
+'@ -f $Using:ContainerID,$TmpFlagFile
             Set-Content -Path "docker.ps1" -Value $DockerThatSucceedsInSecondAttempt
         }
 
-        $NewContainerID = New-Container `
-            -Session $Session `
-            -NetworkName "SoftwareDefinedNetwork" `
-            -Name "jolly-lumberjack" | Should -Not -Throw
+        {
+            $NewContainerID = New-Container `
+                -Session $Session `
+                -NetworkName "SoftwareDefinedNetwork" `
+                -Name "jolly-lumberjack"
+            Set-Variable -Name "NewContainerID" -Value $NewContainerID -Scope 1
+        } | Should -Not -Throw
         $NewContainerID | Should -Be $ContainerID
     }
 
     It "Throws exception when container creation fails in first attempt and reports unknown issue" {
         Invoke-Command -Session $Session {
-            $TmpFlagFile = "TestDrive:\HopeForLuckyTry"
+            $TmpFlagFile = "HopeForLuckyTry"
             Remove-Item $TmpFlagFile -ErrorAction Ignore
             $DockerThatSucceedsInSecondAttempt = @'
             if ($args[0] -eq "run") {{
@@ -96,10 +106,12 @@ Describe "New-Container" {
             Set-Content -Path "docker.ps1" -Value $DockerThatSucceedsInSecondAttempt
         }
 
-        New-Container `
-            -Session $Session `
-            -NetworkName "SoftwareDefinedNetwork" `
-            -Name "jolly-lumberjack" | Should -Throw
+        {
+            New-Container `
+                -Session $Session `
+                -NetworkName "SoftwareDefinedNetwork" `
+                -Name "jolly-lumberjack"
+        } | Should -Throw
     }
 
     BeforeAll {
