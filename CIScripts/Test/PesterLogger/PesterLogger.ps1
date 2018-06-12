@@ -91,13 +91,21 @@ function Write-Log {
         Write-Host @Args
     }
 }
-function ConvertTo-LogWithoutTimestamps {
-    Param([Parameter(ValueFromPipeline, Mandatory=$true)] [AllowEmptyString()] [String[]] $Lines)
+
+class LogItem {
+    [String] $Timestamp
+    [String] $Tag
+    [String] $Message
+}
+
+function ConvertTo-LogItem {
+    Param([Parameter(ValueFromPipeline, Mandatory=$true)] $Line)
     Process {
-        if ($_.Length -ge 29) {
-            $_.Substring(29)
-        } else {
-            $_
+        $Timestamp, $Tag, $Message = $Line.Split("|", 3)
+        [LogItem] @{
+            Timestamp = $Timestamp.Trim()
+            Tag = $Tag.Trim()
+            Message = $Message.Substring(1)
         }
     }
 }
