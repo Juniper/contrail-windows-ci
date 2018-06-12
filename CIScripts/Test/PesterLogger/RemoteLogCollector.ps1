@@ -165,7 +165,7 @@ function Merge-Logs {
         Write-Log ("=" * 100)
         Write-Log $ComputerNamePrefix
 
-        foreach ($Log in $LogSources.GetContent()) {
+        foreach ($Log in $LogSource.GetContent()) {
             if ($Log -is [ValidCollectedLog]) {
                 Write-Log ("-" * 100)
                 Write-Log "Contents of $( $Log.Name ):"
