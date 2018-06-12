@@ -178,11 +178,13 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     Test-MultipleSourcesAndSessions
 
     BeforeEach {
-        $DummyLog1 = ((Get-Item $TestDrive).FullName) + "\remotelog.log"
+        $DummyLog1 = Join-Path ((Get-Item $TestDrive).FullName) ($DummyLog1Basename + ".log")
         "remote log text" | Out-File $DummyLog1
-        $DummyLog2 = ((Get-Item $TestDrive).FullName) + "\remotelog_second.log"
+
+        $DummyLog2 = Join-Path ((Get-Item $TestDrive).FullName) ($DummyLog2Basename + ".log")
         "another file content" | Out-File $DummyLog2
     }
+
 
     AfterEach {
         Remove-Item "TestDrive:/*" 
