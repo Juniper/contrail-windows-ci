@@ -52,7 +52,7 @@ Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
             $TestResult | Should BeNullOrEmpty
         }
 
-        It "Pass valid then invalid object into pipeline" {
+        It "Pass valid/invalid object combinations into pipeline" {
             $InvalidGetNetIPAddress = @{
                 AddressFamily = "IPv4";
                 SuffixOrigin = @("WellKnown", "Link", "Random")
@@ -61,24 +61,21 @@ Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
                 AddressFamily = "IPv4";
                 SuffixOrigin = @("Dhcp", "Manual")
             }
-            $MockedGetNetIPAddress = $InvalidGetNetIPAddress, $ValidGetNetIPAddress
 
+            $MockedGetNetIPAddress = @($InvalidGetNetIPAddress, $ValidGetNetIPAddress)
             $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
             $TestResult | Should Be $ValidGetNetIPAddress
-        }
 
-        It "Pass invalid then valid object into pipeline" {
-            $ValidGetNetIPAddress = @{
-                AddressFamily = "IPv4";
-                SuffixOrigin = @("Dhcp", "Manual")
-            }
-            $InvalidGetNetIPAddress = @{
-                AddressFamily = "IPv6";
-                SuffixOrigin = @("Dhcp", "Manual")
-            }
-            $MockedGetNetIPAddress = @($ValidGetNetIPAddress, $InvalidGetNetIPAddress)
-
+            $MockedGetNetIPAddress = $InvalidGetNetIPAddress, $ValidGetNetIPAddress
             $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
-            $TestResult | Should Be $ValidGetNetIPAddresss
+            $TestResult | Should Be $ValidGetNetIPAddress
+
+            $MockedGetNetIPAddress = @($ValidGetNetIPAddress, $InvalidGetNetIPAddress)
+            $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
+            $TestResult | Should Be $ValidGetNetIPAddress
+
+            $MockedGetNetIPAddress = $InvalidGetNetIPAddress, $InvalidGetNetIPAddress
+            $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
+            $TestResult | Should BeNullOrEmpty
         }
 }
