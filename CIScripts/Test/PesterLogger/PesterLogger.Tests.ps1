@@ -101,23 +101,23 @@ Describe "PesterLogger" -Tags CI, Unit {
                 Initialize-PesterLogger -OutDir "TestDrive:\"
                 Write-Log "foo"
                 Get-Content "TestDrive:\PesterLogger.Write-Log.Timestamps.are present in logs.txt" |
-                    Should -Be "2018-06-08 14:46:44.042000 | tester | foo"
+                    Should -Be "2018-06-08 14:46:44.042000 | test-runner | foo"
             }
 
             It "can be disabled" {
                 Initialize-PesterLogger -OutDir "TestDrive:\"
                 Write-Log -NoTimestamps "foo"
                 Get-Content "TestDrive:\PesterLogger.Write-Log.Timestamps.can be disabled.txt" |
-                    Should -Be "                           | tester | foo"
+                    Should -Be "                           | test-runner | foo"
             }
         }
 
         Context "Tags" {
-            It "default to tester" {
+            It "default to test-runner" {
                 Initialize-PesterLogger -OutDir "TestDrive:\"
                 Write-Log "foo"
-                Get-Content "TestDrive:\PesterLogger.Write-Log.Tags.default to tester.txt" |
-                    ConvertTo-LogItem | Foreach-Object Tag | Should -Be "tester"
+                Get-Content "TestDrive:\PesterLogger.Write-Log.Tags.default to test-runner.txt" |
+                    ConvertTo-LogItem | Foreach-Object Tag | Should -Be "test-runner"
             }
 
             It "can be set" {

@@ -24,7 +24,7 @@ function Initialize-PesterLogger {
         Param(
             [Parameter(Mandatory = $true)] [object] $Message,
             [parameter(ValueFromRemainingArguments=$true)] $WriterArgs,
-            [Parameter(Mandatory=$false)] [string] $Tag = "tester",
+            [Parameter(Mandatory=$false)] [string] $Tag = "test-runner",
             [Switch] $NoTimestamps
         )
 
