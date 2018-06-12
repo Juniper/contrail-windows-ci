@@ -54,6 +54,10 @@ class FileLogSource : LogSource {
             }
             return $Logs
         }
+
+        # We cannot create [ValidCollectedLog] and [InvalidCollectedLog] classes directly
+        # in the closure, as it may be executed in remote session, so as a workaround
+        # we need to fix the types afterwards.
         return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $this.Session -Arguments $this.Path |
             ForEach-Object {
                 if ($_['Err']) {
