@@ -78,23 +78,4 @@ Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
             $TestResult = $MockedGetNetIPAddress | Select-ValidNetIPInterface
             $TestResult | Should BeNullOrEmpty
         }
-
-        It "Call Select-ValidNetIPInterface in Invoke-UntilSucceeds" {
-            $InvalidGetNetIPAddress = @{
-                AddressFamily = "IPv4";
-                SuffixOrigin = @("WellKnown", "Link", "Random")
-            }
-            $ValidGetNetIPAddress = @{
-                AddressFamily = "IPv4";
-                SuffixOrigin = @("Dhcp", "Manual")
-            }
-
-            Invoke-UntilSucceeds -Duration 3 { $ValidGetNetIPAddress | Select-ValidNetIPInterface } `
-                | Should Be $ValidGetNetIPAddress
-            { { $ValidGetNetIPAddress | Select-ValidNetIPInterface } | Invoke-UntilSucceeds -Duration 3 } `
-                | Should Not Throw
-            { { $InvalidGetNetIPAddress | Select-ValidNetIPInterface
-            }  | Invoke-UntilSucceeds -Duration 2 } `
-                | Should Throw
-        }
 }
