@@ -101,14 +101,14 @@ Describe "PesterLogger" -Tags CI, Unit {
                 Initialize-PesterLogger -OutDir "TestDrive:\"
                 Write-Log "foo"
                 Get-Content "TestDrive:\PesterLogger.Write-Log.Timestamps.are present in logs.txt" |
-                    Should -Be "2018-06-08 14:46:44.042000 | test-runner | foo"
+                    ConvertTo-LogItem | Foreach-Object Timestamp | Should -Be "2018-06-08 14:46:44.042000"
             }
 
             It "can be disabled" {
                 Initialize-PesterLogger -OutDir "TestDrive:\"
                 Write-Log -NoTimestamps "foo"
                 Get-Content "TestDrive:\PesterLogger.Write-Log.Timestamps.can be disabled.txt" |
-                    Should -Be "                           | test-runner | foo"
+                    ConvertTo-LogItem | Foreach-Object Timestamp | Should -BeNullOrEmpty
             }
         }
 
@@ -125,6 +125,22 @@ Describe "PesterLogger" -Tags CI, Unit {
                 Write-Log -Tag "testbed" "foo"
                 Get-Content "TestDrive:\PesterLogger.Write-Log.Tags.can be set.txt" |
                     ConvertTo-LogItem | Foreach-Object Tag | Should -Be "testbed"
+            }
+        }
+
+        Context "Formatting" {
+            It "looks as expected with timestamps" {
+                Initialize-PesterLogger -OutDir "TestDrive:\"
+                Write-Log "foo"
+                Get-Content "TestDrive:\PesterLogger.Write-Log.Formatting.looks as expected with timestamps.txt" |
+                    Should -BeLike "????-??-?? ??:??:??.?????? | test-runner | foo"
+            }
+
+            It "looks as expected without timestamps" {
+                Initialize-PesterLogger -OutDir "TestDrive:\"
+                Write-Log -NoTimestamps "foo"
+                Get-Content "TestDrive:\PesterLogger.Write-Log.Formatting.looks as expected without timestamps.txt" |
+                    Should -BeLike "                           | test-runner | foo"
             }
         }
     }
