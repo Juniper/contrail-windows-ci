@@ -11,7 +11,7 @@ function Initialize-PesterLogger {
     Param([Parameter(Mandatory = $true)] [string] $Outdir)
 
     # Closures don't capture functions, so we need to capture them as variables.
-    $WriterFunc = Get-Item function:Add-ContentForce
+    $WriterFunc = Get-Item function:Write-LogToFile
     $DeducerFunc = Get-Item function:Get-CurrentPesterScope
 
     if (-not (Test-Path $Outdir)) {
@@ -40,17 +40,13 @@ function Initialize-PesterLogger {
     Register-NewFunc -Name "Write-LogImpl" -Func $WriteLogFunc
 }
 
-function Add-ContentForce {
+function Write-LogToFile {
     Param(
         [Parameter(Mandatory=$true)] [string] $Path,
         [Parameter(Mandatory=$true)] [object] $Value,
         [Parameter(Mandatory=$true)] [bool] $UseTimestamps,
         [Parameter(Mandatory=$false)] [string] $Tag
     )
-
-    if (-not (Test-Path $Path)) {
-        New-Item -Force -Path $Path -Type File | Out-Null
-    }
 
     $TimestampFormatString = 'yyyy-MM-dd HH:mm:ss.ffffff'
 
@@ -71,7 +67,20 @@ function Add-ContentForce {
         $Prefix + $_
     }
 
-    Add-Content -Path $Path -Value $PrefixedValue | Out-Null
+    Add-ContentForce -Path $Path -Value $PrefixedValue | Out-Null
+}
+
+function Add-ContentForce {
+    Param(
+        [Parameter(Mandatory=$true)] [string] $Path,
+        [Parameter(Mandatory=$true)] [object] $Value
+    )
+
+    if (-not (Test-Path $Path)) {
+        New-Item -Force -Path $Path -Type File | Out-Null
+    }
+
+    Add-Content -Path $Path -Value $Value | Out-Null
 }
 
 function Register-NewFunc {
