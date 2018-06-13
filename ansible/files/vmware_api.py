@@ -76,6 +76,7 @@ class VmwareApi(object):
 
     def get_destination_hosts_and_datastores(self, datastore_cluster_name):
         datastores = self._get_datastores_from_cluster(datastore_cluster_name)
+        datastores = [d for d in datastores if str(d.host[0].key.name) == 'ci-esx01.englab.juniper.net']
         random.shuffle(datastores)
 
         for datastore in datastores:
