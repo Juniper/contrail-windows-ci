@@ -7,6 +7,7 @@ import time
 from pyVim.connect import SmartConnection
 from pyVim.task import WaitForTask
 from pyVmomi import vmodl
+from pyVmomi import vim
 from vmware_api import *
 
 
@@ -110,10 +111,6 @@ def provision_vm(api, args):
         raise ResourceNotFound("Couldn't find the folder with the provided path "
                                "'{}'".format(args.folder))
 
-    host, datastore = api.select_destination_host_and_datastore(args.datastore_cluster)
-    if not host or not datastore:
-        raise ResourceNotFound('Choosing appropriate host and datastore failed')
-
     customization_data = {
         'name': args.name,
         'org': 'Contrail',
@@ -125,22 +122,33 @@ def provision_vm(api, args):
 
     config_spec = get_vm_config_spec(api, vm=template, networks=[args.mgmt_network, args.data_network])
     customization_spec = get_vm_customization_spec(template, **customization_data)
-    relocate_spec = get_vm_relocate_spec(api.cluster, host, datastore)
-    clone_spec = get_vm_clone_spec(template, config_spec, customization_spec, relocate_spec)
 
-    try:
-        task = template.Clone(name=name, folder=folder, spec=clone_spec)
-        WaitForTask(task)
-    except (KeyboardInterrupt, SystemExit):
-        if task is not None:
-            # In this case we should at least try to cancel the task
-            task.CancelTask()
-            wait_until_vm_does_not_exist(api, name)
-        raise
+    hosts_and_datastores = api.get_destination_hosts_and_datastores(args.datastore_cluster)
+    for host, datastore in hosts_and_datastores:
+        relocate_spec = get_vm_relocate_spec(api.cluster, host, datastore)
+        clone_spec = get_vm_clone_spec(template, config_spec, customization_spec, relocate_spec)
+
+        try:
+            task = template.Clone(name=name, folder=folder, spec=clone_spec)
+            WaitForTask(task)
+            return
+        except (KeyboardInterrupt, SystemExit):
+            if task is not None:
+                # In this case we should at least try to cancel the task
+                task.CancelTask()
+                wait_until_vm_does_not_exist(api, name)
+            raise
+        except vim.fault.InvalidHostState:
+            # TODO: Post a warning about cloning failure to some monitoring service
+            continue
+
+    raise ResourceNotFound('Choosing appropriate host and datastore failed')
+
 
 def signal_handler(_signo, _stack_frame):
     # Raise an exception to trigger cleanup handlers
     sys.exit()
+
 
 def main():
     args = get_args()
