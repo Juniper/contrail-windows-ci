@@ -5,6 +5,7 @@ Param (
     [switch] $SkipStaticAnalysis
 )
 
+. $PSScriptRoot\CIScripts\Common\Init.ps1
 . $PSScriptRoot/CIScripts/TestRunner/Invoke-PesterTests.ps1
 
 # NOTE TO DEVELOPERS
@@ -38,7 +39,7 @@ if (-not $TestenvConfFile) {
 }
 
 Write-VisibleMessage "Including tags: $IncludeTags; Excluding tags: $ExcludeTags"
-$Results = Invoke-PesterTests -TestRootDir $pwd -ReportDir $ReportDir `
+$Results = Invoke-PesterTests -TestRootDir $pwd/CiScripts/Test/PesterLogger -ReportDir $ReportDir `
     -IncludeTags $IncludeTags -ExcludeTags $ExcludeTags `
     -AdditionalParams @{TestenvConfFile=$TestenvConfFile}
 
