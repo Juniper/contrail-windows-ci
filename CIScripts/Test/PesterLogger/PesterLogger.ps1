@@ -100,6 +100,10 @@ class LogItem {
 
 function ConvertTo-LogItem {
     Param([Parameter(ValueFromPipeline, Mandatory=$true)] $Line)
+
+    # This function converts formatted log line back to the
+    # separated components, assuming "timestamp | tag | message" format.
+
     Process {
         $Timestamp, $Tag, $Message = $Line.Split("|", 3)
         [LogItem] @{
