@@ -311,7 +311,7 @@ function Wait-RemoteInterfaceIP {
            [Parameter(Mandatory = $true)] [String] $AdapterName)
     $InjectedFunction = [PSCustomObject]@{ Name = 'Select-ValidNetIPInterface'; Body = ${Function:Select-ValidNetIPInterface} }
 
-    Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 15 {
+    Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
         Invoke-Command -Session $Session {
             $Using:InjectedFunction | ForEach-Object { Invoke-Expression "function $($_.Name) { $($_.Body) }" }
 
