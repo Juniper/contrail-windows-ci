@@ -302,14 +302,6 @@ $SelectValidNetIPInterfaceBody = {
         | Where-Object AddressFamily -eq "IPv4" `
         | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") } 
 }
-function Select-ValidNetIPInterface {
-    Param ([parameter(Mandatory=$true, ValueFromPipeline=$true)]$GetIPAddressOutput)
-
-    Process {
-        $SelectValidNetIPInterfaceBody
-    }
-}
-
 
 function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -319,7 +311,7 @@ function Wait-RemoteInterfaceIP {
         Invoke-Command -Session $Session {
             Get-NetAdapter -Name $Using:AdapterName `
             | Get-NetIPAddress -ErrorAction SilentlyContinue `
-            | ForEach-Object {Invoke-Expression $Using:SelectValidNetIPInterfaceBody }
+            | ForEach-Object { Invoke-Expression $Using:SelectValidNetIPInterfaceBody }
         }
     } | Out-Null
 }
