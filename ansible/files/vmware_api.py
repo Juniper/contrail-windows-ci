@@ -74,8 +74,13 @@ class VmwareApi(object):
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
 
 
-    def get_destination_hosts_and_datastores(self, datastore_cluster_name):
+    def iter_destination_hosts_and_datastores(self, datastore_cluster_name):
         datastores = self._get_datastores_from_cluster(datastore_cluster_name)
+
+        if len(datastores) == 0:
+            raise ResourceNotFound("Couldn't find any datastore and host in cluster"
+                                   "'{}'".format(datastore_cluster_name))
+
         random.shuffle(datastores)
 
         for datastore in datastores:

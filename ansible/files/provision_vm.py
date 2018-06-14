@@ -11,6 +11,10 @@ from pyVmomi import vim
 from vmware_api import *
 
 
+class WorkingHostNotFoundError(Exception):
+    pass
+
+
 def get_args():
     parser = VmwareArgumentParser()
 
@@ -98,6 +102,40 @@ def wait_until_vm_does_not_exist(api, vm_name, retries=100, delay=10):
     raise WaitForResourceDeletionTimeout('Timed out while waiting for VM clone task to be canceled')
 
 
+def get_customization_data_from_args(args):
+    return {
+        'name': args.name,
+        'org': 'Contrail',
+        'username': args.vm_username,
+        'password': args.vm_password,
+        'data_ip_address': args.data_ip_address,
+        'data_netmask': args.data_netmask
+    }
+
+
+def try_provision_in_specific_location(api, template, vm_name, folder, location, specs):
+    host, datastore = location
+    config_spec, customization_spec = specs
+
+    relocate_spec = get_vm_relocate_spec(api.cluster, host, datastore)
+    clone_spec = get_vm_clone_spec(template, config_spec, customization_spec, relocate_spec)
+
+    try:
+        task = template.Clone(name=vm_name, folder=folder, spec=clone_spec)
+        WaitForTask(task)
+    except (KeyboardInterrupt, SystemExit):
+        if task is not None:
+            # In this case we should at least try to cancel the task
+            task.CancelTask()
+            wait_until_vm_does_not_exist(api, vm_name)
+        raise
+    except vim.fault.InvalidHostState:
+        # TODO: Post a warning about cloning failure to some monitoring service
+        return False
+
+    return True
+
+
 def provision_vm(api, args):
     name = args.name
 
@@ -111,38 +149,18 @@ def provision_vm(api, args):
         raise ResourceNotFound("Couldn't find the folder with the provided path "
                                "'{}'".format(args.folder))
 
-    customization_data = {
-        'name': args.name,
-        'org': 'Contrail',
-        'username': args.vm_username,
-        'password': args.vm_password,
-        'data_ip_address': args.data_ip_address,
-        'data_netmask': args.data_netmask
-    }
-
     config_spec = get_vm_config_spec(api, vm=template, networks=[args.mgmt_network, args.data_network])
+
+    customization_data = get_customization_data_from_args(args)
     customization_spec = get_vm_customization_spec(template, **customization_data)
+    specs = (config_spec, customization_spec)
 
-    hosts_and_datastores = api.get_destination_hosts_and_datastores(args.datastore_cluster)
-    for host, datastore in hosts_and_datastores:
-        relocate_spec = get_vm_relocate_spec(api.cluster, host, datastore)
-        clone_spec = get_vm_clone_spec(template, config_spec, customization_spec, relocate_spec)
-
-        try:
-            task = template.Clone(name=name, folder=folder, spec=clone_spec)
-            WaitForTask(task)
+    hosts_and_datastores = api.iter_destination_hosts_and_datastores(args.datastore_cluster)
+    for location in hosts_and_datastores:
+        if try_provision_in_specific_location(api, template, name, folder, location, specs):
             return
-        except (KeyboardInterrupt, SystemExit):
-            if task is not None:
-                # In this case we should at least try to cancel the task
-                task.CancelTask()
-                wait_until_vm_does_not_exist(api, name)
-            raise
-        except vim.fault.InvalidHostState:
-            # TODO: Post a warning about cloning failure to some monitoring service
-            continue
 
-    raise ResourceNotFound('Choosing appropriate host and datastore failed')
+    raise WorkingHostNotFoundError("Couldn't find any working location (host/datastore) for provisioning VM")
 
 
 def signal_handler(_signo, _stack_frame):
