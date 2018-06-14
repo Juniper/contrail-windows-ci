@@ -297,7 +297,7 @@ function Remove-AllUnusedDockerNetworks {
     }
 }
 
-$SelectValidNetIPInterfaceBody = {
+[ScriptBlock]$SelectValidNetIPInterfaceBody = {
     $_ `
         | Where-Object AddressFamily -eq "IPv4" `
         | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") } 
@@ -309,9 +309,10 @@ function Wait-RemoteInterfaceIP {
 
     Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
         Invoke-Command -Session $Session {
+            $ScriptBlock = [ScriptBlock]::Create($Using:SelectValidNetIPInterfaceBody)
             Get-NetAdapter -Name $Using:AdapterName `
             | Get-NetIPAddress -ErrorAction SilentlyContinue `
-            | ForEach-Object { Invoke-Expression $Using:SelectValidNetIPInterfaceBody }
+            | ForEach-Object { Invoke-Expression "$ScriptBlock" }
         }
     } | Out-Null
 }
