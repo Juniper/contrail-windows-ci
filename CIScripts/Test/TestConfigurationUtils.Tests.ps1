@@ -1,10 +1,6 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
-function Select-ValidNetIPInterface {
-    Param ([parameter(Mandatory=$true, ValueFromPipeline=$true)]$GetIPAddressOutput)
 
-    Process { Invoke-Expression "$SelectValidNetIPInterfaceBody" }
-}
 
 Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
         It "Both AddressFamily and SuffixOrigin match values in Select-ValidNetIPInterface" {
