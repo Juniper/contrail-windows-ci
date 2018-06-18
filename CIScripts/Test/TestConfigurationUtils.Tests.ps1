@@ -7,21 +7,19 @@ Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
             $ValidGetNetIPAddress = @{ AddressFamily = "IPv4"; SuffixOrigin = @("Dhcp", "Manual") } 
             $ValidGetNetIPAddress | Select-ValidNetIPInterface | Should Be $ValidGetNetIPAddress
         }
-        It "SuffixOrigin is not matching" {
-            @{ AddressFamily = "IPv4"; SuffixOrigin = @("WellKnown", "Link", "Random") } | `
-            Select-ValidNetIPInterface | Should BeNullOrEmpty
-        }
-        It "AddressFamily is not matching" {
-            @{ AddressFamily = "IPv6"; SuffixOrigin = @("Dhcp", "Manual") } | `
-            Select-ValidNetIPInterface | Should BeNullOrEmpty
-        }
+        It "One or all attributes don't match" {
+            $InvalidCases = ` @( 
+                @{ AddressFamily = "IPv4"; SuffixOrigin = @("WellKnown", "Link", "Random") },
+                @{ AddressFamily = "IPv6"; SuffixOrigin = @("Dhcp", "Manual") }, 
+                @{ AddressFamily = "IPv6"; SuffixOrigin = @("WellKnown", "Link", "Random") }
+            )
 
-        It "Both AddressFamily and SuffixOrigin don't match" {
-            @{ AddressFamily = "IPv6"; SuffixOrigin = @("WellKnown", "Link", "Random") } | Select-ValidNetIPInterface | Should BeNullOrEmpty
+            foreach($InvalidCase in $InvalidCases) {
+                $InvalidCase | Select-ValidNetIPInterface | Should BeNullOrEmpty
+            }
         }
     }
-
-    Context "Get-NetIPAddress return an array" {
+    Context "Get-NetIPAddress returns an array" {
         It "Pass valid/invalid object combinations into pipeline" {
             $InvalidGetNetIPAddress = @{
                 AddressFamily = "IPv4";
