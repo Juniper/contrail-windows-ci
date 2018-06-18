@@ -4,7 +4,7 @@
 
 2. Install Pester:
 
-    ```Install-Module -Name Pester -Force -SkipPublisherCheck```
+    ```Install-Module -Name Pester -Force -SkipPublisherCheck -RequiredVersion 4.2.0```
 
 3. Install `powershell-yaml`:
 
@@ -18,3 +18,7 @@
 5. Run selected test, e.g.:
 
     ```Invoke-Pester -Script @{ Path = ".\TunnellingWithAgent.Tests.ps1"; Parameters = @{ TestenvConfFile = "testenv-conf.yaml"}; } -TestName 'Tunnelling with Agent tests'```
+
+## CI Selfcheck
+
+To run CI Selfcheck please see [this document](../../../SELFCHECK.md).
