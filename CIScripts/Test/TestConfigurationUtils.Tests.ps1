@@ -8,7 +8,7 @@ Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
             $ValidGetNetIPAddress | Select-ValidNetIPInterface | Should Be $ValidGetNetIPAddress
         }
         It "One or all attributes don't match" {
-            $InvalidCases = ` @( 
+            $InvalidCases = @( 
                 @{ AddressFamily = "IPv4"; SuffixOrigin = @("WellKnown", "Link", "Random") },
                 @{ AddressFamily = "IPv6"; SuffixOrigin = @("Dhcp", "Manual") }, 
                 @{ AddressFamily = "IPv6"; SuffixOrigin = @("WellKnown", "Link", "Random") }
