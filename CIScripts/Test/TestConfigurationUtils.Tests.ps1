@@ -2,49 +2,44 @@
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
 Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
-    It "Simple valid/invalid Get-NetIPAddress output" {
-        $TestCases = @(
-            @{ Case = @{ AddressFamily = "IPv4"; SuffixOrigin = @("Dhcp", "Manual") }; Valid = $true },
-            @{ Case = @{ AddressFamily = "IPv4"; SuffixOrigin = @("WellKnown", "Link", "Random") }; Valid = $false },
-            @{ Case = @{ AddressFamily = "IPv6"; SuffixOrigin = @("Dhcp", "Manual") }; Valid = $false },
-            @{ Case = @{ AddressFamily = "IPv6"; SuffixOrigin = @("WellKnown", "Link", "Random") }; Valid = $false }
-        )
+    Context "Single valid/invalid Get-NetIPAddress output" {
+        It "Both AddressFamily and SuffixOrigin match" {
+            $ValidGetNetIPAddress = @{ AddressFamily = "IPv4"; SuffixOrigin = @("Dhcp", "Manual") } 
+            $ValidGetNetIPAddress | Select-ValidNetIPInterface | Should Be $ValidGetNetIPAddress
+        }
+        It "SuffixOrigin is not matching" {
+            @{ AddressFamily = "IPv4"; SuffixOrigin = @("WellKnown", "Link", "Random") } | `
+            Select-ValidNetIPInterface | Should BeNullOrEmpty
+        }
+        It "AddressFamily is not matching" {
+            @{ AddressFamily = "IPv6"; SuffixOrigin = @("Dhcp", "Manual") } | `
+            Select-ValidNetIPInterface | Should BeNullOrEmpty
+        }
 
-        foreach ($TestCase in $TestCases) {
-            $TestResult = $TestCase.Case | Select-ValidNetIPInterface
-            if ($( $TestCase.Valid )) {
-                $TestResult | Should Be $TestCase.Case
-            }
-            else {
-                $TestResult | Should BeNullOrEmpty
-            }
+        It "Both AddressFamily and SuffixOrigin don't match" {
+            @{ AddressFamily = "IPv6"; SuffixOrigin = @("WellKnown", "Link", "Random") } | Select-ValidNetIPInterface | Should BeNullOrEmpty
         }
     }
 
-    It "Pass valid/invalid object combinations into pipeline" {
-        $InvalidGetNetIPAddress = @{
-            AddressFamily = "IPv4";
-            SuffixOrigin = @("WellKnown", "Link", "Random")
-        }
-        $ValidGetNetIPAddress = @{
-            AddressFamily = "IPv4";
-            SuffixOrigin = @("Dhcp", "Manual")
-        }
-
-        $TestCases = @(
-            @{ Case = @($( $InvalidGetNetIPAddress ), $( $ValidGetNetIPAddress )); Valid = $true },
-            @{ Case = @($( $ValidGetNetIPAddress ), $( $InvalidGetNetIPAddress )); Valid = $true },
-            @{ Case = @($( $InvalidGetNetIPAddress ), $( $InvalidGetNetIPAddress )); Valid = $false }
-        )
-
-        foreach ($TestCase in $TestCases) {
-            $TestResult = $TestCase.Case | Select-ValidNetIPInterface
-            if ($( $TestCase.Valid )) {
-                $TestResult | Should Be $ValidGetNetIPAddress
+    Context "Get-NetIPAddress return an array" {
+        It "Pass valid/invalid object combinations into pipeline" {
+            $InvalidGetNetIPAddress = @{
+                AddressFamily = "IPv4";
+                SuffixOrigin = @("WellKnown", "Link", "Random")
             }
-            else {
-                $TestResult | Should BeNullOrEmpty
+            $ValidGetNetIPAddress = @{
+                AddressFamily = "IPv4";
+                SuffixOrigin = @("Dhcp", "Manual")
             }
+
+            @( $InvalidGetNetIPAddress, $ValidGetNetIPAddress ) | `
+            Select-ValidNetIPInterface | Should Be $ValidGetNetIPAddress
+
+            @( $ValidGetNetIPAddress, $InvalidGetNetIPAddress ) | `
+            Select-ValidNetIPInterface | Should Be $ValidGetNetIPAddress
+
+            @( $InvalidGetNetIPAddress, $InvalidGetNetIPAddress ) | `
+            Select-ValidNetIPInterface | Should BeNullOrEmpty
         }
     }
 }
