@@ -252,13 +252,13 @@ pipeline {
                 deleteDir()
                 unstash 'CIScripts'
                 script {
-                    if (tryUnstash 'windowsComputeNUnitLogs') {
+                    if (tryUnstash('windowsComputeNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
                             -XmlsDir testReportsRaw/WindowsCompute/raw_NUnit `
                             -OutputDir TestReports/WindowsCompute'''
                     }
 
-                    if (tryUnstash 'CISelfcheckNUnitLogs') {
+                    if (tryUnstash('CISelfcheckNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
                             -XmlsDir testReportsRaw/CISelfcheck/raw_NUnit `
                             -OutputDir TestReports/CISelfcheck'''
