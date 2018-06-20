@@ -277,8 +277,8 @@ pipeline {
                     dir('to_publish') {
                         unstash 'processedTestReports'
                         dir('TestReports') {
-                            tryUnstash 'ddriverJUnitLogs'
-                            tryUnstash 'detailedLogs'
+                            tryUnstash('ddriverJUnitLogs')
+                            tryUnstash('detailedLogs')
                         }
 
                         def logFilename = 'log.txt.gz'
