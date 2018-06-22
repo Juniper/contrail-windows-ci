@@ -23,7 +23,7 @@ Describe "Get-RemoteContainerNetAdapterInformation - Unit tests" -Tags CI, Unit 
 
         It "should not throw when validating IPAddress" {
             {
-                Assert-IsIpAddressInRawNetAdaterInfoValid -RawAdapterInfo $RawAdapterInfo
+                Assert-IsIpAddressInRawNetAdapterInfoValid -RawAdapterInfo $RawAdapterInfo
             } | Should -Not -Throw
         }
 
@@ -59,7 +59,7 @@ Describe "Get-RemoteContainerNetAdapterInformation - Unit tests" -Tags CI, Unit 
 
         It "should throw when validating IPAddress" {
             {
-                Assert-IsIpAddressInRawNetAdaterInfoValid -RawAdapterInfo $RawAdapterInfo
+                Assert-IsIpAddressInRawNetAdapterInfoValid -RawAdapterInfo $RawAdapterInfo
             } | Should -Throw
         }
     }

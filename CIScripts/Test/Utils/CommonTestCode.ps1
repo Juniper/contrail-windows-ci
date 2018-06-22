@@ -79,7 +79,7 @@ function Read-RawRemoteContainerNetAdapterInformation {
     return $JsonAdapterInfo | ConvertFrom-Json
 }
 
-function Assert-IsIpAddressInRawNetAdaterInfoValid {
+function Assert-IsIpAddressInRawNetAdapterInfoValid {
     Param (
         [Parameter(Mandatory = $true)] [PSCustomObject] $RawAdapterInfo
     )
@@ -113,7 +113,7 @@ function Get-RemoteContainerNetAdapterInformation {
            [Parameter(Mandatory = $true)] [string] $ContainerID)
 
     $AdapterInfo = Read-RawRemoteContainerNetAdapterInformation -Session $Session -ContainerID $ContainerID
-    Assert-IsIpAddressInRawNetAdaterInfoValid -RawAdapterInfo $AdapterInfo
+    Assert-IsIpAddressInRawNetAdapterInfoValid -RawAdapterInfo $AdapterInfo
     return ConvertFrom-RawNetAdapterInformation -RawAdapterInfo $AdapterInfo
 }
 
