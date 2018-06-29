@@ -52,9 +52,9 @@ pipeline {
                         script {
                             try {
                                 powershell script: """./Invoke-Selfcheck.ps1 `
-                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck"""
+                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit"""
                             } finally {
-                                stash name: 'testReportsCISelfcheck', includes: 'testReportsRaw/**', allowEmpty: true
+                                stash name: 'CISelfcheckNUnitLogs', includes: 'testReportsRaw/CISelfcheck/raw_NUnit/**', allowEmpty: true
                             }
                         }
                     }
@@ -142,8 +142,8 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201804050628"
-                        CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin"
+                        TESTBED_TEMPLATE = "Template-testbed-201806061010"
+                        CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin-LinkedClones"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"
                         VCENTER_DATASTORE_CLUSTER = "WinCI-Datastores-SSD"
@@ -221,18 +221,29 @@ pipeline {
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
-                        stash name: 'testReportsWindowsCompute', includes: 'testReportsRaw/**', allowEmpty: true
+                        stash name: 'windowsComputeNUnitLogs', includes: 'testReportsRaw/WindowsCompute/raw_NUnit/**', allowEmpty: true
+
+                        dir('testReportsRaw') {
+                            stash name: 'ddriverJUnitLogs', includes:
+                            'WindowsCompute/ddriver_junit_test_logs/**', allowEmpty: true
+
+                            stash name: 'detailedLogs', includes:
+                            'WindowsCompute/detailed_logs/**', allowEmpty: true
+                            }
+                        }
                     }
                 }
             }
         }
-    }
 
     environment {
         LOG_SERVER = "logs.opencontrail.org"
         LOG_SERVER_USER = "zuul-win"
         LOG_SERVER_FOLDER = "winci"
-        LOG_ROOT_DIR = "/var/www/logs/winci"
+        LOG_ROOT_DIR = "/var/www/logs"
+        MYSQL = credentials('monitoring-mysql')
+        MYSQL_HOST = "10.84.12.52"
+        MYSQL_DATABASE = "monitoring_test"
     }
 
     post {
@@ -241,59 +252,69 @@ pipeline {
                 deleteDir()
                 unstash 'CIScripts'
                 script {
-                    try {
-                        unstash 'testReportsWindowsCompute'
-                        unstash 'testReportsCISelfcheck'
-                    } catch (Exception err) {
-                        echo "No test report to parse"
-                    } finally {
+                    if (tryUnstash('windowsComputeNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/WindowsCompute `
+                            -XmlsDir testReportsRaw/WindowsCompute/raw_NUnit `
                             -OutputDir TestReports/WindowsCompute'''
-
-                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/CISelfcheck `
-                            -OutputDir TestReports/CISelfcheck'''
-
-                        // Using robocopy to workaround 260 chars path length limitation.
-                        // TODO: Similar method may be used when CISelfcheck generates detailed logs.
-                        robocopy("${pwd()}/testReportsRaw/WindowsCompute/detailed/", "${pwd()}/TestReports/WindowsCompute/detailedLogs", "*.log")
-
-                        stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
+
+                    if (tryUnstash('CISelfcheckNUnitLogs')) {
+                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
+                            -XmlsDir testReportsRaw/CISelfcheck/raw_NUnit `
+                            -OutputDir TestReports/CISelfcheck'''
+                    }
+
+                    stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                 }
             }
 
             node('master') {
                 script {
                     deleteDir()
-                    def logServer = [
-                        addr: env.LOG_SERVER,
-                        user: env.LOG_SERVER_USER,
-                        folder: env.LOG_SERVER_FOLDER,
-                        rootDir: env.LOG_ROOT_DIR
-                    ]
-                    def destDir = decideLogsDestination(logServer, env.ZUUL_UUID)
+                    def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
+                        env.BUILD_NUMBER, env.ZUUL_UUID)
 
                     dir('to_publish') {
                         unstash 'processedTestReports'
+                        dir('TestReports') {
+                            tryUnstash('ddriverJUnitLogs')
+                            tryUnstash('detailedLogs')
+                        }
+
                         def logFilename = 'log.txt.gz'
-                        obtainLogFile(env.JOB_NAME, env.BUILD_ID, logFilename)
-                        publishToLogServer(logServer, ".", destDir)
+                        createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
+
+                        def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
+                        def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
+                        publishCurrentDirToLogServer(auth, dst)
                     }
 
-                    def logsURL = getLogsURL(logServer, env.ZUUL_UUID)
-
+                    def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
+                    def logDestMsg = "Full logs URL: ${fullLogsURL}"
+                    echo(logDestMsg)
                     if (isGithub()) {
-                        sendGithubComment("Full logs URL: ${logsURL}")
+                        sendGithubComment(logDestMsg)
                     }
+                }
+            }
 
-                    def reportLocationsFile = "${logsURL}/TestReports/WindowsCompute/reports-locations.json"
-                    build job: 'WinContrail/gather-build-stats', wait: false,
-                        parameters: [string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
-                                     string(name: 'MONITORED_JOB_NAME', value: env.JOB_NAME),
-                                     string(name: 'MONITORED_BUILD_URL', value: env.BUILD_URL),
-                                     string(name: 'TEST_REPORTS_JSON_URL', value: reportLocationsFile)]
+            node('ansible') {
+                script {
+                    deleteDir()
+                    def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME, env.BUILD_NUMBER, env.ZUUL_UUID)
+                    def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
+
+                    unstash "Monitoring"
+                    shellCommand('python3', [
+                        'monitoring/collect_and_push_build_stats.py',
+                        '--job-name', env.JOB_NAME,
+                        '--job-status', currentBuild.currentResult,
+                        '--build-url', env.BUILD_URL,
+                        '--mysql-host', env.MYSQL_HOST,
+                        '--mysql-database', env.MYSQL_DATABASE,
+                        '--mysql-username', env.MYSQL_USR,
+                        '--mysql-password', env.MYSQL_PSW,
+                    ] + getReportsLocationParam(fullLogsURL))
                 }
             }
         }

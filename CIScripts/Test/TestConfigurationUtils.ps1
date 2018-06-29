@@ -1,6 +1,8 @@
 . $PSScriptRoot\..\Testenv\Testenv.ps1
+. $PSScriptRoot\..\Testenv\Testbed.ps1
 . $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
 
@@ -27,7 +29,7 @@ function Test-IsProcessRunning {
         return $(Get-Process $Using:ProcessName -ErrorAction SilentlyContinue)
     }
 
-    return $(if ($Proc) { $true } else { $false })
+    return [bool] $Proc
 }
 
 function Enable-VRouterExtension {
@@ -43,8 +45,19 @@ function Enable-VRouterExtension {
     $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
     $VMSwitchName = $SystemConfig.VMSwitchName()
 
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
+
     Invoke-Command -Session $Session -ScriptBlock {
         New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
+    }
+
+    # We're not waiting for IP on this adapter, because our tests
+    # don't rely on this adapter to have the correct IP set for correctess.
+    # We could implement retrying to avoid flakiness but it's easier to just
+    # ignore the error.
+    # Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+
+    Invoke-Command -Session $Session -ScriptBlock {
         $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:ForwardingExtensionName | Where-Object Enabled
         if ($Extension) {
             Write-Warning "Extension already enabled on: $($Extension.SwitchName)"
@@ -100,6 +113,13 @@ function Start-DockerDriver {
 
     Write-Log "Starting Docker Driver"
 
+    # We have to specify some file, because docker driver doesn't
+    # currently support stderr-only logging.
+    # TODO: Remove this when after "no log file" option is supported.
+    $OldLogPath = "NUL"
+
+    $LogDir = Get-ComputeLogsDir
+
     $Arguments = @(
         "-forceAsInteractive",
         "-controllerIP", $ControllerConfig.Address,
@@ -109,34 +129,26 @@ function Start-DockerDriver {
         "-os_tenant_name", $OpenStackConfig.Project,
         "-adapter", $AdapterName,
         "-vswitchName", "Layered <adapter>",
+        "-logPath", $OldLogPath,
         "-logLevel", "Debug"
     )
 
     Invoke-Command -Session $Session -ScriptBlock {
 
-        $LogDir = "$Env:ProgramData/ContrailDockerDriver"
-
-        if (Test-Path $LogDir) {
-            Push-Location $LogDir
-
-            if (Test-Path log.txt) {
-                Move-Item -Force log.txt log.old.txt
-            }
-
-            Pop-Location
-        }
-
         # Nested ScriptBlock variable passing workaround
         $Arguments = $Using:Arguments
+        $LogDir = $Using:LogDir
 
         Start-Job -ScriptBlock {
-            Param($Arguments)
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments
+            Param($Arguments, $LogDir)
 
-            # The `, $null` below is used to force passing $Arguments as an arguments'
-            # list element instead of an arguments list itself.
-            # @($Arguments) looks like it should work, but does not.
-        } -ArgumentList $Arguments, $null
+            New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+            $LogPath = Join-Path $LogDir "contrail-windows-docker-driver.log"
+            $ErrorActionPreference = "Continue"
+
+            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments 2>&1 |
+                Add-Content -NoNewline $LogPath
+        } -ArgumentList $Arguments, $LogDir
     }
 
     Start-Sleep -s $WaitTime
@@ -285,16 +297,30 @@ function Remove-AllUnusedDockerNetworks {
     }
 }
 
+function Select-ValidNetIPInterface {
+    Param ([parameter(Mandatory=$true, ValueFromPipeline=$true)]$GetIPAddressOutput)
+
+    Process { $_ `
+        | Where-Object AddressFamily -eq "IPv4" `
+        | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
+    }
+}
+
 function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [String] $AdapterName)
+    $InjectedFunction = [PSCustomObject] @{ 
+        Name = 'Select-ValidNetIPInterface'; 
+        Body = ${Function:Select-ValidNetIPInterface} 
+    }
 
     Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
         Invoke-Command -Session $Session {
+            $Using:InjectedFunction | ForEach-Object { Invoke-Expression "function $( $_.Name ) { $( $_.Body ) }" }
+
             Get-NetAdapter -Name $Using:AdapterName `
-                | Get-NetIPAddress -ErrorAction SilentlyContinue `
-                | Where-Object AddressFamily -eq IPv4 `
-                | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
+            | Get-NetIPAddress -ErrorAction SilentlyContinue `
+            | Select-ValidNetIPInterface
         }
     } | Out-Null
 }
@@ -311,8 +337,9 @@ function Initialize-DriverAndExtension {
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
-        # DockerDriver automatically enables Extension, so there is no need to enable it manually
+        Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 
+        # DockerDriver automatically enables Extension
         Start-DockerDriver -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
             -OpenStackConfig $OpenStackConfig `
@@ -351,10 +378,15 @@ function Clear-TestConfiguration {
 
     Write-Log "Cleaning up test configuration"
 
+    Write-Log "Agent service status: $( Get-AgentServiceStatus -Session $Session )"
+    Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
+
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session
     Stop-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
+
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
 
 function New-AgentConfigFile {
@@ -447,7 +479,7 @@ function New-Container {
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name,
            [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver")
-           
+
     if (Test-Dockerfile $Image) {
         Initialize-DockerImage -Session $Session -DockerImageName $Image | Out-Null
     }
@@ -456,7 +488,24 @@ function New-Container {
     if ($Name) { $Arguments += "--name", $Name }
     $Arguments += "--network", $NetworkName, $Image
 
-    $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
+    $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero { docker @Using:Arguments }
+    $ContainerID = $Result.Output[0]
+    $OutputMessages = $Result.Output
+
+    # Workaround for occasional failures of container creation in Docker for Windows.
+    # In such a case Docker reports: "CreateContainer: failure in a Windows system call",
+    # container is created (enters CREATED state), but is not started and can not be
+    # started manually. It's possible to delete a faulty container and start it again.
+    # We want to capture just this specific issue here not to miss any new problem.
+    if ($Result.Output -match "CreateContainer: failure in a Windows system call") {
+        Write-Log "Container creation failed with the following output: $OutputMessages"
+        Write-Log "Removing incorrectly created container (if exists)..."
+        Invoke-NativeCommand -Session $Session -AllowNonZero { docker rm -f $Using:ContainerID } | Out-Null
+        Write-Log "Retrying container creation..."
+        $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
+    } elseif ($Result.ExitCode -ne 0) {
+        throw "New-Container failed with the following output: $OutputMessages"
+    }
 
     return $ContainerID
 }
@@ -474,12 +523,30 @@ function Remove-AllContainers {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
 
     foreach ($Session in $Sessions) {
-        Invoke-Command -Session $Session -ScriptBlock {
+        $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero {
             $Containers = docker ps -aq
+            $MaxAttempts = 3
+            $TimesToGo = $MaxAttempts
+            while ( $Containers -and $TimesToGo -gt 0 ) {
                 if($Containers) {
-                    docker rm -f $Containers | Out-Null
+                    $Command = "docker rm -f $Containers"
+                    Invoke-Expression -Command $Command
                 }
+                $Containers = docker ps -aq
+                $TimesToGo = $TimesToGo - 1
+                if ( $Containers -and $TimesToGo -eq 0 ) {
+                    $LASTEXITCODE = 1
+                }
+            }
             Remove-Variable "Containers"
+            return $MaxAttempts - $TimesToGo - 1
+        }
+
+        $OutputMessages = $Result.Output
+        if ($Result.ExitCode -ne 0) {
+            throw "Remove-AllContainers - removing containers failed with the following messages: $OutputMessages"
+        } elseif ($Result.Output[-1] -gt 0) {
+            Write-Host "Remove-AllContainers - removing containers was successful, but required more than one attempt: $OutputMessages"
         }
     }
 }

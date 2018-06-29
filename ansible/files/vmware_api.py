@@ -2,6 +2,7 @@ import os
 import ssl
 import getpass
 import argparse
+import random
 from pyVmomi import vim
 
 
@@ -10,6 +11,10 @@ class ResourceNotFound(Exception):
 
 
 class IncorrectArgument(Exception):
+    pass
+
+
+class WaitForResourceDeletionTimeout(Exception):
     pass
 
 
@@ -67,6 +72,30 @@ class VmwareApi(object):
     def get_vm_folder(self, folder_path):
         inventory_path = os.path.join(self.datacenter.name, 'vm', folder_path)
         return self.content.searchIndex.FindByInventoryPath(inventory_path)
+
+
+    def iter_destination_hosts_and_datastores(self, datastore_cluster_name):
+        datastores = self._get_datastores_from_cluster(datastore_cluster_name)
+
+        if len(datastores) == 0:
+            raise ResourceNotFound("Couldn't find any datastore and host in cluster"
+                                   "'{}'".format(datastore_cluster_name))
+
+        random.shuffle(datastores)
+
+        for datastore in datastores:
+            host = datastore.host[0].key
+            yield host, datastore
+
+
+    def _get_datastores_from_cluster(self, datastore_cluster_name):
+        datastore_cluster = self.get_vc_object(vim.StoragePod, datastore_cluster_name)
+        if not datastore_cluster:
+            raise ResourceNotFound("Couldn't find the datastore cluster with provided name"
+                                   "'{}'".format(datastore_cluster_name))
+
+        datastores = list(datastore_cluster.childEntity)
+        return datastores
 
 
     def _setup_common_objects(self, datacenter_name, cluster_name):
@@ -215,63 +244,24 @@ def get_vm_customization_spec(template, name, org, username, password, data_ip_a
     return customization_spec
 
 
-def get_vm_relocate_spec(cluster):
+def get_vm_relocate_spec(cluster, host, datastore):
     relocate_spec = vim.vm.RelocateSpec()
     relocate_spec.pool = cluster.resourcePool
+    relocate_spec.host = host
+    relocate_spec.datastore = datastore
+    relocate_spec.diskMoveType = 'createNewChildDiskBacking'
     return relocate_spec
 
 
-def get_vm_clone_spec(config_spec, customization_spec, relocate_spec):
+def get_vm_clone_spec(template, config_spec, customization_spec, relocate_spec):
     clone_spec = vim.vm.CloneSpec()
     clone_spec.powerOn = True
     clone_spec.template = False
     clone_spec.config = config_spec
     clone_spec.customization = customization_spec
     clone_spec.location = relocate_spec
+    clone_spec.snapshot = template.snapshot.rootSnapshotList[0].snapshot
     return clone_spec
-
-
-def get_vm_storage_spec(name, folder, pod_selection_spec, vm, clone_spec, operation_type):
-    storage_spec = vim.storageDrs.StoragePlacementSpec()
-    storage_spec.cloneName = name
-    storage_spec.folder = folder
-    storage_spec.podSelectionSpec = pod_selection_spec
-    storage_spec.vm = vm
-    storage_spec.cloneSpec = clone_spec
-    storage_spec.type = operation_type
-    return storage_spec
-
-def get_vm_pod_selection_spec(api, datastore_cluster_name):
-    datastore_cluster = _get_datastore_cluster(api, datastore_cluster_name)
-    if not datastore_cluster:
-        raise ResourceNotFound("Couldn't find the datastore cluster with provided name"
-                                "'{}'".format(datastore_cluster_name))
-
-    pod_selection_spec = vim.storageDrs.PodSelectionSpec()
-    pod_selection_spec.storagePod = datastore_cluster
-    return pod_selection_spec
-
-
-def _get_datastore_cluster(api, datastore_cluster_name):
-    datastore_cluster = api.get_vc_object(vim.StoragePod, datastore_cluster_name)
-    return datastore_cluster
-
-
-def clone_template_to_datastore_cluster(api, storage_spec):
-    storage_manager = api.storage_manager
-    recommendation_key = _get_recommendation_key(api, storage_spec)
-    task = storage_manager.ApplyStorageDrsRecommendation_Task(key = recommendation_key)
-    return task
-
-
-def _get_recommendation_key(api, storage_spec):
-    storage_manager = api.storage_manager
-    recommended_datastores = storage_manager.RecommendDatastores(storageSpec = storage_spec)
-    recommendations = recommended_datastores.recommendations
-    if not recommendations:
-        raise ResourceNotFound("Couldn't find any SDRS recommendation to apply")
-    
-    return recommendations[0].key
 
 
 def get_connection_params(args):

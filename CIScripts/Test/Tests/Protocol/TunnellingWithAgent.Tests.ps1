@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs"
+    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\Common\Aliases.ps1
@@ -509,8 +510,8 @@ Describe "Tunnelling with Agent tests" {
         )]
         $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
             -Session $Sessions[1] -ContainerID $Container2ID
-            $IP = $Container2NetInfo.IPAddress
-            Write-Log "IP of ${Container2ID}: $IP"
+        $IP = $Container2NetInfo.IPAddress
+        Write-Log "IP of ${Container2ID}: $IP"
     }
 
     AfterEach {
@@ -522,7 +523,7 @@ Describe "Tunnelling with Agent tests" {
 
             Write-Log "Removing all containers"
             Remove-AllContainers -Sessions $Sessions
-    
+
             Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
             Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
         } finally {
