@@ -20,7 +20,7 @@ def call(Map params) {
         agent { label 'ansible' }
         steps {
           dir('ansible') {
-            sh 'cp inventory.sample inventory'
+            sh 'cp inventory.groups inventory'
             script {
               vmWareConfig = getVMwareConfig(vm_role)
               if (params.vc_datastore_name) {
