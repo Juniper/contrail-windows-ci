@@ -68,15 +68,19 @@
     name: docker
     state: stopped
 
-# Workaround for Docker/Windows behavior.
+# Workaround (#1) for Docker/Windows behavior.
 # When WinNAT is enabled and NetNat object associated with default bridge
 # network created by Docker exists, ICMP/UDP packets bigger than MTU do
 # not reach containers and the host itself.
-- name: Stop and disable WinNAT
-  win_service:
-    name: winnat
-    start_mode: disabled
-    state: stopped
+# Workaround (#2) for win_service behavior.
+# We use win_shell instead of win_service because for this particular service
+# win_service seems to fail ("An error occurred while creating the pipeline")
+# while it works fine for other services like Docker.
+- name: Stop  WinNAT
+  win_shell: Stop-Service winnat
+
+- name: Disable WinNAT
+  win_shell: Set-Service -StartupType Disabled -Name winnat
 
 - name: Remove container networks
   win_shell: |
