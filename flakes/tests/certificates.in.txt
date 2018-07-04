@@ -1,3 +1,8 @@
+This error may happens sometimes when testsigning the vrouter extension.
+First occurrence happened on 2018-06-26.
+Why we recheck it: We don't know the root cause,
+but this flake increases the failure rate in CI quite significantly.
+
 4114-2018-07-02 03:52:43.143000 | [Build] TestSign:
 4115-2018-07-02 03:52:43.143000 | [Build]   The driver will be test-signed. Driver signing options can be changed from the project properties.
 4116-2018-07-02 03:52:43.143000 | [Build]   Sign Inputs: J:\Jenkins\workspace\WinContrail\winci-server2016-prod@2\vrouter\windows\..\..\build\debug\vrouter\extension\vRouter.sys
