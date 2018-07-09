@@ -17,5 +17,5 @@ function Invoke-CommandWithFunctions {
         $Using:FunctionsInvoked | ForEach-Object { Remove-Item -Path "Function:$( $_.Name )" }
     }
 
-    $Output
+    return $Output
 }
