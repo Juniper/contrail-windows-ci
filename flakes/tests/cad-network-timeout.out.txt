@@ -1,0 +1,7 @@
+2018-07-08 11:22:41.570000 | [Testenv provisioning] 	to retry, use: --limit @/var/lib/jenkins/workspace/WinContrail/winci-server2016-prod/ansible/vmware-deploy-testenv.retry
+2018-07-08 11:22:41.571000 | [Testenv provisioning]
+2018-07-08 11:22:41.571000 | [Testenv provisioning] PLAY RECAP *********************************************************************
+2018-07-08 11:22:41.571000 | [Testenv provisioning] 518-controller             : ok=23   changed=14   unreachable=0    failed=1
+2018-07-08 11:22:41.571000 | [Testenv provisioning] 518-wintb01                : ok=11   changed=1    unreachable=0    failed=0
+2018-07-08 11:22:41.571000 | [Testenv provisioning] 518-wintb02                : ok=11   changed=1    unreachable=0    failed=0
+2018-07-08 11:22:41.572000 | [Testenv provisioning] localhost                  : ok=5    changed=3    unreachable=0    failed=0
