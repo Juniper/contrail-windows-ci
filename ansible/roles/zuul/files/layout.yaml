@@ -13,23 +13,32 @@ pipelines:
           branch:
             - ^master$
             - ^contrail/ocata$
+            - ^contrail/queens$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^R5\..*$
+            - ^release-3.7-contrail$
+            - ^release-3.9-contrail$
         - event: change-restored
           branch:
             - ^master$
             - ^contrail/ocata$
+            - ^contrail/queens$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^R5\..*$
+            - ^release-3.7-contrail$
+            - ^release-3.9-contrail$
         - event: comment-added
           branch:
             - ^master$
             - ^contrail/ocata$
+            - ^contrail/queens$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^R5\..*$
+            - ^release-3.7-contrail$
+            - ^release-3.9-contrail$
           comment: (?i)recheck(( (?:bug|lp)[\s#:]*(\d+))|( no bug))?(\s+clean)?\s*$
         - event: comment-added
           comment: (?i)recheck windows$
@@ -56,15 +65,6 @@ pipelines:
         - event: comment-added
           comment: (?i)recheck windows(?:-| )(dev|devel|development)\s*$
 
-  - name: check-windows-contrail-phase-in
-    description: Pipeline used for Windows CI development (phase in of Juniper/windows-contrail repository). It should always work in silent mode.
-    manager: IndependentPipelineManager
-    precedence: low
-    trigger:
-      gerrit:
-        - event: comment-added
-          comment: (?i)recheck windows-contrail(?:-| )(dev|devel|development)\s*$
-
 jobs:
   - name: ^ci-contrail-windows.*$
     success-pattern: &logs_url http://logs.opencontrail.org/winci/{build.uuid}/
@@ -74,8 +74,8 @@ project-templates:
   - name: ci-contrail-windows-template
     check:
       - ci-contrail-windows-production
-    check-windows-contrail-phase-in:
-      - ci-contrail-windows-wc-phase-in
+    check-development:
+      - ci-contrail-windows-development
 
   - name: ci-contrail-windows-other-projects-template
     check:
@@ -89,8 +89,6 @@ projects:
   - name: Juniper/contrail-controller
     template:
       - name: ci-contrail-windows-template
-    check-development:
-      - ci-contrail-windows-development
 
   - name: Juniper/contrail-vrouter
     template:
@@ -109,6 +107,10 @@ projects:
       - name: ci-contrail-windows-template
 
   - name: Juniper/contrail-windows-docker-driver
+    template:
+      - name: ci-contrail-windows-template
+
+  - name: Juniper/contrail-windows
     template:
       - name: ci-contrail-windows-template
 
@@ -183,6 +185,10 @@ projects:
       - name: ci-contrail-windows-other-projects-template
 
   - name: Juniper/contrail-horizon
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
+  - name: Juniper/contrail-infra-doc
     template:
       - name: ci-contrail-windows-other-projects-template
 
@@ -290,10 +296,6 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
 
-  - name: Juniper/contrail-windows
-    template:
-      - name: ci-contrail-windows-other-projects-template
-
   - name: Juniper/contrail-zuul-jobs
     template:
       - name: ci-contrail-windows-other-projects-template
@@ -327,5 +329,9 @@ projects:
       - name: ci-contrail-windows-other-projects-template
 
   - name: tungstenfabric/contrail-ci-test
+    template:
+      - name: ci-contrail-windows-other-projects-template
+
+  - name: tungstenfabric/tungsten-test-runner
     template:
       - name: ci-contrail-windows-other-projects-template

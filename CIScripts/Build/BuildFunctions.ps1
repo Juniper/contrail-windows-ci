@@ -58,7 +58,7 @@ function Invoke-DockerDriverBuild {
             & dep prune -v
         }
     })
-    Pop-Location
+    Pop-Location # $srcPath
 
     $Job.Step("Contrail-go-api source code generation", {
         Invoke-NativeCommand -ScriptBlock {
@@ -72,42 +72,27 @@ function Invoke-DockerDriverBuild {
         }
     })
 
-    Push-Location bin
-
-    $Job.Step("Building driver", {
+    $Job.Step("Building driver and precompiling tests", {
         # TODO: Handle new name properly
-        Invoke-NativeCommand -ScriptBlock {
-            go build -o contrail-windows-docker.exe -v $DriverSrcPath
-        }
-    })
-
-    $Job.Step("Precompiling tests", {
-        Invoke-NativeCommand -ScriptBlock {
-            ginkgo build -r $srcPath
-        }
-        Get-ChildItem -Recurse -Path $srcPath -Filter "*.test" | ForEach-Object { Move-Item $_.FullName ("./" + $_.Name + ".exe") }
-    })
-
-    $Job.Step("Building MSI", {
         Push-Location $srcPath
         Invoke-NativeCommand -ScriptBlock {
-            & go-msi make --msi docker-driver.msi --arch x64 --version 0.1 `
-                          --src template --out $pwd/gomsi
+            & $srcPath\Invoke-Build.ps1
         }
-        Pop-Location
-
-        Move-Item $srcPath/docker-driver.msi ./
+        Pop-Location # $srcPath
     })
 
-    Set-MSISignature -SigntoolPath $SigntoolPath `
-                     -CertPath $CertPath `
-                     -CertPasswordFilePath $CertPasswordFilePath `
-                     -MSIPath "docker-driver.msi"
-
-    Pop-Location
 
     $Job.Step("Copying artifacts to $OutputPath", {
-        Copy-Item bin/* $OutputPath
+        Copy-Item -Path $srcPath\build\* -Include "*.msi", "*.exe" -Destination $OutputPath
+    })
+
+    $Job.Step("Signing MSI", {
+        Push-Location $OutputPath
+        Set-MSISignature -SigntoolPath $SigntoolPath `
+                        -CertPath $CertPath `
+                        -CertPasswordFilePath $CertPasswordFilePath `
+                        -MSIPath (Get-ChildItem "*.msi").FullName
+        Pop-Location # $OutputPath
     })
 
     $Job.PopStep()
@@ -120,7 +105,7 @@ function Invoke-ExtensionBuild {
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath,
-           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
+           [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Extension build")
 
@@ -128,7 +113,6 @@ function Invoke-ExtensionBuild {
         Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\
     })
 
-    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building Extension and Utils", {
@@ -190,15 +174,13 @@ function Invoke-AgentBuild {
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath,
-           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
+           [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Agent build")
 
     $Job.Step("Copying Agent dependencies", {
         Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
     })
-
-    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
 
     $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
         if(Test-Path Env:AGENT_BUILD_THREADS) {
@@ -282,11 +264,10 @@ function Invoke-AgentUnitTestRunner {
 
 function Invoke-AgentTestsBuild {
     Param ([Parameter(Mandatory = $true)] [string] $LogsPath,
-           [Parameter(Mandatory = $false)] [bool] $ReleaseMode = $false)
+           [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Agent Tests build")
 
-    $BuildMode = $(if ($ReleaseMode) { "production" } else { "debug" })
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building agent tests", {

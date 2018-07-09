@@ -24,6 +24,7 @@ pipeline {
                 stash name: "StaticAnalysis", includes: "StaticAnalysis/**"
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
+                stash name: "Flakes", includes: "flakes/**"
             }
         }
 
@@ -52,7 +53,7 @@ pipeline {
                         script {
                             try {
                                 powershell script: """./Invoke-Selfcheck.ps1 `
-                                    -ReportDir ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit"""
+                                    -ReportPath ${env.WORKSPACE}/testReportsRaw/CISelfcheck/raw_NUnit/out.xml"""
                             } finally {
                                 stash name: 'CISelfcheckNUnitLogs', includes: 'testReportsRaw/CISelfcheck/raw_NUnit/**', allowEmpty: true
                             }
@@ -74,6 +75,9 @@ pipeline {
                         dir("monitoring") {
                             sh "python3 -m tests.monitoring_tests"
                         }
+
+                        unstash "Flakes"
+                        sh "flakes/run-tests.sh"
 
                         runHelpersTests()
                     }
@@ -131,6 +135,7 @@ pipeline {
                     }
                     post {
                         always {
+                            stash name: "sconsTestsLogs", allowEmpty: true, includes: "SconsTestsLogs/**"
                             deleteDir()
                         }
                     }
@@ -142,7 +147,7 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201806061010"
+                        TESTBED_TEMPLATE = "Template-testbed-201807060237"
                         CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin-LinkedClones"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"
@@ -252,22 +257,19 @@ pipeline {
                 deleteDir()
                 unstash 'CIScripts'
                 script {
-                    try {
-                        unstash 'windowsComputeNUnitLogs'
-                        unstash 'CISelfcheckNUnitLogs'
-                    } catch (Exception err) {
-                        echo "No test report to parse"
-                    } finally {
+                    if (tryUnstash('windowsComputeNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/WindowsCompute/raw_NUnit `
+                            -RawNUnitPath testReportsRaw/WindowsCompute/raw_NUnit/report.xml `
                             -OutputDir TestReports/WindowsCompute'''
-
-                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
-                            -XmlsDir testReportsRaw/CISelfcheck/raw_NUnit `
-                            -OutputDir TestReports/CISelfcheck'''
-
-                        stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                     }
+
+                    if (tryUnstash('CISelfcheckNUnitLogs')) {
+                        powershell script: '''./CIScripts/GenerateTestReport.ps1 `
+                            -RawNUnitPath testReportsRaw/CISelfcheck/raw_NUnit/out.xml `
+                            -OutputDir TestReports/CISelfcheck'''
+                    }
+
+                    stash name: 'processedTestReports', includes: 'TestReports/**', allowEmpty: true
                 }
             }
 
@@ -277,14 +279,16 @@ pipeline {
                     def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
                         env.BUILD_NUMBER, env.ZUUL_UUID)
 
+                    def logFilename = 'log.txt.gz'
+
                     dir('to_publish') {
                         unstash 'processedTestReports'
                         dir('TestReports') {
-                            unstash 'ddriverJUnitLogs'
-                            unstash 'detailedLogs'
+                            tryUnstash('ddriverJUnitLogs')
+                            tryUnstash('detailedLogs')
+                            tryUnstash('sconsTestsLogs')
                         }
 
-                        def logFilename = 'log.txt.gz'
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
 
                         def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
@@ -297,6 +301,23 @@ pipeline {
                     echo(logDestMsg)
                     if (isGithub()) {
                         sendGithubComment(logDestMsg)
+                    }
+
+                    unstash "Flakes"
+
+                    if (containsFlakiness("to_publish/$logFilename")) {
+                        echo "Flakiness detected"
+                        if (isGithub()) {
+                            sendGithubComment("recheck no bug")
+                        } else if (env.BRANCH_NAME == "production") {
+                            build job: "post-recheck-comment",
+                                wait: false,
+                                parameters: [
+                                    string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
+                                    string(name: 'ZUUL_CHANGE', value: env.ZUUL_CHANGE),
+                                    string(name: 'ZUUL_PATCHSET', value: env.ZUUL_PATCHSET),
+                                ]
+                        }
                     }
                 }
             }

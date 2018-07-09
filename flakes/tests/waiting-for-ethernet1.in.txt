@@ -1,0 +1,23 @@
+This error is a symptom of incorrect removal of vEthernet (HNSTransparent)
+network adapter. Correct behavior:
+1. Ethernet1 has no IP address (it was "moved" to vEthernet)
+2. After removing all container networks, vEthernet automatically disappears.
+3. Ehternet1 gets its IP address back.
+Behavior when this error occurs:
+1. Ethernet1 has no IP address (it was "moved" to vEthernet)
+2. After removing all container networks, vEthernet doesn't properly disappear.
+3. Ethernet1 appears as "disconnected" and never gets its IP address back.
+4. To fix the testbed to usable state, the reboot of the machine is needed.
+
+Why we recheck it: The bug is not our fault, and the testbed is in unrecoverable
+state, so we can't retry a test.
+
+2018-06-25 02:18:26.104000 |       [-] TCP - HTTP connection between containers on separate compute nodes succeeds 146.71s
+2018-06-25 02:18:26.104000 |         CITimeoutException: Did not evaluate to True.Last return value encountered was: .
+2018-06-25 02:18:26.104000 |         CITimeoutException: Waiting for IP on interface Ethernet1 failed.
+2018-06-25 02:18:26.104000 |         at Invoke-UntilSucceeds, J:\Jenkins\workspace\WinContrail\winci-server2016-prod\CIScripts\Common\Invoke-UntilSucceeds.ps1: line 62
+2018-06-25 02:18:26.104000 |         at Wait-RemoteInterfaceIP, J:\Jenkins\workspace\WinContrail\winci-server2016-prod\CIScripts\Test\TestConfigurationUtils.ps1: line 317
+2018-06-25 02:18:26.104000 |         at Clear-TestConfiguration, J:\Jenkins\workspace\WinContrail\winci-server2016-prod\CIScripts\Test\TestConfigurationUtils.ps1: line 389
+2018-06-25 02:18:26.104000 |         at <ScriptBlock>, J:\Jenkins\workspace\WinContrail\winci-server2016-prod\CIScripts\Test\Tests\Protocol\TunnellingWithAgent.Tests.ps1: line 527
+2018-06-25 02:18:26.104000 |         at Invoke-Blocks, C:\Program Files\WindowsPowerShell\Modules\Pester\4.2.0\Functions\SetupTeardown.ps1: line 140
+2018-06-25 02:18:26.104000 |         at Invoke-TestCaseTeardownBlocks, C:\Program Files\WindowsPowerShell\Modules\Pester\4.2.0\Functions\SetupTeardown.ps1: line 120
