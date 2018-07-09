@@ -1,7 +1,1 @@
-2018-07-08 11:22:41.570000 | [Testenv provisioning] 	to retry, use: --limit @/var/lib/jenkins/workspace/WinContrail/winci-server2016-prod/ansible/vmware-deploy-testenv.retry
-2018-07-08 11:22:41.571000 | [Testenv provisioning]
-2018-07-08 11:22:41.571000 | [Testenv provisioning] PLAY RECAP *********************************************************************
-2018-07-08 11:22:41.571000 | [Testenv provisioning] 518-controller             : ok=23   changed=14   unreachable=0    failed=1
-2018-07-08 11:22:41.571000 | [Testenv provisioning] 518-wintb01                : ok=11   changed=1    unreachable=0    failed=0
-2018-07-08 11:22:41.571000 | [Testenv provisioning] 518-wintb02                : ok=11   changed=1    unreachable=0    failed=0
-2018-07-08 11:22:41.572000 | [Testenv provisioning] localhost                  : ok=5    changed=3    unreachable=0    failed=0
+2018-07-08 11:22:41.533000 | [Testenv provisioning] fatal: STDERR:\n\nError response from daemon: Get https://registry-1.docker.io/v2/opencontrailnightly/contrail-external-zookeeper/manifests/ocata-master-91: Get https://auth.docker.io/token?scope=repository%3Aopencontrailnightly%2Fcontrail-external-zookeeper%3Apull&service=registry.docker.io: net/http: TLS handshake timeout\n\n\nMSG:\n\nnon-zero return code\nchanged: [172.17.0.124] => (item=contrail-external-rabbitmq)\n\tto retry, use: --limit @/tmp/contrail-ansible-deployer/playbooks/install_contrail.retry\n\nPLAY RECAP *********************************************************************\n172.17.0.124               : ok=418  changed=200  unreachable=0    failed=1   \nlocalhost                  : ok=7    changed=2    unreachable=0    failed=0   "
