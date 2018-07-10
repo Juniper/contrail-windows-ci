@@ -3,12 +3,13 @@ Param (
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
-. $PSScriptRoot/Invoke-CommandWithFunctions.ps1
 . $PSScriptRoot/Init.ps1
 . $PSScriptRoot/../Testenv/Testenv.ps1
 . $PSScriptRoot/../Testenv/Testbed.ps1
 
-Describe "Invoke-CommandWithFunctions tests" -Tags CI {
+. $PSScriptRoot/Invoke-CommandWithFunctions.ps1
+
+Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
     function Test-CWF {
         param(
             [Parameter(Mandatory=$true)] [PSCustomObject] $FunctionsInvoked,
