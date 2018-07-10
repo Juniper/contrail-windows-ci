@@ -12,13 +12,13 @@ Param (
 Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
     function Test-CWF {
         param(
-            [Parameter(Mandatory=$true)] [PSCustomObject] $FunctionsInvoked,
+            [Parameter(Mandatory=$true)] [string[]] $Functions,
             [Parameter(Mandatory=$true)] [ScriptBlock] $ScriptBlock,
             [Switch] $CaptureOutput
         )
 
         Invoke-CommandWithFunctions -Session $Session `
-            -FunctionsInvoked $FunctionsInvoked `
+            -FunctionNames $Functions `
             -ScriptBlock $ScriptBlock `
             -CaptureOutput:$CaptureOutput
     }
@@ -31,18 +31,16 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
         return $SimpleParam
     }
 
-    $TestSimpleFunctionInvoked = @(
-        @{ Name = "Test-SimpleFunction";
-           Body = ${Function:Test-SimpleFunction} } )
+    $TestSimpleFunction = @("Test-SimpleFunction")
 
     Context "Incorrect function usage handling" {
         It "throws on nonexisting function" {
-            { Test-CWF -FunctionsInvoked $TestSimpleFunctionInvoked  `
+            { Test-CWF -Functions $TestSimpleFunction  `
               -ScriptBlock { Test-ANonExistingFunction } } | Should Throw
         }
 
         It "throws on invoking with incorrectly passed parameter" {
-            { Test-CWF -FunctionsInvoked $TestSimpleFunctionInvoked  `
+            { Test-CWF -Functions $TestSimpleFunction `
               -ScriptBlock { Test-SimpleFunction -InvalidParam $true } } | Should Throw
         }
     }
@@ -50,13 +48,13 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
     Context "correctly defined simple functions" {
         It "invokes function passed in ScriptBlock" {
             $str = "A simple string"
-            Test-CWF -FunctionsInvoked $TestSimpleFunctionInvoked  `
+            Test-CWF -Functions $TestSimpleFunction `
                 -ScriptBlock { Test-SimpleFunction -SimpleParam $using:str } `
                 -CaptureOutput | Should Be $str
         }
 
         It "correctly invokes function with parameters defined at remote session" {
-            Test-CWF -FunctionsInvoked $TestSimpleFunctionInvoked  `
+            Test-CWF -Functions $TestSimpleFunction  `
                 -ScriptBlock { $a = "abcd"; Test-SimpleFunction -SimpleParam $a } `
                 -CaptureOutput | Should Be "abcd"
         }
@@ -87,20 +85,16 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
             }
          }
     
-        $TestFunctionsInvoked = @( 
-            @{ Name = "Test-OuterFunction"; 
-               Body = ${Function:Test-OuterFunction} },
-            @{ Name = "Test-InnerFunction"; 
-               Body = ${Function:Test-InnerFunction} } )
+        $TestFunctions = @("Test-OuterFunction", "Test-InnerFunction")
 
         It "Inner function calls passed string as scriptblock and outputs result" {
-            Test-CWF -FunctionsInvoked $TestFunctionsInvoked  `
+            Test-CWF -Functions $TestFunctions  `
                 -ScriptBlock { Test-OuterFunction -TestString "whoami.exe" } `
                 -CaptureOutput | Should Not BeNullOrEmpty
         }
 
         It "allows to throw exception" {
-            { Test-CWF -FunctionsInvoked $TestFunctionsInvoked  `
+            { Test-CWF -Functions $TestFunctions  `
               -ScriptBlock { Test-OuterFunction -TestString "" -DoAThrow } } | Should Throw
         }
 
@@ -111,12 +105,10 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
                 Process { Test-SimpleFunction -SimpleParam $_ }
             }
 
-            $TestPipelineInvoked = $TestSimpleFunctionInvoked
-            $TestPipelineInvoked += @{
-                Name = "Test-PipelineFunction";
-                Body = ${Function:Test-PipelineFunction} }
+            $TestPipeline = $TestSimpleFunction
+            $TestPipeline += "Test-PipelineFunction";
 
-            Test-CWF -FunctionsInvoked $TestPipelineInvoked  `
+            Test-CWF -Functions $TestPipeline  `
                 -ScriptBlock { 1..5 | Test-PipelineFunction } `
                 -CaptureOutput | Should Be @('1', '2', '3', '4', '5')
         }
