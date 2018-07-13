@@ -46,7 +46,7 @@
 - name: Fail when configure_instances failed
   fail:
     msg: configure_instances.yml playbook has failed
-  when: configure_instances_command.rc != 0
+  when: configure_instances_command is failed
 
 - name: Provision instances with install_contrail.yml playbook
   command: ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/install_contrail.yml
@@ -73,7 +73,7 @@
 - name: Fail if install_contrail failed
   fail:
     msg: install_contrail.yml playbook has failed
-  when: install_contrail_command.rc != 0
+  when: install_contrail_command is failed
 
 - name: Show the list of running containers
   command: docker ps -a
