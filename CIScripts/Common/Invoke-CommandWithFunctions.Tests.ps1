@@ -18,7 +18,7 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
         )
 
         Invoke-CommandWithFunctions -Session $Session `
-            -FunctionNames $Functions `
+            -Functions $Functions `
             -ScriptBlock $ScriptBlock `
             -CaptureOutput:$CaptureOutput
     }
@@ -31,16 +31,14 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
         return $SimpleParam
     }
 
-    $TestSimpleFunction = @("Test-SimpleFunction")
-
     Context "Incorrect function usage handling" {
         It "throws on nonexisting function" {
-            { Test-CWF -Functions $TestSimpleFunction  `
+            { Test-CWF -Functions "Test-SimpleFunction"  `
               -ScriptBlock { Test-ANonExistingFunction } } | Should Throw
         }
 
         It "throws on invoking with incorrectly passed parameter" {
-            { Test-CWF -Functions $TestSimpleFunction `
+            { Test-CWF -Functions "Test-SimpleFunction" `
               -ScriptBlock { Test-SimpleFunction -InvalidParam $true } } | Should Throw
         }
     }
@@ -48,13 +46,13 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
     Context "correctly defined simple functions" {
         It "invokes function passed in ScriptBlock" {
             $str = "A simple string"
-            Test-CWF -Functions $TestSimpleFunction `
+            Test-CWF -Functions "Test-SimpleFunction" `
                 -ScriptBlock { Test-SimpleFunction -SimpleParam $using:str } `
                 -CaptureOutput | Should Be $str
         }
 
         It "correctly invokes function with parameters defined at remote session" {
-            Test-CWF -Functions $TestSimpleFunction  `
+            Test-CWF -Functions "Test-SimpleFunction"  `
                 -ScriptBlock { $a = "abcd"; Test-SimpleFunction -SimpleParam $a } `
                 -CaptureOutput | Should Be "abcd"
         }
@@ -105,7 +103,7 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
                 Process { Test-SimpleFunction -SimpleParam $_ }
             }
 
-            $TestPipeline = $TestSimpleFunction
+            $TestPipeline = @("Test-SimpleFunction")
             $TestPipeline += "Test-PipelineFunction";
 
             Test-CWF -Functions $TestPipeline  `
