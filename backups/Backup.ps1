@@ -16,8 +16,8 @@ $VirtualMachines = @(
     [VMSpec]@{Name="winci-purgatory-2"},
     [VMSpec]@{Name="winci-registry"},
     [VMSpec]@{Name="winci-zuulv2-production"},
-    [VMSpec]@{Name="winci-vyos-mgmt"; SupportQuiesce = $false}
+    [VMSpec]@{Name="winci-vyos-mgmt"; SupportsQuiesce = $false}
 )
 
-Remove-LastBackups -Repository $backupRepository -PreserveCount $PreserveCount
+Remove-LastBackups -Repository $Repository -PreserveCount $PreserveCount
 Backup-Infrastructure -VirtualMachines $VirtualMachines -Repository $Repository
