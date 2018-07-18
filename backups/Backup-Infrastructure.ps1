@@ -11,7 +11,9 @@ function Backup-Infrastructure {
 
     $backupsDir = (Get-Date).ToUniversalTime().ToString("yyyyMMdd")
     $backupsPath = Join-Path -Path $Repository -ChildPath $backupsDir
-    New-Item $backupsPath -ItemType Directory
+    if (!(Test-Path -Path $backupsPath)) {
+        New-Item $backupsPath -ItemType Directory
+    }
 
     $failedForVirtualMachines = @()
 
@@ -50,7 +52,6 @@ function Backup-VirtualMachine {
         }
         if (!$vm.SupportsQuiesce) {
             $zipParams['DisableQuiesce'] = $true
-            Start-VBRZip -Folder $BackupsPath -Entity $Entity -Compression $CompressionLevel
         }
         Start-VBRZip @zipParams
     } catch {
