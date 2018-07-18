@@ -17,7 +17,7 @@ function Start-VBRZip {
 }
 function Disconnect-VBRServer {}
 
-Describe 'Backup-Infrastructure' -Tags 'CI' {
+Describe 'Backup-Infrastructure' -Tags CI, Unit {
     BeforeEach {
         $backupRepository = "TestDrive:\Backups\"
         New-Item -ItemType Directory -Path $backupRepository

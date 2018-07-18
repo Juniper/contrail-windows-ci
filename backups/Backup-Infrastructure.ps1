@@ -38,16 +38,21 @@ function Backup-VirtualMachine {
         [Parameter(Mandatory = $false)] [int32] $CompressionLevel = 5
     )
 
-    $entity = Find-VBRViEntity -Name $vm.name
-    if (!$entity) {
+    $Entity = Find-VBRViEntity -Name $vm.name
+    if (!$Entity) {
         throw $vm.name
     }
     try {
-        if ($vm.SupportsQuiesce) {
-            Start-VBRZip -Folder $BackupsPath -Entity $entity -Compression $CompressionLevel
-        } else {
-            Start-VBRZip -Folder $BackupsPath -Entity $entity -Compression $CompressionLevel -DisableQuiesce
+        $zipParams = @{
+            'Folder'=$BackupsPath;
+            'Entity'=$Entity;
+            'Compression'=$CompressionLevel;
         }
+        if (!$vm.SupportsQuiesce) {
+            $zipParams['DisableQuiesce'] = $true
+            Start-VBRZip -Folder $BackupsPath -Entity $Entity -Compression $CompressionLevel
+        }
+        Start-VBRZip @zipParams
     } catch {
         throw $vm.name
     }
