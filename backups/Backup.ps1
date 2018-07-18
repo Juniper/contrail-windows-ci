@@ -1,6 +1,8 @@
 . $PSScriptRoot\Backup-Infrastructure.ps1
 . $PSScriptRoot\Remove-LastBackups.ps1
 
+Add-PSSnapin VeeamPSSnapin
+
 $Repository = "\\10.84.10.100\vol\winci_backup\Backups"
 $PreserveCount = 5
 
