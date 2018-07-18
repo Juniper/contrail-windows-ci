@@ -1,4 +1,5 @@
 . $PSScriptRoot\Backup-Infrastructure.ps1
+. $PSScriptRoot\Remove-LastBackups.ps1
 
 $Repository = "\\10.84.10.100\vol\winci_backup\Backups"
 $PreserveCount = 5
@@ -20,4 +21,3 @@ $VirtualMachines = @(
 
 Remove-LastBackups -Repository $backupRepository -PreserveCount $PreserveCount
 Backup-Infrastructure -VirtualMachines $VirtualMachines -Repository $Repository
-
