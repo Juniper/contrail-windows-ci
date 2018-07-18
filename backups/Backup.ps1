@@ -18,5 +18,6 @@ $VirtualMachines = @(
     [VMSpec]@{Name="winci-vyos-mgmt"; SupportQuiesce = $false}
 )
 
-Backup-Infrastructure -VirtualMachines $VirtualMachines -Repository $Repository
 Remove-LastBackups -Repository $backupRepository -PreserveCount $PreserveCount
+Backup-Infrastructure -VirtualMachines $VirtualMachines -Repository $Repository
+
