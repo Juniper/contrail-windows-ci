@@ -24,6 +24,7 @@ contrail-windows-ci - infrastructure backups
 
     ```powershell
     git clone https://github.com/Juniper/contrail-windows-ci.git
+    cd contrail-windows-ci/backups
     ```
 
 1. Run backup script
