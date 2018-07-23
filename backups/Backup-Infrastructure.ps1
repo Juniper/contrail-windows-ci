@@ -9,7 +9,7 @@ function Backup-Infrastructure {
         [Parameter(Mandatory = $true)] [string] $Repository
     )
 
-    $backupsDir = (Get-Date).ToUniversalTime().ToString("yyyyMMdd")
+    $backupsDir = (Get-Date).ToUniversalTime().ToString("yyyyMMdd-hhmmss")
     $backupsPath = Join-Path -Path $Repository -ChildPath $backupsDir
     if (!(Test-Path -Path $backupsPath)) {
         New-Item $backupsPath -ItemType Directory

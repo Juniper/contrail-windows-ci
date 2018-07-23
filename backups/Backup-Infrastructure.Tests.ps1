@@ -38,8 +38,6 @@ Describe 'Backup-Infrastructure' -Tags CI, Unit {
         $dir = Get-ChildItem $backupRepository -Directory
         $dir | Should -HaveCount 1
 
-        Get-ChildItem $backupRepository -Directory
-
         $backupFiles = Get-ChildItem $dir.FullName -File -Filter "*.vbk"
         $backupFiles | Should -HaveCount $vmSpecList.Count
         ($backupFiles | Where-Object Name -Match "vm1").FullName | Should -Exist
@@ -54,11 +52,11 @@ Describe 'Backup-Infrastructure' -Tags CI, Unit {
             Backup-Infrastructure -VirtualMachines $vmSpecList -Repository $backupRepository
 
             $dir = Get-ChildItem $backupRepository -Directory
-            $dir.Name | Should -Be "20180101"
+            $dir.Name | Should -Be "20180101-010203"
         }
 
         It 'uses existing directory if it exists' {
-            $backupPath = Join-Path $backupRepository "20180101"
+            $backupPath = Join-Path $backupRepository "20180101-010203"
 
             New-Item -ItemType Directory -Path $backupPath
             Backup-Infrastructure -VirtualMachines $vmSpecList -Repository $backupRepository
