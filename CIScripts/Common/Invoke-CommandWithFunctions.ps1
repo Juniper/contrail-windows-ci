@@ -2,22 +2,23 @@
 function Invoke-CommandWithFunctions {
     <#
     .SYNOPSIS
-    This is a helper function for using locally defined functions in remote session.
-    The problem is that PowerShell does not support passing functions
-    to remote session, like ScriptBlocks or locally defined variables (by "$using:")
-    What Invoke-CommandWithFunctions do is just taking functions names and bodies 
-    and define them at remote session by using Invoke-Expression.
-    Then we invoke ScriptBlock with calls to already defined functions
-    After we remove the definitions from remote session memory so we do not pollute it.
+    This is a helper function that solves the following problem:
+    PowerShell does not support passing functions to remote session,
+    like ScriptBlocks or locally defined variables (by "$using:").
+
+    What Invoke-CommandWithFunctions does is defining functions at remote session by using local definitions allowing to call the functions in ScriptBlock without any additional syntax.
+    After invocation of the ScriptBlock we remove the definitions from remote session memory so we do not pollute it.
     .PARAMETER ScriptBlock
-    ScriptBlock with functions calls to invoke.
+    ScriptBlock with commands invoked in the remote session.
+    ScriptBlock can contain calls to functions passed in $Functions parameter.
+    Refer to tests for examples.
     .PARAMETER Session
     Remote session where the Scriptblock will be invoked.
     .PARAMETER Functions
-    Names of functions called in ScriptBlock
+    Names of locally defined functions to be made available in remote scope.
     .PARAMETER CaptureOutput
-    If set, output from invoking ScriptBlock will be saved to a variable and returned
-    If not, output is printed to stdout.
+    If set, output from invoking ScriptBlock will be saved to a variable and returned.
+    If not, output is printed to logs or stdout depending on whether logging is on.
     #>
     Param(
         [Parameter(Mandatory=$true)] [ScriptBlock] $ScriptBlock,
@@ -30,7 +31,8 @@ function Invoke-CommandWithFunctions {
         | ForEach-Object { @{ Name = $_; Body = Get-Content function:$_ } }
 
     Invoke-Command -Session $Session -ScriptBlock {
-        $Using:FunctionsInvoked | ForEach-Object { Invoke-Expression "function $( $_.Name ) { $( $_.Body ) }" }
+        $Using:FunctionsInvoked `
+            | ForEach-Object { Invoke-Expression "function $( $_.Name ) { $( $_.Body ) }" }
     }
 
     try {
@@ -38,7 +40,8 @@ function Invoke-CommandWithFunctions {
     }
     finally {
         Invoke-Command -Session $Session -ScriptBlock {
-            $Using:FunctionsInvoked | ForEach-Object { Remove-Item -Path "Function:$( $_.Name )" }
+            $Using:FunctionsInvoked `
+                | ForEach-Object { Remove-Item -Path "Function:$( $_.Name )" }
         }
     }
 
@@ -46,6 +49,6 @@ function Invoke-CommandWithFunctions {
         return $Output
     }
     else {
-        Write-Host $Output
+        Write-Log $Output
     }
 }
