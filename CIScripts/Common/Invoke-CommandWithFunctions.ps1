@@ -6,8 +6,11 @@ function Invoke-CommandWithFunctions {
     PowerShell does not support passing functions to remote session,
     like ScriptBlocks or locally defined variables (by "$using:").
 
-    What Invoke-CommandWithFunctions does is defining functions at remote session by using local definitions allowing to call the functions in ScriptBlock without any additional syntax.
-    After invocation of the ScriptBlock we remove the definitions from remote session memory so we do not pollute it.
+    What Invoke-CommandWithFunctions does is defining functions at remote
+    session by using local definitions allowing to call the functions in 
+    ScriptBlock without any additional syntax.
+    After invocation of the ScriptBlock we remove the definitions from remote 
+    session memory so we do not pollute it.
     .PARAMETER ScriptBlock
     ScriptBlock with commands invoked in the remote session.
     ScriptBlock can contain calls to functions passed in $Functions parameter.
