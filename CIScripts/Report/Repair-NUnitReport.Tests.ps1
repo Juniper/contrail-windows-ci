@@ -270,7 +270,7 @@ Describe "Repair-NUnitReport" -Tags CI, Unit {
             NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
 
-        It "removes root node attributes like total, errors, failures etc" {
+        It "zeroes root node attributes like total, errors, failures etc" {
             $TestData = NormalizeXmlString -InputData @"
 <?xml version="1.0"?>
 <test-results total="70" errors="0" failures="5" not-run="0" inconclusive="38" ignored="0" skipped="0" invalid="0">
@@ -290,7 +290,7 @@ Describe "Repair-NUnitReport" -Tags CI, Unit {
 
             $ExpectedOutput = NormalizeXmlString -InputData @"
 <?xml version="1.0"?>
-<test-results>
+<test-results total="0" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0">
     <environment />
     <culture-info />
     <test-suite name="3">
