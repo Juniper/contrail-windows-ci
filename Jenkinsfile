@@ -94,6 +94,7 @@ pipeline {
                         unstash "SourceCode"
                         unstash "CIScripts"
                         unstash "Test"
+                        unstash "Backups"
                         powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
                     }
                 }
