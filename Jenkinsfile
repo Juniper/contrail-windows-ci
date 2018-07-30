@@ -52,6 +52,7 @@ pipeline {
                         deleteDir()
                         unstash "Backups"
                         unstash "CIScripts"
+                        unstash "Test"
                         unstash "CISelfcheck"
                         script {
                             try {
@@ -236,16 +237,16 @@ pipeline {
 
                         dir('testReportsRaw') {
                             stash name: 'ddriverJUnitLogs', includes:
-                            'WindowsCompute/ddriver_junit_test_logs/**', allowEmpty: true
+                                'WindowsCompute/ddriver_junit_test_logs/**', allowEmpty: true
 
                             stash name: 'detailedLogs', includes:
-                            'WindowsCompute/detailed_logs/**', allowEmpty: true
-                            }
+                                'WindowsCompute/detailed_logs/**', allowEmpty: true
                         }
                     }
                 }
             }
         }
+    }
 
     environment {
         LOG_SERVER = "logs.opencontrail.org"
