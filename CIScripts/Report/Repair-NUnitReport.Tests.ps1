@@ -36,7 +36,7 @@ Describe "Repair-NUnitReport" -Tags CI, Unit {
 "@
             $ExpectedOutput = NormalizeXmlString -InputData @"
 <test-results>
-</test-results>
+</test-results>AAAAAAAAAAAAAAAAAAAAAAAAAAAA
 "@
             $ActualOutput = Repair-NUnitReport -InputData $TestData
             NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
