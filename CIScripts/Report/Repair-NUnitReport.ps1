@@ -2,8 +2,6 @@
     Param([Parameter(Mandatory = $true)] [string] $InputData)
     [xml] $XML = $InputData
 
-    Set-SummaryCountersToZero -XML $XML
-
     $CaseNodes = Find-CaseNodes -XML $XML
     Set-DescriptionAndNameTheSameFor -Nodes $CaseNodes
 
@@ -14,6 +12,10 @@
 
     $SuiteNodesWithoutCases = Find-SuiteNodesWithoutCases -XML $XML
     Remove-Nodes -Nodes $SuiteNodesWithoutCases
+
+    $RootResultsNode = Find-RootPesterResultsNode -XML $XML
+    $Counters = Get-TestResultCounts -Nodes $CaseNodes
+    Set-TestResultCountersTo -Node $RootResultsNode -Counters $Counters
 
     return $XML.OuterXml
 }
@@ -51,18 +53,24 @@ function Split-NUnitReport {
     return $XMLs
 }
 
-function Set-SummaryCountersToZero {
-    Param([Parameter(Mandatory = $true)] [xml] $XML)
-    $RootResults = Find-RootPesterResultsNode -XML $XML
-    $RootResults.Node.Attributes | ForEach-Object {
-        $_.Value = 0
-    } | Out-Null
-}
-
 function Find-RootPesterResultsNode {
     Param([Parameter(Mandatory = $true)] [xml] $XML)
     $RootResults = $XML | Select-Xml -Xpath '/test-results'
-    return ,$RootResults
+    return ,$RootResults.Node
+}
+
+function Set-TestResultCountersTo {
+    Param([Parameter(Mandatory = $true)] [System.Xml.XmlElement] $Node,
+          [Parameter(Mandatory = $true)] [AllowEmptyCollection()] $Counters)
+    if ($Node.HasAttribute('total')) {
+        $Node.SetAttribute('total', $Counters.Total)
+    }
+    if ($Node.HasAttribute('failures')) {
+        $Node.SetAttribute('failures', $Counters.Failures)
+    }
+    if ($Node.HasAttribute('inconclusive')) {
+        $Node.SetAttribute('inconclusive', $Counters.Inconclusive)
+    }
 }
 
 function Find-CaseNodes {
@@ -124,6 +132,27 @@ function Remove-Nodes {
     $Nodes | ForEach-Object {
         $_.ParentNode.RemoveChild($_)
     } | Out-Null
+}
+
+function Get-TestResultCounts {
+    Param([Parameter(Mandatory = $true)] [AllowEmptyCollection()]
+          [System.Xml.XmlElement[]] $Nodes)
+    $Counters = @{
+        "Total"=0;
+        "Failures"=0;
+        "Inconclusive"=0
+    }
+    $Nodes | ForEach-Object {
+        $Counters.Total += 1
+        if ($_.HasAttribute('result')) {
+            if ($_.'result' -eq 'Inconclusive') {
+                $Counters.Inconclusive += 1
+            } elseif ($_.'result' -eq 'Failure') {
+                $Counters.Failures += 1
+            }
+        }
+    } | Out-Null
+    return $Counters
 }
 
 function Get-NameOfPesterTestSuite {
