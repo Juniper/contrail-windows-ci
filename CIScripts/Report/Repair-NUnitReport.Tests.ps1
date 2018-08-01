@@ -333,7 +333,7 @@ Describe "Repair-NUnitReport" -Tags CI, Unit {
 "@
 
             $ActualOutput = Repair-NUnitReport -InputData $TestData
-            NormalizeXmlString $ActualOutput | Should Not BeExactly $ExpectedOutput
+            NormalizeXmlString $ActualOutput | Should BeExactly $ExpectedOutput
         }
     }
 
