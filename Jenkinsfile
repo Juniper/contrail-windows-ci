@@ -26,6 +26,8 @@ pipeline {
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
                 stash name: "Flakes", includes: "flakes/**"
+                stash name: "Test", includes: "Test/**"
+                stash name: "Utility", includes: "utility/**"
             }
         }
 
@@ -51,6 +53,7 @@ pipeline {
                         deleteDir()
                         unstash "Backups"
                         unstash "CIScripts"
+                        unstash "Test"
                         unstash "CISelfcheck"
                         script {
                             try {
@@ -92,6 +95,8 @@ pipeline {
                         unstash "StaticAnalysis"
                         unstash "SourceCode"
                         unstash "CIScripts"
+                        unstash "Test"
+                        unstash "Backups"
                         powershell script: "./StaticAnalysis/Invoke-StaticAnalysisTools.ps1 -RootDir . -Config ${pwd()}/StaticAnalysis"
                     }
                 }
@@ -137,7 +142,7 @@ pipeline {
                     }
                     post {
                         always {
-                            stash name: "sconsTestsLogs", allowEmpty: true, includes: "SconsTestsLogs/**"
+                            stash name: "unitTestsLogs", allowEmpty: true, includes: "unittests-logs/**"
                             deleteDir()
                         }
                     }
@@ -222,9 +227,11 @@ pipeline {
                 deleteDir()
                 unstash 'CIScripts'
                 unstash 'TestenvConf'
+                unstash 'Test'
                 script {
                     try {
                         powershell script: """./CIScripts/Test.ps1 `
+                            -TestRootDir Test `
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
                     } finally {
@@ -232,25 +239,25 @@ pipeline {
 
                         dir('testReportsRaw') {
                             stash name: 'ddriverJUnitLogs', includes:
-                            'WindowsCompute/ddriver_junit_test_logs/**', allowEmpty: true
+                                'WindowsCompute/ddriver_junit_test_logs/**', allowEmpty: true
 
                             stash name: 'detailedLogs', includes:
-                            'WindowsCompute/detailed_logs/**', allowEmpty: true
-                            }
+                                'WindowsCompute/detailed_logs/**', allowEmpty: true
                         }
                     }
                 }
             }
         }
+    }
 
     environment {
         LOG_SERVER = "logs.opencontrail.org"
         LOG_SERVER_USER = "zuul-win"
         LOG_SERVER_FOLDER = "winci"
         LOG_ROOT_DIR = "/var/www/logs"
-        MYSQL = credentials('monitoring-mysql')
-        MYSQL_HOST = "10.84.12.52"
-        MYSQL_DATABASE = "monitoring_test"
+        MYSQL = credentials('winstats-mysql')
+        MYSQL_HOST = "winci-winstats"
+        MYSQL_DATABASE = "monitoring"
     }
 
     post {
@@ -278,6 +285,9 @@ pipeline {
             node('master') {
                 script {
                     deleteDir()
+
+                    unstash 'Utility'
+
                     def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
                         env.BUILD_NUMBER, env.ZUUL_UUID)
 
@@ -285,11 +295,17 @@ pipeline {
 
                     dir('to_publish') {
                         unstash 'processedTestReports'
+                        // NOTE: We have to preserve two index files, because:
+                        //       - `Index.html` is referenced in other html files
+                        //       - `index.html` can be loaded by default when entering `pretty_test_report`
+                        shellCommand('/bin/bash', ['../utility/fix-test-report-index-files.sh',
+                                                   './TestReports'])
+
                         dir('TestReports') {
                             tryUnstash('ddriverJUnitLogs')
                             tryUnstash('detailedLogs')
-                            tryUnstash('sconsTestsLogs')
                         }
+                        tryUnstash('unitTestsLogs')
 
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
 
