@@ -11,10 +11,10 @@ gunzip --keep "$full_log_gz"
 full_log=$(basename "$1" .gz)
 
 function get_stage_regexp() {
-    echo '^.{29}(?:\[Pipeline\] )?\[('"$1"')\].*$'
+    echo '^.{29}(?:\[Pipeline\] )?\[(?!Pipeline)('"$1"')\].*$'
 }
 
-stage_regexp=$(get_stage_regexp '[A-Za-z -]+')
+stage_regexp=$(get_stage_regexp '[\w -]+')
 
 stages=$(perl -lne "s/$stage_regexp/\$1/ or next; print" < "$full_log" | sort --unique)
 
@@ -27,8 +27,7 @@ do
     grep --perl-regexp "$this_stage_regexp" "$full_log" | gzip > "$stage_log_filename"
 done
 
-non_tagged_filename='log.cloning-and-tests.txt.gz'
-
+non_tagged_filename='log.cloning-tests-and-post.txt.gz'
 echo "copying remaining part of log to $non_tagged_filename"
 grep --perl-regexp --invert-match "$stage_regexp" "$full_log" | gzip > "$non_tagged_filename"
 
