@@ -11,7 +11,10 @@ gunzip --keep "$full_log_gz"
 full_log=$(basename "$1" .gz)
 
 function get_stage_regexp() {
-    echo '^.{29}(?:\[Pipeline\] )?\[(?!Pipeline)('"$1"')\].*$'
+    # * Match <Tag> from `<timestamp> | [<Tag>] ...`
+    # * Don't count [Pipeline] as a separate tag
+    # * Don't count [Directory] in `<timestamp> | [Directory] Running shell script` as separate tag.
+    echo '^.{29}(?:\[Pipeline\] )?\[(?!Pipeline)('"$1"')\](?! Running (?:PowerShell|shell) script$).*$'
 }
 
 stage_regexp=$(get_stage_regexp '[\w -]+')
