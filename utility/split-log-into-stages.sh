@@ -4,7 +4,7 @@ set -e
 set -u
 IFS=$'\n'
 
-cd $(dirname "$1")
+cd "$(dirname "$1")"
 
 full_log_gz=$(basename "$1")
 gunzip --keep "$full_log_gz"
@@ -20,7 +20,7 @@ stages=$(perl -lne "s/$stage_regexp/\$1/ or next; print" < "$full_log" | sort --
 
 for stage in $stages
 do
-    stage_slug=$(echo $stage | tr 'A-Z' 'a-z' | tr --squeeze ' ' '-')
+    stage_slug=$(echo "$stage" | tr '[:upper:]' '[:lower:]' | tr --squeeze ' ' '-')
     stage_log_filename="log.$stage_slug.txt.gz"
     this_stage_regexp=$(get_stage_regexp "$stage")
     echo "copying '$stage' log to $stage_log_filename"
