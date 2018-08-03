@@ -30,7 +30,7 @@ do
     grep --perl-regexp "$this_stage_regexp" "$full_log" | gzip > "$stage_log_filename"
 done
 
-non_tagged_filename='log.cloning-tests-and-post.txt.gz'
+non_tagged_filename='log.cloning-and-tests-and-post.txt.gz'
 echo "copying remaining part of log to $non_tagged_filename"
 grep --perl-regexp --invert-match "$stage_regexp" "$full_log" | gzip > "$non_tagged_filename"
 
