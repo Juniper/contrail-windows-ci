@@ -67,7 +67,7 @@ function Invoke-DockerDriverBuild {
                                     -g golang-api src/contrail-api-client/schema/vnc_cfg.xsd
 
             # Workaround on https://github.com/golang/go/issues/18468
-            Copy-Item -Path $srcPath/vendor/* -Destination $GoPath/src -Force -Container -Recurse
+            Copy-Item -Path $srcPath/vendor/* -Destination $GoPath/src -Force -Recurse
             Remove-Item -Path $srcPath/vendor -Force -Recurse
         }
     })
@@ -149,9 +149,9 @@ function Invoke-ExtensionBuild {
                      -MSIPath $vRouterMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
-        Copy-Item $utilsMSI $OutputPath -Recurse -Container
-        Copy-Item $vRouterMSI $OutputPath -Recurse -Container
-        Copy-Item $vRouterCert $OutputPath -Recurse -Container
+        Copy-Item $utilsMSI $OutputPath -Recurse
+        Copy-Item $vRouterMSI $OutputPath -Recurse
+        Copy-Item $vRouterCert $OutputPath -Recurse
     })
 
     $Job.PopStep()
@@ -203,7 +203,45 @@ function Invoke-AgentBuild {
                      -MSIPath $agentMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
-        Copy-Item $agentMSI $OutputPath -Recurse -Container
+        Copy-Item $agentMSI $OutputPath -Recurse
+    })
+
+    $Job.PopStep()
+}
+
+function Invoke-NodemgrBuild {
+    Param ([Parameter(Mandatory = $true)] [string] $Output,
+           [Parameter(Mandatory = $true)] [string] $LogsPath,
+           [Parameter(Mnadatory = $false)] [string] $BuildMode = "debug")
+
+    $Job.PushStep("Nodemgr build")
+
+    $Job.Step("Building nodemgr", {
+        $Components = @(
+            "database:node_mgr",
+            "build/debug/sandesh/common/dist",
+            "sandesh/library/python:pysandesh",
+            "contrail-nodemgr",
+            "vrouter:node_mgr"
+        )
+        $ComponentsString = $Components -Join " "
+
+        Invoke-NativeCommand -ScriptBlock {
+            scons $ComponentsString | Tee-Object -FilePath $LogsPath/build_nodemgr.log
+        }
+    })
+
+    $Job.Step("Copying artifacts to $OutputPath", {
+        $ArchivesFolders = @(
+            "analytics\database",
+            "sandesh\common",
+            "tools\sandesh\library\python",
+            "nodemgr",
+            "vnsw\agent\uve"
+        )
+        ForEach ($ArchiveFolder in $ArchivesFolders) {
+            Copy-Item "build\$BuildMode\$ArchiveFolder\dist\*.tar.gz" $OutputPath
+        }
     })
 
     $Job.PopStep()
