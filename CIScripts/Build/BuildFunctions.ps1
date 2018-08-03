@@ -212,7 +212,7 @@ function Invoke-AgentBuild {
 function Invoke-NodemgrBuild {
     Param ([Parameter(Mandatory = $true)] [string] $Output,
            [Parameter(Mandatory = $true)] [string] $LogsPath,
-           [Parameter(Mnadatory = $false)] [string] $BuildMode = "debug")
+           [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Nodemgr build")
 
