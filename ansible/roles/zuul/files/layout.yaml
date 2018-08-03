@@ -3,7 +3,7 @@ pipelines:
     description: Newly uploaded patchsets enter this pipeline to receive an initial +/-1 Verified vote from Windows CI.
     failure-message: Build failed (check pipeline).
     success-message: Build succeeeded (check pipeline).
-    footer-message: > 
+    footer-message: >
                       This is a pipeline from Windows CI. For more information, see:
                       https://github.com/Juniper/contrail-windows-ci/wiki/OpenContrail-Windows-CI-FAQ
     manager: IndependentPipelineManager
@@ -17,7 +17,6 @@ pipelines:
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^contrail_dpdk_17_11_3$
-            - ^R5\..*$
             - ^release-3.7-contrail$
             - ^release-3.9-contrail$
             - ^stable/queens$
@@ -29,7 +28,6 @@ pipelines:
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^contrail_dpdk_17_11_3$
-            - ^R5\..*$
             - ^release-3.7-contrail$
             - ^release-3.9-contrail$
             - ^stable/queens$
@@ -41,7 +39,6 @@ pipelines:
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^contrail_dpdk_17_11_3$
-            - ^R5\..*$
             - ^release-3.7-contrail$
             - ^release-3.9-contrail$
             - ^stable/queens$
@@ -57,6 +54,23 @@ pipelines:
     failure:
       gerrit:
         verified: -1
+
+  - name: check-noop
+    description: Pipeline used for nooping branches unsupported by Windows CI.
+    manager: IndependentPipelineManager
+    precedence: normal
+    trigger:
+      gerrit:
+        - event: patchset-created
+          branch: ^R5\.0$
+        - event: change-restored
+          branch: ^R5\.0$
+        - event: comment-added
+          branch: ^R5\.0$
+          comment: (?i)recheck(( (?:bug|lp)[\s#:]*(\d+))|( no bug))?(\s+clean)?\s*$
+        - event: comment-added
+          branch: ^R5\.0$
+          comment: (?i)recheck windows$
 
   - name: check-development
     description: Pipeline used for Windows CI development. It should always work in silent mode.
@@ -82,9 +96,13 @@ project-templates:
       - ci-contrail-windows-production
     check-development:
       - ci-contrail-windows-development
+    check-noop:
+      - noop
 
   - name: ci-contrail-windows-other-projects-template
     check:
+      - noop
+    check-noop:
       - noop
 
 projects:
