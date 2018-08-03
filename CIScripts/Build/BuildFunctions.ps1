@@ -227,7 +227,7 @@ function Invoke-NodemgrBuild {
         $ComponentsString = $Components -Join " "
 
         Invoke-NativeCommand -ScriptBlock {
-            scons $ComponentsString | Tee-Object -FilePath $LogsPath/build_nodemgr.log
+            Invoke-Expression "scons $ComponentsString" | Tee-Object -FilePath $LogsPath/build_nodemgr.log
         }
     })
 
