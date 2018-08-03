@@ -210,7 +210,7 @@ function Invoke-AgentBuild {
 }
 
 function Invoke-NodemgrBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $Output,
+    Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
