@@ -188,7 +188,7 @@ function Invoke-AgentBuild {
         } else {
             $Threads = 1
         }
-        $AgentBuildCommand = "scons -j {0} --optimization={1} contrail-vrouter-agent.msi" -f $Threads, $BuildMode
+        $AgentBuildCommand = "scons -j {0} --opt={1} contrail-vrouter-agent.msi" -f $Threads, $BuildMode
         Invoke-NativeCommand -ScriptBlock {
             Invoke-Expression $AgentBuildCommand | Tee-Object -FilePath $LogsPath/build_agent.log
         }
@@ -219,15 +219,14 @@ function Invoke-NodemgrBuild {
     $Job.Step("Building nodemgr", {
         $Components = @(
             "database:node_mgr",
-            "build/debug/sandesh/common/dist",
+            "build/$BuildMode/sandesh/common/dist",
             "sandesh/library/python:pysandesh",
-            "contrail-nodemgr",
-            "vrouter:node_mgr"
+            "vrouter:node_mgr",
+            "contrail-nodemgr"
         )
-        $ComponentsString = $Components -Join " "
 
         Invoke-NativeCommand -ScriptBlock {
-            Invoke-Expression "scons $ComponentsString" | Tee-Object -FilePath $LogsPath/build_nodemgr.log
+            scons --opt=$BuildMode @Components | Tee-Object -FilePath $LogsPath/build_nodemgr.log
         }
     })
 
@@ -236,8 +235,8 @@ function Invoke-NodemgrBuild {
             "analytics\database",
             "sandesh\common",
             "tools\sandesh\library\python",
-            "nodemgr",
-            "vnsw\agent\uve"
+            "vnsw\agent\uve",
+            "nodemgr"
         )
         ForEach ($ArchiveFolder in $ArchivesFolders) {
             Copy-Item "build\$BuildMode\$ArchiveFolder\dist\*.tar.gz" $OutputPath
