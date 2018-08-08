@@ -1,7 +1,8 @@
 #!groovy
 library "contrailWindows@$BRANCH_NAME"
 
-// NOTE: This is a temporary workaround. Alternative workaround would be to put `when` in each stage,
+// NOTE: This is a temporary workaround for lack of per project branch specification in Zuul.
+//       Alternative workaround would be to put `when` in each stage,
 //       but this seems harder to maintain than a solution below.
 //       This workaround should be replaced by a proper solution using Zuulv2/Zuulv3 branch filtering.
 if (isBranchUnsupported()) {

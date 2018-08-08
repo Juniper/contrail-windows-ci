@@ -11,9 +11,5 @@ def zuulBranchIsUnsupported() {
 }
 
 def call() {
-    if (wasTriggeredByZuul() && zuulBranchIsUnsupported()) {
-        return true;
-    }
-
-    return false
+    return wasTriggeredByZuul() && zuulBranchIsUnsupported()
 }
