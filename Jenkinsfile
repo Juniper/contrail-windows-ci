@@ -1,6 +1,11 @@
 #!groovy
 library "contrailWindows@$BRANCH_NAME"
 
+if (isBranchUnsupported()) {
+    currentBuild.result = 'SUCCESS'
+    return
+}
+
 pipeline {
     agent none
 
