@@ -34,4 +34,20 @@ non_tagged_filename='log.cloning-and-tests-and-post.txt.gz'
 echo "copying remaining part of log to $non_tagged_filename"
 grep --perl-regexp --invert-match "$stage_regexp" "$full_log" | gzip > "$non_tagged_filename"
 
+echo "creating readme"
+cat > README << EOF
+The $full_log_gz contains the whole log of the check pipeline.
+
+Additionally, logs from various stages are also available in log.<stage>.txt.gz files.
+Most likely, you'd want to check:
+
+* log.build.txt.gz -- contains log of the build
+* $non_tagged_filename -- contains info about passed/failed tests (see also TestReports/WindowsCompute directory)
+* log.testenv-provisioning.txt.gz -- this is the output from testenv provisioning stage.
+  Any failure in this stage is most likely a CI flakiness.
+
+The full documentation on Windows CI logs layout is available here:
+https://juniper.github.io/contrail-windows-docs/ci_admin_guide/Windows_CI_logs_layout/
+EOF
+
 rm "$full_log"

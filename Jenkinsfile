@@ -291,7 +291,7 @@ pipeline {
                     def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
                         env.BUILD_NUMBER, env.ZUUL_UUID)
 
-                    def logFilename = 'log.txt.gz'
+                    def logFilename = 'log.full.txt.gz'
 
                     dir('to_publish') {
                         unstash 'processedTestReports'
