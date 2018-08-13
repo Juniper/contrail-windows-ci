@@ -5,6 +5,7 @@ import json
 import sys
 import re
 
+# TODO: This script assumes that it's being ran from inside ansible/ directory.
 layout_file = "roles/zuul/files/layout.yaml"
 gerrit_server = "review.opencontrail.org"
 special_delimiter_line = \
