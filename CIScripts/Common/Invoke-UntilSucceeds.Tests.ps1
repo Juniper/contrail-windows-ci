@@ -30,13 +30,10 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
         { return $true } | Invoke-UntilSucceeds -Duration 3 | Should Be $true
     }
 
-    It "succeeds if ScriptBlock is immediately true with precondition" {
-        { { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { $true } } | Should Not Throw
-        { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { $true } | Should Be $true
-    }
-
-    It "fails if ScriptBlock is immediately true but precondition throws" {
-        { { return $true } | Invoke-UntilSucceeds -Duration 3 -Precondition { throw "precondition fails" } } | Should Throw
+    It "stops retrying immediately when StopRetrying is returned" {
+        $Script:Counter = 0;
+        { { $Script:Counter += 1; [StopRetrying]::new() } | Invoke-UntilSucceeds -Duration 3 } | Should Throw
+        $Script:Counter | Should -Be 1
     }
 
     It "succeeds for other values than pure `$true" {
@@ -58,17 +55,6 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
                 return ($Script:Counter -eq 3)
             } | Invoke-UntilSucceeds -Duration 3
         } | Should Not Throw
-    }
-
-    It "fails if ScriptBlock is eventually true, but precondition is false" {
-        $Script:Counter = 0
-        {
-            { 
-                $Script:Counter += 1;
-                return ($Script:Counter -eq 3)
-            } | Invoke-UntilSucceeds -Duration 3 -Precondition { $Script:Counter -ne 2 }
-        } | Should Throw
-        $Script:Counter | Should Be 2
     }
 
     It "keeps retrying even when exception is throw" {
