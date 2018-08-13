@@ -6,17 +6,21 @@ function Invoke-UntilSucceeds {
     .SYNOPSIS
     Repeatedly calls a script block until its return value evaluates to true. Subsequent calls
     happen after Interval seconds. Will catch any exceptions that occur in the meantime.
-    User has to specify a timeout after which the function fails by setting the Duration parameter.
+    User has to specify a timeout after which the function fails by setting the Duration (or NumRetires) parameter.
     If the function fails, it throws an exception containing the last reason of failure.
 
-    It is guaranteed that that if Invoke-UntilSucceeds had failed and precondition was true,
-    there was at least one check performed at time T where T >= T_start + Duration
+    Invoke-UntilSucceeds can work in two modes: number of retries limit (-NumRetries)
+    or retrying until timeout (-Duration). When Duration is set,
+    it is guaranteed that that if Invoke-UntilSucceeds had failed and precondition was true,
+    there was at least one check performed at time T where T >= T_start + Duration.
     .PARAMETER ScriptBlock
     ScriptBlock to repeatedly call.
     .PARAMETER Interval
     Interval (in seconds) between retries.
     .PARAMETER Duration
     Timeout (in seconds).
+    .PARAMETER NumRetries
+    Maximum number of retries to perform.
     .PARAMETER Precondition
     If the precondition is false or throws, abort the waiting immediately.
     .PARAMETER Name
@@ -29,21 +33,42 @@ function Invoke-UntilSucceeds {
         [Parameter(Mandatory=$true,
                    ValueFromPipeline=$true)] [ScriptBlock] $ScriptBlock,
         [Parameter(Mandatory=$false)] [int] $Interval = 1,
-        [Parameter(Mandatory=$true)] [int] $Duration = 3,
+        [Parameter(Mandatory=$false)] [int] $Duration,
+        [Parameter(Mandatory=$false)] [int] $NumRetries,
         [Parameter(Mandatory=$false)] [ScriptBlock] $Precondition,
         [Parameter(Mandatory=$false)] [String] $Name = "Invoke-UntilSucceds",
         [Switch] $AssumeTrue
     )
-    if ($Duration -lt $Interval) {
-        throw "Duration must be longer than interval"
+
+    if ((-not $Duration) -and (-not $NumRetries)) {
+        throw "Either non-zero -Duration or -NumRetries has to be specified"
     }
+
+    if ($Duration) {
+        if ($NumRetries) {
+            throw "-Duration can't be used with -Retries"
+        }
+
+        if ($Duration -lt $Interval) {
+            throw "Duration must be longer than interval"
+        }
+    }
+
     if ($Interval -eq 0) {
         throw "Interval must not be equal to zero"
     }
     $StartTime = Get-Date
 
+    $NumRetry = 0
+
     while ($true) {
-        $LastCheck = ((Get-Date) - $StartTime).TotalSeconds -ge $Duration
+        $NumRetry += 1
+
+        $LastCheck = if ($Duration) {
+            ((Get-Date) - $StartTime).TotalSeconds -ge $Duration
+        } else {
+            $NumRetry -eq $NumRetries
+        }
 
         if ($Precondition -and -not (Invoke-Command $Precondition)) {
             throw New-Object -TypeName CITimeoutException("Precondition was false, waiting aborted early")

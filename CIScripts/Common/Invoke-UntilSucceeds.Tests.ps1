@@ -175,6 +175,24 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
         ((Get-Date) - $StartDate).TotalSeconds | Should BeGreaterThan 99
     }
 
+    It "fails when nor Duration nor NumRetries is specified" {
+        { Invoke-UntilSucceeds { $true } } | Should -Throw
+    }
+
+    It "fails when both Duration and NumRetries is specified" {
+        { Invoke-UntilSucceeds { $true } -Duration 5 -NumRetries 5 } | Should -Throw
+    }
+
+    It "works with NumRetries mode" {
+        Invoke-UntilSucceeds { $true } -NumRetries 5 | Should -Be $True
+    }
+
+    It "retries maximally NumRetries times if the flag is set" {
+        $Script:Counter = 0
+        { Invoke-UntilSucceeds { $Script:Counter += 1; $false } -NumRetries 5 } | Should -Throw
+        $Script:Counter | Should -Be 5
+    }
+
     BeforeEach {
         $Script:MockStartDate = Get-Date
         $Script:SecondsCounter = 0
