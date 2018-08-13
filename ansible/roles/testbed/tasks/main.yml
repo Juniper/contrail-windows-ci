@@ -44,6 +44,12 @@
 - name: Install Docker-EE
   win_shell: "Install-Package Docker -ProviderName DockerProvider -Force"
 
+- name: Make sure docker is started
+  win_service:
+    name: Docker
+    state: started
+    start_mode: auto
+
 - name: Pull docker images
   win_shell: "docker pull {{ item }}"
   with_items:
