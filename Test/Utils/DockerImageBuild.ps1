@@ -1,5 +1,6 @@
 . $PSScriptRoot\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\..\PesterLogger\PesterLogger.ps1
 
 $DockerfilesPath = "$PSScriptRoot\..\DockerFiles\"
@@ -27,28 +28,25 @@ function Initialize-DockerImage  {
     Write-Log "Building Docker image"
     $TestbedDockerfilePath = $TestbedDockerfilesDir + $DockerImageName
 
-    $MaxNumRetries = 5
-    foreach ($i in 1..$MaxNumRetries) {
-        # This retry loop is a workaround for a "container <hash> encountered an error during Start:
-        # failure in a Windows system call: This operation returned because the timeout period expired".
-        # This is probably caused by slow disks or other windows error. See:
-        # https://github.com/MicrosoftDocs/Virtualization-Documentation/issues/575
-        # https://github.com/moby/moby/issues/27588
-
+    # This retry loop is a workaround for a "container <hash> encountered an error during Start:
+    # failure in a Windows system call: This operation returned because the timeout period expired. (0x5b4)".
+    # This is probably caused by slow disks or other windows error. See:
+    # https://github.com/MicrosoftDocs/Virtualization-Documentation/issues/575
+    # https://github.com/moby/moby/issues/27588
+    {
         $Command = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero -ScriptBlock {
             docker build -t $Using:DockerImageName $Using:TestbedDockerfilePath
         }
 
         if ($Command.ExitCode -eq 0) {
-            break
+            return $true
         }
 
-        $IsTimeoutFlake = $Command.Output -Match ".*container.*encountered an error during Start.*0x5b4.*"
-        if (($i -ne $MaxNumRetries) -and $IsTimeoutFlake) {
-            Write-Log "Retrying due to following error: $( $Command.Output )"
-            continue
-        }
+        Write-Log $Command.Output
 
-        throw "docker build failed: $( $Command.Output )"
-    }
+        if (-not ($Command.Output -Match ".*container.*encountered an error during Start.*0x5b4.*")) {
+            # Treat every error other than the timeout as a hard error.
+            return [StopRetrying]::new()
+        }
+    } | Invoke-UntilSucceeds -Name "docker build" -NumRetries 5
 }
