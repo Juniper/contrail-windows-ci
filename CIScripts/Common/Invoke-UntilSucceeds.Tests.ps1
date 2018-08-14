@@ -30,9 +30,9 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
         { return $true } | Invoke-UntilSucceeds -Duration 3 | Should Be $true
     }
 
-    It "stops retrying immediately when StopRetrying is returned" {
+    It "stops retrying immediately when HardError is thrown" {
         $Script:Counter = 0;
-        { { $Script:Counter += 1; [StopRetrying]::new() } | Invoke-UntilSucceeds -Duration 3 } | Should Throw
+        { { $Script:Counter += 1; throw [HardError]::new("bad") } | Invoke-UntilSucceeds -Duration 3 } | Should Throw
         $Script:Counter | Should -Be 1
     }
 

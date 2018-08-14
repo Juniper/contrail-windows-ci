@@ -353,7 +353,7 @@ function Initialize-DriverAndExtension {
 
             {
                 if (-not (Invoke-Command $TestProcessRunning)) {
-                    return [StopRetrying]::new()
+                    throw [HardError]::new("docker process has stopped running")
                 }
                 Test-IsDockerDriverEnabled -Session $Session
             } | Invoke-UntilSucceeds -Duration 600 -Interval 5

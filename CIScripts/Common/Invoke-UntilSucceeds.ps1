@@ -1,13 +1,17 @@
 . $PSScriptRoot\Aliases.ps1
 . $PSScriptRoot\Exceptions.ps1
 
-class StopRetrying : System.Exception {}
+class HardError : System.Exception {
+    HardError([string] $msg) : base($msg) {}
+    HardError([string] $msg, [System.Exception] $inner) : base($msg, $inner) {}
+}
 
 function Invoke-UntilSucceeds {
     <#
     .SYNOPSIS
     Repeatedly calls a script block until its return value evaluates to true*. Subsequent calls
     happen after Interval seconds. Will catch any exceptions that occur in the meantime.
+    If the exception being thrown is a HardError, no further retry attempps will be made.
     User has to specify a timeout after which the function fails by setting the Duration (or NumRetires) parameter.
     If the function fails, it throws an exception containing the last reason of failure.
 
@@ -15,8 +19,6 @@ function Invoke-UntilSucceeds {
     or retrying until timeout (-Duration). When Duration is set,
     it is guaranteed that that if Invoke-UntilSucceeds had failed and precondition was true,
     there was at least one check performed at time T where T >= T_start + Duration.
-
-    *: If the returned or thrown expression is an object of StopRetrying class, the retry loop stops immediately.
 
     .PARAMETER ScriptBlock
     ScriptBlock to repeatedly call.
@@ -76,19 +78,15 @@ function Invoke-UntilSucceeds {
         try {
             $ReturnVal = Invoke-Command $ScriptBlock
 
-            if ($ReturnVal -as [StopRetrying]) {
-                throw [StopRetrying]::new()
-            }
-
             if ($AssumeTrue -Or $ReturnVal) {
                 return $ReturnVal
             } else {
                 throw New-Object -TypeName CITimeoutException("${Name}: Did not evaluate to True." + 
                     "Last return value encountered was: $ReturnVal.")
             }
-        } catch [StopRetrying] {
+        } catch [HardError] {
             throw New-Object -TypeName CITimeoutException(
-                "${Name}: Stopped retrying because StopRetrying was returned"
+                "${Name}: Stopped retrying because HardError was thrown"
             )
         } catch {
             if ($LastCheck) {
