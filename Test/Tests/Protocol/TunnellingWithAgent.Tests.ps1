@@ -169,10 +169,12 @@ function Start-UDPEchoServerInContainer {
     '$UDPSocket.Client.SetSocketOption([System.Net.Sockets.SocketOptionLevel]::Socket, [System.Net.Sockets.SocketOptionName]::ReuseAddress, $true);' + `
     '$UDPSocket.Client.Bind($IPEndpoint);' + `
     'while($true) {{' + `
-    '    $Payload = $UDPSocket.Receive([ref]$RemoteIPEndpoint);' + `
-    '    $RemoteIPEndpoint.Port = $SendPort;' + `
-    '    $UDPSocket.Send($Payload, $Payload.Length, $RemoteIPEndpoint);' + `
-    '    \"Received message and sent it to: $RemoteIPEndpoint.\" | Out-String;' + `
+    '    try {{' + `
+    '        $Payload = $UDPSocket.Receive([ref]$RemoteIPEndpoint);' + `
+    '        $RemoteIPEndpoint.Port = $SendPort;' + `
+    '        $UDPSocket.Send($Payload, $Payload.Length, $RemoteIPEndpoint);' + `
+    '        \"Received message and sent it to: $RemoteIPEndpoint.\" | Out-String;' + `
+    '    }} catch {{ break }}' + `
     '}}') -f $ClientPort, $ServerPort
 
     Invoke-Command -Session $Session -ScriptBlock {
