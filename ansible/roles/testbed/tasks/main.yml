@@ -97,7 +97,6 @@
     state: directory
 
 - name: Disable docker's nat network
-  register: docker_config_file
   win_copy:
     dest: 'C:\ProgramData\Docker\config\daemon.json'
     content: |
