@@ -13,7 +13,7 @@ function Get-ZuulRepos {
         $GerritUrl
     )
 
-    if ($ZuulParams.Count -ne 0) {
+    if ($ZuulAdditionalParams.Count -ne 0) {
         $ZuulClonerOptions = @(
             "--zuul-url=$($ZuulAdditionalParams.Url)",
             "--zuul-project=$($ZuulAdditionalParams.Project)",
