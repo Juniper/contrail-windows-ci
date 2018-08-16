@@ -9,7 +9,7 @@ class HardError : System.Exception {
 function Invoke-UntilSucceeds {
     <#
     .SYNOPSIS
-    Repeatedly calls a script block until its return value evaluates to true*. Subsequent calls
+    Repeatedly calls a script block until its return value evaluates to true. Subsequent calls
     happen after Interval seconds. Will catch any exceptions that occur in the meantime.
     If the exception being thrown is a HardError, no further retry attempps will be made.
     User has to specify a timeout after which the function fails by setting the Duration (or NumRetires) parameter.

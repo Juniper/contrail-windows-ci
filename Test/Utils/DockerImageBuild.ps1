@@ -46,7 +46,7 @@ function Initialize-DockerImage  {
 
         if ($Command.Output -Match ".*container.*encountered an error during Start.*0x5b4.*") {
             throw $Command.Output
-        else {
+        } else {
             throw [HardError]::new("hard error", $Command.Output)
         }
     } | Invoke-UntilSucceeds -Name "docker build" -NumRetries 5
