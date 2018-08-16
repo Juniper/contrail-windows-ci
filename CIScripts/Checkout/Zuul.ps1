@@ -3,23 +3,21 @@
 function Get-ZuulRepos {
     Param (
         [Parameter(Mandatory = $true)] [string] $GerritUrl,
-        [Parameter(Mandatory = $false)] [string] $ZuulProject,
-        [Parameter(Mandatory = $false)] [string] $ZuulRef,
-        [Parameter(Mandatory = $false)] [string] $ZuulUrl,
-        [Parameter(Mandatory = $false)] [string] $ZuulBranch
+        [Parameter(Mandatory = $true)] [string] $ZuulBranch,
+        [Parameter(Mandatory = $false)] [hashtable] $ZuulAdditionalParams
     )
 
     $ZuulClonerOptions = @(
+        "--zuul-branch=$($ZuulBranch)",
         "--map=./CIScripts/clonemap.yml",
         $GerritUrl
     )
 
-    if ($ZuulUrl -ne "") {
+    if ($ZuulParams.Count -ne 0) {
         $ZuulClonerOptions = @(
-            "--zuul-project=$ZuulProject",
-            "--zuul-ref=$ZuulRef",
-            "--zuul-url=$ZuulUrl",
-            "--zuul-branch=$ZuulBranch"
+            "--zuul-url=$($ZuulAdditionalParams.Url)",
+            "--zuul-project=$($ZuulAdditionalParams.Project)",
+            "--zuul-ref=$($ZuulAdditionalParams.Ref)"
         ) + $ZuulClonerOptions
     }
 
