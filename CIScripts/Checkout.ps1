@@ -6,8 +6,8 @@ $Job = [Job]::new("Checkout")
 
 if (Test-Path "Env:ZUUL_URL") {
     $ZuulAdditionalParams = @{
-        Url = $Env:ZUUL_URL;
-        Project = $Env:ZUUL_PROJECT;
+        Url = $Env:ZUUL_URL
+        Project = $Env:ZUUL_PROJECT
         Ref = $Env:ZUUL_REF
     }
     Get-ZuulRepos -GerritUrl $Env:GERRIT_URL `
