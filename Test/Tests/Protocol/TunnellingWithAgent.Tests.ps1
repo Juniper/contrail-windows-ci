@@ -174,7 +174,7 @@ function Start-UDPEchoServerInContainer {
     '        $RemoteIPEndpoint.Port = $SendPort;' + `
     '        $UDPSocket.Send($Payload, $Payload.Length, $RemoteIPEndpoint);' + `
     '        \"Received message and sent it to: $RemoteIPEndpoint.\" | Out-String;' + `
-    '    }} catch {{ break }}' + `
+    '    }} catch {{ continue }}' + `
     '}}') -f $ClientPort, $ServerPort
 
     Invoke-Command -Session $Session -ScriptBlock {
