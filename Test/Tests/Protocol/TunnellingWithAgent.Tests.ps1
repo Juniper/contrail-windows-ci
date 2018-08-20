@@ -104,48 +104,31 @@ function Test-TCP {
     return $Res[-1]
 }
 
-function Install-Components {
+function Test-MPLSoGRE {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session
     )
 
-    Install-Extension -Session $Session
-    Install-DockerDriver -Session $Session
-    Install-Agent -Session $Session
-    Install-Utils -Session $Session
+    $VrfStats = Get-VrfStats -Session $Session
+    if (($VrfStats.MplsGrePktCount -eq 0) -or ($VrfStats.MplsUdpPktCount -ne 0) -or ($VrfStats.VxlanPktCount -ne 0)) {
+        Write-Log "Tunnel usage statistics: Udp = $($VrfStats.MplsUdpPktCount), Gre = $($VrfStats.MplsGrePktCount), Vxlan = $($VrfStats.VxlanPktCount)"
+        return $false
+    } else {
+        return $true
+    }
 }
 
-function Uninstall-Components {
+function Test-MPLSoUDP {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session
     )
 
-    Uninstall-Utils -Session $Session
-    Uninstall-Agent -Session $Session
-    Uninstall-DockerDriver -Session $Session
-    Uninstall-Extension -Session $Session
-}
-
-function Get-VrfStats {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    # NOTE: we are assuming that there will be only one vif with index == 2.
-    #       Indices 0 and 1 are reserved, so the first available is index 2.
-    #       This is consistent - for now. It used to be that only index 0 was reserved, so it may
-    #       change in the future.
-    #       We could get this index by using other utils and doing a bunch of filtering, but
-    #       let's do it when the time comes.
-    $VifIdx = 2
-    $Stats = Invoke-Command -Session $Session -ScriptBlock {
-        $Out = $(vrfstats --get $Using:VifIdx)
-        $PktCountMPLSoUDP = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($Out[3]).Groups[1].Value
-        $PktCountMPLSoGRE = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($Out[3]).Groups[1].Value
-        $PktCountVXLAN = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($Out[3]).Groups[1].Value
-        return @{
-            MPLSoUDP = $PktCountMPLSoUDP
-            MPLSoGRE = $PktCountMPLSoGRE
-            VXLAN = $PktCountVXLAN
-        }
+    $VrfStats = Get-VrfStats -Session $Session
+    if (($VrfStats.MplsGrePktCount -ne 0) -or ($VrfStats.MplsUdpPktCount -eq 0) -or ($VrfStats.VxlanPktCount -ne 0)) {
+        Write-Log "Tunnel usage statistics: Udp = $($VrfStats.MplsUdpPktCount), Gre = $($VrfStats.MplsGrePktCount), Vxlan = $($VrfStats.VxlanPktCount)"
+        return $false
+    } else {
+        return $true
     }
     Write-Log "vrfstats for vif $VifIdx : $($Stats | Out-String)"
     return $Stats

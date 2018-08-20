@@ -113,3 +113,21 @@ function Uninstall-Nodemgr {
         }
     }
 }
+
+function Install-Components {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Install-Extension -Session $Session
+    Install-DockerDriver -Session $Session
+    Install-Agent -Session $Session
+    Install-Utils -Session $Session
+}
+
+function Uninstall-Components {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    Uninstall-Utils -Session $Session
+    Uninstall-Agent -Session $Session
+    Uninstall-DockerDriver -Session $Session
+    Uninstall-Extension -Session $Session
+}
