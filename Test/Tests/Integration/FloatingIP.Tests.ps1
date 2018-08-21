@@ -19,79 +19,107 @@ $ClientNetworkSubnet = [SubnetConfiguration]::new(
     "10.1.1.100"
 )
 
+$ServerNetworkName = "network2"
+$ServerNetworkSubnet = [SubnetConfiguration]::new(
+    "10.2.2.0",
+    24,
+    "10.2.2.1",
+    "10.2.2.11",
+    "10.2.2.100"
+)
+
 Describe "Floating IP" -Tags CI, Systest {
-    It "works" {
-        $false | Should -Be $true
-    }
+    Context "Multinode" {
+        Context "2 networks" {
+            It "works" {
+                $true | Should -Be $true
+            }
 
-    BeforeAll {
-        $VMs = Read-TestbedsConfig -Path $TestenvConfFile
-        $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-        $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "ContrailNetwork",
-            Justification="It's actually used."
-        )]
-        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+            BeforeAll {
+                Write-Log "Creating virtual network: $ClientNetworkName"
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseDeclaredVarsMoreThanAssignments",
+                    "ContrailNetwork",
+                    Justification="It's actually used."
+                )]
+                $ContrailClientNetwork = $ContrailNM.AddNetwork($null, $ClientNetworkName, $ClientNetworkSubnet)
 
-        $Sessions = New-RemoteSessions -VMs $VMs
+                Write-Log "Creating virtual network: $ServerNetworkName"
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseDeclaredVarsMoreThanAssignments",
+                    "ContrailNetwork",
+                    Justification="It's actually used."
+                )]
+                $ContrailServerNetwork = $ContrailNM.AddNetwork($null, $ServerNetworkName, $ServerNetworkSubnet)
+            }
 
-        Initialize-PesterLogger -OutDir $LogDir
+            AfterAll {
+                Write-Log "Deleting virtual network"
+                if (Get-Variable ContrailServerNetwork -ErrorAction SilentlyContinue) {
+                    $ContrailNM.RemoveNetwork($ContrailServerNetwork)
+                }
 
-        Write-Log "Installing components on testbeds..."
-        Install-Components -Session $Sessions[0]
-        Install-Components -Session $Sessions[1]
-
-        $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-        $ContrailNM.EnsureProject($ControllerConfig.DefaultProject)
-
-        $Testbed1Address = $VMs[0].Address
-        $Testbed1Name = $VMs[0].Name
-        Write-Log "Creating virtual router. Name: $Testbed1Name; Address: $Testbed1Address"
-        $VRouter1Uuid = $ContrailNM.AddVirtualRouter($Testbed1Name, $Testbed1Address)
-        Write-Log "Reported UUID of new virtual router: $VRouter1Uuid"
-
-        $Testbed2Address = $VMs[1].Address
-        $Testbed2Name = $VMs[1].Name
-        Write-Log "Creating virtual router. Name: $Testbed2Name; Address: $Testbed2Address"
-        $VRouter2Uuid = $ContrailNM.AddVirtualRouter($Testbed2Name, $Testbed2Address)
-        Write-Log "Reported UUID of new virtual router: $VRouter2Uuid"
-
-        Write-Log "Creating virtual network: $ClientNetworkName"
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "ContrailNetwork",
-            Justification="It's actually used."
-        )]
-        $ContrailNetwork = $ContrailNM.AddNetwork($null, $ClientNetworkName, $ClientNetworkSubnet)
-
-        # TODO(sodar): Add Servers Network
-    }
-
-    AfterAll {
-        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-
-        if (Get-Variable "VRouter1Uuid" -ErrorAction SilentlyContinue) {
-            Write-Log "Removing virtual router: $VRouter1Uuid"
-            $ContrailNM.RemoveVirtualRouter($VRouter1Uuid)
-            Remove-Variable "VRouter1Uuid"
-        }
-        if (Get-Variable "VRouter2Uuid" -ErrorAction SilentlyContinue) {
-            Write-Log "Removing virtual router: $VRouter2Uuid"
-            $ContrailNM.RemoveVirtualRouter($VRouter2Uuid)
-            Remove-Variable "VRouter2Uuid"
+                Write-Log "Deleting virtual network"
+                if (Get-Variable ContrailClientNetwork -ErrorAction SilentlyContinue) {
+                    $ContrailNM.RemoveNetwork($ContrailClientNetwork)
+                }
+            }
         }
 
-        Write-Log "Uninstalling components from testbeds..."
-        Uninstall-Components -Session $Sessions[0]
-        Uninstall-Components -Session $Sessions[1]
+        BeforeAll {
+            $VMs = Read-TestbedsConfig -Path $TestenvConfFile
+            $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
+            $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "ContrailNetwork",
+                Justification="It's actually used."
+            )]
+            $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
-        Write-Log "Deleting virtual network"
-        if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-            $ContrailNM.RemoveNetwork($ContrailNetwork)
+            $Sessions = New-RemoteSessions -VMs $VMs
+
+            Initialize-PesterLogger -OutDir $LogDir
+
+            Write-Log "Installing components on testbeds..."
+            Install-Components -Session $Sessions[0]
+            Install-Components -Session $Sessions[1]
+
+            $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
+            $ContrailNM.EnsureProject($ControllerConfig.DefaultProject)
+
+            $Testbed1Address = $VMs[0].Address
+            $Testbed1Name = $VMs[0].Name
+            Write-Log "Creating virtual router. Name: $Testbed1Name; Address: $Testbed1Address"
+            $VRouter1Uuid = $ContrailNM.AddVirtualRouter($Testbed1Name, $Testbed1Address)
+            Write-Log "Reported UUID of new virtual router: $VRouter1Uuid"
+
+            $Testbed2Address = $VMs[1].Address
+            $Testbed2Name = $VMs[1].Name
+            Write-Log "Creating virtual router. Name: $Testbed2Name; Address: $Testbed2Address"
+            $VRouter2Uuid = $ContrailNM.AddVirtualRouter($Testbed2Name, $Testbed2Address)
+            Write-Log "Reported UUID of new virtual router: $VRouter2Uuid"
         }
 
-        Remove-PSSession $Sessions
+        AfterAll {
+            if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
+
+            if (Get-Variable "VRouter1Uuid" -ErrorAction SilentlyContinue) {
+                Write-Log "Removing virtual router: $VRouter1Uuid"
+                $ContrailNM.RemoveVirtualRouter($VRouter1Uuid)
+                Remove-Variable "VRouter1Uuid"
+            }
+            if (Get-Variable "VRouter2Uuid" -ErrorAction SilentlyContinue) {
+                Write-Log "Removing virtual router: $VRouter2Uuid"
+                $ContrailNM.RemoveVirtualRouter($VRouter2Uuid)
+                Remove-Variable "VRouter2Uuid"
+            }
+
+            Write-Log "Uninstalling components from testbeds..."
+            Uninstall-Components -Session $Sessions[0]
+            Uninstall-Components -Session $Sessions[1]
+
+            Remove-PSSession $Sessions
+        }
     }
 }
