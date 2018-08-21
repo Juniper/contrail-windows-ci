@@ -99,4 +99,24 @@ class ContrailNetworkManager {
             -AuthToken $this.AuthToken `
             -PrioritiesList $PrioritiesList
     }
+
+    [String] AddFloatingIpPool([String] $TenantName, [String] $NetworkName, [String] $PoolName) {
+        if (-not $TenantName) {
+            $TenantName = $this.DefaultTenantName
+        }
+
+        return Add-ContrailFloatingIpPool `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -TenantName $TenantName `
+            -NetworkName $NetworkName `
+            -PoolName $PoolName
+    }
+
+    RemoveFloatingIpPool([String] $PoolUuid) {
+        Remove-ContrailFloatingIpPool `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -PoolUuid $PoolUuid
+    }
 }
