@@ -7,8 +7,30 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+
+# TODO: refactor, copy pasted from TunnellingWithAgent.Tests.ps1
+function Initialize-ComputeNode {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$true)] [String[]] $Networks
+    )
+
+    Initialize-ComputeServices -Session $Session `
+        -SystemConfig $SystemConfig `
+        -OpenStackConfig $OpenStackConfig `
+        -ControllerConfig $ControllerConfig
+
+    foreach ($Network in $Networks) {
+        $NetworkID = New-DockerNetwork -Session $Session `
+            -TenantName $ControllerConfig.DefaultProject `
+            -Name $Network
+
+        Write-Log "Created network id: $NetworkID"
+    }
+}
 
 $ClientNetworkName = "network1"
 $ClientNetworkSubnet = [SubnetConfiguration]::new(
@@ -30,7 +52,11 @@ $ServerNetworkSubnet = [SubnetConfiguration]::new(
 
 $ServerFloatingIpPoolName = "pool"
 
-Describe "Floating IP" -Tags CI, Systest {
+$ContainerImage = "microsoft/windowsservercore"
+$ContainerClientID = "fip-client"
+$ContainerServer1ID = "fip-server1"
+
+Describe "Floating IP" {
     Context "Multinode" {
         Context "2 networks" {
             It "works" {
@@ -54,6 +80,7 @@ Describe "Floating IP" -Tags CI, Systest {
                 )]
                 $ContrailServerNetwork = $ContrailNM.AddNetwork($null, $ServerNetworkName, $ServerNetworkSubnet)
 
+                Write-Log "Creating virtual network: $ServerFloatingIpPoolName"
                 $ContrailFloatingIpPool = $ContrailNM.AddFloatingIpPool($null, $ServerNetworkName, $ServerFloatingIpPoolName)
             }
 
@@ -71,6 +98,46 @@ Describe "Floating IP" -Tags CI, Systest {
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailClientNetwork -ErrorAction SilentlyContinue) {
                     $ContrailNM.RemoveNetwork($ContrailClientNetwork)
+                }
+            }
+
+            BeforeEach {
+                $Networks = @($ClientNetworkName, $ServerNetworkName)
+                foreach ($Session in $Sessions) {
+                    Initialize-ComputeNode -Session $Session -Networks $Networks
+                }
+
+                Write-Log "Creating containers"
+                Write-Log "Creating container: $ContainerClientID"
+                New-Container `
+                    -Session $Sessions[0] `
+                    -NetworkName $ClientNetworkName `
+                    -Name $ContainerClientID `
+                    -Image $ContainerImage
+
+                Write-Log "Creating containers"
+                Write-Log "Creating container: $ContainerServer1ID"
+                New-Container `
+                    -Session $Sessions[1] `
+                    -NetworkName $ServerNetworkName `
+                    -Name $ContainerServer1ID `
+                    -Image $ContainerImage
+            }
+
+            AfterEach {
+                try {
+                    Merge-Logs -LogSources (
+                        (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $ContainerClientID),
+                        (New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $ContainerServer1ID)
+                    )
+
+                    Write-Log "Removing all containers"
+                    Remove-AllContainers -Sessions $Sessions
+
+                    Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
+                    Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
+                } finally {
+                    Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
                 }
             }
         }
