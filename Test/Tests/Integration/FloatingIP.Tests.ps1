@@ -32,6 +32,24 @@ function Initialize-ComputeNode {
     }
 }
 
+function Test-Ping {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$true)] [String] $SrcContainerName,
+        [Parameter(Mandatory=$true)] [String] $DstIP,
+        [Parameter(Mandatory=$false)] [Int] $BufferSize = 32
+    )
+
+    Write-Log "Container $SrcContainerName is pinging $DstIP..."
+    $Res = Invoke-Command -Session $Session -ScriptBlock {
+        docker exec $Using:SrcContainerName powershell `
+            "ping -l $Using:BufferSize $Using:DstIP; `$LASTEXITCODE;"
+    }
+    $Output = $Res[0..($Res.length - 2)]
+    Write-Log "Ping output: $Output"
+    return $Res[-1]
+}
+
 $ClientNetworkName = "network1"
 $ClientNetworkSubnet = [SubnetConfiguration]::new(
     "10.1.1.0",
@@ -51,6 +69,7 @@ $ServerNetworkSubnet = [SubnetConfiguration]::new(
 )
 
 $ServerFloatingIpPoolName = "pool"
+$ServerFloatingIpAddress = "10.2.2.10"
 
 $ContainerImage = "microsoft/windowsservercore"
 $ContainerClientID = "fip-client"
@@ -59,8 +78,11 @@ $ContainerServer1ID = "fip-server1"
 Describe "Floating IP" {
     Context "Multinode" {
         Context "2 networks" {
-            It "works" {
-                $true | Should -Be $true
+            It "ICMP works" {
+                Test-Ping `
+                    -Session $Sessions[0] `
+                    -SrcContainerName $ContainerClientID `
+                    -DstIP $ServerFloatingIpAddress | Should Be 0
             }
 
             BeforeAll {
@@ -127,9 +149,16 @@ Describe "Floating IP" {
                     -NetworkName $ServerNetworkName `
                     -Name $ContainerServer1ID `
                     -Image $ContainerImage
+
+                $ContrailFloatingIp = $ContrailNM.AddFloatingIp($ContrailFloatingIpPool, $ServerFloatingIpAddress)
             }
 
             AfterEach {
+                Write-Log "Deleting floating IP"
+                if (Get-Variable ContrailFloatingIp -ErrorAction SilentlyContinue) {
+                    $ContrailNM.RemoveFloatingIp($ContrailFloatingIp)
+                }
+
                 try {
                     Merge-Logs -LogSources (
                         (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $ContainerClientID),

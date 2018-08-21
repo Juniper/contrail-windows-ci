@@ -106,4 +106,20 @@ class ContrailNetworkManager {
             -AuthToken $this.AuthToken `
             -PoolUuid $PoolUuid
     }
+
+    [String] AddFloatingIp([String] $PoolUuid,
+                           [String] $IPAddress) {
+        return Add-ContrailFloatingIp `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -PoolUuid $PoolUuid `
+            -IPAddress $IPAddress
+    }
+
+    RemoveFloatingIp([String] $IpUuid) {
+        Remove-ContrailFloatingIp `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -IpUuid $IpUuid
+    }
 }
