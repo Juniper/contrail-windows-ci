@@ -67,7 +67,7 @@ Describe "Floating IP" {
                 Write-Log "Creating virtual network: $ClientNetworkName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
-                    "ContrailNetwork",
+                    "ContrailClientNetwork",
                     Justification="It's actually used."
                 )]
                 $ContrailClientNetwork = $ContrailNM.AddNetwork($null, $ClientNetworkName, $ClientNetworkSubnet)
@@ -75,12 +75,17 @@ Describe "Floating IP" {
                 Write-Log "Creating virtual network: $ServerNetworkName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
-                    "ContrailNetwork",
+                    "ContrailServerNetwork",
                     Justification="It's actually used."
                 )]
                 $ContrailServerNetwork = $ContrailNM.AddNetwork($null, $ServerNetworkName, $ServerNetworkSubnet)
 
                 Write-Log "Creating virtual network: $ServerFloatingIpPoolName"
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseDeclaredVarsMoreThanAssignments",
+                    "ContrailFloatingIpPool",
+                    Justification="It's actually used."
+                )]
                 $ContrailFloatingIpPool = $ContrailNM.AddFloatingIpPool($null, $ServerNetworkName, $ServerFloatingIpPoolName)
             }
 
