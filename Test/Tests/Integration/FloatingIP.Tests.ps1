@@ -28,6 +28,8 @@ $ServerNetworkSubnet = [SubnetConfiguration]::new(
     "10.2.2.100"
 )
 
+$ServerFloatingIpPoolName = "pool"
+
 Describe "Floating IP" -Tags CI, Systest {
     Context "Multinode" {
         Context "2 networks" {
@@ -51,9 +53,16 @@ Describe "Floating IP" -Tags CI, Systest {
                     Justification="It's actually used."
                 )]
                 $ContrailServerNetwork = $ContrailNM.AddNetwork($null, $ServerNetworkName, $ServerNetworkSubnet)
+
+                $ContrailFloatingIpPool = $ContrailNM.AddFloatingIpPool($null, $ServerNetworkName, $ServerFloatingIpPoolName)
             }
 
             AfterAll {
+                Write-Log "Deleting floating IP pool"
+                if (Get-Variable ContrailFloatingIpPool -ErrorAction SilentlyContinue) {
+                    $ContrailNM.RemoveFloatingIpPool($ContrailFloatingIpPool)
+                }
+
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailServerNetwork -ErrorAction SilentlyContinue) {
                     $ContrailNM.RemoveNetwork($ContrailServerNetwork)
