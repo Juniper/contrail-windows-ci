@@ -69,6 +69,7 @@ $ServerNetworkSubnet = [SubnetConfiguration]::new(
 )
 
 $ServerFloatingIpPoolName = "pool"
+$ServerFloatingIpName = "fip"
 $ServerFloatingIpAddress = "10.2.2.10"
 
 $ContainerImage = "microsoft/windowsservercore"
@@ -102,7 +103,7 @@ Describe "Floating IP" {
                 )]
                 $ContrailServerNetwork = $ContrailNM.AddNetwork($null, $ServerNetworkName, $ServerNetworkSubnet)
 
-                Write-Log "Creating virtual network: $ServerFloatingIpPoolName"
+                Write-Log "Creating floating IP pool: $ServerFloatingIpPoolName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailFloatingIpPool",
@@ -150,7 +151,15 @@ Describe "Floating IP" {
                     -Name $ContainerServer1ID `
                     -Image $ContainerImage
 
-                $ContrailFloatingIp = $ContrailNM.AddFloatingIp($ContrailFloatingIpPool, $ServerFloatingIpAddress)
+                Write-Log "Creating floating IP: $ServerFloatingIpPoolName"
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseDeclaredVarsMoreThanAssignments",
+                    "ContrailFloatingIp",
+                    Justification="It's actually used."
+                )]
+                $ContrailFloatingIp = $ContrailNM.AddFloatingIp($ContrailFloatingIpPool,
+                                                                $ServerFloatingIpName,
+                                                                $ServerFloatingIpAddress)
             }
 
             AfterEach {
