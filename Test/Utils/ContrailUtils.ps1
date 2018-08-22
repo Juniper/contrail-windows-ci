@@ -392,9 +392,6 @@ function Add-ContrailPolicyToNetwork {
            [Parameter(Mandatory = $true)] [string] $AuthToken,
            [Parameter(Mandatory = $true)] [string] $PolicyUuid,
            [Parameter(Mandatory = $true)] [string] $NetworkUuid)
-    $NetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
-    $Network = Invoke-RestMethod -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken}
-
     $PolicyRef = @{
         "uuid" = $PolicyUuid
         "attr" = @{
@@ -411,6 +408,8 @@ function Add-ContrailPolicyToNetwork {
             "network_policy_refs" = @( $PolicyRef )
         }
     }
+    
+    $NetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
     $Body = ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $BodyObject
     Invoke-RestMethod `
         -Uri $NetworkUrl `
