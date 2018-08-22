@@ -318,7 +318,7 @@ function Test-UDP {
     }
 }
 
-Describe "Tunnelling with Agent tests" {
+Describe "Tunneling with Agent tests" {
 
     #
     #               !!!!!! IMPORTANT: DEBUGGING/DEVELOPING THESE TESTS !!!!!!
@@ -329,7 +329,7 @@ Describe "Tunnelling with Agent tests" {
     # Logging into WebUI for the first time is known to cause problems.
     # When someone logs into webui for the first time, it suddenly realizes that its default
     # encap priorities list is different than the one on the controller. It causes a cascade of
-    # requests from WebUI to config node, that will change the tunnelling method.
+    # requests from WebUI to config node, that will change the tunneling method.
     #
     # When debugging, make sure that the encapsulation method specified in webui
     # (under Configure/Infrastructure/Global Config/Virtual Routers/Encapsulation Priority Order)
@@ -337,10 +337,10 @@ Describe "Tunnelling with Agent tests" {
     # Do it especially when logging in via WebUI for the first time.
     #
 
-    foreach($TunnellingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
-        Context "Tunneling $TunnellingMethod" {
+    foreach($TunnelingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
+        Context "Tunneling $TunnelingMethod" {
             BeforeEach {
-                $EncapPrioritiesList = @($TunnellingMethod)
+                $EncapPrioritiesList = @($TunnelingMethod)
                 $ContrailNM.SetEncapPriorities($EncapPrioritiesList)
             }
 
@@ -389,9 +389,9 @@ Describe "Tunnelling with Agent tests" {
                 $BufferSizes = @($Container1MsgFragmentationThreshold, $Container2MsgFragmentationThreshold)
 
                 foreach ($ContainerIdx in @(0, 1)) {
-                    $BufferSizeLargerBeforeTunnelling = $BufferSizes[$ContainerIdx] + 1
-                    $BufferSizeLargerAfterTunnelling = $BufferSizes[$ContainerIdx] - 1
-                    foreach ($BufferSize in @($BufferSizeLargerBeforeTunnelling, $BufferSizeLargerAfterTunnelling)) {
+                    $BufferSizeLargerBeforeTunneling = $BufferSizes[$ContainerIdx] + 1
+                    $BufferSizeLargerAfterTunneling = $BufferSizes[$ContainerIdx] - 1
+                    foreach ($BufferSize in @($BufferSizeLargerBeforeTunneling, $BufferSizeLargerAfterTunneling)) {
                         Test-Ping `
                             -Session $Sessions[$ContainerIdx] `
                             -SrcContainerName $SrcContainers[$ContainerIdx] `
@@ -405,9 +405,9 @@ Describe "Tunnelling with Agent tests" {
             It "IP fragmentation - UDP - sending big buffer succeeds" {
                 $MsgFragmentationThreshold = Get-MaxUDPDataSizeForMTU -MTU $Container1NetInfo.MtuSize
 
-                $MessageLargerBeforeTunnelling = "a" * $($MsgFragmentationThreshold + 1)
-                $MessageLargerAfterTunnelling = "a" * $($MsgFragmentationThreshold - 1)
-                foreach ($Message in @($MessageLargerBeforeTunnelling, $MessageLargerAfterTunnelling)) {
+                $MessageLargerBeforeTunneling = "a" * $($MsgFragmentationThreshold + 1)
+                $MessageLargerAfterTunneling = "a" * $($MsgFragmentationThreshold - 1)
+                foreach ($Message in @($MessageLargerBeforeTunneling, $MessageLargerAfterTunneling)) {
                     Test-UDP `
                         -Session1 $Sessions[0] `
                         -Session2 $Sessions[1] `
