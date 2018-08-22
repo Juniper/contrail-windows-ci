@@ -120,6 +120,9 @@ Describe "Floating IP" {
                     Justification="It's actually used."
                 )]
                 $ContrailFloatingIpPool = $ContrailNM.AddFloatingIpPool($null, $ServerNetworkName, $ServerFloatingIpPoolName)
+
+                $ContrailNM.AddPolicyToNetwork($ContrailPolicy, $ContrailClientNetwork)
+                $ContrailNM.AddPolicyToNetwork($ContrailPolicy, $ContrailServerNetwork)
             }
 
             AfterAll {

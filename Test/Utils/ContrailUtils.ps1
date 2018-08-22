@@ -197,8 +197,18 @@ function New-ContrailPassAllPolicyDefinition {
                 "virtual_network" = "any"
             }
         )
+        "dst_ports" = @(
+            @{
+                "end_port" = -1
+                "start_port" = -1
+            }
+        )
         "ethertype" = "IPv4"
         "protocol" = "any"
+        "rule_sequence" = @{
+            "major" = -1
+            "minor" = -1
+        }
         "rule_uuid" = $null
         "src_addresses" = @(
             @{
@@ -206,6 +216,12 @@ function New-ContrailPassAllPolicyDefinition {
                 "security_group" = $null
                 "subnet" = $null
                 "virtual_network" = "any"
+            }
+        )
+        "src_ports" = @(
+            @{
+                "end_port" = -1
+                "start_port" = -1
             }
         )
     }
@@ -251,4 +267,37 @@ function Remove-ContrailPolicy {
 
     $Url = $ContrailUrl + "/network-policy/" + $Uuid
     Invoke-RestMethod -Uri $Url -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
+}
+
+function Add-ContrailPolicyToNetwork {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $PolicyUuid,
+           [Parameter(Mandatory = $true)] [string] $NetworkUuid)
+    $NetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
+    $Network = Invoke-RestMethod -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken}
+
+    $PolicyRef = @{
+        "uuid" = $PolicyUuid
+        "attr" = @{
+            "timer" = $null
+            "sequence" = @{
+                "major" = 0
+                "minor" = 0
+            }
+        }
+    }
+    $BodyObject = @{
+        "virtual-network" = @{
+            "uuid" = $NetworkUuid
+            "network_policy_refs" = @( $PolicyRef )
+        }
+    }
+    $Body = ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $BodyObject
+    Invoke-RestMethod `
+        -Uri $NetworkUrl `
+        -Headers @{"X-Auth-Token" = $AuthToken} `
+        -Method Put `
+        -ContentType "application/json" `
+        -Body $Body
 }
