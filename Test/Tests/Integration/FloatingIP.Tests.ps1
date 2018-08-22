@@ -160,6 +160,8 @@ Describe "Floating IP" {
                 $ContrailFloatingIp = $ContrailNM.AddFloatingIp($ContrailFloatingIpPool,
                                                                 $ServerFloatingIpName,
                                                                 $ServerFloatingIpAddress)
+
+                $ContrailNM.AssignFloatingIpToAllPortsInNetwork($ContrailFloatingIp, $ContrailServerNetwork)
             }
 
             AfterEach {

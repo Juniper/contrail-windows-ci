@@ -142,6 +142,24 @@ function Remove-ContrailVirtualNetwork {
     Invoke-RestMethod -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
 }
 
+function Get-ContrailVirtualNetworkPorts {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $NetworkUuid)
+
+    $VirtualNetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
+    $VirtualNetwork = Invoke-RestMethod -Uri $VirtualNetworkUrl -Headers @{"X-Auth-Token" = $AuthToken}
+    $Interfaces = $VirtualNetwork.'virtual-network'.virtual_machine_interface_back_refs
+
+    $Result = @()
+    foreach ($Interface in $Interfaces) {
+        $FqName = $Interface.to -Join ":"
+        $Result = $Result + $FqName
+    }
+
+    return $Result
+}
+
 function Add-ContrailVirtualRouter {
     Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
            [Parameter(Mandatory = $true)] [string] $AuthToken,
@@ -226,7 +244,6 @@ function Add-ContrailFloatingIp {
             "fq_name" = $FipFqName
             "parent_type" = "floating-ip-pool"
             "uuid" = $null
-            # "virtual_machine_interface_refs" = ADD
         }
     }
     $RequestUrl = $ContrailUrl + "/floating-ips"
@@ -237,6 +254,41 @@ function Add-ContrailFloatingIp {
         -ContentType "application/json" `
         -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
     return $Response.'floating-ip'.'uuid'
+}
+
+function Assign-ContrailFloatingIpToPorts {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $IpUuid,
+           [Parameter(Mandatory = $true)] [string[]] $PortFqNames,
+           [Parameter(Mandatory = $false)] [string[]] $TenantName)
+
+    $FipUrl = $ContrailUrl + "/floating-ip/" + $IpUuid
+    $Fip = Invoke-RestMethod -Uri $FipUrl -Headers @{"X-Auth-Token" = $AuthToken}
+
+    $InterfaceRefs = @()
+    foreach ($PortFqName in $PortFqNames) {
+        $Ref = @{
+            "to" = $PortFqName -Split ":"
+        }
+        $InterfaceRefs = $InterfaceRefs + $Ref
+    }
+
+    $RequestBody = @{
+        "floating-ip" = @{
+            "floating_ip_address" = $Fip.'floating-ip'.floating_ip_address
+            "fq_name" = $Fip.'floating-ip'.fq_name
+            "parent_type" = $Fip.'floating-ip'.parent_type
+            "uuid" = $Fip.'floating-ip'.uuid
+            "virtual_machine_interface_refs" = $InterfaceRefs
+        }
+    }
+    Invoke-RestMethod `
+        -Uri $FipUrl `
+        -Headers @{"X-Auth-Token" = $AuthToken} `
+        -Method Put `
+        -ContentType "application/json" `
+        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $RequestBody)
 }
 
 function Remove-ContrailFloatingIp {
