@@ -131,6 +131,20 @@ class ContrailNetworkManager {
             -IPAddress $IPAddress
     }
 
+    AssignFloatingIpToAllPortsInNetwork([String] $IpUuid,
+                                        [String] $NetworkUuid) {
+        $PortFqNames = Get-ContrailVirtualNetworkPorts `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -NetworkUuid $NetworkUuid
+
+        Assign-ContrailFloatingIpToPorts `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -IpUuid $IpUuid `
+            -PortFqNames $PortFqNames
+    }
+
     RemoveFloatingIp([String] $IpUuid) {
         Remove-ContrailFloatingIp `
             -ContrailUrl $this.ContrailUrl `
