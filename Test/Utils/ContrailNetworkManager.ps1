@@ -138,7 +138,7 @@ class ContrailNetworkManager {
             -AuthToken $this.AuthToken `
             -NetworkUuid $NetworkUuid
 
-        Assign-ContrailFloatingIpToPorts `
+        Set-ContrailFloatingIpPorts `
             -ContrailUrl $this.ContrailUrl `
             -AuthToken $this.AuthToken `
             -IpUuid $IpUuid `
@@ -150,5 +150,22 @@ class ContrailNetworkManager {
             -ContrailUrl $this.ContrailUrl `
             -AuthToken $this.AuthToken `
             -IpUuid $IpUuid
+    }
+
+    [String] AddPassAllPolicyOnDefaultTenant([String] $Name) {
+        $TenantName = $this.DefaultTenantName
+
+        return Add-ContrailPassAllPolicy `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -TenantName $TenantName `
+            -Name $Name
+    }
+
+    RemovePolicy([String] $Uuid) {
+        Remove-ContrailPolicy `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -Uuid $Uuid
     }
 }

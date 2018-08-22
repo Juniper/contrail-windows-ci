@@ -50,6 +50,8 @@ function Test-Ping {
     return $Res[-1]
 }
 
+$PolicyName = "passallpolicy"
+
 $ClientNetworkName = "network1"
 $ClientNetworkSubnet = [SubnetConfiguration]::new(
     "10.1.1.0",
@@ -87,6 +89,14 @@ Describe "Floating IP" {
             }
 
             BeforeAll {
+                Write-Log "Creating network policy: $ContrailPolicy"
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseDeclaredVarsMoreThanAssignments",
+                    "ContrailPolicy",
+                    Justification="It's actually used."
+                )]
+                $ContrailPolicy = $ContrailNM.AddPassAllPolicyOnDefaultTenant($PolicyName)
+
                 Write-Log "Creating virtual network: $ClientNetworkName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
@@ -126,6 +136,11 @@ Describe "Floating IP" {
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailClientNetwork -ErrorAction SilentlyContinue) {
                     $ContrailNM.RemoveNetwork($ContrailClientNetwork)
+                }
+
+                Write-Log "Deleting network policy"
+                if (Get-Variable ContrailPolicy -ErrorAction SilentlyContinue) {
+                    $ContrailNM.RemovePolicy($ContrailPolicy)
                 }
             }
 
