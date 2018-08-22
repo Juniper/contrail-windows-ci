@@ -256,12 +256,12 @@ function Add-ContrailFloatingIp {
     return $Response.'floating-ip'.'uuid'
 }
 
-function Assign-ContrailFloatingIpToPorts {
+function Set-ContrailFloatingIpPorts {
     Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
            [Parameter(Mandatory = $true)] [string] $AuthToken,
            [Parameter(Mandatory = $true)] [string] $IpUuid,
            [Parameter(Mandatory = $true)] [string[]] $PortFqNames,
-           [Parameter(Mandatory = $false)] [string[]] $TenantName)
+           [Parameter(Mandatory = $false)] [string] $TenantName)
 
     $FipUrl = $ContrailUrl + "/floating-ip/" + $IpUuid
     $Fip = Invoke-RestMethod -Uri $FipUrl -Headers @{"X-Auth-Token" = $AuthToken}
@@ -298,4 +298,75 @@ function Remove-ContrailFloatingIp {
 
     $RequestUrl = $ContrailUrl + "/floating-ip/" + $IpUuid
     Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+}
+
+function New-ContrailPassAllPolicyDefinition {
+    Param ([Parameter(Mandatory = $true)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $Name)
+
+    $Rule = @{
+        "action_list" = @{ "simple_action" = "pass" }
+        "direction" = "<>"
+        "dst_addresses" = @(
+            @{
+                "network_policy" = $null
+                "security_group" = $null
+                "subnet" = $null
+                "virtual_network" = "any"
+            }
+        )
+        "ethertype" = "IPv4"
+        "protocol" = "any"
+        "rule_uuid" = $null
+        "src_addresses" = @(
+            @{
+                "network_policy" = $null
+                "security_group" = $null
+                "subnet" = $null
+                "virtual_network" = "any"
+            }
+        )
+    }
+
+    $BodyObject = @{
+        "network-policy" = @{
+            "fq_name" = @("default-domain", $TenantName, $Name)
+            "name" = $Name
+            "display_name" = $Name
+            "network_policy_entries" = @{
+                "policy_rule" = @( $Rule )
+            }
+        }
+    }
+
+    return $BodyObject
+}
+
+function Add-ContrailPassAllPolicy {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $Name)
+
+    $Url = $ContrailUrl + "/network-policys"
+    $BodyObject = New-ContrailPassAllPolicyDefinition $TenantName $Name
+    # We need to escape '<>' in 'direction' field because reasons
+    # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
+    $Body = ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $BodyObject | ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) }
+    $Response = Invoke-RestMethod `
+        -Uri $Url `
+        -Headers @{"X-Auth-Token" = $AuthToken} `
+        -Method Post `
+        -ContentType "application/json" `
+        -Body $Body
+    return $Response.'network-policy'.'uuid'
+}
+
+function Remove-ContrailPolicy {
+    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
+           [Parameter(Mandatory = $true)] [string] $AuthToken,
+           [Parameter(Mandatory = $true)] [string] $Uuid)
+
+    $Url = $ContrailUrl + "/network-policy/" + $Uuid
+    Invoke-RestMethod -Uri $Url -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
 }
