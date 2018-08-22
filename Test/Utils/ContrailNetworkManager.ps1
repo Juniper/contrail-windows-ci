@@ -155,4 +155,13 @@ class ContrailNetworkManager {
             -AuthToken $this.AuthToken `
             -Uuid $Uuid
     }
+
+    AddPolicyToNetwork([String] $PolicyUuid,
+                       [String] $NetworkUuid) {
+        Add-ContrailPolicyToNetwork `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -PolicyUuid $PolicyUuid `
+            -NetworkUuid $NetworkUuid
+    }
 }
