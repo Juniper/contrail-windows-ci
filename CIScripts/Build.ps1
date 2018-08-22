@@ -1,4 +1,7 @@
 # Build builds selected Windows Compute components.
+param(
+    [Parameter(Mandatory=$true)] [string] $BuildMode
+)
 
 . $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\Common\Job.ps1
@@ -7,9 +10,6 @@
 
 
 $Job = [Job]::new("Build")
-
-$IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
-$BuildMode = $(if ($IsReleaseMode) { "production" } else { "debug" })
 
 Initialize-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
