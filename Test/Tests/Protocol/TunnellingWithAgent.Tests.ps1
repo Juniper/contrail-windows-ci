@@ -126,34 +126,22 @@ function Uninstall-Components {
     Uninstall-Extension -Session $Session
 }
 
-function Test-MPLSoGRE {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
-    )
+function Get-VrfStats {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    $VrfStats = Get-VrfStats -Session $Session
-    if (($VrfStats.MplsGrePktCount -eq 0) -or ($VrfStats.MplsUdpPktCount -ne 0) -or ($VrfStats.VxlanPktCount -ne 0)) {
-        Write-Log "Tunnel usage statistics: Udp = $($VrfStats.MplsUdpPktCount), Gre = $($VrfStats.MplsGrePktCount), Vxlan = $($VrfStats.VxlanPktCount)"
-        return $false
-    } else {
-        return $true
+    $VrfStats = Invoke-Command -Session $Session -ScriptBlock {
+        $vrfstatsOutput = $(vrfstats --get 1)
+        $mplsUdpPktCount = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        $mplsGrePktCount = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        $vxlanPktCount = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($vrfstatsOutput[3]).Groups[1].Value
+        return @{
+            MPLSoUDP = $mplsUdpPktCount
+            MPLSoGRE = $mplsGrePktCount
+            VXLAN = $vxlanPktCount
+        }
     }
+    return $VrfStats
 }
-
-function Test-MPLSoUDP {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
-    )
-
-    $VrfStats = Get-VrfStats -Session $Session
-    if (($VrfStats.MplsGrePktCount -ne 0) -or ($VrfStats.MplsUdpPktCount -eq 0) -or ($VrfStats.VxlanPktCount -ne 0)) {
-        Write-Log "Tunnel usage statistics: Udp = $($VrfStats.MplsUdpPktCount), Gre = $($VrfStats.MplsGrePktCount), Vxlan = $($VrfStats.VxlanPktCount)"
-        return $false
-    } else {
-        return $true
-    }
-}
-
 function Start-UDPEchoServerInContainer {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
@@ -342,6 +330,19 @@ Describe "Tunneling with Agent tests" {
             BeforeEach {
                 $EncapPrioritiesList = @($TunnelingMethod)
                 $ContrailNM.SetEncapPriorities($EncapPrioritiesList)
+            }
+
+            It "Uses specified tunneling method" {
+                $StatsBefore = Get-VrfStats -Session $Sessions[0]
+
+                Test-Ping `
+                    -Session $Sessions[0] `
+                    -SrcContainerName $Container1ID `
+                    -DstContainerName $Container2ID `
+                    -DstContainerIP $Container2NetInfo.IPAddress | Should Be 0
+
+                $StatsAfter = Get-VrfStats -Session $Sessions[0]
+                $StatsAfter[$TunnelingMethod] | Should BeGreaterThan $StatsBefore[$TunnelingMethod]
             }
 
             It "ICMP - Ping between containers on separate compute nodes succeeds" {
