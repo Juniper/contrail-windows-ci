@@ -28,6 +28,11 @@ do
     this_stage_regexp=$(get_stage_regexp "$stage")
     echo "copying '$stage' log to $stage_log_filename"
     grep --perl-regexp "$this_stage_regexp" "$full_log" | gzip > "$stage_log_filename"
+
+    if grep "Failed in branch" temp.txt
+    then
+        mv $stage_log_filename "SUSPECTED-ERROR-HERE-$stage_log_filename"
+    fi
 done
 
 non_tagged_filename='log.cloning-and-tests-and-post.txt.gz'
