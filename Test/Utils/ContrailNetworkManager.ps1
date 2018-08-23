@@ -1,3 +1,4 @@
+. $PSScriptRoot\ContrailAPI\FloatingIP.ps1
 . $PSScriptRoot\ContrailUtils.ps1
 . $PSScriptRoot\..\TestConfigurationUtils.ps1
 
@@ -9,7 +10,7 @@ class ContrailNetworkManager {
     # We cannot add a type to the parameters,
     # because the class is parsed before the files are sourced.
     ContrailNetworkManager($OpenStackConfig, $ControllerConfig) {
-        
+
         $this.ContrailUrl = $ControllerConfig.RestApiUrl()
         $this.DefaultTenantName = $ControllerConfig.DefaultProject
 
@@ -65,7 +66,7 @@ class ContrailNetworkManager {
     }
 
     RemoveNetwork([String] $Uuid) {
-        
+
         Remove-ContrailVirtualNetwork `
             -ContrailUrl $this.ContrailUrl `
             -AuthToken $this.AuthToken `
