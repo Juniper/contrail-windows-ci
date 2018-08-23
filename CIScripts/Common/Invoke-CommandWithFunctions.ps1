@@ -1,4 +1,5 @@
 . $PSScriptRoot/Aliases.ps1
+
 function Invoke-CommandWithFunctions {
     <#
     .SYNOPSIS

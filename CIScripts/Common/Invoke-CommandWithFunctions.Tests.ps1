@@ -33,8 +33,11 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
 
     Context "Incorrect function usage handling" {
         It "throws on nonexisting function" {
-            { Test-CWF -Functions "Test-SimpleFunction"  `
-              -ScriptBlock { Test-ANonExistingFunction } } | Should Throw
+            {
+                Test-CWF -Functions "Test-SimpleFunction" -ScriptBlock {
+                    Test-ANonExistingFunction # analyzer: allow unknown-functions
+                }
+            } | Should Throw
         }
 
         It "throws on invoking with incorrectly passed parameter" {
