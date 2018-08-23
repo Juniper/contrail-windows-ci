@@ -89,7 +89,7 @@ Describe "Floating IP" {
             }
 
             BeforeAll {
-                Write-Log "Creating network policy: $ContrailPolicy"
+                Write-Log "Creating network policy: $PolicyName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailPolicy",
