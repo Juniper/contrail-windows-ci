@@ -1,9 +1,10 @@
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\DockerNetwork\Network.ps1
 
 function Initialize-ComputeNode {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [String[]] $Networks
+        [Parameter(Mandatory=$true)] [Network[]] $Networks
     )
 
     Initialize-ComputeServices -Session $Session `
@@ -12,10 +13,11 @@ function Initialize-ComputeNode {
         -ControllerConfig $ControllerConfig
 
     foreach ($Network in $Networks) {
-        $NetworkID = New-DockerNetwork -Session $Session `
+        $ID = New-DockerNetwork -Session $Session `
             -TenantName $ControllerConfig.DefaultProject `
-            -Name $Network
+            -Name $Network.Name `
+            -Subnet "$( $Network.Subnet.IpPrefix )/$( $Network.Subnet.IpPrefixLen )"
 
-        Write-Log "Created network id: $NetworkID"
+        Write-Log "Created network id: $ID"
     }
 }

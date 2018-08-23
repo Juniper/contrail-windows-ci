@@ -9,14 +9,15 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
-. $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
-. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
-. $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
+. $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
+. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
 
 $TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
@@ -46,25 +47,6 @@ function Get-MaxUDPDataSizeForMTU {
     Param ([Parameter(Mandatory=$true)] [Int] $MTU)
     $UDPHeaderSize = 8
     return $(Get-MaxIPv4DataSizeForMTU -MTU $MTU) - $UDPHeaderSize
-}
-
-function Initialize-ComputeNode {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [SubnetConfiguration] $Subnet
-    )
-
-    Initialize-ComputeServices -Session $Session `
-        -SystemConfig $SystemConfig `
-        -OpenStackConfig $OpenStackConfig `
-        -ControllerConfig $ControllerConfig
-
-    $NetworkID = New-DockerNetwork -Session $Session `
-        -TenantName $ControllerConfig.DefaultProject `
-        -Name $NetworkName `
-        -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
-
-    Write-Log "Created network id: $NetworkID"
 }
 
 function Test-Ping {

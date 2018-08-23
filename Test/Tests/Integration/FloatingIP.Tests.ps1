@@ -11,6 +11,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\Network.ps1
 
 function Test-Ping {
     Param (
@@ -32,7 +33,6 @@ function Test-Ping {
 
 $PolicyName = "passallpolicy"
 
-$ClientNetworkName = "network1"
 $ClientNetworkSubnet = [SubnetConfiguration]::new(
     "10.1.1.0",
     24,
@@ -40,8 +40,8 @@ $ClientNetworkSubnet = [SubnetConfiguration]::new(
     "10.1.1.11",
     "10.1.1.100"
 )
+$ClientNetwork = [Network]::New("network1", $ClientNetworkSubnet)
 
-$ServerNetworkName = "network2"
 $ServerNetworkSubnet = [SubnetConfiguration]::new(
     "10.2.2.0",
     24,
@@ -49,6 +49,7 @@ $ServerNetworkSubnet = [SubnetConfiguration]::new(
     "10.2.2.11",
     "10.2.2.100"
 )
+$ServerNetwork = [Network]::New("network2", $ServerNetworkSubnet)
 
 $ServerFloatingIpPoolName = "pool"
 $ServerFloatingIpName = "fip"
@@ -83,7 +84,7 @@ Describe "Floating IP" {
                     "ContrailClientNetwork",
                     Justification="It's actually used."
                 )]
-                $ContrailClientNetwork = $ContrailNM.AddNetwork($null, $ClientNetworkName, $ClientNetworkSubnet)
+                $ContrailClientNetwork = $ContrailNM.AddNetwork($null, $ClientNetwork.Name, $ClientNetwork.Subnet)
 
                 Write-Log "Creating virtual network: $ServerNetworkName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -91,7 +92,7 @@ Describe "Floating IP" {
                     "ContrailServerNetwork",
                     Justification="It's actually used."
                 )]
-                $ContrailServerNetwork = $ContrailNM.AddNetwork($null, $ServerNetworkName, $ServerNetworkSubnet)
+                $ContrailServerNetwork = $ContrailNM.AddNetwork($null, $ServerNetwork.Name, $ServerNetwork.Subnet)
 
                 Write-Log "Creating floating IP pool: $ServerFloatingIpPoolName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -99,7 +100,7 @@ Describe "Floating IP" {
                     "ContrailFloatingIpPool",
                     Justification="It's actually used."
                 )]
-                $ContrailFloatingIpPool = $ContrailNM.AddFloatingIpPool($null, $ServerNetworkName, $ServerFloatingIpPoolName)
+                $ContrailFloatingIpPool = $ContrailNM.AddFloatingIpPool($null, $ServerNetwork.Name, $ServerFloatingIpPoolName)
 
                 $ContrailNM.AddPolicyToNetwork($ContrailPolicy, $ContrailClientNetwork)
                 $ContrailNM.AddPolicyToNetwork($ContrailPolicy, $ContrailServerNetwork)
@@ -128,7 +129,7 @@ Describe "Floating IP" {
             }
 
             BeforeEach {
-                $Networks = @($ClientNetworkName, $ServerNetworkName)
+                $Networks = @($ClientNetwork, $ServerNetwork)
                 foreach ($Session in $Sessions) {
                     Initialize-ComputeNode -Session $Session -Networks $Networks
                 }
@@ -137,7 +138,7 @@ Describe "Floating IP" {
                 Write-Log "Creating container: $ContainerClientID"
                 New-Container `
                     -Session $Sessions[0] `
-                    -NetworkName $ClientNetworkName `
+                    -NetworkName $ClientNetwork.Name `
                     -Name $ContainerClientID `
                     -Image $ContainerImage
 
@@ -145,7 +146,7 @@ Describe "Floating IP" {
                 Write-Log "Creating container: $ContainerServer1ID"
                 New-Container `
                     -Session $Sessions[1] `
-                    -NetworkName $ServerNetworkName `
+                    -NetworkName $ServerNetwork.Name `
                     -Name $ContainerServer1ID `
                     -Image $ContainerImage
 
