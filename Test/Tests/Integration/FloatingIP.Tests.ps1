@@ -78,7 +78,7 @@ Describe "Floating IP" {
                 )]
                 $ContrailPolicy = $ContrailNM.AddPassAllPolicyOnDefaultTenant($PolicyName)
 
-                Write-Log "Creating virtual network: $ClientNetworkName"
+                Write-Log "Creating virtual network: $ClientNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailClientNetwork",
@@ -86,7 +86,7 @@ Describe "Floating IP" {
                 )]
                 $ContrailClientNetwork = $ContrailNM.AddNetwork($null, $ClientNetwork.Name, $ClientNetwork.Subnet)
 
-                Write-Log "Creating virtual network: $ServerNetworkName"
+                Write-Log "Creating virtual network: $ServerNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailServerNetwork",
