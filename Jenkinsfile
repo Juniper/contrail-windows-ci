@@ -142,6 +142,10 @@ pipeline {
                         COMPONENTS_TO_BUILD = "DockerDriver,Extension,Agent"
 
                         WINCIDEV = credentials('winci-drive')
+
+                        if(env.BUILD_IN_RELEASE_MODE == null) {
+                            BUILD_IN_RELEASE_MODE = "false"
+                        }
                     }
                     steps {
                         deleteDir()
