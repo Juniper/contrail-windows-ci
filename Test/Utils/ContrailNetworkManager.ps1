@@ -1,5 +1,6 @@
 . $PSScriptRoot\ContrailAPI\FloatingIP.ps1
 . $PSScriptRoot\ContrailAPI\FloatingIPPool.ps1
+. $PSScriptRoot\ContrailAPI\NetworkPolicy.ps1
 . $PSScriptRoot\ContrailUtils.ps1
 . $PSScriptRoot\..\TestConfigurationUtils.ps1
 
