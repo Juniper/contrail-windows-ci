@@ -9,28 +9,8 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
-
-# TODO: refactor, copy pasted from TunnellingWithAgent.Tests.ps1
-function Initialize-ComputeNode {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [String[]] $Networks
-    )
-
-    Initialize-ComputeServices -Session $Session `
-        -SystemConfig $SystemConfig `
-        -OpenStackConfig $OpenStackConfig `
-        -ControllerConfig $ControllerConfig
-
-    foreach ($Network in $Networks) {
-        $NetworkID = New-DockerNetwork -Session $Session `
-            -TenantName $ControllerConfig.DefaultProject `
-            -Name $Network
-
-        Write-Log "Created network id: $NetworkID"
-    }
-}
 
 function Test-Ping {
     Param (
