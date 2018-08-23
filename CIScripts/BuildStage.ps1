@@ -2,6 +2,7 @@
 . $PSScriptRoot\Common\Job.ps1
 . $PSScriptRoot\Common\Aliases.ps1
 . $PSScriptRoot\Common\Credentials.ps1
+. $PSScriptRoot\Build\BuildMode.ps1
 
 $Credentials = Get-MgmtCreds
 
@@ -9,11 +10,8 @@ $OutputRootDirectory = "output"
 $NothingToBuild = $Env:COMPONENTS_TO_BUILD -eq "None"
 $CopyDisabledArtifacts = Test-Path Env:COPY_DISABLED_ARTIFACTS
 
-$IsReleaseMode = [bool]::Parse($Env:BUILD_IN_RELEASE_MODE)
-$BuildMode = $(if ($IsReleaseMode) { "production" } else { "debug" })
-
 if (-not $NothingToBuild) {
-    & $PSScriptRoot\Build.ps1 -BuildMode $BuildMode
+    & $PSScriptRoot\Build.ps1
 }
 
 if ($NothingToBuild -or $CopyDisabledArtifacts) {
@@ -50,7 +48,8 @@ if ($NothingToBuild -or $CopyDisabledArtifacts) {
 if (Test-Path Env:UPLOAD_ARTIFACTS) {
     if ($Env:UPLOAD_ARTIFACTS -ne "0") {
         $ArtifactsPath = "\\$Env:SHARED_DRIVE_IP\SharedFiles\WindowsCI-UploadedArtifacts"
-        $Subdir = "$BuildMode\$Env:JOB_NAME\$Env:BUILD_NUMBER"
+        $ProductionOrDebugMode = Resolve-BuildMode
+        $Subdir = "$ProductionOrDebugMode\$Env:JOB_NAME\$Env:BUILD_NUMBER"
         $DiskName = [Guid]::newGuid().Guid
         New-PSDrive -Name $DiskName -PSProvider "FileSystem" -Root $ArtifactsPath -Credential $Credentials
         Push-Location
