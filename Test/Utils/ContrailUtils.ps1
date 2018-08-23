@@ -225,41 +225,6 @@ function Remove-ContrailFloatingIpPool {
     Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
 }
 
-function Set-ContrailFloatingIpPorts {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
-           [Parameter(Mandatory = $true)] [string] $IpUuid,
-           [Parameter(Mandatory = $true)] [string[]] $PortFqNames,
-           [Parameter(Mandatory = $false)] [string] $TenantName)
-
-    $FipUrl = $ContrailUrl + "/floating-ip/" + $IpUuid
-    $Fip = Invoke-RestMethod -Uri $FipUrl -Headers @{"X-Auth-Token" = $AuthToken}
-
-    $InterfaceRefs = @()
-    foreach ($PortFqName in $PortFqNames) {
-        $Ref = @{
-            "to" = $PortFqName -Split ":"
-        }
-        $InterfaceRefs = $InterfaceRefs + $Ref
-    }
-
-    $RequestBody = @{
-        "floating-ip" = @{
-            "floating_ip_address" = $Fip.'floating-ip'.floating_ip_address
-            "fq_name" = $Fip.'floating-ip'.fq_name
-            "parent_type" = $Fip.'floating-ip'.parent_type
-            "uuid" = $Fip.'floating-ip'.uuid
-            "virtual_machine_interface_refs" = $InterfaceRefs
-        }
-    }
-    Invoke-RestMethod `
-        -Uri $FipUrl `
-        -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Put `
-        -ContentType "application/json" `
-        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $RequestBody)
-}
-
 function New-ContrailPassAllPolicyDefinition {
     Param ([Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $true)] [string] $Name)
