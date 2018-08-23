@@ -48,8 +48,8 @@ if ($NothingToBuild -or $CopyDisabledArtifacts) {
 if (Test-Path Env:UPLOAD_ARTIFACTS) {
     if ($Env:UPLOAD_ARTIFACTS -ne "0") {
         $ArtifactsPath = "\\$Env:SHARED_DRIVE_IP\SharedFiles\WindowsCI-UploadedArtifacts"
-        $ProductionOrDebugMode = Resolve-BuildMode
-        $Subdir = "$ProductionOrDebugMode\$Env:JOB_NAME\$Env:BUILD_NUMBER"
+        $NightlyBuildMode = Resolve-BuildMode
+        $Subdir = "$Env:JOB_NAME\$NightlyBuildMode\$Env:BUILD_NUMBER"
         $DiskName = [Guid]::newGuid().Guid
         New-PSDrive -Name $DiskName -PSProvider "FileSystem" -Root $ArtifactsPath -Credential $Credentials
         Push-Location
