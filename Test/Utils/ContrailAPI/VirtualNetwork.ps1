@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\DockerNetwork\Network.ps1
+. $PSScriptRoot\..\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\Constants.ps1
 
 function Add-ContrailVirtualNetwork {

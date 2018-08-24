@@ -12,7 +12,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
-. $PSScriptRoot\..\..\Utils\DockerNetwork\Network.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 function Test-Ping {

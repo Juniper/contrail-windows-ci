@@ -1,7 +1,7 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\DockerNetwork\Network.ps1
+. $PSScriptRoot\..\DockerNetwork\DockerNetwork.ps1
 
 function Initialize-ComputeNode {
     Param (
