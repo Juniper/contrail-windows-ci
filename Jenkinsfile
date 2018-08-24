@@ -151,7 +151,7 @@ pipeline {
 
                         script {
                             if(!env.BUILD_IN_RELEASE_MODE) {
-                                BUILD_IN_RELEASE_MODE = "false"
+                                env.BUILD_IN_RELEASE_MODE = "false"
                             }
                         }
 
