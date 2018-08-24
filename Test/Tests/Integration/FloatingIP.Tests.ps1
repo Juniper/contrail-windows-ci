@@ -13,6 +13,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Network.ps1
+. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 function Test-Ping {
     Param (
@@ -65,7 +66,7 @@ Describe "Floating IP" {
         Context "2 networks" {
             It "ICMP works" {
                 Test-Ping `
-                    -Session $Sessions[0] `
+                    -Session $MultiNode.Sessions[0] `
                     -SrcContainerName $ContainerClientID `
                     -DstIP $ServerFloatingIpAddress | Should Be 0
             }
@@ -77,7 +78,7 @@ Describe "Floating IP" {
                     "ContrailPolicy",
                     Justification="It's actually used."
                 )]
-                $ContrailPolicy = $ContrailNM.AddPassAllPolicyOnDefaultTenant($PolicyName)
+                $ContrailPolicy = $MultiNode.NM.AddPassAllPolicyOnDefaultTenant($PolicyName)
 
                 Write-Log "Creating virtual network: $ClientNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -85,7 +86,7 @@ Describe "Floating IP" {
                     "ContrailClientNetwork",
                     Justification="It's actually used."
                 )]
-                $ContrailClientNetwork = $ContrailNM.AddNetwork($null, $ClientNetwork.Name, $ClientNetwork.Subnet)
+                $ContrailClientNetwork = $MultiNode.NM.AddNetwork($null, $ClientNetwork.Name, $ClientNetwork.Subnet)
 
                 Write-Log "Creating virtual network: $ServerNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -93,7 +94,7 @@ Describe "Floating IP" {
                     "ContrailServerNetwork",
                     Justification="It's actually used."
                 )]
-                $ContrailServerNetwork = $ContrailNM.AddNetwork($null, $ServerNetwork.Name, $ServerNetwork.Subnet)
+                $ContrailServerNetwork = $MultiNode.NM.AddNetwork($null, $ServerNetwork.Name, $ServerNetwork.Subnet)
 
                 Write-Log "Creating floating IP pool: $ServerFloatingIpPoolName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -101,44 +102,44 @@ Describe "Floating IP" {
                     "ContrailFloatingIpPool",
                     Justification="It's actually used."
                 )]
-                $ContrailFloatingIpPool = $ContrailNM.AddFloatingIpPool($null, $ServerNetwork.Name, $ServerFloatingIpPoolName)
+                $ContrailFloatingIpPool = $MultiNode.NM.AddFloatingIpPool($null, $ServerNetwork.Name, $ServerFloatingIpPoolName)
 
-                $ContrailNM.AddPolicyToNetwork($ContrailPolicy, $ContrailClientNetwork)
-                $ContrailNM.AddPolicyToNetwork($ContrailPolicy, $ContrailServerNetwork)
+                $MultiNode.NM.AddPolicyToNetwork($ContrailPolicy, $ContrailClientNetwork)
+                $MultiNode.NM.AddPolicyToNetwork($ContrailPolicy, $ContrailServerNetwork)
             }
 
             AfterAll {
                 Write-Log "Deleting floating IP pool"
                 if (Get-Variable ContrailFloatingIpPool -ErrorAction SilentlyContinue) {
-                    $ContrailNM.RemoveFloatingIpPool($ContrailFloatingIpPool)
+                    $MultiNode.NM.RemoveFloatingIpPool($ContrailFloatingIpPool)
                 }
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailServerNetwork -ErrorAction SilentlyContinue) {
-                    $ContrailNM.RemoveNetwork($ContrailServerNetwork)
+                    $MultiNode.NM.RemoveNetwork($ContrailServerNetwork)
                 }
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailClientNetwork -ErrorAction SilentlyContinue) {
-                    $ContrailNM.RemoveNetwork($ContrailClientNetwork)
+                    $MultiNode.NM.RemoveNetwork($ContrailClientNetwork)
                 }
 
                 Write-Log "Deleting network policy"
                 if (Get-Variable ContrailPolicy -ErrorAction SilentlyContinue) {
-                    $ContrailNM.RemovePolicy($ContrailPolicy)
+                    $MultiNode.NM.RemovePolicy($ContrailPolicy)
                 }
             }
 
             BeforeEach {
                 $Networks = @($ClientNetwork, $ServerNetwork)
-                foreach ($Session in $Sessions) {
-                    Initialize-ComputeNode -Session $Session -Networks $Networks
+                foreach ($Session in $MultiNode.Sessions) {
+                    Initialize-ComputeNode -Session $Session -Networks $Networks -Configs $MultiNode.Configs
                 }
 
                 Write-Log "Creating containers"
                 Write-Log "Creating container: $ContainerClientID"
                 New-Container `
-                    -Session $Sessions[0] `
+                    -Session $MultiNode.Sessions[0] `
                     -NetworkName $ClientNetwork.Name `
                     -Name $ContainerClientID `
                     -Image $ContainerImage
@@ -146,7 +147,7 @@ Describe "Floating IP" {
                 Write-Log "Creating containers"
                 Write-Log "Creating container: $ContainerServer1ID"
                 New-Container `
-                    -Session $Sessions[1] `
+                    -Session $MultiNode.Sessions[1] `
                     -NetworkName $ServerNetwork.Name `
                     -Name $ContainerServer1ID `
                     -Image $ContainerImage
@@ -157,19 +158,21 @@ Describe "Floating IP" {
                     "ContrailFloatingIp",
                     Justification="It's actually used."
                 )]
-                $ContrailFloatingIp = $ContrailNM.AddFloatingIp($ContrailFloatingIpPool,
-                                                                $ServerFloatingIpName,
-                                                                $ServerFloatingIpAddress)
+                $ContrailFloatingIp = $MultiNode.NM.AddFloatingIp($ContrailFloatingIpPool,
+                                                                  $ServerFloatingIpName,
+                                                                  $ServerFloatingIpAddress)
 
-                $ContrailNM.AssignFloatingIpToAllPortsInNetwork($ContrailFloatingIp, $ContrailServerNetwork)
+                $MultiNode.NM.AssignFloatingIpToAllPortsInNetwork($ContrailFloatingIp, $ContrailServerNetwork)
             }
 
             AfterEach {
                 Write-Log "Deleting floating IP"
                 if (Get-Variable ContrailFloatingIp -ErrorAction SilentlyContinue) {
-                    $ContrailNM.RemoveFloatingIp($ContrailFloatingIp)
+                    $MultiNode.NM.RemoveFloatingIp($ContrailFloatingIp)
                 }
 
+                $Sessions = $MultiNode.Sessions
+                $SystemConfig = $MultiNode.Configs.System
                 try {
                     Merge-Logs -LogSources (
                         (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $ContainerClientID),
@@ -188,59 +191,15 @@ Describe "Floating IP" {
         }
 
         BeforeAll {
-            $VMs = Read-TestbedsConfig -Path $TestenvConfFile
-            $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-            $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "ContrailNetwork",
-                Justification="It's actually used."
-            )]
-            $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
-
-            $Sessions = New-RemoteSessions -VMs $VMs
-
             Initialize-PesterLogger -OutDir $LogDir
-
-            Write-Log "Installing components on testbeds..."
-            Install-Components -Session $Sessions[0]
-            Install-Components -Session $Sessions[1]
-
-            $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-            $ContrailNM.EnsureProject($ControllerConfig.DefaultProject)
-
-            $Testbed1Address = $VMs[0].Address
-            $Testbed1Name = $VMs[0].Name
-            Write-Log "Creating virtual router. Name: $Testbed1Name; Address: $Testbed1Address"
-            $VRouter1Uuid = $ContrailNM.AddVirtualRouter($Testbed1Name, $Testbed1Address)
-            Write-Log "Reported UUID of new virtual router: $VRouter1Uuid"
-
-            $Testbed2Address = $VMs[1].Address
-            $Testbed2Name = $VMs[1].Name
-            Write-Log "Creating virtual router. Name: $Testbed2Name; Address: $Testbed2Address"
-            $VRouter2Uuid = $ContrailNM.AddVirtualRouter($Testbed2Name, $Testbed2Address)
-            Write-Log "Reported UUID of new virtual router: $VRouter2Uuid"
+            $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
         }
 
         AfterAll {
-            if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-
-            if (Get-Variable "VRouter1Uuid" -ErrorAction SilentlyContinue) {
-                Write-Log "Removing virtual router: $VRouter1Uuid"
-                $ContrailNM.RemoveVirtualRouter($VRouter1Uuid)
-                Remove-Variable "VRouter1Uuid"
+            if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
+                Remove-MultiNodeSetup -MultiNode $MultiNode
+                Remove-Variable "MultiNode"
             }
-            if (Get-Variable "VRouter2Uuid" -ErrorAction SilentlyContinue) {
-                Write-Log "Removing virtual router: $VRouter2Uuid"
-                $ContrailNM.RemoveVirtualRouter($VRouter2Uuid)
-                Remove-Variable "VRouter2Uuid"
-            }
-
-            Write-Log "Uninstalling components from testbeds..."
-            Uninstall-Components -Session $Sessions[0]
-            Uninstall-Components -Session $Sessions[1]
-
-            Remove-PSSession $Sessions
         }
     }
 }
