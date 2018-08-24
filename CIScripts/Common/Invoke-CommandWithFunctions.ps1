@@ -36,7 +36,7 @@ function Invoke-CommandWithFunctions {
     }
 
     try {
-        Invoke-Command -Session $Session -ScriptBlock $ScriptBlock
+        return Invoke-Command -Session $Session -ScriptBlock $ScriptBlock
     }
     finally {
         Invoke-Command -Session $Session -ScriptBlock {
