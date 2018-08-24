@@ -1,4 +1,4 @@
-This error indicates a broken powershell session,
+This error indicates a broken or closed (disconnected) powershell session,
 it occurs mostly in Pester's teardown (MergeLogs / msi uninstallation)
 and sometimes during setup. Perhaps it matters, perhaps it doesn't.
 It's possible that it occurs only under high load
