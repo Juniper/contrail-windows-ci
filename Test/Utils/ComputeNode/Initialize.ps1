@@ -1,3 +1,4 @@
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\DockerNetwork\Network.ps1
 
