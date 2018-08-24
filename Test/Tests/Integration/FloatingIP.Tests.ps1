@@ -192,6 +192,12 @@ Describe "Floating IP" {
 
         BeforeAll {
             Initialize-PesterLogger -OutDir $LogDir
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "MultiNode",
+                Justification="It's actually used."
+            )]
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
         }
 
