@@ -150,7 +150,7 @@ pipeline {
                         unstash "CIScripts"
                         unstash "SourceCode"
 
-                        powershell script: './CIScripts/NoSuchFile.ps1'
+                        powershell script: './CIScripts/BuildStage.ps1'
 
                         stash name: "Artifacts", includes: "output/**/*"
                     }
