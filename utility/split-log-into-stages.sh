@@ -29,7 +29,7 @@ do
     echo "copying '$stage' log to $stage_log_filename"
     grep --perl-regexp "$this_stage_regexp" "$full_log" | gzip > "$stage_log_filename"
 
-    if grep "Failed in branch" $stage_log_filename
+    if zgrep "Failed in branch" $stage_log_filename
     then
         mv $stage_log_filename "SUSPECTED-ERROR-HERE-$stage_log_filename"
     fi
