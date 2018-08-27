@@ -24,7 +24,7 @@ function Set-EncapPriorities {
     }
 
     Invoke-RestMethod -Method PUT -Uri ($ContrailUrl + "/global-vrouter-config/$Uuid") `
-        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
+        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request) `
         -Headers @{"X-Auth-Token" = $AuthToken} `
         -ContentType "application/json" 
 }
