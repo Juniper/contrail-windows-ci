@@ -105,7 +105,7 @@
 - name: Install ActivePerl Community Edition
   win_chocolatey:
     name: activeperl
-    version: 5.24.1.2402
+    version: 5.26.1.2601
     state: present
 
 - name: Install .NET Framework 3.5
