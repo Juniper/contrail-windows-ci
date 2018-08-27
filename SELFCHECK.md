@@ -10,7 +10,7 @@ Requires PowerShell test framework: `Pester 4.2.0`. See [this link](https://gith
 
 ### Static analysis (optional)
 
-Requires `PSScriptAnalyzer 17.0`. See [this link](https://github.com/PowerShell/PSScriptAnalyzer) for installation instructions.
+Requires at least `PSScriptAnalyzer 1.17.0`. See [this link](https://github.com/PowerShell/PSScriptAnalyzer) for installation instructions.
 
 ## To run unit tests and static analysis of CI:
 
