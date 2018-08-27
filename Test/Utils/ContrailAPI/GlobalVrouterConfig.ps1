@@ -9,7 +9,7 @@ function Set-EncapPriorities {
         -Headers @{"X-Auth-Token" = $AuthToken}
 
     # Assume there's only one global-vrouter-config
-    $Uuid = $GetResponse."global-vrouter-config"[0].uuid
+    $Uuid = $GetResponse[0].uuid
 
     # Request constructed based on
     # http://www.opencontrail.org/documentation/api/r4.0/contrail_openapi.html#globalvrouterconfigcreate
