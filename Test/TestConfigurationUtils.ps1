@@ -419,7 +419,7 @@ function New-AgentConfigFile {
 
         $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
         $PrefixLength = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).PrefixLength
-        $VHostGateway = (Get-NetIPConfiguration -InterfaceAlias $VHostIfName).IPv4DefaultGateway
+        $VHostGateway = (Get-NetIPConfiguration -InterfaceIndex $VHostIfIndex).IPv4DefaultGateway
         $VHostGatewayConfig = if ($VHostGateway) { "gateway=$( $VHostGateway.NextHop )" } else { "" }
 
         $ConfigFileContent = @"
