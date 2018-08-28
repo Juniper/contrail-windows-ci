@@ -147,5 +147,5 @@ function Add-ContrailPolicyToNetwork {
         -Headers @{"X-Auth-Token" = $AuthToken} `
         -Method Put `
         -ContentType "application/json" `
-        -Body $Body
+        -Body $Body | Out-Null
 }

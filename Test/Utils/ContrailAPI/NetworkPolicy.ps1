@@ -84,5 +84,5 @@ function Remove-ContrailPolicy {
            [Parameter(Mandatory = $true)] [string] $Uuid)
 
     $Url = $ContrailUrl + "/network-policy/" + $Uuid
-    Invoke-RestMethod -Uri $Url -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete
+    Invoke-RestMethod -Uri $Url -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
 }
