@@ -325,7 +325,7 @@ function Wait-RemoteInterfaceIP {
     } | Out-Null
 }
 
-function Get-PSIPAddress {
+function Get-NodeManagementIP {
     Param([Parameter(Mandatory = $true)] [PSSessionT] $Session)
     return Invoke-Command -Session $Session -ScriptBlock { Get-NetIPAddress |
         Where-Object InterfaceAlias -like "Ethernet0*" |

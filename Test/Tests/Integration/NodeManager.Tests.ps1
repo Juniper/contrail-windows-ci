@@ -21,14 +21,15 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 $ConfigPath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
-$LogPath = "C:\ProgramData\contrail\var\log\contrail\contrail-vrouter-nodemgr.log"
+$LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
 
 function New-NodeMgrConfig {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [string] $ControllerIP
     )
 
-    $HostIP = Get-PSIPAddress -Session $Session
+    $HostIP = Get-NodeManagementIP -Session $Session
 
     $Config = @"
 [DEFAULTS]
@@ -40,7 +41,7 @@ db_port=9042
 db_jmx_port=7200
 
 [COLLECTOR]
-server_list=$($ControllerConfig.Address):8086
+server_list=${ControllerIP}:8086
 
 [SANDESH]
 introspect_ssl_enable=False
@@ -58,7 +59,7 @@ function Clear-NodeMgrLogs {
     )
 
     Invoke-Command -Session $Session -ScriptBlock {
-        if(Test-Path -Path $Using:LogPath) {
+        if (Test-Path -Path $Using:LogPath) {
             Remove-Item $Using:LogPath -Force
         }
     }
@@ -87,10 +88,7 @@ function Test-NodeMgrConnectionWithController {
     $Out = Invoke-RestMethod ("http://" + $ControllerConfig.Address + ":8089/Snh_ShowCollectorServerReq?")
     $OurNode = $Out.ShowCollectorServerResp.generators.list.GeneratorSummaryInfo.source | Where-Object "#text" -Like "$TestbedHostname"
 
-    if($OurNode) {
-        return $true
-    }
-    return $false
+    return [bool]($OurNode)
 }
 
 function Test-ControllerReceivesNodeStatus {
@@ -134,14 +132,15 @@ function Stop-NodeMgr {
 
 function Install-Components {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [string] $ControllerIP
     )
 
     Install-Extension -Session $Session
     Install-DockerDriver -Session $Session
     Install-Agent -Session $Session
     Install-Nodemgr -Session $Session
-    New-NodeMgrConfig -Session $Session
+    New-NodeMgrConfig -Session $Session -ControllerIP $ControllerIP
 }
 
 function Uninstall-Components {
@@ -215,13 +214,10 @@ Describe "Node manager" {
 
         Initialize-PesterLogger -OutDir $LogDir
 
-        # TODO Remove this temporary workaround once testbed template is updated
-        Invoke-Command -Session $Session -ScriptBlock {
-            choco install vcpython27 --yes
-        }
-
         Write-Log "Installing components on testbed..."
-        Install-Components -Session $Session
+        Install-Components `
+            -Session $Session `
+            -ControllerIP $ControllerConfig.Address
 
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
         $ContrailNM.EnsureProject($ControllerConfig.DefaultProject)
