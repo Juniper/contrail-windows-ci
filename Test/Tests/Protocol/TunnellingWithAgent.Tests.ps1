@@ -342,6 +342,11 @@ Describe "Tunneling with Agent tests" {
             }
 
             It "Uses specified tunneling method" {
+                if ($TunnelingMethod -eq "VXLAN") {
+                    # Probably a bug here: https://github.com/Juniper/contrail-vrouter/blob/master/dp-core/vr_nexthop.c#L1983
+                    Set-TestInconclusive "Test not performed, because VXLAN doesn't report correctly in vrfstats"
+                }
+
                 $StatsBefore = Get-VrfStats -Session $Sessions[0]
 
                 Test-Ping `
