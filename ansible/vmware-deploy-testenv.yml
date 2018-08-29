@@ -65,6 +65,7 @@
 - hosts: testenv
   gather_facts: no
   any_errors_fatal: true
+  serial: 1
   roles:
   - role: vmware-vm
     action: deploy
