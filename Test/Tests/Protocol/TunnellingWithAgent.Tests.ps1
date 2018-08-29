@@ -147,7 +147,7 @@ function Get-VrfStats {
             VXLAN = $PktCountVXLAN
         }
     }
-    Write-Log "vrfstats for vif $VifIdx : $($Stats | Out-String)"
+    Write-Log "vrfstats for vif $VifIdx : $Stats"
     return $Stats
 }
 
@@ -339,21 +339,19 @@ Describe "Tunneling with Agent tests" {
             BeforeEach {
                 $EncapPrioritiesList = @($TunnelingMethod)
                 $ContrailNM.SetEncapPriorities($EncapPrioritiesList)
-                Start-Sleep -s 3
+            }
 
-                # Wait for the tunneling method to have updated on compute nodes.
-                Eventually {
-                    $StatsBefore = Get-VrfStats -Session $Sessions[0]
-    
-                    Test-Ping `
-                        -Session $Sessions[0] `
-                        -SrcContainerName $Container1ID `
-                        -DstContainerName $Container2ID `
-                        -DstContainerIP $Container2NetInfo.IPAddress | Should Be 0
+            It "Uses specified tunneling method" {
+                $StatsBefore = Get-VrfStats -Session $Sessions[0]
 
-                    $StatsAfter = Get-VrfStats -Session $Sessions[0]
-                    $StatsAfter[$TunnelingMethod] | Should BeGreaterThan $StatsBefore[$TunnelingMethod]
-                } -Duration 5
+                Test-Ping `
+                    -Session $Sessions[0] `
+                    -SrcContainerName $Container1ID `
+                    -DstContainerName $Container2ID `
+                    -DstContainerIP $Container2NetInfo.IPAddress | Should Be 0
+
+                $StatsAfter = Get-VrfStats -Session $Sessions[0]
+                $StatsAfter[$TunnelingMethod] | Should BeGreaterThan $StatsBefore[$TunnelingMethod]
             }
 
             It "ICMP - Ping between containers on separate compute nodes succeeds" {
