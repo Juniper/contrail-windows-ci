@@ -134,7 +134,6 @@ pipeline {
                     environment {
                         THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
                         DRIVER_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
-                        BUILD_IN_RELEASE_MODE = "false"
                         AGENT_BUILD_THREADS = "6"
                         SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
                         CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
@@ -167,7 +166,7 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201807060237"
+                        TESTBED_TEMPLATE = "Template-testbed-201808280603"
                         CONTROLLER_TEMPLATE = "Template-CentOS-7.4-Thin-LinkedClones"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"

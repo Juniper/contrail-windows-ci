@@ -1,5 +1,6 @@
 . $PSScriptRoot\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\..\CIScripts\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
 . $PSScriptRoot\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\CIScripts\Testenv\Testbed.ps1
 
@@ -309,20 +310,23 @@ function Select-ValidNetIPInterface {
 function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [String] $AdapterName)
-    $InjectedFunction = [PSCustomObject] @{ 
-        Name = 'Select-ValidNetIPInterface'; 
-        Body = ${Function:Select-ValidNetIPInterface} 
-    }
 
     Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
-        Invoke-Command -Session $Session {
-            $Using:InjectedFunction | ForEach-Object { Invoke-Expression "function $( $_.Name ) { $( $_.Body ) }" }
-
+        Invoke-CommandWithFunctions -Functions "Select-ValidNetIPInterface" -Session $Session {
             Get-NetAdapter -Name $Using:AdapterName `
             | Get-NetIPAddress -ErrorAction SilentlyContinue `
             | Select-ValidNetIPInterface
         }
     } | Out-Null
+}
+
+function Get-NodeManagementIP {
+    Param([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    return Invoke-Command -Session $Session -ScriptBlock { Get-NetIPAddress |
+        Where-Object InterfaceAlias -like "Ethernet0*" |
+        Where-Object AddressFamily -eq IPv4 |
+        Select-Object -ExpandProperty IPAddress
+    }
 }
 
 function Initialize-DriverAndExtension {
@@ -352,8 +356,11 @@ function Initialize-DriverAndExtension {
             $TestProcessRunning | Invoke-UntilSucceeds -Duration 15
 
             {
+                if (-not (Invoke-Command $TestProcessRunning)) {
+                    throw [HardError]::new("docker process has stopped running")
+                }
                 Test-IsDockerDriverEnabled -Session $Session
-            } | Invoke-UntilSucceeds -Duration 600 -Interval 5 -Precondition $TestProcessRunning
+            } | Invoke-UntilSucceeds -Duration 600 -Interval 5
 
             Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
 
