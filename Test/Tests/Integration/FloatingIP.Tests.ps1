@@ -153,11 +153,6 @@ Describe "Floating IP" {
                     -Image $ContainerImage
 
                 Write-Log "Creating floating IP: $ServerFloatingIpPoolName"
-                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                    "PSUseDeclaredVarsMoreThanAssignments",
-                    "ContrailFloatingIp",
-                    Justification="It's actually used."
-                )]
                 $ContrailFloatingIp = $MultiNode.NM.AddFloatingIp($ContrailFloatingIpPool,
                                                                   $ServerFloatingIpName,
                                                                   $ServerFloatingIpAddress)

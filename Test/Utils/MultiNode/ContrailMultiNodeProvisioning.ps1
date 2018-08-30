@@ -16,11 +16,6 @@ function New-MultiNodeSetup {
     $VMs = Read-TestbedsConfig -Path $TestenvConfFile
     $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
     $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-        "PSUseDeclaredVarsMoreThanAssignments",
-        "ContrailNetwork",
-        Justification="It's actually used."
-    )]
     $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
     $Sessions = New-RemoteSessions -VMs $VMs
