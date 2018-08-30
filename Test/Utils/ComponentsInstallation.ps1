@@ -95,7 +95,7 @@ function Install-Nodemgr {
         Write-Log "- (Nodemgr) Installing pip archive $A"
         Invoke-NativeCommand -Session $Session -ScriptBlock {
             pip install "C:\Artifacts\nodemgr\$Using:A"
-        }
+        } | Out-Null
     }
 }
 
@@ -151,7 +151,7 @@ function Uninstall-Nodemgr {
 function Install-Components {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $false)] [Switch] $InstallNodeMgr,
-           [Parameter(Mandatory = $false)] [Switch] $ControllerIP)
+           [Parameter(Mandatory = $false)] [String] $ControllerIP)
 
     Install-Extension -Session $Session
     Install-DockerDriver -Session $Session

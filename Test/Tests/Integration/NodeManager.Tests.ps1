@@ -11,14 +11,15 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
-. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
-. $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
-. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
-. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
+. $PSScriptRoot\..\..\Utils\CommonTestCode.ps1
+. $PSScriptRoot\..\..\Utils\ComponentsInstallation.ps1
+. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
@@ -50,13 +51,14 @@ function Test-NodeMgrLogs {
 
 function Test-NodeMgrConnectionWithController {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [string] $ControllerIP
     )
 
     $TestbedHostname = Invoke-Command -Session $Session -ScriptBlock {
         hostname
     }
-    $Out = Invoke-RestMethod ("http://" + $ControllerConfig.Address + ":8089/Snh_ShowCollectorServerReq?")
+    $Out = Invoke-RestMethod ("http://" + $ControllerIP + ":8089/Snh_ShowCollectorServerReq?")
     $OurNode = $Out.ShowCollectorServerResp.generators.list.GeneratorSummaryInfo.source | Where-Object "#text" -Like "$TestbedHostname"
 
     return [bool]($OurNode)
@@ -110,7 +112,9 @@ Describe "Node manager" {
 
     It "connects to controller" {
         Eventually {
-            Test-NodeMgrConnectionWithController -Session $Session | Should Be True
+            Test-NodeMgrConnectionWithController `
+                -Session $Session `
+                -ControllerIP $MultiNode.Configs.Controller.Address | Should Be True
         } -Duration 60
     }
 
@@ -148,7 +152,7 @@ Describe "Node manager" {
             "MultiNode",
             Justification="It's actually used."
         )]
-        $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+        $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
     }
 
     AfterAll {
