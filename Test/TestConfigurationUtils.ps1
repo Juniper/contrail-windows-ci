@@ -320,6 +320,15 @@ function Wait-RemoteInterfaceIP {
     } | Out-Null
 }
 
+function Get-NodeManagementIP {
+    Param([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    return Invoke-Command -Session $Session -ScriptBlock { Get-NetIPAddress |
+        Where-Object InterfaceAlias -like "Ethernet0*" |
+        Where-Object AddressFamily -eq IPv4 |
+        Select-Object -ExpandProperty IPAddress
+    }
+}
+
 function Initialize-DriverAndExtension {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -419,6 +428,8 @@ function New-AgentConfigFile {
 
         $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
         $PrefixLength = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).PrefixLength
+        $VHostGateway = (Get-NetIPConfiguration -InterfaceIndex $VHostIfIndex).IPv4DefaultGateway
+        $VHostGatewayConfig = if ($VHostGateway) { "gateway=$( $VHostGateway.NextHop )" } else { "" }
 
         $ConfigFileContent = @"
 [DEFAULT]
@@ -430,6 +441,7 @@ servers=$ControllerIP
 [VIRTUAL-HOST-INTERFACE]
 name=$VHostIfName
 ip=$VHostIP/$PrefixLength
+$VHostGatewayConfig
 physical_interface=$PhysIfName
 "@
 
