@@ -306,6 +306,11 @@ Describe "Tunneling with Agent tests" {
                 $EncapPrioritiesList = @($TunnelingMethod)
                 $MultiNode.NM.SetEncapPriorities($EncapPrioritiesList)
 
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseDeclaredVarsMoreThanAssignments",
+                    "Sessions",
+                    Justification="It's actually used in 'It' blocks."
+                )]
                 $Sessions = $MultiNode.Sessions
             }
 
