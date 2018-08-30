@@ -10,6 +10,7 @@ if (isBranchUnsupported()) {
     return
 }
 
+
 pipeline {
     agent none
 
