@@ -18,7 +18,8 @@ function Invoke-MsiExec {
         $Result = Start-Process msiexec.exe -ArgumentList @($Using:Action, $Using:Path, "/quiet") `
             -Wait -PassThru
         if ($Result.ExitCode -ne 0) {
-            throw "Installation of $Using:Path failed with $($Result.ExitCode)"
+            $WhatWentWrong = if ($Using:Uninstall) {"Uninstallation"} else {"Installation"}
+            throw "$WhatWentWrong of $Using:Path failed with $($Result.ExitCode)"
         }
 
         # Refresh Path
@@ -98,6 +99,39 @@ function Install-Nodemgr {
     }
 }
 
+function New-NodeMgrConfig {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [string] $ControllerIP
+    )
+
+    $ConfigPath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
+    $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
+
+    $HostIP = Get-NodeManagementIP -Session $Session
+
+    $Config = @"
+[DEFAULTS]
+log_local = 1
+log_level = SYS_DEBUG
+log_file = $LogPath
+hostip=$HostIP
+db_port=9042
+db_jmx_port=7200
+
+[COLLECTOR]
+server_list=${ControllerIP}:8086
+
+[SANDESH]
+introspect_ssl_enable=False
+sandesh_ssl_enable=False
+"@
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        Set-Content -Path $Using:ConfigPath -Value $Using:Config
+    }
+}
+
 function Uninstall-Nodemgr {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -115,16 +149,28 @@ function Uninstall-Nodemgr {
 }
 
 function Install-Components {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+           [Parameter(Mandatory = $false)] [Switch] $InstallNodeMgr,
+           [Parameter(Mandatory = $false)] [Switch] $ControllerIP)
 
     Install-Extension -Session $Session
     Install-DockerDriver -Session $Session
     Install-Agent -Session $Session
     Install-Utils -Session $Session
+
+    if ($InstallNodeMgr -and $ControllerIP) {
+        Install-Nodemgr -Session $Session
+        New-NodeMgrConfig -Session $Session -ControllerIP $ControllerIP
+    }
 }
 
 function Uninstall-Components {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+           [Parameter(Mandatory = $false)] [Switch] $UninstallNodeMgr)
+
+    if ($UninstallNodeMgr) {
+        Uninstall-Nodemgr -Session $Session
+    }
 
     Uninstall-Utils -Session $Session
     Uninstall-Agent -Session $Session

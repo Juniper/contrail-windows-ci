@@ -20,38 +20,9 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-$ConfigPath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
+# TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
+#       Should be refactored.
 $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
-
-function New-NodeMgrConfig {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $ControllerIP
-    )
-
-    $HostIP = Get-NodeManagementIP -Session $Session
-
-    $Config = @"
-[DEFAULTS]
-log_local = 1
-log_level = SYS_DEBUG
-log_file = $LogPath
-hostip=$HostIP
-db_port=9042
-db_jmx_port=7200
-
-[COLLECTOR]
-server_list=${ControllerIP}:8086
-
-[SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False
-"@
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        Set-Content -Path $Using:ConfigPath -Value $Using:Config
-    }
-}
 
 function Clear-NodeMgrLogs {
     Param (
@@ -130,30 +101,6 @@ function Stop-NodeMgr {
     }
 }
 
-function Install-Components {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $ControllerIP
-    )
-
-    Install-Extension -Session $Session
-    Install-DockerDriver -Session $Session
-    Install-Agent -Session $Session
-    Install-Nodemgr -Session $Session
-    New-NodeMgrConfig -Session $Session -ControllerIP $ControllerIP
-}
-
-function Uninstall-Components {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
-    )
-
-    Uninstall-Nodemgr -Session $Session
-    Uninstall-Agent -Session $Session
-    Uninstall-DockerDriver -Session $Session
-    Uninstall-Extension -Session $Session
-}
-
 Describe "Node manager" {
     It "starts" {
         Eventually {
@@ -174,10 +121,12 @@ Describe "Node manager" {
     }
 
     BeforeEach {
+        $Session = $MultiNode.Sessions[0]
+
         Initialize-ComputeServices -Session $Session `
-            -SystemConfig $SystemConfig `
-            -OpenStackConfig $OpenStackConfig `
-            -ControllerConfig $ControllerConfig
+            -SystemConfig $MultiNode.Configs.System `
+            -OpenStackConfig $MultiNode.Configs.OpenStack `
+            -ControllerConfig $MultiNode.Configs.Controller
         Clear-NodeMgrLogs -Session $Session
         Start-NodeMgr -Session $Session
     }
@@ -185,62 +134,27 @@ Describe "Node manager" {
     AfterEach {
         try {
             Stop-NodeMgr -Session $Session
-            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+            Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
         } finally {
             Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
     BeforeAll {
-        $VMs = Read-TestbedsConfig -Path $TestenvConfFile
-        $Sessions = New-RemoteSessions -VMs $VMs
-        $Session = $Sessions[0]
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
-
         Initialize-PesterLogger -OutDir $LogDir
 
-        Write-Log "Installing components on testbed..."
-        Install-Components `
-            -Session $Session `
-            -ControllerIP $ControllerConfig.Address
-
-        $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-        $ContrailNM.EnsureProject($ControllerConfig.DefaultProject)
-
-        $TestbedAddress = $VMs[0].Address
-        $TestbedName = $VMs[0].Name
-        Write-Log "Creating virtual router. Name: $TestbedName; Address: $TestbedAddress"
-        $VRouterUuid = $ContrailNM.AddVirtualRouter($TestbedName, $TestbedAddress)
-        Write-Log "Reported UUID of new virtual router: $VRouterUuid"
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "MultiNode",
+            Justification="It's actually used."
+        )]
+        $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
     }
 
     AfterAll {
-        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-
-        if(Get-Variable "VRouterUuid" -ErrorAction SilentlyContinue) {
-            Write-Log "Removing virtual router: $VRouterUuid"
-            $ContrailNM.RemoveVirtualRouter($VRouterUuid)
-            Remove-Variable "VRouterUuid"
+        if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
+            Remove-MultiNodeSetup -MultiNode $MultiNode
+            Remove-Variable "MultiNode"
         }
-
-        Write-Log "Uninstalling components from testbed..."
-        Uninstall-Components -Session $Session
-
-        Remove-PSSession $Sessions
     }
 }

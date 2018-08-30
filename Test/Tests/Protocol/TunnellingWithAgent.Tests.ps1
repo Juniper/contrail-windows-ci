@@ -304,7 +304,9 @@ Describe "Tunneling with Agent tests" {
         Context "Tunneling $TunnelingMethod" {
             BeforeEach {
                 $EncapPrioritiesList = @($TunnelingMethod)
-                $ContrailNM.SetEncapPriorities($EncapPrioritiesList)
+                $MultiNode.NM.SetEncapPriorities($EncapPrioritiesList)
+
+                $Sessions = $MultiNode.Sessions
             }
 
             It "Uses specified tunneling method" {
@@ -351,8 +353,8 @@ Describe "Tunneling with Agent tests" {
                 $MyMessage = "We are Tungsten Fabric. We come in peace."
 
                 Test-UDP `
-                    -Session1 $MultiNode.Sessions[0] `
-                    -Session2 $MultiNode.Sessions[1] `
+                    -Session1 $Sessions[0] `
+                    -Session2 $Sessions[1] `
                     -Container1Name $Container1ID `
                     -Container2Name $Container2ID `
                     -Container1IP $Container1NetInfo.IPAddress `

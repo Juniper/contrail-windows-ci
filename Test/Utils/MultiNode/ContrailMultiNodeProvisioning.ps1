@@ -10,7 +10,8 @@
 
 function New-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+        [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
+        [Parameter(Mandatory=$false)] [Switch] $InstallNodeMgr
     )
 
     $VMs = Read-TestbedsConfig -Path $TestenvConfFile
@@ -21,8 +22,13 @@ function New-MultiNodeSetup {
     $Sessions = New-RemoteSessions -VMs $VMs
 
     Write-Log "Installing components on testbeds..."
-    Install-Components -Session $Sessions[0]
-    Install-Components -Session $Sessions[1]
+    if ($InstallNodeMgr) {
+        Install-Components -Session $Sessions[0] -InstallNodeMgr -ControllerIP $ControllerConfig.Address
+        Install-Components -Session $Sessions[1] -InstallNodeMgr -ControllerIP $ControllerConfig.Address
+    } else {
+        Install-Components -Session $Sessions[0]
+        Install-Components -Session $Sessions[1]
+    }
 
     $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
     $ContrailNM.EnsureProject($ControllerConfig.DefaultProject)
@@ -41,7 +47,7 @@ function New-MultiNodeSetup {
 
     $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
     $VRoutersUuids = @($VRouter1Uuid, $VRouter2Uuid)
-    return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids)
+    return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids, $InstallNodeMgr)
 }
 
 function Remove-MultiNodeSetup {
@@ -57,7 +63,11 @@ function Remove-MultiNodeSetup {
 
     Write-Log "Uninstalling components from testbeds..."
     foreach ($Session in $MultiNode.Sessions) {
-        Uninstall-Components -Session $Session
+        if ($MultiNode.InstalledNodeMgr) {
+            Uninstall-Components -Session $Session -UninstallNodeMgr
+        } else {
+            Uninstall-Components -Session $Session
+        }
     }
 
     Write-Log "Removing PS sessions.."
