@@ -20,7 +20,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
-$ContrailNM = $null
 $TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
