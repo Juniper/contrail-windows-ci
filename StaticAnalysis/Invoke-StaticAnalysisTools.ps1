@@ -5,7 +5,7 @@ Param([Parameter(Mandatory = $true)] [string] $RootDir,
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Test-MinimalAnalyzerVersion($MinimumVersion) {
+function Assert-MeetsMinimalAnalyzerVersion($MinimumVersion) {
     try {
         # Maybe it was installed using PSGet?
         $Analyzer = Get-Package -Name PSScriptAnalyzer
@@ -16,7 +16,7 @@ function Test-MinimalAnalyzerVersion($MinimumVersion) {
     if (-not $Analyzer) {
         Write-Host "PSScriptAnalyzer not found. Please install at least version $MinimumVersion."
         exit 1
-    } else if ($Analyzer.Version -lt $MinimumVersion) {
+    } elseif ($Analyzer.Version -lt $MinimumVersion) {
         Write-Host "PSScriptAnalyzer minimum version requirements not met. Make sure that it's at least version $MinimumVersion."
         exit 1
     }
@@ -39,7 +39,7 @@ function Write-Results ($Data) {
 
 $PSLinterConfig = "$ConfigDir/PSScriptAnalyzerSettings.psd1"
 Write-Host "Running PSScriptAnalyzer... (config from $PSLinterConfig)"
-Test-MinimalAnalyzerVersion($MinimumVersion)
+Assert-MeetsMinimalAnalyzerVersion($MinimumVersion)
 $Output = Invoke-ScriptAnalyzer $RootDir -Recurse -Setting $PSLinterConfig
 $Output = Remove-TypeNotFoundWarning $Output
 if ($Output) {
