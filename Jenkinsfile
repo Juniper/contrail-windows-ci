@@ -308,7 +308,7 @@ pipeline {
                     dir('to_publish') {
                         unstash 'processedTestReports'
 
-                        shellCommand('${env.WORKSPACE}/CIScripts/LogserverUtils/fix-test-report-index-files.sh', ['./TestReports'])
+                        shellCommand("${env.WORKSPACE}/CIScripts/LogserverUtils/fix-test-report-index-files.sh", ['./TestReports'])
 
                         dir('TestReports') {
                             tryUnstash('ddriverJUnitLogs')
@@ -317,7 +317,7 @@ pipeline {
                         tryUnstash('unitTestsLogs')
 
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
-                        shellCommand('${env.WORKSPACE}/CIScripts/LogserverUtils/split-log-into-stages.sh', [logFilename])
+                        shellCommand("${env.WORKSPACE}/CIScripts/LogserverUtils/split-log-into-stages.sh", [logFilename])
 
                         def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
                         def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
