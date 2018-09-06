@@ -13,8 +13,11 @@ function Test-MinimalAnalyzerVersion($MinimumVersion) {
         # Maybe it was installed by chocolatey?
         $Analyzer = Get-Module -Name PSScriptAnalyzer
     }
-    if ($Analyzer.Version -lt $MinimumVersion) {
-        Write-Host "PSScriptAnalyzer not found. If you have installed it, make sure that it's at least version $MinimumVersion."
+    if (-not $Analyzer) {
+        Write-Host "PSScriptAnalyzer not found. Please install at least version $MinimumVersion."
+        exit 1
+    } else if ($Analyzer.Version -lt $MinimumVersion) {
+        Write-Host "PSScriptAnalyzer minimum version requirements not met. Make sure that it's at least version $MinimumVersion."
         exit 1
     }
 }
