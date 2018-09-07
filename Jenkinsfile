@@ -321,17 +321,6 @@ pipeline {
 
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
                         shellCommand('../utility/split-log-into-stages.sh', [logFilename])
-
-                        def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
-                        def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
-                        publishCurrentDirToLogServer(auth, dst)
-                    }
-
-                    def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
-                    def logDestMsg = "Full logs URL: ${fullLogsURL}"
-                    echo(logDestMsg)
-                    if (isGithub()) {
-                        sendGithubComment(logDestMsg)
                     }
 
                     unstash "Flakes"
