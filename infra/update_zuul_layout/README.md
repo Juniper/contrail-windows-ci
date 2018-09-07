@@ -1,3 +1,7 @@
-Important: this script assumes that it's being ran from inside ansible/ directory.
+# Update zuul layout
 
-TODO
+Example usage:
+
+```
+.\update-zuul-layout.py ..\..\ansible\roles\zuul\files\layout.yaml
+```
