@@ -320,6 +320,7 @@ pipeline {
                         tryUnstash('unitTestsLogs')
 
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
+<<<<<<< Updated upstream
                         shellCommand('../utility/split-log-into-stages.sh', [logFilename])
 
                         def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
@@ -332,10 +333,12 @@ pipeline {
                     echo(logDestMsg)
                     if (isGithub()) {
                         sendGithubComment(logDestMsg)
+=======
+                        shellCommand("${env.WORKSPACE}/CIScripts/LogserverUtils/split-log-into-stages.sh", [logFilename])
+>>>>>>> Stashed changes
                     }
 
                     unstash "Flakes"
-
                     if (containsFlakiness("to_publish/$logFilename")) {
                         echo "Flakiness detected"
                         if (isGithub()) {
@@ -349,6 +352,17 @@ pipeline {
                                     string(name: 'ZUUL_PATCHSET', value: env.ZUUL_PATCHSET),
                                 ]
                         }
+                    }
+
+                    def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
+                    def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
+                    publishDirToLogServer(auth, dst)
+
+                    def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
+                    def logDestMsg = "Full logs URL: ${fullLogsURL}"
+                    echo(logDestMsg)
+                    if (isGithub()) {
+                        sendGithubComment(logDestMsg)
                     }
                 }
             }
