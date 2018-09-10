@@ -137,12 +137,6 @@
     version: 4.5.1
     state: present
 
-- name: Install PowerShell Community Extensions (PSCX)
-  win_psmodule:
-    name: Pscx
-    state: present
-    allow_clobber: yes
-
 - name: Install PSScriptAnalyzer
   win_chocolatey:
     name: psscriptanalyzer
