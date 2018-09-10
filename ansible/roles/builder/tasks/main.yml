@@ -12,6 +12,63 @@
   include_role:
     name: windows-ntp
 
+- name: Install Windows-Containers feature
+  win_feature:
+    name: Containers
+    state: present
+  tags:
+    - builder_docker
+
+- name: Install feature NET-Framework-Features
+  win_feature:
+    name: 'NET-Framework-Features'
+    state: present
+  tags:
+    - builder_docker
+
+- name: Install Hyper-V feature
+  win_feature:
+    name: Hyper-V
+    include_management_tools: true
+    state: present
+  register: hyperv_installation
+  tags:
+    - builder_docker
+
+- name: Reboot the system
+  win_reboot:
+    test_command: powershell.exe 'Get-WindowsFeature'
+    pre_reboot_delay: 15
+    post_reboot_delay: 15
+  when: hyperv_installation is changed
+  tags:
+    - builder_docker
+    - skip_ansible_lint
+
+- name: Wait for reconnection
+  wait_for_connection:
+  tags:
+    - builder_docker
+
+- name: Install DockerMsftProvider
+  win_psmodule:
+    name: DockerMsftProvider
+  tags:
+    - builder_docker
+
+- name: Install Docker-EE
+  win_shell: "Install-Package -Name Docker -ProviderName DockerMsftProvider -Force"
+  tags:
+    - builder_docker
+
+- name: Make sure Docker has started
+  win_service:
+    name: Docker
+    state: started
+    start_mode: auto
+  tags:
+    - builder_docker
+
 - name: Install .NET 3.5
   win_feature:
     name: NET-Framework-Core
