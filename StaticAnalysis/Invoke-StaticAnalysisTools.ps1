@@ -11,12 +11,15 @@ function Assert-MeetsMinimalAnalyzerVersion($MinimumVersion) {
         $Analyzer = Get-Package -Name PSScriptAnalyzer
     } catch {
         # Maybe it was installed by chocolatey?
+        try {
+            Import-Module -Name PSScriptAnalyzer
+        } catch {
+            throw "PSScriptAnalyzer not found. Please install at least version $MinimumVersion."
+        }
         $Analyzer = Get-Module -Name PSScriptAnalyzer
     }
 
-    if (-not $Analyzer) {
-        throw "PSScriptAnalyzer not found. Please install at least version $MinimumVersion."
-    } elseif ($Analyzer.Version -lt $MinimumVersion) {
+    if ($Analyzer.Version -lt $MinimumVersion) {
         throw "PSScriptAnalyzer minimum version requirements not met. Make sure that it's at least version $MinimumVersion."
     } else {
         Write-Host "Found PSScriptAnalyzer in version $($Analyzer.Version)."
