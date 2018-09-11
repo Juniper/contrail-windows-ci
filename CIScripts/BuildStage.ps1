@@ -56,14 +56,21 @@ if (Test-Path Env:UPLOAD_ARTIFACTS) {
         Set-Location ($Diskname + ":\")
         New-Item -Name $Subdir -ItemType directory
         Pop-Location
-        $DestinationPath = "$DiskName" + ":\" + $Subdir
-        Copy-Item ($OutputRootDirectory + "\*") -Destination $DestinationPath -Recurse
-
-        $items = Get-ChildItem -Path $OutputRootDirectory -Exclude dlls
-        foreach($item in $items) {
-            Compress-Archive -Path $item.FullName -Update -DestinationPath $DestinationPath\Artifacts.zip
-        }
+        Copy-Item ($OutputRootDirectory + "\*") -Destination ("$DiskName" + ":\" + $Subdir) -Recurse
     }
+}
+
+if (Test-Path Env:DOCKER_REGISTRY) {
+    $Containers = "$OutputRootDirectory\containers"
+    $VrouterItems = (
+        "agent",
+        "vrouter",
+        "nodemgr"
+    ) | Foreach-Object { "$OutputRootDirectory\$_" }
+    New-Item -Name $Containers\vrouter -ItemType directory
+    Compress-Archive -Path $VrouterItems -DestinationPath $Containers\vrouter\Artifacts.zip
+    New-Item -Name $Containers\docker-driver -ItemType directory
+    Compress-Archive -Path $OutputRootDirectory\docker-driver -DestinationPath $Containers\docker-driver\Artifacts.zip
 }
 
 exit 0
