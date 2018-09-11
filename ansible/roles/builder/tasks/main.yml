@@ -66,8 +66,6 @@
     name: Docker
     state: started
     start_mode: auto
-  tags:
-    - builder_docker
 
 - name: Install .NET 3.5
   win_feature:
