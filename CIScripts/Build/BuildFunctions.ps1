@@ -407,7 +407,7 @@ function Invoke-ContainerBuild {
            [Parameter(Mandatory = $true)] [string] $ContainerSuffix,
            [Parameter(Mandatory = $true)] [hashtable] $ArtifactsFolders)
 
-    $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "$output\$_" }
+    $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "output\$_" }
     New-Item -Name $OutputPath\$ContainerSuffix -ItemType directory
     Compress-Archive -Path $ArtifactsFolders -DestinationPath $OutputPath\$ContainerSuffix\Artifacts.zip
     Invoke-NativeCommand -ScriptBlock {
