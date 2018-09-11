@@ -402,6 +402,19 @@ function Invoke-AgentTestsBuild {
     $Job.PopStep()
 }
 
+function Invoke-ContainerBuild {
+    Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $true)] [string] $ContainerSuffix,
+           [Parameter(Mandatory = $true)] [hashtable] $ArtifactsFolders)
+
+    $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "$output\$_" }
+    New-Item -Name $OutputPath\$ContainerSuffix -ItemType directory
+    Compress-Archive -Path $ArtifactsFolders -DestinationPath $OutputPath\$ContainerSuffix\Artifacts.zip
+    Invoke-NativeCommand -ScriptBlock {
+        docker build -t contrail-windows-$ContainerSuffix -f $PSScriptRoot\Dockerfile $OutputPath\$ContainerSuffix
+    }
+}
+
 function Invoke-ContainersBuild {
     Param ([Parameter(Mandatory = $true)] [string] $OutputPath)
 
@@ -409,24 +422,20 @@ function Invoke-ContainersBuild {
 
     $Job.Step("contrail-windows-vrouter", {
         # todo: pass as a list parameter maybe
-        $VrouterItems = (
+        $folders = (
             "agent",
             "vrouter",
             "nodemgr"
-        ) | Foreach-Object { "$OutputPath\$_" }
-        New-Item -Name $OutputPath\vrouter -ItemType directory
-        Compress-Archive -Path $VrouterItems -DestinationPath $OutputPath\vrouter\Artifacts.zip
-        Invoke-NativeCommand -ScriptBlock {
-            docker build -t contrail-windows-vrouter -f $PSScriptRoot\Dockerfile $OutputPath\vrouter
-        }
+        )
+        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "vrouter" -ArtifactsFolders $folders
     })
 
     $Job.Step("contrail-windows-docker-driver", {
-        New-Item -Name $OutputPath\docker-driver -ItemType directory
-        Compress-Archive -Path $OutputRootDirectory\docker-driver -DestinationPath $OutputPath\docker-driver\Artifacts.zip
-        Invoke-NativeCommand -ScriptBlock {
-            docker build -t contrail-windows-docker-driver -f $PSScriptRoot\Dockerfile $OutputPath\docker-driver
-        }
+        # todo: pass as a list parameter maybe
+        $folders = (
+            "docker-driver"
+        )
+        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "docker-driver" -ArtifactsFolders $folders
     })
 
     $Job.PopStep()
