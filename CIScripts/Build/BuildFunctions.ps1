@@ -401,3 +401,33 @@ function Invoke-AgentTestsBuild {
 
     $Job.PopStep()
 }
+
+function Invoke-ContainersBuild {
+    Param ([Parameter(Mandatory = $true)] [string] $OutputPath)
+
+    $Job.PushStep("Containers build")
+
+    $Job.Step("contrail-windows-vrouter", {
+        # todo: pass as a list parameter maybe
+        $VrouterItems = (
+            "agent",
+            "vrouter",
+            "nodemgr"
+        ) | Foreach-Object { "$OutputPath\$_" }
+        New-Item -Name $OutputPath\vrouter -ItemType directory
+        Compress-Archive -Path $VrouterItems -DestinationPath $OutputPath\vrouter\Artifacts.zip
+        Invoke-NativeCommand -ScriptBlock {
+            docker build -t contrail-windows-vrouter -f $PSScriptRoot\Dockerfile $OutputPath\vrouter
+        }
+    })
+
+    $Job.Step("contrail-windows-docker-driver", {
+        New-Item -Name $OutputPath\docker-driver -ItemType directory
+        Compress-Archive -Path $OutputRootDirectory\docker-driver -DestinationPath $OutputPath\docker-driver\Artifacts.zip
+        Invoke-NativeCommand -ScriptBlock {
+            docker build -t contrail-windows-docker-driver -f $PSScriptRoot\Dockerfile $OutputPath\docker-driver
+        }
+    })
+
+    $Job.PopStep()
+}

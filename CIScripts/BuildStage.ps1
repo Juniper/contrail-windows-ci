@@ -60,17 +60,4 @@ if (Test-Path Env:UPLOAD_ARTIFACTS) {
     }
 }
 
-if (Test-Path Env:DOCKER_REGISTRY) {
-    $Containers = "$OutputRootDirectory\containers"
-    $VrouterItems = (
-        "agent",
-        "vrouter",
-        "nodemgr"
-    ) | Foreach-Object { "$OutputRootDirectory\$_" }
-    New-Item -Name $Containers\vrouter -ItemType directory
-    Compress-Archive -Path $VrouterItems -DestinationPath $Containers\vrouter\Artifacts.zip
-    New-Item -Name $Containers\docker-driver -ItemType directory
-    Compress-Archive -Path $OutputRootDirectory\docker-driver -DestinationPath $Containers\docker-driver\Artifacts.zip
-}
-
 exit 0
