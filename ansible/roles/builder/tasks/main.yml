@@ -40,7 +40,7 @@
     test_command: powershell.exe 'Get-WindowsFeature'
     pre_reboot_delay: 15
     post_reboot_delay: 15
-  when: hyperv_installation is changed
+  when: hyperv_installation.reboot_required
   tags:
     - builder_docker
     - skip_ansible_lint
