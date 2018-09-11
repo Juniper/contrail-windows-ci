@@ -31,10 +31,9 @@
 
 - name: Reboot the system
   win_reboot:
-    test_command: powershell.exe 'Get-WindowsFeature'
     pre_reboot_delay: 15
     post_reboot_delay: 15
-  when: hyperv_installation.reboot_required
+  when: hyperv_installation.reboot_required or hyperv_installation.feature_result.reboot_required
   tags:
     - skip_ansible_lint
 
