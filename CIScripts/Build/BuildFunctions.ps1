@@ -413,8 +413,9 @@ function Invoke-ContainerBuild {
     Compress-Archive -Path $ArtifactsFolders -DestinationPath $OutputPath\$ContainerSuffix\Artifacts.zip
     # Docker pre 18.03 needs Dockerfile to be within the build context
     Copy-Item $PSScriptRoot\Dockerfile $OutputPath\$ContainerSuffix
+    # We use ${} to delimit the name before the colon
     Invoke-NativeCommand -ScriptBlock {
-        docker build -t contrail-windows-$ContainerSuffix:$ContainerTag $OutputPath\$ContainerSuffix
+        docker build -t contrail-windows-${ContainerSuffix}:$ContainerTag $OutputPath\$ContainerSuffix
     }
 }
 
