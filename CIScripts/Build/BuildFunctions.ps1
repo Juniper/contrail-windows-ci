@@ -408,10 +408,12 @@ function Invoke-ContainerBuild {
            [Parameter(Mandatory = $true)] [string[]] $ArtifactsFolders)
 
     $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "output\$_" }
+    # Docker pre 18.03 needs absolute path to dockerfile
+    $DockerfileAbsolutePath = (Get-Item $PSScriptRoot\Dockerfile).FullName
     New-Item -Name $OutputPath\$ContainerSuffix -ItemType directory
     Compress-Archive -Path $ArtifactsFolders -DestinationPath $OutputPath\$ContainerSuffix\Artifacts.zip
     Invoke-NativeCommand -ScriptBlock {
-        docker build -t contrail-windows-$ContainerSuffix -f $PSScriptRoot\Dockerfile $OutputPath\$ContainerSuffix
+        docker build -t contrail-windows-$ContainerSuffix -f $DockerfileAbsolutePath $OutputPath\$ContainerSuffix
     }
 }
 
