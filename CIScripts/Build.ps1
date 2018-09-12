@@ -88,7 +88,9 @@ try {
     }
 
     if (Test-Path Env:DOCKER_REGISTRY) {
-        Invoke-ContainersBuild -OutputPath $ContainersWorkDir -ContainerTag "$Env:ZUUL_BRANCH-$Env:BUILD_NUMBER"
+        Invoke-ContainersBuild -OutputPath $ContainersWorkDir `
+            -ContainerTag "$Env:ZUUL_BRANCH-$Env:BUILD_NUMBER" `
+            -Registry $Env:DOCKER_REGISTRY
     }
 } finally {
     $testDirs = Get-ChildItem ".\build\$SconsBuildMode" -Directory

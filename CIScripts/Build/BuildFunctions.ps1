@@ -406,7 +406,8 @@ function Invoke-ContainerBuild {
     Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $ContainerSuffix,
            [Parameter(Mandatory = $true)] [string] $ContainerTag,
-           [Parameter(Mandatory = $true)] [string[]] $ArtifactsFolders)
+           [Parameter(Mandatory = $true)] [string[]] $ArtifactsFolders,
+           [Parameter(Mandatory = $true)] [string] $Registry)
 
     $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "output\$_" }
     New-Item -Name $OutputPath\$ContainerSuffix -ItemType directory
@@ -414,33 +415,44 @@ function Invoke-ContainerBuild {
     # Docker pre 18.03 needs Dockerfile to be within the build context
     Copy-Item $PSScriptRoot\Dockerfile $OutputPath\$ContainerSuffix
     # We use ${} to delimit the name before the colon
+    $ContainerName = "contrail-windows-${ContainerSuffix}:$ContainerTag"
     Invoke-NativeCommand -ScriptBlock {
-        docker build -t contrail-windows-${ContainerSuffix}:$ContainerTag $OutputPath\$ContainerSuffix
+        docker build -t $ContainerName $OutputPath\$ContainerSuffix
+        docker push $Registry/$ContainerName
     }
 }
 
 function Invoke-ContainersBuild {
     Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
-           [Parameter(Mandatory = $true)] [string] $ContainerTag)
+           [Parameter(Mandatory = $true)] [string] $ContainerTag,
+           [Parameter(Mandatory = $true)] [string] $Registry)
 
     $Job.PushStep("Containers build")
 
     $Job.Step("contrail-windows-vrouter", {
         # todo: pass as a list parameter maybe
-        $folders = (
+        $Folders = (
             "agent",
             "vrouter",
             "nodemgr"
         )
-        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "vrouter" -ContainerTag $ContainerTag -ArtifactsFolders $folders
+        Invoke-ContainerBuild -OutputPath $OutputPath `
+            -ContainerSuffix "vrouter" `
+            -ContainerTag $ContainerTag `
+            -ArtifactsFolders $Folders `
+            -Registry $Registry
     })
 
     $Job.Step("contrail-windows-docker-driver", {
         # todo: pass as a list parameter maybe
-        $folders = (
+        $Folders = (
             "docker-driver"
         )
-        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "docker-driver" -ContainerTag $ContainerTag -ArtifactsFolders $folders
+        Invoke-ContainerBuild -OutputPath $OutputPath `
+            -ContainerSuffix "docker-driver" `
+            -ContainerTag $ContainerTag `
+            -ArtifactsFolders $Folders `
+            -Registry $Registry
     })
 
     $Job.PopStep()
