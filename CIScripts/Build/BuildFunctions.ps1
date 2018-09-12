@@ -405,7 +405,7 @@ function Invoke-AgentTestsBuild {
 function Invoke-ContainerBuild {
     Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $ContainerSuffix,
-           [Parameter(Mandatory = $true)] [hashtable] $ArtifactsFolders)
+           [Parameter(Mandatory = $true)] [string[]] $ArtifactsFolders)
 
     $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "output\$_" }
     New-Item -Name $OutputPath\$ContainerSuffix -ItemType directory
