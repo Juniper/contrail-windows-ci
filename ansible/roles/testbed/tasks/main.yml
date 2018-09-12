@@ -35,8 +35,6 @@
     test_command: powershell.exe 'Get-WindowsFeature'
     pre_reboot_delay: 15
     post_reboot_delay: 15
-  tags:
-    - skip_lint
 
 - name: Wait for reconnection
   wait_for_connection:

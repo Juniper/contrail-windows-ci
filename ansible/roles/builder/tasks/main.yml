@@ -34,8 +34,6 @@
     pre_reboot_delay: 15
     post_reboot_delay: 15
   when: hyperv_installation.reboot_required or hyperv_installation.feature_result.reboot_required
-  tags:
-    - skip_ansible_lint
 
 - name: Wait for reconnection
   wait_for_connection:
