@@ -18,6 +18,7 @@ $vtestOutputDir = "output/vtest"
 $AgentOutputDir = "output/agent"
 $NodemgrOutputDir = "output/nodemgr"
 $DllsOutputDir = "output/dlls"
+$ContainersWorkDir = "output/containers"
 $LogsDir = "logs"
 $SconsTestsLogsDir = "unittests-logs"
 
@@ -28,6 +29,7 @@ $Directories = @(
     $AgentOutputDir,
     $NodemgrOutputDir,
     $DllsOutputDir,
+    $ContainersWorkDir,
     $LogsDir,
     $SconsTestsLogsDir
 )
@@ -83,6 +85,10 @@ try {
 
     if ($SconsBuildMode -eq "debug") {
         Copy-DebugDlls -OutputPath $DllsOutputDir
+    }
+
+    if (Test-Path Env:DOCKER_REGISTRY) {
+        Invoke-ContainersBuild -OutputPath $ContainersWorkDir
     }
 } finally {
     $testDirs = Get-ChildItem ".\build\$SconsBuildMode" -Directory

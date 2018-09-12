@@ -401,3 +401,44 @@ function Invoke-AgentTestsBuild {
 
     $Job.PopStep()
 }
+
+function Invoke-ContainerBuild {
+    Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $true)] [string] $ContainerSuffix,
+           [Parameter(Mandatory = $true)] [string[]] $ArtifactsFolders)
+
+    $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "output\$_" }
+    # Docker pre 18.03 needs absolute path to dockerfile
+    $DockerfileAbsolutePath = (Get-Item $PSScriptRoot\Dockerfile).FullName
+    New-Item -Name $OutputPath\$ContainerSuffix -ItemType directory
+    Compress-Archive -Path $ArtifactsFolders -DestinationPath $OutputPath\$ContainerSuffix\Artifacts.zip
+    Invoke-NativeCommand -ScriptBlock {
+        docker build -t contrail-windows-$ContainerSuffix -f $DockerfileAbsolutePath $OutputPath\$ContainerSuffix
+    }
+}
+
+function Invoke-ContainersBuild {
+    Param ([Parameter(Mandatory = $true)] [string] $OutputPath)
+
+    $Job.PushStep("Containers build")
+
+    $Job.Step("contrail-windows-vrouter", {
+        # todo: pass as a list parameter maybe
+        $folders = (
+            "agent",
+            "vrouter",
+            "nodemgr"
+        )
+        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "vrouter" -ArtifactsFolders $folders
+    })
+
+    $Job.Step("contrail-windows-docker-driver", {
+        # todo: pass as a list parameter maybe
+        $folders = (
+            "docker-driver"
+        )
+        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "docker-driver" -ArtifactsFolders $folders
+    })
+
+    $Job.PopStep()
+}
