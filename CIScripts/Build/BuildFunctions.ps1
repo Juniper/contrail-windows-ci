@@ -405,20 +405,22 @@ function Invoke-AgentTestsBuild {
 function Invoke-ContainerBuild {
     Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $ContainerSuffix,
+           [Parameter(Mandatory = $true)] [string] $ContainerTag,
            [Parameter(Mandatory = $true)] [string[]] $ArtifactsFolders)
 
     $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "output\$_" }
-    # Docker pre 18.03 needs absolute path to dockerfile
-    $DockerfileAbsolutePath = (Get-Item $PSScriptRoot\Dockerfile).FullName
     New-Item -Name $OutputPath\$ContainerSuffix -ItemType directory
     Compress-Archive -Path $ArtifactsFolders -DestinationPath $OutputPath\$ContainerSuffix\Artifacts.zip
+    # Docker pre 18.03 needs Dockerfile to be within the build context
+    Copy-Item $PSScriptRoot\Dockerfile $OutputPath\$ContainerSuffix
     Invoke-NativeCommand -ScriptBlock {
-        docker build -t contrail-windows-$ContainerSuffix -f $DockerfileAbsolutePath $OutputPath\$ContainerSuffix
+        docker build -t contrail-windows-$ContainerSuffix:$ContainerTag $OutputPath\$ContainerSuffix
     }
 }
 
 function Invoke-ContainersBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $OutputPath)
+    Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
+           [Parameter(Mandatory = $true)] [string] $ContainerTag)
 
     $Job.PushStep("Containers build")
 
@@ -429,7 +431,7 @@ function Invoke-ContainersBuild {
             "vrouter",
             "nodemgr"
         )
-        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "vrouter" -ArtifactsFolders $folders
+        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "vrouter" -ContainerTag $ContainerTag -ArtifactsFolders $folders
     })
 
     $Job.Step("contrail-windows-docker-driver", {
@@ -437,7 +439,7 @@ function Invoke-ContainersBuild {
         $folders = (
             "docker-driver"
         )
-        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "docker-driver" -ArtifactsFolders $folders
+        Invoke-ContainerBuild -OutputPath $OutputPath -ContainerSuffix "docker-driver" -ContainerTag $ContainerTag -ArtifactsFolders $folders
     })
 
     $Job.PopStep()

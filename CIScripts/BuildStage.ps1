@@ -17,7 +17,7 @@ if (-not $NothingToBuild) {
 if ($NothingToBuild -or $CopyDisabledArtifacts) {
     $Job = [Job]::new("Copying ready artifacts")
 
-    $ArtifactsPath = "\\$Env:SHARED_DRIVE_IP\SharedFiles\WindowsCI-Artifacts"
+    $ArtifactsPath = "\\$Env:SHARED_DRIVE_IP\SharedFiles\WindowsCI-UploadedArtifacts\WinContrail\winci-server2016-devel\debug\3385"
     if (Test-Path Env:READY_ARTIFACTS_PATH) {
         $ArtifactsPath = $Env:READY_ARTIFACTS_PATH
     }
