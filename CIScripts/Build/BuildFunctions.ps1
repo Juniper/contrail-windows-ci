@@ -434,6 +434,16 @@ function Invoke-ContainersBuild {
 
     $Job.PushStep("Containers build")
 
+    $Job.Step("add insecure registry", {
+        $DockerConfig = @"
+{
+    "insecure-registries" : [ $Registry ]
+}
+"@
+        Set-Content -Path "C:\ProgramData\Docker\config\daemon.json" -Value $DockerConfig
+        Restart-Service docker
+    })
+
     $Job.Step("contrail-windows-vrouter", {
         # todo: pass as a list parameter maybe
         $Folders = (
