@@ -410,7 +410,7 @@ function Invoke-ContainerBuild {
            [Parameter(Mandatory = $true)] [string] $Registry)
 
     New-Item -Name $WorkDir\$ContainerSuffix -ItemType directory
-    Compress-Archive -Path $ArtifactsFolders -DestinationPath $WorkDir\$ContainerSuffix\Artifacts.zip
+    Compress-Archive -Path $ArtifactsFolders -DestinationPath $WorkDir\$ContainerSuffix\artifacts.zip
     # Docker pre 18.03 needs Dockerfile to be within the build context
     Copy-Item $PSScriptRoot\Dockerfile $WorkDir\$ContainerSuffix
     # We use ${} to delimit the name before the colon
@@ -423,6 +423,9 @@ function Invoke-ContainerBuild {
     }
     Invoke-NativeCommand -ScriptBlock {
         docker push $Registry/$ContainerName
+    }
+    Invoke-NativeCommand -ScriptBlock {
+        docker rmi $ContainerName $Registry/$ContainerName
     }
 }
 
@@ -444,7 +447,7 @@ function Invoke-ContainersBuild {
         Restart-Service docker
     })
 
-    Foreach ($ContainerAttributes in $ContainersAttributes) {
+    ForEach ($ContainerAttributes in $ContainersAttributes) {
         $Job.Step("Building contrail-windows-$($ContainerAttributes.Suffix)", {
             Invoke-ContainerBuild -WorkDir $WorkDir `
                 -ContainerSuffix $ContainerAttributes.Suffix `
