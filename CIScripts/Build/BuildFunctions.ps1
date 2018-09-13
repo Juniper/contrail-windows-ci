@@ -403,21 +403,20 @@ function Invoke-AgentTestsBuild {
 }
 
 function Invoke-ContainerBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
+    Param ([Parameter(Mandatory = $true)] [string] $WorkDir,
            [Parameter(Mandatory = $true)] [string] $ContainerSuffix,
            [Parameter(Mandatory = $true)] [string] $ContainerTag,
            [Parameter(Mandatory = $true)] [string[]] $ArtifactsFolders,
            [Parameter(Mandatory = $true)] [string] $Registry)
 
-    $ArtifactsFolders = $ArtifactsFolders | Foreach-Object { "output\$_" }
-    New-Item -Name $OutputPath\$ContainerSuffix -ItemType directory
-    Compress-Archive -Path $ArtifactsFolders -DestinationPath $OutputPath\$ContainerSuffix\Artifacts.zip
+    New-Item -Name $WorkDir\$ContainerSuffix -ItemType directory
+    Compress-Archive -Path $ArtifactsFolders -DestinationPath $WorkDir\$ContainerSuffix\Artifacts.zip
     # Docker pre 18.03 needs Dockerfile to be within the build context
-    Copy-Item $PSScriptRoot\Dockerfile $OutputPath\$ContainerSuffix
+    Copy-Item $PSScriptRoot\Dockerfile $WorkDir\$ContainerSuffix
     # We use ${} to delimit the name before the colon
     $ContainerName = "contrail-windows-${ContainerSuffix}:$ContainerTag"
     Invoke-NativeCommand -ScriptBlock {
-        docker build -t $ContainerName $OutputPath\$ContainerSuffix
+        docker build -t $ContainerName $WorkDir\$ContainerSuffix
     }
     Invoke-NativeCommand -ScriptBlock {
         docker tag $ContainerName $Registry/$ContainerName
@@ -428,7 +427,8 @@ function Invoke-ContainerBuild {
 }
 
 function Invoke-ContainersBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
+    Param ([Parameter(Mandatory = $true)] [string] $WorkDir,
+           [Parameter(Mandatory = $true)] [hashtable[]] $ContainersAttributes,
            [Parameter(Mandatory = $true)] [string] $ContainerTag,
            [Parameter(Mandatory = $true)] [string] $Registry)
 
@@ -444,31 +444,15 @@ function Invoke-ContainersBuild {
         Restart-Service docker
     })
 
-    $Job.Step("contrail-windows-vrouter", {
-        # todo: pass as a list parameter maybe
-        $Folders = (
-            "agent",
-            "vrouter",
-            "nodemgr"
-        )
-        Invoke-ContainerBuild -OutputPath $OutputPath `
-            -ContainerSuffix "vrouter" `
-            -ContainerTag $ContainerTag `
-            -ArtifactsFolders $Folders `
-            -Registry $Registry
-    })
-
-    $Job.Step("contrail-windows-docker-driver", {
-        # todo: pass as a list parameter maybe
-        $Folders = (
-            "docker-driver"
-        )
-        Invoke-ContainerBuild -OutputPath $OutputPath `
-            -ContainerSuffix "docker-driver" `
-            -ContainerTag $ContainerTag `
-            -ArtifactsFolders $Folders `
-            -Registry $Registry
-    })
+    Foreach ($ContainerAttributes in $ContainersAttributes) {
+        $Job.Step("Building contrail-windows-$($ContainerAttributes.Suffix)", {
+            Invoke-ContainerBuild -WorkDir $WorkDir `
+                -ContainerSuffix $ContainerAttributes.Suffix `
+                -ContainerTag $ContainerTag `
+                -ArtifactsFolders $ContainerAttributes.Folders `
+                -Registry $Registry
+        })
+    }
 
     $Job.PopStep()
 }

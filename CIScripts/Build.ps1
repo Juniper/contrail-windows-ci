@@ -88,7 +88,24 @@ try {
     }
 
     if (Test-Path Env:DOCKER_REGISTRY) {
-        Invoke-ContainersBuild -OutputPath $ContainersWorkDir `
+        $ContainersAttributes = @(
+            @{
+                Suffix = "vrouter"
+                Folders = @(
+                    $vRouterOutputDir,
+                    $AgentOutputDir,
+                    $NodemgrOutputDir
+                )
+            },
+            @{
+                Suffix = "docker-driver"
+                Folders = @(
+                    $DockerDriverOutputDir
+                )
+            }
+        )
+        Invoke-ContainersBuild -WorkDir $ContainersWorkDir `
+            -ContainersAttributes $ContainersAttributes `
             -ContainerTag "$Env:ZUUL_BRANCH-$Env:BUILD_NUMBER" `
             -Registry $Env:DOCKER_REGISTRY
     }
