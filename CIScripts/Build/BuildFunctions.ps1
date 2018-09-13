@@ -418,6 +418,11 @@ function Invoke-ContainerBuild {
     $ContainerName = "contrail-windows-${ContainerSuffix}:$ContainerTag"
     Invoke-NativeCommand -ScriptBlock {
         docker build -t $ContainerName $OutputPath\$ContainerSuffix
+    }
+    Invoke-NativeCommand -ScriptBlock {
+        docker tag $ContainerName $Registry/$ContainerName
+    }
+    Invoke-NativeCommand -ScriptBlock {
         docker push $Registry/$ContainerName
     }
 }
