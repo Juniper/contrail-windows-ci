@@ -4,6 +4,7 @@
 . $PSScriptRoot\Common\Components.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
 . $PSScriptRoot\Build\BuildMode.ps1
+. $PSScriptRoot\Build\Containers.ps1
 
 
 $Job = [Job]::new("Build")
@@ -89,20 +90,14 @@ try {
 
     if (Test-Path Env:DOCKER_REGISTRY) {
         $ContainersAttributes = @(
-            @{
-                Suffix = "vrouter"
-                Folders = @(
-                    $vRouterOutputDir,
-                    $AgentOutputDir,
-                    $NodemgrOutputDir
-                )
-            },
-            @{
-                Suffix = "docker-driver"
-                Folders = @(
-                    $DockerDriverOutputDir
-                )
-            }
+            [ContainerAttributes]::New("vrouter", @(
+                $vRouterOutputDir,
+                $AgentOutputDir,
+                $NodemgrOutputDir
+            )),
+            [ContainerAttributes]::New("docker-driver", @(
+                $DockerDriverOutputDir
+            ))
         )
         Invoke-ContainersBuild -WorkDir $ContainersWorkDir `
             -ContainersAttributes $ContainersAttributes `
