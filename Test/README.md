@@ -50,7 +50,7 @@ run_tb "Copy-Item -Recurse -Filter *msi 'C:/Artifacts/*/*' 'C:/Artifacts'"
 run_tb "Copy-Item -Recurse -Filter *cer 'C:/Artifacts/*/*' 'C:/Artifacts'"
 
 # Verify with:
-run_on_testbeds "ls 'C:/Artifacts'"
+run_tb "ls 'C:/Artifacts'"
 ```
 
 ## Test suite prerequisites
@@ -84,6 +84,24 @@ Run selected test:
 ```
 Invoke-Pester -Script @{ Path = ".\TunnellingWithAgent.Tests.ps1"; Parameters = @{ TestenvConfFile = "testenv-conf.yaml"}; } -TestName 'Tunnelling with Agent tests'
 ```
+
+## Debugging the tests
+
+### Install Visual Studio Code with ms-vscode.powershell plugin
+
+1. Open test file you want to debug.
+1. At the top of the file, specify path to `TestenvConfFile`, like so:
+
+```
+Param (
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile = "C:\Users\mk\Juniper\tmp\contrail-windows-ci\testenv-conf.yaml",
+    ...
+```
+1. Setup any breakpoints.
+1. Find the start of test suite `Describe` block.
+1. Click `Debug tests` which appears just above the `Describe` block.
+
+Note: if PowerShell session crashes, try `Ctrl`+`Shift`+`P` -> `Powershell: Restart current session`.
 
 ## CI Selfcheck
 
