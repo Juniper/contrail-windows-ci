@@ -38,6 +38,11 @@ run_tb "Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ C:\Artifa
 run_tb "Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ C:\Artifacts\vrouter\vRouter.cer"
 ```
 
+WORKAROUND: vcpython27 is missing on testbeds:
+```
+run_tb "choco install vcpython27 -y"
+```
+
 WORKAROUND: layout of artifacts expected by test suite is slightly different than the one
 created by nightly containers. We must move
 ```
