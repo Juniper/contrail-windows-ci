@@ -33,7 +33,6 @@ alias run_tb='ansible -i inventory --vault-password-file ~/ansible-vault-key tes
 run_tb "mkdir C:/Artifacts"
 run_tb "docker run -v C:\Artifacts:C:\Artifacts mclapinski/contrail-windows-docker-driver"
 run_tb "docker run -v C:\Artifacts:C:\Artifacts mclapinski/contrail-windows-vrouter"
-run_tb "ls C:/Artifacts"
 run_tb "Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ C:\Artifacts\vrouter\vRouter.cer"
 run_tb "Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ C:\Artifacts\vrouter\vRouter.cer"
 ```
@@ -51,7 +50,7 @@ created by nightly containers. We must move
 run_tb "Copy-Item -Recurse -Filter *msi 'C:/Artifacts/*/*' 'C:/Artifacts'"
 run_tb "Copy-Item -Recurse -Filter *cer 'C:/Artifacts/*/*' 'C:/Artifacts'"
 
-# Verify with:
+# Verify that there are four MSIs (for Agent, vRouter, utils and CNM plugin) with:
 run_tb "ls 'C:/Artifacts'"
 ```
 
