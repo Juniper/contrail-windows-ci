@@ -38,12 +38,14 @@ run_tb "Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ C:\Artifa
 run_tb "Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ C:\Artifacts\vrouter\vRouter.cer"
 ```
 
-WORKAROUND: vcpython27 is missing on testbeds:
+#### Current workarounds
+
+*WORKAROUND*: vcpython27 is missing on testbeds:
 ```
 run_tb "choco install vcpython27 -y"
 ```
 
-WORKAROUND: layout of artifacts expected by test suite is slightly different than the one
+*WORKAROUND*: layout of artifacts expected by test suite is slightly different than the one
 created by nightly containers. We must move
 ```
 run_tb "Copy-Item -Recurse -Filter *msi 'C:/Artifacts/*/*' 'C:/Artifacts'"
@@ -52,6 +54,23 @@ run_tb "Copy-Item -Recurse -Filter *cer 'C:/Artifacts/*/*' 'C:/Artifacts'"
 # Verify with:
 run_tb "ls 'C:/Artifacts'"
 ```
+
+*WORKAROUND*: when working with Debug version of vRouter Forwarding Extension, special debug DLLs
+must be present on testbeds. These DLLs are:
+* msvcp140d.dll
+* ucrtbased.dll
+* vcruntime140d.dll
+
+They are distributed along with Visual Studio and MSBuild.
+
+To copy them to remote Windows testbeds, use:
+```
+ansible -i inventory --vault-password-file ~/ansible-vault-key testbed -m win_copy -a "dest=C:/Windows/system32/ src=/path/to/msvcp140d.dll"
+ansible -i inventory --vault-password-file ~/ansible-vault-key testbed -m win_copy -a "dest=C:/Windows/system32/ src=/path/to/ucrtbased.dll"
+ansible -i inventory --vault-password-file ~/ansible-vault-key testbed -m win_copy -a "dest=C:/Windows/system32/ src=/path/to/vcruntime140d.dll"
+```
+
+
 
 ## Test suite prerequisites
 
