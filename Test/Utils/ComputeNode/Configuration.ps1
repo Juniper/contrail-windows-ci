@@ -42,7 +42,7 @@ Os_token=
 function Get-DefaultNodeMgrsConfigPath {
     return "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
 }
-function New-NodeMgrConfig {
+function New-NodeMgrConfigFile {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [string] $ControllerIP
@@ -74,7 +74,7 @@ sandesh_ssl_enable=False
 }
 
 #Function executed in the remote machine to create Agent's config file.
-function Prepare-AgentConfig {
+function Get-AgentConfig {
     Param (
         [Parameter(Mandatory = $true)] [string] $ControllerIP,
         [Parameter(Mandatory = $true)] [string] $VHostIfName,
@@ -101,7 +101,7 @@ physical_interface=$PhysIfName
 "@
 }
 
-function New-AgentConfig {
+function New-AgentConfigFile {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
@@ -116,14 +116,14 @@ function New-AgentConfig {
             -Session $Session `
             -AdapterName $SystemConfig.AdapterName
 
-    Invoke-CommandWithFunctions -Functions "Prepare-AgentConfig" -Session $Session -ScriptBlock {
+    Invoke-CommandWithFunctions -Functions "Get-AgentConfig" -Session $Session -ScriptBlock {
         # Save file with prepared config
-        $ConfigFileContent = Prepare-AgentConfig
+        $ConfigFileContent = Get-AgentConfig
             -ControllerIP $Using:ControllerConfig.Address
             -VHostIfName $Using:HNSTransparentAdapter.ifName
             -VHostIfIndex $Using:HNSTransparentAdapter.ifIndex
             -PhysIfName $Using:PhysicalAdapter.ifName
 
-        Set-Content -Path $Using:AgentConfigFilePath -Value $ConfigFileContent
+        Set-Content -Path $Using:SystemConfig.AgentConfigFilePath -Value $ConfigFileContent
     }
 }

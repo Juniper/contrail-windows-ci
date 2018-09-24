@@ -128,7 +128,7 @@ function Install-Components {
 
     if ($InstallNodeMgr -and $ControllerIP) {
         Install-Nodemgr -Session $Session
-        New-NodeMgrConfig -Session $Session -ControllerIP $ControllerIP
+        New-NodeMgrConfigFile -Session $Session -ControllerIP $ControllerIP
     }
 }
 
