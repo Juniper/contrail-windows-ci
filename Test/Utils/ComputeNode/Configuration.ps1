@@ -1,6 +1,6 @@
-. $PSScriptRoot\..\..\Common\Init.ps1
-. $PSScriptRoot\..\..\Common\Invoke-CommandWithFunctions.ps1
-. $PSScriptRoot\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 function Get-DefaultCNMPluginsConfigPath {
     return "C:\ProgramData\Contrail\etc\contrail\cnm-driver.conf"
@@ -17,21 +17,21 @@ function New-CNMPluginConfigFile {
 
     $Config = @"
 [DRIVER]
-Adapter = $AdapterName
-ControllerIP = $( $ControllerConfig.Address )
-ControllerPort = 8082
-AgentURL = http://127.0.0.1:9091
-VSwitchName = Layered?<adapter>
+Adapter=$AdapterName
+ControllerIP=$( $ControllerConfig.Address )
+ControllerPort=8082
+AgentURL=http://127.0.0.1:9091
+VSwitchName=Layered?<adapter>
 
 [AUTH]
-AuthMethod = $( $ControllerConfig.Address )
+AuthMethod=$( $ControllerConfig.AuthMethod )
 
 [KEYSTONE]
-Os_auth_url = $( $OpenStackConfig.AuthUrl() )
-Os_username = $( $OpenStackConfig.Username )
-Os_tenant_name = $( $OpenStackConfig.Project )
-Os_password = $( $OpenStackConfig.Password )
-Os_token =
+Os_auth_url=$( $OpenStackConfig.AuthUrl() )
+Os_username=$( $OpenStackConfig.Username )
+Os_tenant_name=$( $OpenStackConfig.Project )
+Os_password=$( $OpenStackConfig.Password )
+Os_token=
 "@
 
     Invoke-Command -Session $Session -ScriptBlock {
@@ -39,22 +39,25 @@ Os_token =
     }
 }
 
+function Get-DefaultNodeMgrsConfigPath {
+    return "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
+}
 function New-NodeMgrConfig {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [string] $ControllerIP
     )
 
-    $ConfigPath = "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
+    $ConfigPath = Get-DefaultNodeMgrsConfigPath
     $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
 
     $HostIP = Get-NodeManagementIP -Session $Session
 
     $Config = @"
 [DEFAULTS]
-log_local = 1
-log_level = SYS_DEBUG
-log_file = $LogPath
+log_local=1
+log_level=SYS_DEBUG
+log_file=$LogPath
 hostip=$HostIP
 
 [COLLECTOR]
@@ -121,6 +124,6 @@ function New-AgentConfig {
             -VHostIfIndex $Using:HNSTransparentAdapter.ifIndex
             -PhysIfName $Using:PhysicalAdapter.ifName
 
-            Set-Content -Path $Using:AgentConfigFilePath -Value $ConfigFileContent
+        Set-Content -Path $Using:AgentConfigFilePath -Value $ConfigFileContent
     }
 }
