@@ -42,6 +42,7 @@ Os_token=
 function Get-DefaultNodeMgrsConfigPath {
     return "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
 }
+
 function New-NodeMgrConfigFile {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -73,38 +74,9 @@ sandesh_ssl_enable=False
     }
 }
 
-#Function executed in the remote machine to create Agent's config file.
-function Get-AgentConfig {
-    Param (
-        [Parameter(Mandatory = $true)] [string] $ControllerIP,
-        [Parameter(Mandatory = $true)] [string] $VHostIfName,
-        [Parameter(Mandatory = $true)] [string] $VHostIfIndex,
-        [Parameter(Mandatory = $true)] [string] $PhysIfName
-    )
-    $VHostIP = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).IPAddress
-    $PrefixLength = (Get-NetIPAddress -ifIndex $VHostIfIndex -AddressFamily IPv4).PrefixLength
-    $VHostGateway = (Get-NetIPConfiguration -InterfaceIndex $VHostIfIndex).IPv4DefaultGateway
-    $VHostGatewayConfig = if ($VHostGateway) { "gateway=$( $VHostGateway.NextHop )" } else { "" }
-
-    return @"
-[DEFAULT]
-platform=windows
-
-[CONTROL-NODE]
-servers=$ControllerIP
-
-[VIRTUAL-HOST-INTERFACE]
-name=$VHostIfName
-ip=$VHostIP/$PrefixLength
-$VHostGatewayConfig
-physical_interface=$PhysIfName
-"@
-}
-
-function New-AgentConfigFile {
+function Get-AdaptersInfo {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
     # Gather information about testbed's network adapters
@@ -116,14 +88,73 @@ function New-AgentConfigFile {
             -Session $Session `
             -AdapterName $SystemConfig.AdapterName
 
-    Invoke-CommandWithFunctions -Functions "Get-AgentConfig" -Session $Session -ScriptBlock {
-        # Save file with prepared config
-        $ConfigFileContent = Get-AgentConfig
-            -ControllerIP $Using:ControllerConfig.Address
-            -VHostIfName $Using:HNSTransparentAdapter.ifName
-            -VHostIfIndex $Using:HNSTransparentAdapter.ifIndex
-            -PhysIfName $Using:PhysicalAdapter.ifName
+    return @{
+        "VHostIfName" = $HNSTransparentAdapter.ifName;
+        "VHostIfIndex" = $HNSTransparentAdapter.ifIndex;
+        "PhysIfName" = $PhysicalAdapter.ifName
+    }
+}
 
-        Set-Content -Path $Using:SystemConfig.AgentConfigFilePath -Value $ConfigFileContent
+#Functions executed in the remote machine to create Agent's config file.
+function Get-VHostConfiguration {
+    Param (
+        [Parameter(Mandatory = $true)] [string] $IfIndex
+    )
+    $IP = (Get-NetIPAddress -ifIndex $IfIndex -AddressFamily IPv4).IPAddress
+    $PrefixLength = (Get-NetIPAddress -ifIndex $IfIndex -AddressFamily IPv4).PrefixLength
+    $Gateway = (Get-NetIPConfiguration -InterfaceIndex $IfIndex).IPv4DefaultGateway
+    $GatewayConfig = if ($Gateway) { "gateway=$( $Gateway.NextHop )" } else { "" }
+
+    return @{
+        "IP" = $IP;
+        "PrefixLength" = $PrefixLength;
+        "GatewayConfig" = $GatewayConfig
+    }
+}
+
+function Get-AgentConfig {
+    Param (
+        [Parameter(Mandatory = $true)] [string] $ControllerIP,
+        [Parameter(Mandatory = $true)] [string] $VHostIfName,
+        [Parameter(Mandatory = $true)] [string] $VHostIfIndex,
+        [Parameter(Mandatory = $true)] [string] $PhysIfName
+    )
+    $VHostConfguration = Get-VHostConfiguration -IfIndex $VHostIfIndex
+
+    return @"
+[DEFAULT]
+platform=windows
+
+[CONTROL-NODE]
+servers=$ControllerIP
+
+[VIRTUAL-HOST-INTERFACE]
+name=$VHostIfName
+ip=$( $VHostConfguration.IP )/$( $VHostConfguration.PrefixLength )
+$( $VHostConfguration.GatewayConfig )
+physical_interface=$PhysIfName
+"@
+}
+
+function New-AgentConfigFile {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+    )
+    $AdaptersInfo = Get-AdaptersInfo -Session $Session -SystemConfig $SystemConfig
+
+    Invoke-CommandWithFunctions
+        -Functions @("Get-VHostConfiguration", "Get-AgentConfig")
+        -Session $Session
+        -ScriptBlock {
+            # Save file with prepared config
+            $ConfigFileContent = Get-AgentConfig
+                -ControllerIP $Using:ControllerConfig.Address
+                -VHostIfName $Using:AdaptersInfo.VHostIfName
+                -VHostIfIndex $Using:AdaptersInfo.VHostIfIndex
+                -PhysIfName $Using:AdaptersInfo.PhysIfName
+
+            Set-Content -Path $Using:SystemConfig.AgentConfigFilePath -Value $ConfigFileContent
     }
 }
