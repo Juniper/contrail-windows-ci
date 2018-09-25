@@ -96,8 +96,6 @@ Describe "Single compute node protocol tests with utils" {
 
         Initialize-DriverAndExtension -Session $Session `
             -SystemConfig $SystemConfig `
-            -OpenStackConfig $OpenStackConfig `
-            -ControllerConfig $ControllerConfig
 
         New-DockerNetwork -Session $Session `
             -TenantName $ControllerConfig.DefaultProject `
