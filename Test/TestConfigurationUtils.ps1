@@ -392,6 +392,7 @@ function Initialize-ComputeServices {
             [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
         )
         New-CNMPluginConfigFile -Session $Session `
+            -AdapterName $SystemConfig.AdapterName
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
