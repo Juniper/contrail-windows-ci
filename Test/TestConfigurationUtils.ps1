@@ -4,7 +4,7 @@
 . $PSScriptRoot\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\CIScripts\Testenv\Testbed.ps1
 
-. $PSScriptRoot\Utils\ComponentsConfiguration.ps1
+. $PSScriptRoot\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
