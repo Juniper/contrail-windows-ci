@@ -87,7 +87,7 @@ Describe "vRouter Agent service" {
 
     BeforeEach {
         New-CNMPluginConfigFile -Session $Session `
-            -AdapterName $SystemConfig.AdapterName
+            -AdapterName $SystemConfig.AdapterName `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
