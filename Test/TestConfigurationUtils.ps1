@@ -399,7 +399,7 @@ function Initialize-ComputeServices {
             -ControllerConfig $ControllerConfig
 
         Initialize-DriverAndExtension -Session $Session `
-            -SystemConfig $SystemConfig `
+            -SystemConfig $SystemConfig
 
         New-AgentConfigFile -Session $Session `
             -ControllerConfig $ControllerConfig `
