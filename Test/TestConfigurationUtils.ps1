@@ -5,8 +5,8 @@
 . $PSScriptRoot\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\Utils\ComputeNode\Configuration.ps1
-. $PSScriptRoot\Utils\CommonTestCode.ps1
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
+. $PSScriptRoot\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
@@ -140,8 +140,10 @@ function Start-DockerDriver {
             $LogPath = Join-Path $LogDir "contrail-windows-docker-driver.log"
             $ErrorActionPreference = "Continue"
 
+            # "Out-File -Append" in contrary to "Add-Content" doesn't require a read lock, so logs can
+            # be read while the process is running
             & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments 2>&1 |
-                Add-Content -NoNewline $LogPath
+                Out-File -Append -FilePath $LogPath
         } -ArgumentList $Arguments, $LogDir
     }
 
