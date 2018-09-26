@@ -149,10 +149,10 @@ function New-AgentConfigFile {
         -Session $Session `
         -ScriptBlock {
             # Save file with prepared config
-            $ConfigFileContent = Get-AgentConfig
-                -ControllerIP $Using:ControllerConfig.Address
-                -VHostIfName $Using:AdaptersInfo.VHostIfName
-                -VHostIfIndex $Using:AdaptersInfo.VHostIfIndex
+            $ConfigFileContent = Get-AgentConfig `
+                -ControllerIP $Using:ControllerConfig.Address `
+                -VHostIfName $Using:AdaptersInfo.VHostIfName `
+                -VHostIfIndex $Using:AdaptersInfo.VHostIfIndex `
                 -PhysIfName $Using:AdaptersInfo.PhysIfName
 
             Set-Content -Path $Using:SystemConfig.AgentConfigFilePath -Value $ConfigFileContent
