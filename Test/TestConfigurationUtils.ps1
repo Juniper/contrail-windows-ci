@@ -165,9 +165,14 @@ function Stop-DockerDriver {
 
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service docker | Out-Null
-        Get-NetNat | Remove-NetNat -Confirm:$false
-        Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
-        Get-ContainerNetwork | Remove-ContainerNetwork -Force
+
+        Get-NetNat | ForEach-Object {
+            Remove-NetNat $_.Name -Confirm:$false -ErrorAction SilentlyContinue
+        }
+
+        Get-ContainerNetwork | Where-Object Name -NE nat | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
+        Get-ContainerNetwork | Where-Object Name -NE nat | Remove-ContainerNetwork -Force
+
         Start-Service docker | Out-Null
     }
 }
