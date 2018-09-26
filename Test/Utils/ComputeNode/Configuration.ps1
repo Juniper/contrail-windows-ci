@@ -144,9 +144,9 @@ function New-AgentConfigFile {
     )
     $AdaptersInfo = Get-AdaptersInfo -Session $Session -SystemConfig $SystemConfig
 
-    Invoke-CommandWithFunctions
-        -Functions @("Get-VHostConfiguration", "Get-AgentConfig")
-        -Session $Session
+    Invoke-CommandWithFunctions `
+        -Functions @("Get-VHostConfiguration", "Get-AgentConfig") `
+        -Session $Session `
         -ScriptBlock {
             # Save file with prepared config
             $ConfigFileContent = Get-AgentConfig
