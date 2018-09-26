@@ -13,7 +13,7 @@ function Get-ContrailVirtualNetworkUuidByName {
 
     foreach ($Network in $Networks) {
         $FqName = $Network.fq_name
-        $AreFqNamesEqual = $(Compare-Object $FqName @("default-domain", $TenantName, $NetworkName)) -eq $null
+        $AreFqNamesEqual = $null -eq $(Compare-Object $FqName @("default-domain", $TenantName, $NetworkName))
 
         if ($AreFqNamesEqual) {
             return $Network.uuid
