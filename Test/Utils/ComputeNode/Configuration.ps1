@@ -3,7 +3,7 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 function Get-DefaultCNMPluginsConfigPath {
-    return "C:\ProgramData\Contrail\etc\contrail\cnm-driver.conf"
+    return "C:\ProgramData\Contrail\etc\contrail\cnm-plugin.conf"
 }
 
 function New-CNMPluginConfigFile {
