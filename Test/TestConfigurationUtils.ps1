@@ -205,6 +205,7 @@ function Enable-AgentService {
 
     Write-Log "Starting Agent"
     Invoke-Command -Session $Session -ScriptBlock {
+        netstat -abq #dial tcp bug debug output
         Start-Service ContrailAgent | Out-Null
     }
 }
