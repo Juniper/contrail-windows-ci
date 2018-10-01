@@ -204,9 +204,9 @@ function Enable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Starting Agent"
-    Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-NativeCommand -Session $Session -ScriptBlock {
         netstat -abq #dial tcp bug debug output
-        Start-Service ContrailAgent | Out-Null
+        Start-Service ContrailAgent
     }
 }
 
