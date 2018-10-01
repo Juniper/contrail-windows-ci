@@ -21,11 +21,11 @@ Param (
 
 Describe "vRouter Agent service" {
     Context "disabling" {
-        It "is disabled" -Pending {
+        It "is disabled" {
             Get-CNMPluginServiceStatus -Session $Session | Should Be "Stopped"
         }
 
-        It "does not restart" -Pending {
+        It "does not restart" {
             Consistently {
                 Get-CNMPluginServiceStatus -Session $Session | Should Be "Stopped"
             } -Duration 3
