@@ -67,7 +67,7 @@ Describe "vRouter Agent service" {
         try {
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if ((Get-CNMPluginServiceStatus -Session $Session) -eq "Running") {
-                Disable-AgentService -Session $Session
+                Disable-CNMPluginServiceService -Session $Session
             }
         } finally {
             Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
