@@ -51,7 +51,6 @@ function Test-IsVRouterExtensionEnabled {
     return $($Ext.Enabled -and $Ext.Running)
 }
 
-
 function Test-IsDockerDriverProcessRunning {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -77,8 +76,6 @@ function Test-IsDockerDriverEnabled {
         (Test-IsDockerPluginRegistered)
 }
 
-
-
 function Get-AgentServiceStatus {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -90,30 +87,6 @@ function Get-AgentServiceStatus {
         } else {
             return $null
         }
-    }
-}
-
-function Assert-IsAgentServiceEnabled {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-    $Status = Invoke-UntilSucceeds { Get-AgentServiceStatus -Session $Session } `
-            -Interval $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS `
-            -Duration $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
-    if ($Status -eq "Running") {
-        return
-    } else {
-        throw "Agent service is not enabled. EXPECTED: Agent service is enabled"
-    }
-}
-
-function Assert-IsAgentServiceDisabled {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-    $Status = Invoke-UntilSucceeds { Get-AgentServiceStatus -Session $Session } `
-            -Interval $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS `
-            -Duration $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
-    if ($Status -eq "Stopped") {
-        return
-    } else {
-        throw "Agent service is not disabled. EXPECTED: Agent service is disabled"
     }
 }
 
@@ -192,23 +165,6 @@ function Get-NodeManagementIP {
         Where-Object AddressFamily -eq IPv4 |
         Select-Object -ExpandProperty IPAddress
     }
-}
-
-function Clear-TestConfiguration {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig)
-
-    Write-Log "Cleaning up test configuration"
-
-    Write-Log "Agent service status: $( Get-AgentServiceStatus -Session $Session )"
-    Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
-
-    Remove-AllUnusedDockerNetworks -Session $Session
-    Disable-AgentService -Session $Session
-    Stop-DockerDriver -Session $Session
-    Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
-
-    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
 
 function Remove-DockerNetwork {

@@ -1,3 +1,6 @@
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+
 function Disable-VRouterExtension {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -49,4 +52,21 @@ function Stop-DockerDriver {
 
         Start-Service docker | Out-Null
     }
+}
+
+function Clear-TestConfiguration {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+           [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig)
+
+    Write-Log "Cleaning up test configuration"
+
+    Write-Log "Agent service status: $( Get-AgentServiceStatus -Session $Session )"
+    Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
+
+    Remove-AllUnusedDockerNetworks -Session $Session
+    Disable-AgentService -Session $Session
+    Stop-DockerDriver -Session $Session
+    Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
+
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
