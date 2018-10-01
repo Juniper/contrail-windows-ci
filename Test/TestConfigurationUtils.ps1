@@ -5,6 +5,7 @@
 . $PSScriptRoot\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\Utils\ComputeNode\Configuration.ps1
+. $PSScriptRoot\Utils\ComputeNode\Services.ps1
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
@@ -107,74 +108,6 @@ function Test-IsVRouterExtensionEnabled {
     return $($Ext.Enabled -and $Ext.Running)
 }
 
-function Start-DockerDriver {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $false)] [int] $WaitTime = 60)
-    Write-Log "Starting Docker Driver"
-
-    # We have to specify some file, because docker driver doesn't
-    # currently support stderr-only logging.
-    # TODO: Remove this when after "no log file" option is supported.
-    $OldLogPath = "NUL"
-    $LogDir = Get-ComputeLogsDir
-    $DefaultConfigFilePath = Get-DefaultCNMPluginsConfigPath
-
-    # TODO: delete the "config" argument
-    # when default path for the config file is supported.
-    $Arguments = @(
-        "-logPath", $OldLogPath,
-        "-logLevel", "Debug",
-        "-config", $DefaultConfigFilePath
-    )
-
-    Invoke-Command -Session $Session -ScriptBlock {
-
-        # Nested ScriptBlock variable passing workaround
-        $Arguments = $Using:Arguments
-        $LogDir = $Using:LogDir
-
-        Start-Job -ScriptBlock {
-            Param($Arguments, $LogDir)
-
-            New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
-            $LogPath = Join-Path $LogDir "contrail-windows-docker-driver.log"
-            $ErrorActionPreference = "Continue"
-
-            # "Out-File -Append" in contrary to "Add-Content" doesn't require a read lock, so logs can
-            # be read while the process is running
-            & "C:\Program Files\Juniper Networks\contrail-windows-docker.exe" $Arguments 2>&1 |
-                Out-File -Append -FilePath $LogPath
-        } -ArgumentList $Arguments, $LogDir
-    }
-
-    Start-Sleep -s $WaitTime
-}
-
-function Stop-DockerDriver {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    Write-Log "Stopping Docker Driver"
-
-    Stop-ProcessIfExists -Session $Session -ProcessName "contrail-windows-docker"
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        Stop-Service docker | Out-Null
-
-        # Removing NAT objects when 'winnat' service is stopped may fail.
-        # In this case, we have to try removing all objects but ignore failures for some of them.
-        Get-NetNat | ForEach-Object {
-            Remove-NetNat $_.Name -Confirm:$false -ErrorAction SilentlyContinue
-        }
-
-        # Removing ContainerNetworks may fail for NAT network when 'winnat'
-        # service is disabled, so we have to filter out all NAT networks.
-        Get-ContainerNetwork | Where-Object Name -NE nat | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
-        Get-ContainerNetwork | Where-Object Name -NE nat | Remove-ContainerNetwork -Force
-
-        Start-Service docker | Out-Null
-    }
-}
-
 function Test-IsDockerDriverProcessRunning {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -221,6 +154,8 @@ function Disable-AgentService {
 function Get-AgentServiceStatus {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
+    #TODO: Use Get-ServiceStatus here (will be done with commit
+    #responsible for creating agent service with nssm)
     Invoke-Command -Session $Session -ScriptBlock {
         $Service = Get-Service "ContrailAgent" -ErrorAction SilentlyContinue
 
@@ -345,9 +280,8 @@ function Initialize-DriverAndExtension {
     foreach ($i in 1..$NRetries) {
         Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 
-        # DockerDriver automatically enables Extension
-        Start-DockerDriver -Session $Session `
-            -WaitTime 0
+        # CNMPlugin automatically enables Extension
+        Enable-CNMPluginService -Session $Session
 
         try {
             $TestProcessRunning = { Test-IsDockerDriverProcessRunning -Session $Session }
@@ -385,11 +319,11 @@ function Clear-TestConfiguration {
     Write-Log "Cleaning up test configuration"
 
     Write-Log "Agent service status: $( Get-AgentServiceStatus -Session $Session )"
-    Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
+    Write-Log "CNMPlugin service status: $( Get-CNMPluginServiceStatus -Session $Session )"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session
-    Stop-DockerDriver -Session $Session
+    Disable-CNMPluginService -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName

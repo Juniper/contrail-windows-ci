@@ -2,6 +2,7 @@
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\Configuration.ps1
+. $PSScriptRoot\Service.ps1
 
 function Invoke-MsiExec {
     Param (
@@ -82,12 +83,15 @@ function Install-DockerDriver {
 
     Write-Log "Installing Docker Driver"
     Invoke-MsiExec -Session $Session -Path "C:\Artifacts\docker-driver.msi"
+    New-CNMPluginService -Session $Session
 }
 
 function Uninstall-DockerDriver {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Uninstalling Docker Driver"
+
+    Remove-CNMPluginService -Session $Session
     Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\docker-driver.msi"
 }
 
