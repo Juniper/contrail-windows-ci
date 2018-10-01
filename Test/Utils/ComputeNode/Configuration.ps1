@@ -1,4 +1,3 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
