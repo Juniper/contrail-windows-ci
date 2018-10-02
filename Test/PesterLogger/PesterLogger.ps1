@@ -1,6 +1,7 @@
 . $PSScriptRoot\..\..\CIScripts\Common\Aliases.ps1
 
-. $PSScriptRoot\Get-CurrentPesterScope.ps1
+# [Shelly-Bug] analyzer doesn't detect allow unused-imports
+. $PSScriptRoot\Get-CurrentPesterScope.ps1 # allow unused-imports
 
 class UnsupportedPesterTestNameException : System.Exception {
     UnsupportedPesterTestNameException([string] $msg) : base($msg) {}

@@ -1,6 +1,12 @@
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+
+# [Shelly-Bug] Shelly doesn't handle imports of classes yet.
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1 # allow unused-imports
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
+
+# . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 
 function Get-DefaultCNMPluginsConfigPath {
     return "C:\ProgramData\Contrail\etc\contrail\cnm-plugin.conf"
@@ -41,6 +47,16 @@ Os_token=
 
 function Get-DefaultNodeMgrsConfigPath {
     return "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
+}
+
+
+function Get-NodeManagementIP {
+    Param([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    return Invoke-Command -Session $Session -ScriptBlock { Get-NetIPAddress |
+        Where-Object InterfaceAlias -like "Ethernet0*" | # TODO: this is hardcoded and bad.
+        Where-Object AddressFamily -eq IPv4 |
+        Select-Object -ExpandProperty IPAddress
+    }
 }
 
 function New-NodeMgrConfigFile {
