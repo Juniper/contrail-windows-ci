@@ -11,6 +11,7 @@
 
 $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
 $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
+$AGENT_EXECUTABLE_PATH = "C:/Program Files/Juniper Networks/agent/contrail-vrouter-agent.exe"
 
 function Stop-ProcessIfExists {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -33,6 +34,17 @@ function Test-IsProcessRunning {
     }
 
     return [bool] $Proc
+}
+
+function Assert-AreDLLsPresent {
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
+    $MissingDLLsErrorReturnCode = [int64]0xC0000135
+
+    if ([int64]$LastExitCode -eq $using:MissingDLLsErrorReturnCode) {
+        throw "Visual DLLs aren't present in C:/Windows/System32"
+    }
 }
 
 function Enable-VRouterExtension {
@@ -204,6 +216,15 @@ function Enable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Starting Agent"
+    Invoke-CommandWithFunctions `
+        -Session $Session `
+        -Functions "Assert-AreDLLsPresent" `
+        -ScriptBlock {
+            & $using:AGENT_EXECUTABLE_PATH --version
+
+            Assert-AreDLLsPresent
+        }
+
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
         $Output = netstat -abq  #dial tcp bug debug output
         Start-Service ContrailAgent

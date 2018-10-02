@@ -38,8 +38,14 @@ Describe "Single compute node protocol tests with utils" {
         Write-Log $("Setting a connection between " + $Container1NetInfo.MACAddress + `
         " and " + $Container2NetInfo.MACAddress + "...")
 
-        Invoke-Command -Session $Session -ScriptBlock {
+        Invoke-CommandWithFunctions `
+            -Session $Session `
+            -Functions "Assert-AreDLLsPresent" `
+            -ScriptBlock {
             vif.exe --add $Using:VMNetInfo.IfName --mac $Using:VMNetInfo.MACAddress --vrf 0 --type physical
+
+            Assert-AreDLLsPresent
+
             vif.exe --add $Using:VHostInfo.IfName --mac $Using:VHostInfo.MACAddress --vrf 0 --type vhost --xconnect $Using:VMNetInfo.IfName
 
             vif.exe --add $Using:Container1NetInfo.IfName --mac $Using:Container1NetInfo.MACAddress --vrf 1 --type virtual
@@ -52,7 +58,6 @@ Describe "Single compute node protocol tests with utils" {
             rt.exe -c -v 1 -f 1 -e ff:ff:ff:ff:ff:ff -n 3
             rt.exe -c -v 1 -f 1 -e $Using:Container1NetInfo.MACAddress -n 1
             rt.exe -c -v 1 -f 1 -e $Using:Container2NetInfo.MACAddress -n 2
-
         }
     }
 
