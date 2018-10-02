@@ -314,7 +314,7 @@ pipeline {
                         tryUnstash('unitTestsLogs')
 
                         createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
-                        shellCommand('${env.WORKSPACE}/CIScripts/LogserverUtils/split-log-into-stages.sh', [logFilename])
+                        shellCommand("${env.WORKSPACE}/CIScripts/LogserverUtils/split-log-into-stages.sh", [logFilename])
                     }
 
                     unstash "Flakes"
