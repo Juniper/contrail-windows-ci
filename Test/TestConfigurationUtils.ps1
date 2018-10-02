@@ -9,9 +9,6 @@
 . $PSScriptRoot\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
 
-$MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
-$TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
-
 function Stop-ProcessIfExists {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [string] $ProcessName)
