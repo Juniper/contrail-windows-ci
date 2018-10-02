@@ -300,9 +300,6 @@ pipeline {
 
                     unstash 'CIScripts'
 
-                    def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
-                        env.BUILD_NUMBER, env.ZUUL_UUID)
-
                     def logFilename = 'log.full.txt.gz'
 
                     dir('to_publish') {
@@ -337,8 +334,10 @@ pipeline {
                     }
 
                     def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
+                    def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
+                        env.BUILD_NUMBER, env.ZUUL_UUID)
                     def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
-                    publishDirToLogServer(auth, dst)
+                    publishDirToLogServer("to_publish", auth, dst)
 
                     def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
                     def logDestMsg = "Full logs URL: ${fullLogsURL}"
