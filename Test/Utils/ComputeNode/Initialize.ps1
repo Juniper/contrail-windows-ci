@@ -22,12 +22,6 @@ function Enable-VRouterExtension {
         New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
     }
 
-    # We're not waiting for IP on this adapter, because our tests
-    # don't rely on this adapter to have the correct IP set for correctess.
-    # We could implement retrying to avoid flakiness but it's easier to just
-    # ignore the error.
-    # Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
-
     Invoke-Command -Session $Session -ScriptBlock {
         $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:ForwardingExtensionName | Where-Object Enabled
         if ($Extension) {
