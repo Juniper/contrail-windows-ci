@@ -1,6 +1,6 @@
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
 
-function New-Service {
+function Install-ServiceWithNSSM {
     Param (
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName,
@@ -12,7 +12,7 @@ function New-Service {
     }
 }
 
-function Remove-Service {
+function Remove-ServiceWithNSSM {
     Param (
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
@@ -82,7 +82,7 @@ function New-CNMPluginService {
     $ServiceName = Get-CNMPluginServiceName
     $ExecutablePath = Get-CNMPluginExecutablePath
 
-    New-Service -Session $Session `
+    Install-ServiceWithNSSM -Session $Session `
         -ServiceName $ServiceName
         -ExecutablePath $ExecutablePath
         -CommandLineParams $Params
@@ -143,5 +143,5 @@ function Remove-CNMPluginService {
         Disable-CNMPluginService -Session $Session
     }
 
-    Remove-Service -Session $Session -ServiceName $ServiceName
+    Remove-ServiceWithNSSM -Session $Session -ServiceName $ServiceName
 }
