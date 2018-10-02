@@ -205,11 +205,11 @@ function Enable-AgentService {
 
     Write-Log "Starting Agent"
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
-        $Output = netstat -abq #dial tcp bug debug output
+        $Output = netstat -abq  #dial tcp bug debug output
         Start-Service ContrailAgent
         return $Output
-    }
-    Write-Log $Output
+    } -CaptureOutput
+    Write-Log $Output.Output
 }
 
 function Disable-AgentService {
