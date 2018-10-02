@@ -21,10 +21,18 @@ function Find-DockerDriverTests {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [string] $RemoteSearchDir
     )
+
     $TestModules = Invoke-Command -Session $Session {
-        Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RemoteSearchDir `
-            | Select-Object BaseName, FullName
+        $Tests = @(Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RemoteSearchDir)
+        if ($Tests.Count -eq 0) {
+            throw [System.IO.FileNotFoundException]::new(
+                "Could not find any file matching '*.test.exe' in $($Using:RemoteSearchDir) directory."
+            )
+        }
+
+        return $Tests | Select-Object BaseName, FullName
     }
+
     Write-Log "Discovered test modules: $($TestModules.BaseName)"
     return $TestModules
 }
@@ -64,7 +72,7 @@ function Save-DockerDriverUnitTestReport {
         New-Item -ItemType Directory -Path $LocalJUnitDir | Out-Null
     }
 
-    $FoundRemoteJUnitReports = Invoke-Command -Session $Session -ScriptBlock { 
+    $FoundRemoteJUnitReports = Invoke-Command -Session $Session -ScriptBlock {
         Get-ChildItem -Filter "*_junit.xml" -Recurse -Path $Using:RemoteJUnitDir
     }
 
