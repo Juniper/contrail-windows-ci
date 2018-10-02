@@ -83,8 +83,8 @@ function New-CNMPluginService {
     $ExecutablePath = Get-CNMPluginExecutablePath
 
     Install-ServiceWithNSSM -Session $Session `
-        -ServiceName $ServiceName
-        -ExecutablePath $ExecutablePath
+        -ServiceName $ServiceName `
+        -ExecutablePath $ExecutablePath `
         -CommandLineParams $Params
 
     #redirect stdout and stderr to the log file
