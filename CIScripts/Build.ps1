@@ -70,10 +70,8 @@ try {
         -LogsPath $LogsDir `
         -BuildMode $SconsBuildMode
 
-    if ("AgentTests" -In $ComponentsToBuild) {
-        Invoke-AgentTestsBuild -LogsPath $LogsDir `
-            -BuildMode $SconsBuildMode
-    }
+    Invoke-AgentTestsBuild -LogsPath $LogsDir `
+        -BuildMode $SconsBuildMode
 
     if ($SconsBuildMode -eq "debug") {
         Copy-DebugDlls -OutputPath $DllsOutputDir
