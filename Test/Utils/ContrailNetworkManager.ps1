@@ -2,6 +2,7 @@
 . $PSScriptRoot\ContrailAPI\FloatingIPPool.ps1
 . $PSScriptRoot\ContrailAPI\NetworkPolicy.ps1
 . $PSScriptRoot\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\ContrailAPI\VirtualRouter.ps1
 . $PSScriptRoot\ContrailUtils.ps1
 . $PSScriptRoot\ContrailAPI\GlobalVrouterConfig.ps1
 . $PSScriptRoot\..\TestConfigurationUtils.ps1
@@ -91,7 +92,6 @@ class ContrailNetworkManager {
     }
 
     RemoveNetwork([String] $Uuid) {
-
         Remove-ContrailVirtualNetwork `
             -ContrailUrl $this.ContrailUrl `
             -AuthToken $this.AuthToken `
@@ -99,11 +99,30 @@ class ContrailNetworkManager {
     }
 
     [String] AddVirtualRouter([String] $RouterName, [String] $RouterIp) {
-        return Add-ContrailVirtualRouter `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -RouterName $RouterName `
-            -RouterIp $RouterIp
+        try {
+            return Add-ContrailVirtualRouter `
+                -ContrailUrl $this.ContrailUrl `
+                -AuthToken $this.AuthToken `
+                -RouterName $RouterName `
+                -RouterIp $RouterIp
+        } catch {
+            if ($_.Exception -notmatch "\(409\)") {
+                throw
+            }
+
+            $RouterUuid = Get-ContrailVirtualRouterUuidByName `
+                -ContrailUrl $this.ContrailUrl `
+                -AuthToken $this.AuthToken `
+                -RouterName $RouterName
+
+            $this.RemoveVirtualRouter($RouterUuid)
+
+            return Add-ContrailVirtualRouter `
+                -ContrailUrl $this.ContrailUrl `
+                -AuthToken $this.AuthToken `
+                -RouterName $RouterName `
+                -RouterIp $RouterIp
+        }
     }
 
     RemoveVirtualRouter([String] $RouterUuid) {
