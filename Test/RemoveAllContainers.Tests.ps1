@@ -8,6 +8,7 @@ Param (
 . $PSScriptRoot\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\CIScripts\Testenv\Testbed.ps1
 
+. $PSScriptRoot\..\..\Utils\ComputeNode\Finalize.ps1
 . $PSScriptRoot\TestConfigurationUtils.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
 
