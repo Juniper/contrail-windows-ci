@@ -231,7 +231,7 @@ function Test-IfUtilsCanLoadDLLs {
         -ScriptBlock {
             foreach ($Util in $using:Utils) {
                 & $Util 2>&1 | Out-Null
-                Assert-AreDLLsPresent
+                Assert-AreDLLsPresent -ExitCode $LastExitCode
             }
 }
 
@@ -244,7 +244,7 @@ function Test-IfAgentCanLoadDLLs {
         -Functions "Assert-AreDLLsPresent" `
         -ScriptBlock {
             & $using:AGENT_EXECUTABLE_PATH --version 2>&1 | Out-Null
-            Assert-AreDLLsPresent
+            Assert-AreDLLsPresent -ExitCode $LastExitCode
     }
 }
 
