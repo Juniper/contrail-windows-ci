@@ -125,8 +125,3 @@
 - name: Enable testsigning
   win_shell: |
     Bcdedit.exe -set TESTSIGNING ON
-
-- name: Install NSSM
-  win_chocolatey:
-    name: nssm
-    state: present
