@@ -37,9 +37,6 @@ function Test-IsProcessRunning {
 }
 
 function Assert-AreDLLsPresent {
-    Param (
-        [Parameter(Mandatory=$true)] $Session
-    )
     $MissingDLLsErrorReturnCode = [int64]0xC0000135
 
     if ([int64]$LastExitCode -eq $using:MissingDLLsErrorReturnCode) {
