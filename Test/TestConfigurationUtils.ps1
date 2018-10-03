@@ -233,6 +233,7 @@ function Test-IfUtilsCanLoadDLLs {
                 & $Util 2>&1 | Out-Null
                 Assert-AreDLLsPresent -ExitCode $LastExitCode
             }
+    }
 }
 
 function Test-IfAgentCanLoadDLLs {
