@@ -1,6 +1,7 @@
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\Configuration.ps1
 
 function Install-ServiceWithNSSM {
     Param (
@@ -97,10 +98,13 @@ function New-AgentService {
     $ServiceName = Get-AgentServiceName
     $ExecutablePath = Get-AgentExecutablePath
 
+    $ConfigPath = Get-DefaultAgentConfigPath
+    $ConfigFileParam = "--config_file=$ConfigPath"
+
     Install-ServiceWithNSSM -Session $Session `
         -ServiceName $ServiceName `
         -ExecutablePath $ExecutablePath `
-        -CommandLineParams $Params
+        -CommandLineParams @($ConfigFileParam)
 
     Out-StdoutAndStderrToLogFile -Session $Session `
         -ServiceName $ServiceName `
