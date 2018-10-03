@@ -37,9 +37,15 @@ function Test-IsProcessRunning {
 }
 
 function Assert-AreDLLsPresent {
+    Param (
+        [Parameter(Mandatory=$true)] $ExitCode
+    )
+    #https://msdn.microsoft.com/en-us/library/cc704588.aspx
+    #Value below is taken from the link above and it indicates
+    #that application failed to load some DLL.
     $MissingDLLsErrorReturnCode = [int64]0xC0000135
 
-    if ([int64]$LastExitCode -eq $using:MissingDLLsErrorReturnCode) {
+    if ([int64]$ExitCode -eq $MissingDLLsErrorReturnCode) {
         throw "Visual DLLs aren't present in C:/Windows/System32"
     }
 }
@@ -209,18 +215,44 @@ function Test-IsDockerDriverEnabled {
         (Test-IsDockerPluginRegistered)
 }
 
-function Enable-AgentService {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    Write-Log "Starting Agent"
+function Test-IfUtilsCanLoadDLLs {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+    )
+    $Utils = @(
+        "vif.exe",
+        "nh.exe",
+        "rt.exe",
+        "flow.exe"
+    )
     Invoke-CommandWithFunctions `
         -Session $Session `
         -Functions "Assert-AreDLLsPresent" `
         -ScriptBlock {
-            & $using:AGENT_EXECUTABLE_PATH --version
+            foreach ($Util in $using:Utils) {
+                & $Util 2>&1 | Out-Null
+                Assert-AreDLLsPresent
+            }
+}
 
+function Test-IfAgentCanLoadDLLs {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+    )
+    Invoke-CommandWithFunctions `
+        -Session $Session `
+        -Functions "Assert-AreDLLsPresent" `
+        -ScriptBlock {
+            & $using:AGENT_EXECUTABLE_PATH --version 2>&1 | Out-Null
             Assert-AreDLLsPresent
-        }
+    }
+}
+
+function Enable-AgentService {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Write-Log "Starting Agent"
+
+    Test-IfAgentCanLoadDLLs -Session $Session
 
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
         $Output = netstat -abq  #dial tcp bug debug output

@@ -38,13 +38,8 @@ Describe "Single compute node protocol tests with utils" {
         Write-Log $("Setting a connection between " + $Container1NetInfo.MACAddress + `
         " and " + $Container2NetInfo.MACAddress + "...")
 
-        Invoke-CommandWithFunctions `
-            -Session $Session `
-            -Functions "Assert-AreDLLsPresent" `
-            -ScriptBlock {
+        Invoke-Command -Session $Session -ScriptBlock {
             vif.exe --add $Using:VMNetInfo.IfName --mac $Using:VMNetInfo.MACAddress --vrf 0 --type physical
-
-            Assert-AreDLLsPresent
 
             vif.exe --add $Using:VHostInfo.IfName --mac $Using:VHostInfo.MACAddress --vrf 0 --type vhost --xconnect $Using:VMNetInfo.IfName
 
@@ -200,6 +195,8 @@ Describe "Single compute node protocol tests with utils" {
         )]
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
         $ContrailNM.EnsureProject($null)
+
+        Test-IfUtilsCanLoadDLLs -Session $Session
     }
 
     AfterAll {
