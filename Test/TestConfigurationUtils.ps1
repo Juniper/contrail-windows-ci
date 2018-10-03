@@ -137,9 +137,12 @@ function Enable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Starting Agent"
-    Invoke-Command -Session $Session -ScriptBlock {
-        Start-Service ContrailAgent | Out-Null
-    }
+    $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
+        $Output = netstat -abq  #dial tcp bug debug output
+        Start-Service ContrailAgent
+        return $Output
+    } -CaptureOutput
+    Write-Log $Output.Output
 }
 
 function Disable-AgentService {
@@ -268,6 +271,8 @@ function Get-NodeManagementIP {
     }
 }
 
+# Before running this function make sure CNM-Plugin config file is created.
+# It can be done by function New-CNMPluginConfigFile.
 function Initialize-DriverAndExtension {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
