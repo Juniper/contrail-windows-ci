@@ -5,12 +5,10 @@
 . $PSScriptRoot\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\Utils\ComputeNode\Configuration.ps1
+. $PSScriptRoot\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
-
-$MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS = 60
-$TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS = 2
 
 function Stop-ProcessIfExists {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
@@ -200,72 +198,13 @@ function Test-IsDockerDriverEnabled {
         (Test-IsDockerPluginRegistered)
 }
 
-function Enable-AgentService {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    Write-Log "Starting Agent"
-    $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
-        $Output = netstat -abq  #dial tcp bug debug output
-        Start-Service ContrailAgent
-        return $Output
-    } -CaptureOutput
-    Write-Log $Output.Output
-}
-
-function Disable-AgentService {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    Write-Log "Stopping Agent"
-    Invoke-Command -Session $Session -ScriptBlock {
-        Stop-Service ContrailAgent -ErrorAction SilentlyContinue | Out-Null
-    }
-}
-
-function Get-AgentServiceStatus {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        $Service = Get-Service "ContrailAgent" -ErrorAction SilentlyContinue
-
-        if ($Service -and $Service.Status) {
-            return $Service.Status.ToString()
-        } else {
-            return $null
-        }
-    }
-}
-
-function Assert-IsAgentServiceEnabled {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-    $Status = Invoke-UntilSucceeds { Get-AgentServiceStatus -Session $Session } `
-            -Interval $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS `
-            -Duration $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
-    if ($Status -eq "Running") {
-        return
-    } else {
-        throw "Agent service is not enabled. EXPECTED: Agent service is enabled"
-    }
-}
-
-function Assert-IsAgentServiceDisabled {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-    $Status = Invoke-UntilSucceeds { Get-AgentServiceStatus -Session $Session } `
-            -Interval $TIME_BETWEEN_AGENT_CHECKS_IN_SECONDS `
-            -Duration $MAX_WAIT_TIME_FOR_AGENT_IN_SECONDS
-    if ($Status -eq "Stopped") {
-        return
-    } else {
-        throw "Agent service is not disabled. EXPECTED: Agent service is disabled"
-    }
-}
-
 function Read-SyslogForAgentCrash {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [DateTime] $After)
     Invoke-Command -Session $Session -ScriptBlock {
         Get-EventLog -LogName "System" -EntryType "Error" `
             -Source "Service Control Manager" `
-            -Message "The ContrailAgent service terminated unexpectedly*" `
+            -Message "The contrail-vrouter-agent service terminated unexpectedly*" `
             -After ($Using:After).addSeconds(-1)
     }
 }
