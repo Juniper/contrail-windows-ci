@@ -1,6 +1,6 @@
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
-# [Shelly-Bug] Shelly doesn't understand imported classes yet
+# [Shelly-Bug] Shelly doesn't detect imported classes yet.
 . $PSScriptRoot\Impl.ps1 # allow unused-imports
 
 function Get-RemoteVMNetAdapterInformation {

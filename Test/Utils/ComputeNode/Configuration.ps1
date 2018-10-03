@@ -1,11 +1,10 @@
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
 
-# [Shelly-Bug] Shelly doesn't handle imports of classes yet.
+# [Shelly-Bug] Shelly doesn't detect imported classes yet.
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1 # allow unused-imports
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
-# . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 
 function Get-DefaultCNMPluginsConfigPath {

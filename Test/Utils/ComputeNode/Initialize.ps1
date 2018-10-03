@@ -1,4 +1,4 @@
-# [Shelly-Bug] Shelly doesn't handle imports of classes yet.
+# [Shelly-Bug] Shelly doesn't detect imported classes yet.
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1 # allow unused-imports
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
