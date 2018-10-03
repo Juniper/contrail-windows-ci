@@ -22,19 +22,10 @@ function Find-DockerDriverTests {
         [Parameter(Mandatory=$true)] [string] $RemoteSearchDir
     )
 
-    $TestModules = Invoke-Command -Session $Session {
-        $Tests = @(Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RemoteSearchDir)
-        if ($Tests.Count -eq 0) {
-            throw [System.IO.FileNotFoundException]::new(
-                "Could not find any file matching '*.test.exe' in $($Using:RemoteSearchDir) directory."
-            )
-        }
-
-        return $Tests | Select-Object BaseName, FullName
+    return Invoke-Command -Session $Session {
+        Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RemoteSearchDir `
+            | Select-Object BaseName, FullName
     }
-
-    Write-Log "Discovered test modules: $($TestModules.BaseName)"
-    return $TestModules
 }
 
 function Invoke-DockerDriverUnitTest {
@@ -86,11 +77,14 @@ Describe "Docker Driver" {
 
         Initialize-PesterLogger -OutDir $LogDir
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $FoundTestModules = Find-DockerDriverTests -RemoteSearchDir $RemoteTestModulesDir -Session $Session
+        $FoundTestModules = @(Find-DockerDriverTests -RemoteSearchDir $RemoteTestModulesDir -Session $Session)
+        if ($FoundTestModules.Count -eq 0) {
+            throw [System.IO.FileNotFoundException]::new(
+                "Could not find any file matching '*.test.exe' in $RemoteTestModulesDir directory."
+            )
+        }
+
+        Write-Log "Discovered test modules: $($FoundTestModules.BaseName)"
     }
 
     AfterAll {
