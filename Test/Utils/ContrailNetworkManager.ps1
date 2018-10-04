@@ -46,8 +46,7 @@ class ContrailNetworkManager {
             $this.AddProject($TenantName)
         }
         catch {
-            if ($_.Exception -match "\(409\)") {
-            } else {
+            if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
                 throw
             }
         }
@@ -57,12 +56,19 @@ class ContrailNetworkManager {
     # TODO return a class (perhaps use the class from MultiTenancy test?)
     # We cannot add a type to $SubnetConfig parameter,
     # because the class is parsed before the files are sourced.
-    [String] AddNetwork([String] $TenantName, [String] $Name, $SubnetConfig) {
+    [String] AddOrReplaceNetwork([String] $TenantName, [String] $Name, $SubnetConfig) {
         if (-not $TenantName) {
             $TenantName = $this.DefaultTenantName
         }
 
         try {
+            Add-ContrailVirtualNetwork `
+                -ContrailUrl $this.ContrailUrl `
+                -AuthToken $this.AuthToken `
+                -TenantName $TenantName `
+                -NetworkName $Name `
+                -SubnetConfig $SubnetConfig
+
             return Add-ContrailVirtualNetwork `
                 -ContrailUrl $this.ContrailUrl `
                 -AuthToken $this.AuthToken `
@@ -70,7 +76,7 @@ class ContrailNetworkManager {
                 -NetworkName $Name `
                 -SubnetConfig $SubnetConfig
         } catch {
-            if ($_.Exception -notmatch "\(409\)") {
+            if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
                 throw
             }
 
@@ -98,7 +104,7 @@ class ContrailNetworkManager {
             -NetworkUuid $Uuid
     }
 
-    [String] AddVirtualRouter([String] $RouterName, [String] $RouterIp) {
+    [String] AddOrReplaceVirtualRouter([String] $RouterName, [String] $RouterIp) {
         try {
             return Add-ContrailVirtualRouter `
                 -ContrailUrl $this.ContrailUrl `
@@ -106,7 +112,7 @@ class ContrailNetworkManager {
                 -RouterName $RouterName `
                 -RouterIp $RouterIp
         } catch {
-            if ($_.Exception -notmatch "\(409\)") {
+            if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
                 throw
             }
 

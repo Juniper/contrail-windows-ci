@@ -9,16 +9,17 @@ function Get-ContrailVirtualRouterUuidByName {
     $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Get
     $Routers = $Response.'virtual-routers'
 
+    $ExpectedFqname = @("default-global-system-config", $RouterName)
     foreach ($Router in $Routers) {
         $FqName = $Router.fq_name
-        $AreFqNamesEqual = $null -eq $(Compare-Object $FqName @("default-global-system-config", $RouterName))
+        $AreFqNamesEqual = $null -eq $(Compare-Object $FqName $ExpectedFqname)
 
         if ($AreFqNamesEqual) {
             return $Router.uuid
         }
     }
 
-    return $null
+    throw "Contrail virtual router with name '$($ExpectedFqname -join ":")' cannot be found."
 }
 
 function Add-ContrailVirtualRouter {
