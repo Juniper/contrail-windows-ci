@@ -62,13 +62,6 @@ class ContrailNetworkManager {
         }
 
         try {
-            Add-ContrailVirtualNetwork `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -TenantName $TenantName `
-                -NetworkName $Name `
-                -SubnetConfig $SubnetConfig
-
             return Add-ContrailVirtualNetwork `
                 -ContrailUrl $this.ContrailUrl `
                 -AuthToken $this.AuthToken `
