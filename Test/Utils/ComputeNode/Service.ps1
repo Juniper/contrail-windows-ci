@@ -86,7 +86,7 @@ function Get-AgentExecutablePath {
 function Get-AgentServiceStatus {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Get-ServiceStatus -Session $Session -ServiceName Get-AgentServiceName
+    Get-ServiceStatus -Session $Session -ServiceName (Get-AgentServiceName)
 }
 
 function New-AgentService {
@@ -129,7 +129,7 @@ function Disable-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Stopping Agent"
-    Disable-Service -Session $Session -ServiceName Get-AgentServiceName
+    Disable-Service -Session $Session -ServiceName (Get-AgentServiceName)
 }
 
 function Remove-AgentService {
