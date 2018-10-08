@@ -1,4 +1,3 @@
-
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 . $PSScriptRoot\Configuration.ps1
@@ -10,8 +9,18 @@ function Install-ServiceWithNSSM {
         [Parameter(Mandatory=$true)] $ExecutablePath,
         [Parameter(Mandatory=$false)] [string[]] $CommandLineParams = @()
     )
-    Invoke-NativeCommand -Session $Session {
-        nssm install $using:ServiceName "$using:ExecutablePath" $using:CommandLineParams
+    $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
+            nssm install $using:ServiceName "$using:ExecutablePath" $using:CommandLineParams
+    } -AllowNonZero
+
+    $NSSMServiceAlreadyCreatedError = 5
+    if ($Output.ExitCode -eq $NSSMServiceAlreadyCreatedError) {
+        Write-Log "$ServiceName service already created, continuing..."
+        return
+    }
+
+    if ($Output.ExitCode -ne 0) {
+        throw [HardError]::new("Unknown (wild) error appeared while creating $ServiceName service")
     }
 }
 
