@@ -5,11 +5,11 @@ Param (
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
@@ -69,7 +69,7 @@ Describe "Floating IP" {
                     "ContrailClientNetwork",
                     Justification="It's actually used."
                 )]
-                $ContrailClientNetwork = $MultiNode.NM.AddNetwork($null, $ClientNetwork.Name, $ClientNetwork.Subnet)
+                $ContrailClientNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $ClientNetwork.Name, $ClientNetwork.Subnet)
 
                 Write-Log "Creating virtual network: $ServerNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -77,7 +77,7 @@ Describe "Floating IP" {
                     "ContrailServerNetwork",
                     Justification="It's actually used."
                 )]
-                $ContrailServerNetwork = $MultiNode.NM.AddNetwork($null, $ServerNetwork.Name, $ServerNetwork.Subnet)
+                $ContrailServerNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $ServerNetwork.Name, $ServerNetwork.Subnet)
 
                 Write-Log "Creating floating IP pool: $ServerFloatingIpPoolName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(

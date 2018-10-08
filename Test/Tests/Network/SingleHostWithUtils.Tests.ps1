@@ -6,18 +6,18 @@ Param (
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
+
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
-. $PSScriptRoot\..\..\Utils\DockerImageBuild.ps1
-. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
@@ -40,6 +40,7 @@ Describe "Single compute node protocol tests with utils" {
 
         Invoke-Command -Session $Session -ScriptBlock {
             vif.exe --add $Using:VMNetInfo.IfName --mac $Using:VMNetInfo.MACAddress --vrf 0 --type physical
+
             vif.exe --add $Using:VHostInfo.IfName --mac $Using:VHostInfo.MACAddress --vrf 0 --type vhost --xconnect $Using:VMNetInfo.IfName
 
             vif.exe --add $Using:Container1NetInfo.IfName --mac $Using:Container1NetInfo.MACAddress --vrf 1 --type virtual
@@ -52,7 +53,6 @@ Describe "Single compute node protocol tests with utils" {
             rt.exe -c -v 1 -f 1 -e ff:ff:ff:ff:ff:ff -n 3
             rt.exe -c -v 1 -f 1 -e $Using:Container1NetInfo.MACAddress -n 1
             rt.exe -c -v 1 -f 1 -e $Using:Container2NetInfo.MACAddress -n 2
-
         }
     }
 
@@ -112,7 +112,7 @@ Describe "Single compute node protocol tests with utils" {
             "ContrailNetwork",
             Justification="It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
-        $ContrailNetwork = $ContrailNM.AddNetwork($null, $NetworkName, $Subnet)
+        $ContrailNetwork = $ContrailNM.AddOrReplaceNetwork($null, $NetworkName, $Subnet)
 
         New-CNMPluginConfigFile -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
@@ -195,6 +195,8 @@ Describe "Single compute node protocol tests with utils" {
         )]
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
         $ContrailNM.EnsureProject($null)
+
+        Test-IfUtilsCanLoadDLLs -Session $Session
     }
 
     AfterAll {
