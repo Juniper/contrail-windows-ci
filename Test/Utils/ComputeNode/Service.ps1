@@ -9,12 +9,18 @@ function Install-ServiceWithNSSM {
         [Parameter(Mandatory=$true)] $ExecutablePath,
         [Parameter(Mandatory=$false)] [string[]] $CommandLineParams = @()
     )
-    #TODO: If pester by any change doesn't execute afterall
-    #block because of exception, then in next test script
-    #this command will throw exception too, because the service already exists.
-    #We need to handle the exception in some convienent way.
-    Invoke-NativeCommand -Session $Session {
-        nssm install $using:ServiceName "$using:ExecutablePath" $using:CommandLineParams
+    $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
+            nssm install $using:ServiceName "$using:ExecutablePath" $using:CommandLineParams
+    } -AllowNonZero
+
+    $NSSMServiceAlreadyCreatedError = 5
+    if ($Output.ExitCode -eq $NSSMServiceAlreadyCreatedError) {
+        Write-Log "$ServiceName service already created, continuing..."
+        return
+    }
+
+    if ($Output.ExitCode -ne 0) {
+        throw [HardError]::new("Unknown (wild) error appeared while creating $ServiceName service")
     }
 }
 
