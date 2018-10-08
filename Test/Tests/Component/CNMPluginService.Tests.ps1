@@ -19,8 +19,8 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-Describe "vRouter Agent service" {
-    Context "disabling" {
+Describe "CNM Plugin service" {
+    Context "disabling"  {
         It "is disabled" {
             Get-CNMPluginServiceStatus -Session $Session | Should Be "Stopped"
         }
@@ -47,28 +47,19 @@ Describe "vRouter Agent service" {
     }
 
     BeforeEach {
-        New-CNMPluginConfigFile -Session $Session `
-            -AdapterName $SystemConfig.AdapterName `
+        Initialize-ComputeServices -Session $Session `
+            -SystemConfig $SystemConfig `
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
-        Initialize-DriverAndExtension -Session $Session `
-            -SystemConfig $SystemConfig
-
-        New-AgentConfigFile -Session $Session `
-            -ControllerConfig $ControllerConfig `
-            -SystemConfig $SystemConfig
-
-        Enable-AgentService -Session $Session
-        Disable-CNMPluginService -Session $Session
+        if ((Get-CNMPluginServiceStatus -Session $Session) -eq "Running") {
+            Disable-CNMPluginService -Session $Session
+        }
     }
 
     AfterEach {
         try {
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-            if ((Get-CNMPluginServiceStatus -Session $Session) -eq "Running") {
-                Disable-CNMPluginServiceService -Session $Session
-            }
         } finally {
             Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }

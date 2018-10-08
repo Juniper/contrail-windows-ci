@@ -9,6 +9,10 @@ function Install-ServiceWithNSSM {
         [Parameter(Mandatory=$true)] $ExecutablePath,
         [Parameter(Mandatory=$false)] [string[]] $CommandLineParams = @()
     )
+    #TODO: If pester by any change doesn't execute afterall
+    #block because of exception, then in next test script
+    #this command will throw exception too, because the service already exists.
+    #We need to handle the exception in some convienent way.
     Invoke-NativeCommand -Session $Session {
         nssm install $using:ServiceName "$using:ExecutablePath" $using:CommandLineParams
     }
@@ -54,32 +58,24 @@ function Get-CNMPluginServiceStatus {
     Param (
         [Parameter(Mandatory=$true)] $Session
     )
-    Get-ServiceStatus -Session $Session -ServiceName Get-CNMPluginServiceName
+    Get-ServiceStatus -Session $Session -ServiceName $(Get-CNMPluginServiceName)
 }
 
 function New-CNMPluginService {
     Param (
         [Parameter(Mandatory=$true)] $Session
     )
-    # We have to specify some file, because docker driver doesn't
-    # currently support stderr-only logging.
-    # TODO: Remove this when after "no log file" option is supported.
-    $OldLogPath = "NUL"
     $LogDir = Get-ComputeLogsDir
-    $LogPath = Join-Path $LogDir "contrail-windows-docker-driver.log"
+    $LogPath = Join-Path $LogDir "contrail-cnm-plugin-service.log"
     $DefaultConfigFilePath = Get-DefaultCNMPluginsConfigPath
 
-    # TODO: delete the "config" argument
-    # when default path for the config file is supported.
-    $Params = @(
-        "-logPath", $OldLogPath,
-        "-logLevel", "Debug",
-        "-config", $DefaultConfigFilePath
-    )
-
     Invoke-Command -Session $Session -ScriptBlock {
-        New-Item -ItemType Directory -Force -Path $using:LogDir | Out-Null
+        New-Item -ItemType Directory -Force -Path $using:LogDir -ErrorAction SilentlyContinue | Out-Null
     }
+
+    $Params = @(
+        #"-config", $DefaultConfigFilePath
+    )
 
     $ServiceName = Get-CNMPluginServiceName
     $ExecutablePath = Get-CNMPluginExecutablePath
@@ -98,7 +94,8 @@ function New-CNMPluginService {
 
 function Enable-CNMPluginService {
     Param (
-        [Parameter(Mandatory=$true)] $Session
+        [Parameter(Mandatory = $true)] $Session,
+        [Parameter(Mandatory = $false)] [int] $WaitTime = 10
     )
     Write-Log "Starting CNM Plugin"
     $ServiceName = Get-CNMPluginServiceName
@@ -106,6 +103,8 @@ function Enable-CNMPluginService {
     Invoke-Command -Session $Session -ScriptBlock {
         Start-Service $using:ServiceName
     }
+
+    Start-Sleep -s $WaitTime
 }
 
 function Disable-CNMPluginService {
@@ -146,4 +145,10 @@ function Remove-CNMPluginService {
     }
 
     Remove-ServiceWithNSSM -Session $Session -ServiceName $ServiceName
+}
+
+function Test-IsCNMPluginServiceRunning {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    return $($(Get-CNMPluginServiceStatus -Session $Session) -eq "Running")
 }

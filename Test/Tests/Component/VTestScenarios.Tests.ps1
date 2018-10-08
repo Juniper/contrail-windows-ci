@@ -37,7 +37,6 @@ Describe "vTest scenarios" {
 
     AfterAll {
         if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
         Uninstall-Utils -Session $Session
         Uninstall-Extension -Session $Session
         Remove-PSSession $Sessions

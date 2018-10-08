@@ -138,12 +138,6 @@ function Test-IsVRouterExtensionEnabled {
     return $($Ext.Enabled -and $Ext.Running)
 }
 
-function Test-IsDockerDriverProcessRunning {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    return Test-IsProcessRunning -Session $Session -ProcessName "contrail-windows-docker"
-}
-
 function Test-IsDockerDriverEnabled {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -346,13 +340,13 @@ function Initialize-DriverAndExtension {
         Enable-CNMPluginService -Session $Session
 
         try {
-            $TestProcessRunning = { Test-IsDockerDriverProcessRunning -Session $Session }
+            $TestCNMPluginServiceRunning = { Test-IsCNMPluginServiceRunning -Session $Session }
 
-            $TestProcessRunning | Invoke-UntilSucceeds -Duration 15
+            $TestCNMPluginServiceRunning | Invoke-UntilSucceeds -Duration 15
 
             {
-                if (-not (Invoke-Command $TestProcessRunning)) {
-                    throw [HardError]::new("docker process has stopped running")
+                if (-not (Invoke-Command $TestCNMPluginServiceRunning)) {
+                    throw [HardError]::new("CNM plugin service didn't start")
                 }
                 Test-IsDockerDriverEnabled -Session $Session
             } | Invoke-UntilSucceeds -Duration 600 -Interval 5
@@ -365,9 +359,9 @@ function Initialize-DriverAndExtension {
             Write-Log $_
 
             if ($i -eq $NRetries) {
-                throw "Docker driver was not enabled."
+                throw "CNM plugin was not enabled."
             } else {
-                Write-Log "Docker driver was not enabled, retrying."
+                Write-Log "CNM plugin was not enabled, retrying."
                 Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             }
         }
