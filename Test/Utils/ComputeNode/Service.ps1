@@ -16,10 +16,8 @@ function Install-ServiceWithNSSM {
     $NSSMServiceAlreadyCreatedError = 5
     if ($Output.ExitCode -eq $NSSMServiceAlreadyCreatedError) {
         Write-Log "$ServiceName service already created, continuing..."
-        return
     }
-
-    if ($Output.ExitCode -ne 0) {
+    elseif ($Output.ExitCode -ne 0) {
         throw [HardError]::new("Unknown (wild) error appeared while creating $ServiceName service")
     }
 }
@@ -32,7 +30,29 @@ function Remove-ServiceWithNSSM {
 
     Invoke-NativeCommand -Session $Session {
         nssm remove $using:ServiceName confirm
-    }
+    } | Out-Null
+}
+
+function Enable-Service {
+    Param (
+        [Parameter(Mandatory=$true)] $Session,
+        [Parameter(Mandatory=$true)] $ServiceName
+    )
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        Start-Service $using:ServiceName
+    } | Out-Null
+}
+
+function Disable-Service {
+    Param (
+        [Parameter(Mandatory=$true)] $Session,
+        [Parameter(Mandatory=$true)] $ServiceName
+    )
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        Stop-Service $using:ServiceName -ErrorAction SilentlyContinue | Out-Null
+    } | Out-Null
 }
 
 function Get-ServiceStatus {
@@ -50,6 +70,19 @@ function Get-ServiceStatus {
             return $null
         }
     }
+}
+
+function Out-StdoutAndStderrToLogFile {
+    Param (
+        [Parameter(Mandatory=$true)] $Session,
+        [Parameter(Mandatory=$true)] $ServiceName,
+        [Parameter(Mandatory=$true)] $LogPath
+    )
+    #redirect stdout and stderr to the log file
+    Invoke-NativeCommand -Session $Session -ScriptBlock {
+        nssm set $using:ServiceName AppStdout $using:LogPath | Out-Null
+        nssm set $using:ServiceName AppStderr $using:LogPath | Out-Null
+    } | Out-Null
 }
 
 function Get-CNMPluginServiceName {
@@ -79,23 +112,17 @@ function New-CNMPluginService {
         New-Item -ItemType Directory -Force -Path $using:LogDir -ErrorAction SilentlyContinue | Out-Null
     }
 
-    $Params = @(
-        #"-config", $DefaultConfigFilePath
-    )
-
     $ServiceName = Get-CNMPluginServiceName
     $ExecutablePath = Get-CNMPluginExecutablePath
 
     Install-ServiceWithNSSM -Session $Session `
         -ServiceName $ServiceName `
         -ExecutablePath $ExecutablePath `
-        -CommandLineParams $Params
+        -CommandLineParams @()
 
-    #redirect stdout and stderr to the log file
-    Invoke-NativeCommand -Session $Session -ScriptBlock {
-        nssm set $using:ServiceName AppStdout $using:LogPath
-        nssm set $using:ServiceName AppStderr $using:LogPath
-    }
+    Out-StdoutAndStderrToLogFile -Session $Session `
+        -ServiceName $ServiceName `
+        -LogPath $LogPath
 }
 
 function Enable-CNMPluginService {
