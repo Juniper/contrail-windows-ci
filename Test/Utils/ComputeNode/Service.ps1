@@ -9,6 +9,7 @@ function Install-ServiceWithNSSM {
         [Parameter(Mandatory=$true)] $ExecutablePath,
         [Parameter(Mandatory=$false)] [string[]] $CommandLineParams = @()
     )
+
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
             nssm install $using:ServiceName "$using:ExecutablePath" $using:CommandLineParams
     } -AllowNonZero
@@ -16,10 +17,8 @@ function Install-ServiceWithNSSM {
     $NSSMServiceAlreadyCreatedError = 5
     if ($Output.ExitCode -eq $NSSMServiceAlreadyCreatedError) {
         Write-Log "$ServiceName service already created, continuing..."
-        return
     }
-
-    if ($Output.ExitCode -ne 0) {
+    elseif ($Output.ExitCode -ne 0) {
         throw [HardError]::new("Unknown (wild) error appeared while creating $ServiceName service")
     }
 }
@@ -79,9 +78,9 @@ function Out-StdoutAndStderrToLogFile {
     )
     #redirect stdout and stderr to the log file
     Invoke-NativeCommand -Session $Session -ScriptBlock {
-        nssm set $using:ServiceName AppStdout $using:LogPath
-        nssm set $using:ServiceName AppStderr $using:LogPath
-    }
+        nssm set $using:ServiceName AppStdout $using:LogPath | Out-Null
+        nssm set $using:ServiceName AppStderr $using:LogPath | Out-Null
+    } | Out-Null
 }
 
 function Get-AgentServiceName {
@@ -103,7 +102,7 @@ function New-AgentService {
         [Parameter(Mandatory=$true)] $Session
     )
     $LogDir = Get-ComputeLogsDir
-    $LogPath = Join-Path $LogDir "contrail-vrouter-agent.log"
+    $LogPath = Join-Path $LogDir "contrail-vrouter-agent-service.log"
     $ServiceName = Get-AgentServiceName
     $ExecutablePath = Get-AgentExecutablePath
 
