@@ -107,6 +107,19 @@ function Get-CNMPluginServiceStatus {
     Get-ServiceStatus -Session $Session -ServiceName $(Get-CNMPluginServiceName)
 }
 
+function Test-IsCNMPluginServicePresent {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    return Get-CNMPluginServiceStatus -Session $Session
+}
+
+function Test-IsCNMPluginServiceRunning {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+
+    return $(Test-IsCNMPluginServicePresent -Session $Session) -eq "Running")
+}
+
+
 function New-CNMPluginService {
     Param (
         [Parameter(Mandatory=$true)] $Session
@@ -153,6 +166,10 @@ function Disable-CNMPluginService {
     Write-Log "Stopping CNM Plugin"
     $ServiceName = Get-CNMPluginServiceName
 
+    if (-not (Test-IsCNMPluginServicePresent)) {
+        return
+    }
+
     Disable-Service -Session $Session -ServiceName $ServiceName
 
     Invoke-Command -Session $Session -ScriptBlock {
@@ -178,17 +195,11 @@ function Remove-CNMPluginService {
         [Parameter(Mandatory=$true)] $Session
     )
     $ServiceName = Get-CNMPluginServiceName
-    $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName $ServiceName
+    $ServiceStatus = Get-CNMPluginServiceStatus -Session $Session
 
     if ($ServiceStatus -ne "Stopped") {
         Disable-CNMPluginService -Session $Session
     }
 
     Remove-ServiceWithNSSM -Session $Session -ServiceName $ServiceName
-}
-
-function Test-IsCNMPluginServiceRunning {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    return $($(Get-CNMPluginServiceStatus -Session $Session) -eq "Running")
 }
