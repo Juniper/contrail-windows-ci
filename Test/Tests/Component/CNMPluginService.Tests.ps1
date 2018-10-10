@@ -21,11 +21,11 @@ Param (
 
 Describe "CNM Plugin service" {
     Context "disabling"  {
-        It "is disabled" {
+        It "is disabled" -Pending {
             Get-CNMPluginServiceStatus -Session $Session | Should Be "Stopped"
         }
 
-        It "does not restart" {
+        It "does not restart" -Pending {
             Consistently {
                 Get-CNMPluginServiceStatus -Session $Session | Should Be "Stopped"
             } -Duration 3

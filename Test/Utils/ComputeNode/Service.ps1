@@ -37,7 +37,7 @@ function Remove-ServiceWithNSSM {
         nssm remove $using:ServiceName confirm
     } -CaptureOutput
 
-    Write-Log $Output
+    Write-Log $Output.Output
 }
 
 function Enable-Service {
@@ -83,13 +83,13 @@ function Out-StdoutAndStderrToLogFile {
         [Parameter(Mandatory=$true)] $ServiceName,
         [Parameter(Mandatory=$true)] $LogPath
     )
-    #redirect stdout and stderr to the log file
+
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
         nssm set $using:ServiceName AppStdout $using:LogPath
         nssm set $using:ServiceName AppStderr $using:LogPath
-    }
+    } -CaptureOutput
 
-    Write-Log $Output
+    Write-Log $Output.Output
 }
 
 function Get-CNMPluginServiceName {
@@ -153,8 +153,9 @@ function Disable-CNMPluginService {
     Write-Log "Stopping CNM Plugin"
     $ServiceName = Get-CNMPluginServiceName
 
+    Disable-Service -Session $Session -ServiceName $ServiceName
+
     Invoke-Command -Session $Session -ScriptBlock {
-        Stop-Service $using:ServiceName
         Stop-Service docker | Out-Null
 
         # Removing NAT objects when 'winnat' service is stopped may fail.

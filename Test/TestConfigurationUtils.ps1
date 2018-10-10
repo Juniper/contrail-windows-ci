@@ -330,14 +330,14 @@ function Initialize-DriverAndExtension {
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
-    Write-Log "Initializing Test Configuration"
+    Write-Log "Initializing CNMPlugin and Extension"
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
         Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 
         # CNMPlugin automatically enables Extension
-        Enable-CNMPluginService -Session $Session
+        Enable-CNMPluginService -Session $Session -WaitTime 0
 
         try {
             $TestCNMPluginServiceRunning = { Test-IsCNMPluginServiceRunning -Session $Session }
