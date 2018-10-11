@@ -17,9 +17,18 @@ Describe 'Configure DNS API' {
         $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
         $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
 
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "ContrailUrl",
+            Justification="It's actually used."
+        )]
         $ContrailUrl = $ControllerConfig.RestApiUrl()
-        $DefaultTenantName = $ControllerConfig.DefaultProject
 
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "AuthToken",
+            Justification="It's actually used."
+        )]
         $AuthToken = Get-AccessTokenFromKeystone `
             -AuthUrl $OpenStackConfig.AuthUrl() `
             -Username $OpenStackConfig.Username `
@@ -103,11 +112,11 @@ Describe 'Configure DNS API' {
             -DNSServerName "CreatedByPS1Script"
 
         $Record1Data = [VirtualDNSRecordData]::new("host1", "1.2.3.4", "A")
-        $Record1UUID = Add-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
+        Add-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
             -DNSServerName "CreatedByPS1Script" -VirtualDNSRecordData $Record1Data
 
         $Record2Data = [VirtualDNSRecordData]::new("host2", "1.2.3.5", "A")
-        $Record2UUID = Add-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
+        Add-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
             -DNSServerName "CreatedByPS1Script" -VirtualDNSRecordData $Record2Data
 
         Set-IpamDNSMode -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
