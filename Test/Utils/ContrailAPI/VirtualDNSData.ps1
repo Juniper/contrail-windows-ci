@@ -1,7 +1,7 @@
 class VirtualDNSData {
     [string] $DomainName;
     [boolean] $DynamicRecordsFromClient;
-    [int] $DefaultTTL; # In seconds
+    [int] $DefaultTTLInSeconds;
     [boolean] $ExternalVisible;
     [boolean] $ReverseResolution;
 
@@ -12,27 +12,42 @@ class VirtualDNSData {
     [string] $FloatingIpRecord;
 
     hidden Init([boolean] $DynamicRecordsFromClient, [string] $RecordOrder,
-    [int] $DefaultTTL, [string] $FloatingIpRecord,
-    [boolean] $ExternalVisible, [boolean] $ReverseResolution) {
-        $this.DomainName = "default-domain";
+        [int] $DefaultTTLInSeconds, [string] $FloatingIpRecord,
+        [boolean] $ExternalVisible, [boolean] $ReverseResolution, [string] $DomainName) {
+
+        $this.DomainName = $DomainName;
         $this.DynamicRecordsFromClient = $DynamicRecordsFromClient;
         $this.RecordOrder = $RecordOrder;
-        $this.DefaultTTL = $DefaultTTL;
+        $this.DefaultTTLInSeconds = $DefaultTTLInSeconds;
         $this.FloatingIpRecord = $FloatingIpRecord;
         $this.ExternalVisible = $ExternalVisible;
         $this.ReverseResolution = $ReverseResolution;
     }
 
-    VirtualDNSData() {
+    hidden Init([boolean] $DynamicRecordsFromClient, [string] $RecordOrder,
+        [int] $DefaultTTLInSeconds, [string] $FloatingIpRecord,
+        [boolean] $ExternalVisible, [boolean] $ReverseResolution) {
+
+        $this.Init($DynamicRecordsFromClient, $RecordOrder,
+            $DefaultTTLInSeconds, $FloatingIpRecord,
+            $ExternalVisible, $ReverseResolution, "default-domain")
+    }
+
+    hidden Init() {
         $this.Init($true, "random", 86400,
             "dashed-ip-tenant-name", $false, $false)
     }
 
+    VirtualDNSData() {
+        $this.Init()
+    }
+
     VirtualDNSData([boolean] $DynamicRecordsFromClient, [string] $RecordOrder,
-        [int] $DefaultTTL, [string] $FloatingIpRecord,
+        [int] $DefaultTTLInSeconds, [string] $FloatingIpRecord,
         [boolean] $ExternalVisible, [boolean] $ReverseResolution) {
+
         $this.Init($DynamicRecordsFromClient, $RecordOrder,
-            $DefaultTTL, $FloatingIpRecord,
+            $DefaultTTLInSeconds, $FloatingIpRecord,
             $ExternalVisible, $ReverseResolution)
     }
 }

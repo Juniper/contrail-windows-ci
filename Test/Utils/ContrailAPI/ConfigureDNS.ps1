@@ -3,6 +3,51 @@
 . $PSScriptRoot\VirtualDNSData.ps1
 . $PSScriptRoot\VirtualDNSRecordData.ps1
 
+function Add-TenantDNSInformation {
+    Param (
+        [Parameter(Mandatory = $false)] [string[]] $TenantServersIPAddresses = @(),
+        [Parameter(Mandatory = $true)] $Request
+    )
+    $DNSServer = @{
+        "ipam_dns_server" = @{
+            "tenant_dns_server_address" = @{
+                "ip_address" = $TenantServersIPAddresses
+            }
+        }
+    }
+
+    $Request."network-ipam"."network_ipam_mgmt" += $DNSServer
+
+    return $Request
+}
+
+function Add-VirtualDNSInformation {
+    Param (
+        [Parameter(Mandatory = $false)] [string[]] $VirtualServerFQName,
+        [Parameter(Mandatory = $false)] [string] $VirtualServerUuid,
+        [Parameter(Mandatory = $false)] [string] $VirtualServerUrl,
+        [Parameter(Mandatory = $true)] $Request
+    )
+
+    $DNSServer = @{
+        "ipam_dns_server" = @{
+            "virtual_dns_server_name" = [string]::Join(":",$VirtualServerFQName)
+        }
+    }
+    $Request."network-ipam"."network_ipam_mgmt" += $DNSServer
+
+    $VirtualServerRef = @{
+        "href" = $VirtualServerUrl
+        "uuid" = $VirtualServerUuid
+        "to"   = $VirtualServerFQName
+
+    }
+
+    $Request."network-ipam"."virtual_DNS_refs" = @($VirtualServerRef)
+
+    return $Request
+}
+
 function Set-IpamDNSMode {
     Param (
         [Parameter(Mandatory = $true)] [string] $ContrailUrl,
@@ -15,9 +60,6 @@ function Set-IpamDNSMode {
         [Parameter(Mandatory = $false)] [string] $VirtualServerName
     )
 
-    $IpamUuid = FQNameToUuid -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                    -Type 'network-ipam' -FQName $IpamFQName
-
     $Request = @{
         "network-ipam" = @{
             "network_ipam_mgmt" = @{"ipam_dns_method" = $DNSMode}
@@ -26,15 +68,7 @@ function Set-IpamDNSMode {
     }
 
     if ($DNSMode -ceq 'tenant-dns-server')     {
-        $DNSServer = @{
-            "ipam_dns_server" = @{
-                "tenant_dns_server_address" = @{
-                    "ip_address" = $TenantServersIPAddresses
-                }
-            }
-        }
-
-        $Request."network-ipam"."network_ipam_mgmt" += $DNSServer
+        Add-TenantDNSInformation -TenantServersIPAddresses $TenantServersIPAddresses -Request $Request
     }
     elseif ($DNSMode -ceq 'virtual-dns-server')     {
         if(-not $VirtualServerName) {
@@ -42,26 +76,18 @@ function Set-IpamDNSMode {
         }
 
         $VirtualServerFQName = @("default-domain", $VirtualServerName)
+        $VirtualServerUuid = FQNameToUuid -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
+            -Type 'virtual-DNS' -FQName $VirtualServerFQName
+        $VirtualServerUrl = $ContrailUrl + "/virtual-DNS/" + $VirtualServerUuid
 
-        $DNSServer = @{
-            "ipam_dns_server" = @{
-                "virtual_dns_server_name" = [string]::Join(":",$VirtualServerFQName)
-            }
-        }
-        $Request."network-ipam"."network_ipam_mgmt" += $DNSServer
+        Add-VirtualDNSInformation -VirtualServerFQName $VirtualServerFQName -VirtualServerUuid $VirtualServerUuid `
+            -VirtualServerUrl $VirtualServerUrl -Request $Request
 
-        $DNSServerUuid = FQNameToUuid -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                            -Type 'virtual-DNS' -FQName $VirtualServerFQName
-        $DNSServerUrl = $ContrailUrl + "/virtual-DNS/" + $DNSServerUuid
-        $DNSServerRef = @{
-            "href" = $DNSServerUrl
-            "uuid" = $DNSServerUuid
-            "to"   = $VirtualServerFQName
-
-        }
-        $Request."network-ipam"."virtual_DNS_refs" = @($DNSServerRef)
     }
 
+
+    $IpamUuid = FQNameToUuid -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
+        -Type 'network-ipam' -FQName $IpamFQName
     $RequestUrl = $ContrailUrl + "/network-ipam/" + $IpamUuid
     $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
         -Method Put -ContentType "application/json" -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
@@ -82,7 +108,7 @@ function Add-ContrailDNSRecord {
         record_type         = $VirtualDNSRecordData.RecordType
         record_class        = $VirtualDNSRecordData.RecordClass
         record_data         = $VirtualDNSRecordData.RecordData
-        record_ttl_seconds  = $VirtualDNSRecordData.RecordTTL
+        record_ttl_seconds  = $VirtualDNSRecordData.RecordTTLInSeconds
     }
 
     $Request = @{
@@ -123,7 +149,7 @@ function Add-ContrailDNSServer {
         domain_name                 = $VirtualDNSData.DomainName
         dynamic_records_from_client = $VirtualDNSData.DynamicRecordsFromClient
         record_order                = $VirtualDNSData.RecordOrder
-        default_ttl_seconds         = $VirtualDNSData.DefaultTTL
+        default_ttl_seconds         = $VirtualDNSData.DefaultTTLInSeconds
         floating_ip_record          = $VirtualDNSData.FloatingIpRecord
         external_visible            = $VirtualDNSData.ExternalVisible
         reverse_resolution          = $VirtualDNSData.ReverseResolution
@@ -156,17 +182,22 @@ function Remove-ContrailDNSServer {
     $DNSServer = Invoke-RestMethod -Method Get -Uri $DNSServerURl -Headers @{"X-Auth-Token" = $AuthToken}
 
     if ($Force) {
-        $VirtualDNSRecords = $DNSServer.'virtual-DNS'.'virtual_DNS_records'
-        ForEach ($VirtualDNSRecord in $VirtualDNSRecords) {
-            Invoke-RestMethod -Method Delete -Uri $VirtualDNSRecord.'href' `
-                -Headers @{"X-Auth-Token" = $AuthToken} | Out-Null
+
+        if($DNSServer.'virtual-DNS'.PSobject.Properties.Name -contains 'virtual_DNS_records') {
+            $VirtualDNSRecords = $DNSServer.'virtual-DNS'.'virtual_DNS_records'
+            ForEach ($VirtualDNSRecord in $VirtualDNSRecords) {
+                Invoke-RestMethod -Method Delete -Uri $VirtualDNSRecord.'href' `
+                    -Headers @{"X-Auth-Token" = $AuthToken} | Out-Null
+            }
         }
 
-        $NetworkIPAMs = $DNSServer.'virtual-DNS'.'network_ipam_back_refs'
-        ForEach ($NetworkIPAM in $NetworkIPAMs) {
-            Set-IpamDNSMode -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                -IpamFQName $NetworkIPAM.'to' `
-                -DNSMode 'none'
+        if($DNSServer.'virtual-DNS'.PSobject.Properties.Name -contains 'network_ipam_back_refs') {
+            $NetworkIPAMs = $DNSServer.'virtual-DNS'.'network_ipam_back_refs'
+            ForEach ($NetworkIPAM in $NetworkIPAMs) {
+                Set-IpamDNSMode -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
+                    -IpamFQName $NetworkIPAM.'to' `
+                    -DNSMode 'none'
+            }
         }
     }
 

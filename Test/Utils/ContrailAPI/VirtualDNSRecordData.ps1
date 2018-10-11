@@ -2,26 +2,26 @@ class VirtualDNSRecordData {
     [string] $RecordName;
     [string] $RecordClass;
     [string] $RecordData;
-    [int] $RecordTTL; # In seconds
+    [int] $RecordTTLInSeconds;
 
     [ValidateSet("A","AAAA","CNAME","PTR","NS","MX")]
     [string] $RecordType;
 
     hidden Init([string] $RecordName, [string] $RecordData,
-        [string] $RecordType, [int] $RecordTTL,
+        [string] $RecordType, [int] $RecordTTLInSeconds,
         [string] $RecordClass) {
 
         $this.RecordName = $RecordName;
         $this.RecordData = $RecordData;
         $this.RecordType = $RecordType;
-        $this.RecordTTL = $RecordTTL;
+        $this.RecordTTLInSeconds = $RecordTTLInSeconds;
         $this.RecordClass = $RecordClass;
     }
 
     hidden Init([string] $RecordName, [string] $RecordData,
-        [string] $RecordType, [int] $RecordTTL) {
+        [string] $RecordType, [int] $RecordTTLInSeconds) {
 
-        $this.Init($RecordName, $RecordData, $RecordType, $RecordTTL, "IN")
+        $this.Init($RecordName, $RecordData, $RecordType, $RecordTTLInSeconds, "IN")
     }
 
     hidden Init([string] $RecordName, [string] $RecordData,
@@ -31,9 +31,9 @@ class VirtualDNSRecordData {
     }
 
     VirtualDNSRecordData([string] $RecordName, [string] $RecordData, [string] $RecordType,
-        [int] $RecordTTL) {
+        [int] $RecordTTLInSeconds) {
 
-        $this.Init($RecordName, $RecordData, $RecordType, $RecordTTL);
+        $this.Init($RecordName, $RecordData, $RecordType, $RecordTTLInSeconds);
     }
 
     VirtualDNSRecordData([string] $RecordName, [string] $RecordData, [string] $RecordType) {
