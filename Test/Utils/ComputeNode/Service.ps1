@@ -107,16 +107,10 @@ function Get-CNMPluginServiceStatus {
     Get-ServiceStatus -Session $Session -ServiceName $(Get-CNMPluginServiceName)
 }
 
-function Test-IsCNMPluginServicePresent {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    return Get-CNMPluginServiceStatus -Session $Session
-}
-
 function Test-IsCNMPluginServiceRunning {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    return $(Test-IsCNMPluginServicePresent -Session $Session) -eq "Running")
+    return $((Get-CNMPluginServiceStatus -Session $Session) -eq "Running")
 }
 
 
@@ -166,7 +160,7 @@ function Disable-CNMPluginService {
     Write-Log "Stopping CNM Plugin"
     $ServiceName = Get-CNMPluginServiceName
 
-    if (-not (Test-IsCNMPluginServicePresent)) {
+    if (-not (Get-CNMPluginServiceStatus -Session $Session)) {
         return
     }
 
