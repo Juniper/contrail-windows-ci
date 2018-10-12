@@ -50,6 +50,7 @@ function Start-RemoteService {
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
+    Write-Log "Starting $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
         Start-Service $using:ServiceName
@@ -59,8 +60,15 @@ function Start-RemoteService {
 function Stop-RemoteService {
     Param (
         [Parameter(Mandatory=$true)] $Session,
-        [Parameter(Mandatory=$true)] $ServiceName
+        [Parameter(Mandatory=$true)] $ServiceName,
+        [Parameter(Mandatory=$false)] [Switch] $NotPresent
     )
+
+    if ($NotPresent) {
+        return
+    }
+
+    Write-Log "Stopping $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service $using:ServiceName
@@ -110,11 +118,12 @@ function Get-CNMPluginServiceStatus {
     Param (
         [Parameter(Mandatory=$true)] $Session
     )
+
     Get-ServiceStatus -Session $Session -ServiceName $(Get-CNMPluginServiceName)
 }
 
 function Test-IsCNMPluginServiceRunning {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param ([Parameter(Mandatory=$true)] [PSSessionT] $Session)
 
     return $((Get-CNMPluginServiceStatus -Session $Session) -eq "Running")
 }
@@ -145,11 +154,10 @@ function New-CNMPluginService {
 
 function Start-CNMPluginService {
     Param (
-        [Parameter(Mandatory = $true)] $Session,
-        [Parameter(Mandatory = $false)] [int] $WaitTime = 10
+        [Parameter(Mandatory=$true)] $Session,
+        [Parameter(Mandatory=$false)] [int] $WaitTime = 10
     )
 
-    Write-Log "Starting CNM Plugin"
     $ServiceName = Get-CNMPluginServiceName
 
     Start-RemoteService -Session $Session -ServiceName $ServiceName
@@ -159,17 +167,13 @@ function Start-CNMPluginService {
 
 function Stop-CNMPluginService {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$false)] [Switch] $NotPresent
     )
 
-    Write-Log "Stopping CNM Plugin"
     $ServiceName = Get-CNMPluginServiceName
 
-    if (-not (Get-CNMPluginServiceStatus -Session $Session)) {
-        return
-    }
-
-    Stop-RemoteService -Session $Session -ServiceName $ServiceName
+    Stop-RemoteService -Session $Session -ServiceName $ServiceName -NotPresent:$NotPresent
 
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service docker | Out-Null
