@@ -66,14 +66,14 @@ Describe "vRouter Agent MSI installer" {
         }
 
         AfterEach {
-            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig -NoAgent
             Uninstall-Extension -Session $Session
         }
     }
 
     AfterEach {
         try {
-            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig -NoAgent
         } finally {
             Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
