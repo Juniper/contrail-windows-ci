@@ -337,7 +337,7 @@ function Initialize-DriverAndExtension {
         Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 
         # CNMPlugin automatically enables Extension
-        Enable-CNMPluginService -Session $Session -WaitTime 0
+        Start-CNMPluginService -Session $Session -WaitTime 0
 
         try {
             $TestCNMPluginServiceRunning = { Test-IsCNMPluginServiceRunning -Session $Session }
@@ -379,7 +379,7 @@ function Clear-TestConfiguration {
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Disable-AgentService -Session $Session
-    Disable-CNMPluginService -Session $Session
+    Stop-CNMPluginService -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName

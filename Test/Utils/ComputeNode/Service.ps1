@@ -23,7 +23,12 @@ function Install-ServiceWithNSSM {
         Write-Log "$ServiceName service already created, continuing..."
     }
     else {
-        throw [HardError]::new("Unknown (wild) error appeared while creating $ServiceName service")
+        $ExceptionMessage = @"
+Unknown (wild) error appeared while creating $ServiceName service.
+ExitCode: $Output.ExitCode
+NSSM output: $Output.Output
+"@
+        throw [HardError]::new($ExceptionMessage)
     }
 }
 
@@ -40,7 +45,7 @@ function Remove-ServiceWithNSSM {
     Write-Log $Output.Output
 }
 
-function Enable-Service {
+function Start-RemoteService {
     Param (
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
@@ -51,14 +56,14 @@ function Enable-Service {
     } | Out-Null
 }
 
-function Disable-Service {
+function Stop-RemoteService {
     Param (
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
 
     Invoke-Command -Session $Session -ScriptBlock {
-        Stop-Service $using:ServiceName -ErrorAction SilentlyContinue
+        Stop-Service $using:ServiceName
     } | Out-Null
 }
 
@@ -67,6 +72,7 @@ function Get-ServiceStatus {
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
+
     Invoke-Command -Session $Session -ScriptBlock {
         $Service = Get-Service $using:ServiceName -ErrorAction SilentlyContinue
         if ($Service -and $Service.Status) {
@@ -113,7 +119,6 @@ function Test-IsCNMPluginServiceRunning {
     return $((Get-CNMPluginServiceStatus -Session $Session) -eq "Running")
 }
 
-
 function New-CNMPluginService {
     Param (
         [Parameter(Mandatory=$true)] $Session
@@ -138,25 +143,25 @@ function New-CNMPluginService {
         -LogPath $LogPath
 }
 
-function Enable-CNMPluginService {
+function Start-CNMPluginService {
     Param (
         [Parameter(Mandatory = $true)] $Session,
         [Parameter(Mandatory = $false)] [int] $WaitTime = 10
     )
+
     Write-Log "Starting CNM Plugin"
     $ServiceName = Get-CNMPluginServiceName
 
-    Invoke-Command -Session $Session -ScriptBlock {
-        Start-Service $using:ServiceName
-    }
+    Start-RemoteService -Session $Session -ServiceName $ServiceName
 
     Start-Sleep -s $WaitTime
 }
 
-function Disable-CNMPluginService {
+function Stop-CNMPluginService {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
+
     Write-Log "Stopping CNM Plugin"
     $ServiceName = Get-CNMPluginServiceName
 
@@ -164,7 +169,7 @@ function Disable-CNMPluginService {
         return
     }
 
-    Disable-Service -Session $Session -ServiceName $ServiceName
+    Stop-RemoteService -Session $Session -ServiceName $ServiceName
 
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service docker | Out-Null
@@ -192,7 +197,7 @@ function Remove-CNMPluginService {
     $ServiceStatus = Get-CNMPluginServiceStatus -Session $Session
 
     if ($ServiceStatus -ne "Stopped") {
-        Disable-CNMPluginService -Session $Session
+        Stop-CNMPluginService -Session $Session
     }
 
     Remove-ServiceWithNSSM -Session $Session -ServiceName $ServiceName

@@ -32,11 +32,11 @@ Describe "CNM Plugin service" {
         }
 
         BeforeEach {
-            Enable-CNMPluginService -Session $Session
+            Start-CNMPluginService -Session $Session
             Invoke-UntilSucceeds {
                 (Get-CNMPluginServiceStatus -Session $Session) -eq 'Running'
             } -Duration 30
-            Disable-CNMPluginService -Session $Session
+            Stop-CNMPluginService -Session $Session
         }
     }
     Context "Agent is not running" {
@@ -53,7 +53,7 @@ Describe "CNM Plugin service" {
             -ControllerConfig $ControllerConfig
 
         if ((Get-CNMPluginServiceStatus -Session $Session) -eq "Running") {
-            Disable-CNMPluginService -Session $Session
+            Stop-CNMPluginService -Session $Session
         }
     }
 
