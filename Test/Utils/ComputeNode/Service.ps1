@@ -23,7 +23,12 @@ function Install-ServiceWithNSSM {
         Write-Log "$ServiceName service already created, continuing..."
     }
     else {
-        throw [HardError]::new("Unknown (wild) error appeared while creating $ServiceName service")
+        $ExceptionMessage = @"
+Unknown (wild) error appeared while creating $ServiceName service.
+ExitCode: $Output.ExitCode
+NSSM output: $Output.Output
+"@
+        throw [HardError]::new($ExceptionMessage)
     }
 }
 
@@ -37,10 +42,10 @@ function Remove-ServiceWithNSSM {
         nssm remove $using:ServiceName confirm
     } -CaptureOutput
 
-    Write-Log $Output
+    Write-Log $Output.Output
 }
 
-function Enable-Service {
+function Start-RemoteService {
     Param (
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
@@ -51,14 +56,14 @@ function Enable-Service {
     } | Out-Null
 }
 
-function Disable-Service {
+function Stop-RemoteService {
     Param (
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
 
     Invoke-Command -Session $Session -ScriptBlock {
-        Stop-Service $using:ServiceName -ErrorAction SilentlyContinue
+        Stop-Service $using:ServiceName
     } | Out-Null
 }
 
@@ -67,6 +72,7 @@ function Get-ServiceStatus {
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
+
     Invoke-Command -Session $Session -ScriptBlock {
         $Service = Get-Service $using:ServiceName -ErrorAction SilentlyContinue
         if ($Service -and $Service.Status) {
@@ -83,13 +89,13 @@ function Out-StdoutAndStderrToLogFile {
         [Parameter(Mandatory=$true)] $ServiceName,
         [Parameter(Mandatory=$true)] $LogPath
     )
-    #redirect stdout and stderr to the log file
+
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
         nssm set $using:ServiceName AppStdout $using:LogPath
         nssm set $using:ServiceName AppStderr $using:LogPath
-    }
+    } -CaptureOutput
 
-    Write-Log $Output
+    Write-Log $Output.Output
 }
 
 function Get-AgentServiceName {
@@ -128,7 +134,7 @@ function New-AgentService {
         -LogPath $LogPath
 }
 
-function Enable-AgentService {
+function Start-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
     Write-Log "Starting Agent"
 
@@ -142,11 +148,11 @@ function Enable-AgentService {
     Write-Log $Output.Output
 }
 
-function Disable-AgentService {
+function Stop-AgentService {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
     Write-Log "Stopping Agent"
-    Disable-Service -Session $Session -ServiceName (Get-AgentServiceName)
+
+    Stop-RemoteService -Session $Session -ServiceName (Get-AgentServiceName)
 }
 
 function Remove-AgentService {
@@ -156,7 +162,7 @@ function Remove-AgentService {
     $ServiceName = Get-AgentServiceName
     $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName $ServiceName
     if ($ServiceStatus -ne "Stopped") {
-        Disable-AgentService -Session $Session
+        Stop-AgentService -Session $Session
     }
     Remove-ServiceWithNSSM -Session $Session -ServiceName $ServiceName
 }

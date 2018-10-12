@@ -33,11 +33,11 @@ Describe "vRouter Agent service" {
         }
 
         BeforeEach {
-            Enable-AgentService -Session $Session
+            Start-AgentService -Session $Session
             Invoke-UntilSucceeds {
                 (Get-AgentServiceStatus -Session $Session) -eq 'Running'
             } -Duration 30
-            Disable-AgentService -Session $Session
+            Stop-AgentService -Session $Session
         }
     }
 
@@ -54,7 +54,7 @@ Describe "vRouter Agent service" {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
-            Enable-AgentService -Session $Session
+            Start-AgentService -Session $Session
         }
     }
 
@@ -66,7 +66,7 @@ Describe "vRouter Agent service" {
         }
 
         BeforeEach {
-            Enable-AgentService -Session $Session
+            Start-AgentService -Session $Session
         }
     }
     Context "vRouter Forwarding Extension was disabled while Agent was running" {
@@ -78,7 +78,7 @@ Describe "vRouter Agent service" {
         }
 
         BeforeEach {
-            Enable-AgentService -Session $Session
+            Start-AgentService -Session $Session
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
                 "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
             $BeforeCrash = Invoke-Command -Session $Session -ScriptBlock { Get-Date }
@@ -104,7 +104,7 @@ Describe "vRouter Agent service" {
         try {
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if ((Get-AgentServiceStatus -Session $Session) -eq "Running") {
-                Disable-AgentService -Session $Session
+                Stop-AgentService -Session $Session
             }
         } finally {
             Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)

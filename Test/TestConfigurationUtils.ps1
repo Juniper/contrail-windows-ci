@@ -374,7 +374,7 @@ function Clear-TestConfiguration {
     Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
 
     Remove-AllUnusedDockerNetworks -Session $Session
-    Disable-AgentService -Session $Session
+    Stop-AgentService -Session $Session
     Stop-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
@@ -400,7 +400,7 @@ function Initialize-ComputeServices {
             -ControllerConfig $ControllerConfig `
             -SystemConfig $SystemConfig
 
-        Enable-AgentService -Session $Session
+        Start-AgentService -Session $Session
 }
 
 function Remove-DockerNetwork {
