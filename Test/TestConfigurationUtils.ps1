@@ -374,9 +374,7 @@ function Clear-TestConfiguration {
     Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
 
     Remove-AllUnusedDockerNetworks -Session $Session
-    if (-not $NoAgent) {
-        Stop-AgentService -Session $Session
-    }
+    Stop-AgentService -Session $Session -NotPresent:$NoAgent
     Stop-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 

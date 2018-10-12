@@ -50,6 +50,7 @@ function Start-RemoteService {
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
+    Write-Log "Starting $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
         Start-Service $using:ServiceName
@@ -59,8 +60,15 @@ function Start-RemoteService {
 function Stop-RemoteService {
     Param (
         [Parameter(Mandatory=$true)] $Session,
-        [Parameter(Mandatory=$true)] $ServiceName
+        [Parameter(Mandatory=$true)] $ServiceName,
+        [Parameter(Mandatory=$false)] [Switch] $NotPresent
     )
+
+    if ($NotPresent) {
+        return
+    }
+
+    Write-Log "Stopping $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service $using:ServiceName
@@ -107,7 +115,7 @@ function Get-AgentExecutablePath {
 }
 
 function Get-AgentServiceStatus {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param ([Parameter(Mandatory=$true)] [PSSessionT] $Session)
 
     Get-ServiceStatus -Session $Session -ServiceName (Get-AgentServiceName)
 }
@@ -135,7 +143,7 @@ function New-AgentService {
 }
 
 function Start-AgentService {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param ([Parameter(Mandatory=$true)] [PSSessionT] $Session)
     Write-Log "Starting Agent"
 
     $AgentServiceName = Get-AgentServiceName
@@ -149,10 +157,12 @@ function Start-AgentService {
 }
 
 function Stop-AgentService {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-    Write-Log "Stopping Agent"
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$false)] [Switch] $NotPresent
+    )
 
-    Stop-RemoteService -Session $Session -ServiceName (Get-AgentServiceName)
+    Stop-RemoteService -Session $Session -ServiceName (Get-AgentServiceName) -NotPresent:$NotPresent
 }
 
 function Remove-AgentService {
