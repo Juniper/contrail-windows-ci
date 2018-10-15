@@ -50,6 +50,7 @@ function Start-RemoteService {
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
+
     Write-Log "Starting $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
@@ -113,7 +114,9 @@ function Get-AgentExecutablePath {
 }
 
 function Get-AgentServiceStatus {
-    Param ([Parameter(Mandatory=$true)] [PSSessionT] $Session)
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
 
     Get-ServiceStatus -Session $Session -ServiceName (Get-AgentServiceName)
 }
@@ -122,6 +125,7 @@ function New-AgentService {
     Param (
         [Parameter(Mandatory=$true)] $Session
     )
+
     $LogDir = Get-ComputeLogsDir
     $LogPath = Join-Path $LogDir "contrail-vrouter-agent-service.log"
     $ServiceName = Get-AgentServiceName
@@ -141,7 +145,10 @@ function New-AgentService {
 }
 
 function Start-AgentService {
-    Param ([Parameter(Mandatory=$true)] [PSSessionT] $Session)
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
+
     Write-Log "Starting Agent"
 
     $AgentServiceName = Get-AgentServiceName
@@ -156,7 +163,7 @@ function Start-AgentService {
 
 function Stop-AgentService {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+        [Parameter(Mandatory=$true)] $Session
     )
 
     Stop-RemoteService -Session $Session -ServiceName (Get-AgentServiceName)
@@ -166,8 +173,10 @@ function Remove-AgentService {
     Param (
         [Parameter(Mandatory=$true)] $Session
     )
+
     $ServiceName = Get-AgentServiceName
     $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName $ServiceName
+
     if ($ServiceStatus -ne "Stopped") {
         Stop-AgentService -Session $Session
     }
