@@ -121,7 +121,9 @@ function Get-CNMPluginServiceStatus {
 }
 
 function Test-IsCNMPluginServiceRunning {
-    Param ([Parameter(Mandatory=$true)] [PSSessionT] $Session)
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
 
     return $((Get-CNMPluginServiceStatus -Session $Session) -eq "Running")
 }
@@ -130,6 +132,7 @@ function New-CNMPluginService {
     Param (
         [Parameter(Mandatory=$true)] $Session
     )
+
     $LogDir = Get-ComputeLogsDir
     $LogPath = Join-Path $LogDir "contrail-cnm-plugin-service.log"
 
@@ -165,7 +168,7 @@ function Start-CNMPluginService {
 
 function Stop-CNMPluginService {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+        [Parameter(Mandatory=$true)] $Session
     )
 
     $ServiceName = Get-CNMPluginServiceName
@@ -194,6 +197,7 @@ function Remove-CNMPluginService {
     Param (
         [Parameter(Mandatory=$true)] $Session
     )
+
     $ServiceName = Get-CNMPluginServiceName
     $ServiceStatus = Get-CNMPluginServiceStatus -Session $Session
 
