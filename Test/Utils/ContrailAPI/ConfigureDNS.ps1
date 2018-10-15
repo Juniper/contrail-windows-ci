@@ -126,6 +126,23 @@ function Add-ContrailDNSRecord {
     return $Response.'virtual-DNS-record'.'uuid'
 }
 
+function Add-ContrailDNSRecordByStrings {
+    Param (
+        [Parameter(Mandatory=$true)] [String] $ContrailUrl,
+        [Parameter(Mandatory=$true)] [String] $AuthToken,
+        [Parameter(Mandatory=$true)] [String] $DNSServerName,
+        [Parameter(Mandatory=$true)] [String] $HostName,
+        [Parameter(Mandatory=$true)] [String] $HostIP
+    )
+
+    $VirtualDNSRecordData = [VirtualDNSRecordData]::new($HostName, $HostIP, "A")
+
+    return Add-ContrailDNSRecord -ContrailUrl $ContrailUrl `
+        -AuthToken $AuthToken `
+        -DNSServerName $DNSServerName `
+        -VirtualDNSRecordData $VirtualDNSRecordData
+}
+
 function Remove-ContrailDNSRecord {
     Param (
         [Parameter(Mandatory = $true)] [string] $ContrailUrl,

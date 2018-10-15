@@ -3,6 +3,7 @@
 . $PSScriptRoot\ContrailAPI\NetworkPolicy.ps1
 . $PSScriptRoot\ContrailAPI\VirtualNetwork.ps1
 . $PSScriptRoot\ContrailAPI\VirtualRouter.ps1
+. $PSScriptRoot\ContrailAPI\ConfigureDNS.ps1
 . $PSScriptRoot\ContrailUtils.ps1
 . $PSScriptRoot\ContrailAPI\GlobalVrouterConfig.ps1
 
@@ -214,5 +215,79 @@ class ContrailNetworkManager {
             -AuthToken $this.AuthToken `
             -PolicyUuid $PolicyUuid `
             -NetworkUuid $NetworkUuid
+    }
+
+    # Overloaded version for none or default mode
+    SetIpamDNSMode([String[]] $IpamFQName,
+                   [String] $DNSMode) {
+        if($DNSMode -ceq 'tenant-dns-server' -or $DNSMode -ceq 'virtual-dns-server') {
+            throw "When setting tenant or virtual DNS mode, you have to specify servers."
+        }
+        elseif(-not ($DNSMode -ceq 'none' -or $DNSMode -ceq 'default-dns-server')){
+            throw "Not supported DNS mode: " + $DNSMode
+        }
+        Set-IpamDNSMode `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -IpamFQName $IpamFQName `
+            -DNSMode $DNSMode
+    }
+
+    # Overloaded version for tenant dns mode
+    SetIpamDNSMode([String[]] $IpamFQName,
+                   [String] $DNSMode,
+                   [String[]] $TenantServersIPAddresses) {
+        if($DNSMode -cne 'tenant-dns-server') {
+            throw "You shouldn't specify DNS server IP addresses for '" + $DNSMode + "' DNS mode."
+        }
+        Set-IpamDNSMode `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -IpamFQName $IpamFQName `
+            -DNSMode $DNSMode `
+            -TenantServersIPAddresses $TenantServersIPAddresses
+    }
+
+    # Overloaded version for virtual dns mode
+    SetIpamDNSMode([String[]] $IpamFQName,
+                   [String] $DNSMode,
+                   [String] $VirtualServerName) {
+        if($DNSMode -cne 'virtual-dns-server') {
+            throw "You shouldn't specify DNS server name for '" + $DNSMode + "' DNS mode."
+        }
+        Set-IpamDNSMode `
+            -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -IpamFQName $IpamFQName `
+            -DNSMode $DNSMode `
+            -VirtualServerName $VirtualServerName
+    }
+
+    [String] AddDNSServer([String] $DNSServerName) {
+        return Add-ContrailDNSServer -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -DNSServerName $DNSServerName
+    }
+
+    RemoveDNSServer([String] $DNSServerName) {
+        $DNSServerUUID = FQNameToUuid -ContrailUrl $this.ContrailUrl `
+                            -AuthToken $this.AuthToken `
+                            -Type "virtual-DNS" `
+                            -FQName @("default-domain", $DNSServerName)
+
+        Remove-ContrailDNSServer -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -DNSServerUuid $DNSServerUUID `
+            -Force
+    }
+
+    [String] AddDNSServerRecord([String] $DNSServerName,
+                       [String] $HostName,
+                       [String] $HostIP) {
+        return Add-ContrailDNSRecordByStrings -ContrailUrl $this.ContrailUrl `
+            -AuthToken $this.AuthToken `
+            -DNSServerName $DNSServerName `
+            -HostName $HostName `
+            -HostIP $HostIP
     }
 }
