@@ -60,18 +60,16 @@ function Start-RemoteService {
 function Stop-RemoteService {
     Param (
         [Parameter(Mandatory=$true)] $Session,
-        [Parameter(Mandatory=$true)] $ServiceName,
-        [Parameter(Mandatory=$false)] [Switch] $NotPresent
+        [Parameter(Mandatory=$true)] $ServiceName
     )
-
-    if ($NotPresent) {
-        return
-    }
 
     Write-Log "Stopping $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
-        Stop-Service $using:ServiceName
+        # Some tests call, which don't use all components, use Clear-TestConfiguration function.
+        # Ignoring errors here allows us to get rid of boilerplate code, which
+        # would be needed to handle cases where not all services are present on testbed(s).
+        Stop-Service $using:ServiceName -ErrorAction SilentlyContinue
     } | Out-Null
 }
 
@@ -173,7 +171,7 @@ function Stop-CNMPluginService {
 
     $ServiceName = Get-CNMPluginServiceName
 
-    Stop-RemoteService -Session $Session -ServiceName $ServiceName -NotPresent:$NotPresent
+    Stop-RemoteService -Session $Session -ServiceName $ServiceName
 
     Invoke-Command -Session $Session -ScriptBlock {
         Stop-Service docker | Out-Null
