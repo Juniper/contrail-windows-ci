@@ -1,3 +1,7 @@
+. $PSScriptRoot\..\ContrailNetworkManager.ps1
+
+. $PSScriptRoot\SettingDNSModeImpl.ps1
+
 . $PSScriptRoot\Constants.ps1
 . $PSScriptRoot\Global.ps1
 

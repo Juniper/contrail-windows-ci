@@ -1,9 +1,11 @@
-. $PSScriptRoot\Constants.ps1
-. $PSScriptRoot\Global.ps1
 . $PSScriptRoot\VirtualDNSData.ps1
 . $PSScriptRoot\VirtualDNSRecordData.ps1
+. $PSScriptRoot\..\ContrailNetworkManager.ps1
 
+. $PSScriptRoot\DNSServerImpl.ps1
 
+. $PSScriptRoot\Constants.ps1
+. $PSScriptRoot\Global.ps1
 
 function Add-ContrailDNSRecord {
     Param (

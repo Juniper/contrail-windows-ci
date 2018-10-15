@@ -7,6 +7,8 @@
 . $PSScriptRoot\ContrailAPI\GlobalVrouterConfig.ps1
 
 class ContrailNetworkManager {
+    [Int] $CONVERT_TO_JSON_MAX_DEPTH = 100;
+
     [String] $AuthToken;
     [String] $ContrailUrl;
     [String] $DefaultTenantName;
@@ -23,6 +25,39 @@ class ContrailNetworkManager {
             -Username $OpenStackConfig.Username `
             -Password $OpenStackConfig.Password `
             -Tenant $OpenStackConfig.Project
+    }
+
+    [PSObject] SendRequest(
+        [String] $Method,
+        [String] $Resource,
+        [String] $Uuid,
+                 $Request
+        )
+    {
+        $RequestUrl = $this.ContrailUrl + "/" + $Resource
+        if(-not $Uuid -and $Resource -neq "fqname-to-id") {
+            $RequestUrl += "s"
+        } else {
+            $RequestUrl += ("/" + $Uuid)
+        }
+
+        return Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
+            -Method $Method -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
+    }
+
+    [String] FQNameToUuid (
+        [Parameter(Mandatory = $true)] [string] $Resource,
+        [Parameter(Mandatory = $true)] [string[]] $FQName
+        )
+    {
+        $Request = @{
+            type     = $Resource
+            fq_name  = $FQName
+        }
+
+        $Response = $this.SendRequest("Post", "fqname-to-id", $null, $Request)
+
+        return $Response.'uuid'
     }
 
     [String] AddProject([String] $TenantName) {
