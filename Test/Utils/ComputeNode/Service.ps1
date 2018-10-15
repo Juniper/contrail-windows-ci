@@ -165,8 +165,7 @@ function Start-CNMPluginService {
 
 function Stop-CNMPluginService {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$false)] [Switch] $NotPresent
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session
     )
 
     $ServiceName = Get-CNMPluginServiceName
