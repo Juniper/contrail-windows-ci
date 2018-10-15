@@ -336,15 +336,15 @@ function Initialize-DriverAndExtension {
         Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 
         # CNMPlugin automatically enables Extension
-        Start-CNMPluginService -Session $Session -WaitTime 0
+        Start-CNMPluginService -Session $Session
 
         try {
-            $TestCNMPluginServiceRunning = { Test-IsCNMPluginServiceRunning -Session $Session }
+            $TestCNMRunning = { Test-IsCNMPluginServiceRunning -Session $Session }
 
-            $TestCNMPluginServiceRunning | Invoke-UntilSucceeds -Duration 15
+            $TestCNMRunning | Invoke-UntilSucceeds -Duration 15
 
             {
-                if (-not (Invoke-Command $TestCNMPluginServiceRunning)) {
+                if (-not (Invoke-Command $TestCNMRunning)) {
                     throw [HardError]::new("CNM plugin service didn't start")
                 }
                 Test-IsDockerDriverEnabled -Session $Session

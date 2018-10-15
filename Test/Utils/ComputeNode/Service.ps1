@@ -155,15 +155,12 @@ function New-CNMPluginService {
 
 function Start-CNMPluginService {
     Param (
-        [Parameter(Mandatory=$true)] $Session,
-        [Parameter(Mandatory=$false)] [int] $WaitTime = 10
+        [Parameter(Mandatory=$true)] $Session
     )
 
     $ServiceName = Get-CNMPluginServiceName
 
     Start-RemoteService -Session $Session -ServiceName $ServiceName
-
-    Start-Sleep -s $WaitTime
 }
 
 function Stop-CNMPluginService {
@@ -187,6 +184,8 @@ function Stop-CNMPluginService {
         # Removing ContainerNetworks may fail for NAT network when 'winnat'
         # service is disabled, so we have to filter out all NAT networks.
         Get-ContainerNetwork | Where-Object Name -NE nat | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
+        # Workaround for flaky HNS behavior.
+        # Removing container networks sometimes ends with "Unspecified error".
         Get-ContainerNetwork | Where-Object Name -NE nat | Remove-ContainerNetwork -Force
 
         Start-Service docker | Out-Null

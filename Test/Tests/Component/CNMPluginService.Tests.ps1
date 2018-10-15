@@ -21,11 +21,11 @@ Param (
 
 Describe "CNM Plugin service" {
     Context "disabling"  {
-        It "is disabled" -Pending {
+        It "is disabled" {
             Get-CNMPluginServiceStatus -Session $Session | Should Be "Stopped"
         }
 
-        It "does not restart" -Pending {
+        It "does not restart" {
             Consistently {
                 Get-CNMPluginServiceStatus -Session $Session | Should Be "Stopped"
             } -Duration 3
@@ -39,7 +39,9 @@ Describe "CNM Plugin service" {
             Stop-CNMPluginService -Session $Session
         }
     }
+
     Context "Agent is not running" {
+        # TODO: implement this test after agent service changes are merged
         It "Unimplemented" -Pending {}
     }
     Context "CNM Plugin service removal works correctly" {
