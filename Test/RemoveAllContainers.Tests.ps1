@@ -111,7 +111,7 @@ Describe "Remove-AllContainers" {
         Invoke-Command -Session $Session {
             Remove-Item docker.ps1 -ErrorAction Ignore
         }
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig -NoAgent
+        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
     }
 
     BeforeAll {

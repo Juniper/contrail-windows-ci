@@ -160,7 +160,7 @@ Describe "Single compute node protocol tests with utils" {
             Write-Log "Removing containers"
             Remove-AllContainers -Session $Session
 
-            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig -NoAgent
+            Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
                 $ContrailNM.RemoveNetwork($ContrailNetwork)
                 Remove-Variable "ContrailNetwork"

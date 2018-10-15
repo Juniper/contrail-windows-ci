@@ -365,8 +365,7 @@ function Initialize-DriverAndExtension {
 
 function Clear-TestConfiguration {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-           [Parameter(Mandatory = $false)] [Switch] $NoAgent)
+           [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig)
 
     Write-Log "Cleaning up test configuration"
 
@@ -374,7 +373,7 @@ function Clear-TestConfiguration {
     Write-Log "Docker Driver status: $( Test-IsDockerDriverProcessRunning -Session $Session )"
 
     Remove-AllUnusedDockerNetworks -Session $Session
-    Stop-AgentService -Session $Session -NotPresent:$NoAgent
+    Stop-AgentService -Session $Session
     Stop-DockerDriver -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
