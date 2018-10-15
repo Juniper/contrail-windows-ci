@@ -3,7 +3,8 @@ Param (
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
-. $PSScriptRoot\ConfigureDNS.ps1
+. $PSScriptRoot\DNSServer.ps1
+. $PSScriptRoot\SettingDNSMode.ps1
 . $PSScriptRoot\..\ContrailUtils.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
@@ -33,65 +34,6 @@ Describe 'Configure DNS API' -Tags CI, Systest {
             -Username $OpenStackConfig.Username `
             -Password $OpenStackConfig.Password `
             -Tenant $OpenStackConfig.Project
-    }
-
-    Context 'DNS server creation and removal' {
-
-        It 'can add and remove not attached to ipam DNS server without records' {
-            {
-                $ServerUUID = Add-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                    -DNSServerName "CreatedByPS1ScriptEmpty"
-                Remove-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                    -DNSServerUuid $ServerUUID
-            } | Should -Not -Throw
-        }
-
-        It 'can add and remove DNS server records' {
-            $ServerUUID = Add-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                -DNSServerName "CreatedByPS1Script"
-
-            {
-                $Record1Data = [VirtualDNSRecordData]::new("host1", "1.2.3.4", "A")
-                $Record1UUID = Add-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                    -DNSServerName "CreatedByPS1Script" -VirtualDNSRecordData $Record1Data
-
-                $Record2Data = [VirtualDNSRecordData]::new("host2", "1.2.3.5", "A")
-                $Record2UUID = Add-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                    -DNSServerName "CreatedByPS1Script" -VirtualDNSRecordData $Record2Data
-
-                Remove-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken -DNSRecordUuid $Record1UUID
-                Remove-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken -DNSRecordUuid $Record2UUID
-            } | Should -Not -Throw
-
-            Remove-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken -DNSServerUuid $ServerUUID
-        }
-
-        It 'needs -Force switch to remove attached to ipam DNS Server with records' {
-            $ServerUUID = Add-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                -DNSServerName "CreatedByPS1ScriptForce"
-
-            $Record1Data = [VirtualDNSRecordData]::new("host1", "1.2.3.4", "A")
-            Add-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                -DNSServerName "CreatedByPS1ScriptForce" -VirtualDNSRecordData $Record1Data
-
-            $Record2Data = [VirtualDNSRecordData]::new("host2", "1.2.3.5", "A")
-            Add-ContrailDNSRecord -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                -DNSServerName "CreatedByPS1ScriptForce" -VirtualDNSRecordData $Record2Data
-
-            Set-IpamDNSMode -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                -IpamFQName @("default-domain", "default-project", "default-network-ipam") `
-                -DNSMode 'virtual-dns-server' -VirtualServerName "CreatedByPS1ScriptForce"
-
-            {
-                Remove-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                    -DNSServerUuid $ServerUUID
-            } | Should -Throw
-
-            {
-                Remove-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                    -DNSServerUuid $ServerUUID -Force
-            } | Should -Not -Throw
-        }
     }
 
     Context 'Setting DNS modes' {
@@ -136,23 +78,25 @@ Describe 'Configure DNS API' -Tags CI, Systest {
                 {
                     Set-IpamDNSMode -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
                         -IpamFQName @("default-domain", "default-project", "default-network-ipam") `
-                        -DNSMode 'tenant-dns-server' -TenantServersIPAddresses @("1.1.1.1", "2.2.2.2")
+                        -DNSMode 'tenant-dns-server' -Options ([TenantDNSOptions]::New(@("1.1.1.1", "2.2.2.2")))
                 } | Should -Not -Throw
             }
         }
 
         Context 'mode - virtual' {
-            It 'can set DNS "mode" to virtual' {
+            It 'can set DNS mode to virtual' {
                 $ServerUUID = Add-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
                     -DNSServerName "CreatedByPS1ScriptForIpam"
 
                 {
-                    Set-IpamDNSMode -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
-                        -IpamFQName @("default-domain", "default-project", "default-network-ipam") `
-                        -DNSMode 'virtual-dns-server' -VirtualServerName "CreatedByPS1ScriptForIpam"
+                    Try {
+                        Set-IpamDNSMode -ContrailUrl $ContrailUrl -AuthToken $AuthToken `
+                            -IpamFQName @("default-domain", "default-project", "default-network-ipam") `
+                            -DNSMode 'virtual-dns-server' -Options ([VirtualDNSOptions]::New("CreatedByPS1ScriptForIpam"))
+                    } Finally {
+                        Remove-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken -DNSServerUuid $ServerUUID -Force
+                    }
                 } | Should -Not -Throw
-
-                Remove-ContrailDNSServer -ContrailUrl $ContrailUrl -AuthToken $AuthToken -DNSServerUuid $ServerUUID -Force
             }
 
             It 'throws when no virtual DNS server specified in virtual DNS mode' {
