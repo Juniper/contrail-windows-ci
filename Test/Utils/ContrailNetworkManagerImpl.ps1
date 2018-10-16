@@ -27,36 +27,35 @@ class ContrailNetworkManager {
             -Tenant $OpenStackConfig.Project
     }
 
-    [PSObject] SendRequest(
-        [String] $Method,
-        [String] $Resource,
-        [String] $Uuid,
-                 $Request
-        )
-    {
+    [PSObject] GetResourceUrl([String] $Resource, [String] $Uuid) {
         $RequestUrl = $this.ContrailUrl + "/" + $Resource
-        if(-not $Uuid -and $Resource -neq "fqname-to-id") {
+
+        if(-not $Uuid) {
             $RequestUrl += "s"
         } else {
             $RequestUrl += ("/" + $Uuid)
         }
 
+        return $RequestUrl
+    }
+
+    [PSObject] SendRequest([String] $Method, [String] $Resource,
+                           [String] $Uuid, $Request) {
+        $RequestUrl = $this.GetResourceUrl($Resource, $Uuid)
+
         return Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
             -Method $Method -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
     }
 
-    [String] FQNameToUuid (
-        [Parameter(Mandatory = $true)] [string] $Resource,
-        [Parameter(Mandatory = $true)] [string[]] $FQName
-        )
-    {
+    [String] FQNameToUuid ([string] $Resource, [string[]] $FQName) {
         $Request = @{
             type     = $Resource
             fq_name  = $FQName
         }
 
-        $Response = $this.SendRequest("Post", "fqname-to-id", $null, $Request)
-
+        $RequestUrl = $this.ContrailUrl + "/fqname-to-id"
+        $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
+            -Method "Post" -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
         return $Response.'uuid'
     }
 
