@@ -66,7 +66,7 @@ function Stop-RemoteService {
     Write-Log "Stopping $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
-        # Some tests call, which don't use all components, use Clear-TestConfiguration function.
+        # Some tests which don't use all components use Clear-TestConfiguration function.
         # Ignoring errors here allows us to get rid of boilerplate code, which
         # would be needed to handle cases where not all services are present on testbed(s).
         Stop-Service $using:ServiceName -ErrorAction SilentlyContinue
