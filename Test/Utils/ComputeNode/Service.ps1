@@ -50,6 +50,7 @@ function Start-RemoteService {
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
+
     Write-Log "Starting $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
@@ -66,7 +67,7 @@ function Stop-RemoteService {
     Write-Log "Stopping $ServiceName"
 
     Invoke-Command -Session $Session -ScriptBlock {
-        # Some tests which don't use all components use Clear-TestConfiguration function.
+        # Some tests which don't use all components, use Clear-TestConfiguration function.
         # Ignoring errors here allows us to get rid of boilerplate code, which
         # would be needed to handle cases where not all services are present on testbed(s).
         Stop-Service $using:ServiceName -ErrorAction SilentlyContinue
@@ -104,12 +105,28 @@ function Out-StdoutAndStderrToLogFile {
     Write-Log $Output.Output
 }
 
+function Get-AgentServiceName {
+    return "contrail-vrouter-agent"
+}
+
 function Get-CNMPluginServiceName {
     return "contrail-cnm-plugin"
 }
 
+function Get-AgentExecutablePath {
+    return "C:\Program Files\Juniper Networks\agent\contrail-vrouter-agent.exe"
+}
+
 function Get-CNMPluginExecutablePath {
     return "C:\Program Files\Juniper Networks\contrail-windows-docker.exe"
+}
+
+function Get-AgentServiceStatus {
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
+
+    Get-ServiceStatus -Session $Session -ServiceName (Get-AgentServiceName)
 }
 
 function Get-CNMPluginServiceStatus {
@@ -126,6 +143,29 @@ function Test-IsCNMPluginServiceRunning {
     )
 
     return $((Get-CNMPluginServiceStatus -Session $Session) -eq "Running")
+}
+
+function New-AgentService {
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
+
+    $LogDir = Get-ComputeLogsDir
+    $LogPath = Join-Path $LogDir "contrail-vrouter-agent-service.log"
+    $ServiceName = Get-AgentServiceName
+    $ExecutablePath = Get-AgentExecutablePath
+
+    $ConfigPath = Get-DefaultAgentConfigPath
+    $ConfigFileParam = "--config_file=$ConfigPath"
+
+    Install-ServiceWithNSSM -Session $Session `
+        -ServiceName $ServiceName `
+        -ExecutablePath $ExecutablePath `
+        -CommandLineParams @($ConfigFileParam)
+
+    Out-StdoutAndStderrToLogFile -Session $Session `
+        -ServiceName $ServiceName `
+        -LogPath $LogPath
 }
 
 function New-CNMPluginService {
@@ -151,6 +191,23 @@ function New-CNMPluginService {
     Out-StdoutAndStderrToLogFile -Session $Session `
         -ServiceName $ServiceName `
         -LogPath $LogPath
+}
+
+function Start-AgentService {
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
+
+    Write-Log "Starting Agent"
+
+    $AgentServiceName = Get-AgentServiceName
+    $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
+        $Output = netstat -abq  #dial tcp bug debug output
+        #TODO: After the bugfix, use Enable-Service generic function here.
+        Start-Service $using:AgentServiceName
+        return $Output
+    } -CaptureOutput
+    Write-Log $Output.Output
 }
 
 function Start-CNMPluginService {
@@ -192,6 +249,14 @@ function Stop-CNMPluginService {
     }
 }
 
+function Stop-AgentService {
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
+
+    Stop-RemoteService -Session $Session -ServiceName (Get-AgentServiceName)
+}
+
 function Remove-CNMPluginService {
     Param (
         [Parameter(Mandatory=$true)] $Session
@@ -202,6 +267,21 @@ function Remove-CNMPluginService {
 
     if ($ServiceStatus -ne "Stopped") {
         Stop-CNMPluginService -Session $Session
+    }
+
+    Remove-ServiceWithNSSM -Session $Session -ServiceName $ServiceName
+}
+
+function Remove-AgentService {
+    Param (
+        [Parameter(Mandatory=$true)] $Session
+    )
+
+    $ServiceName = Get-AgentServiceName
+    $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName $ServiceName
+
+    if ($ServiceStatus -ne "Stopped") {
+        Stop-AgentService -Session $Session
     }
 
     Remove-ServiceWithNSSM -Session $Session -ServiceName $ServiceName
