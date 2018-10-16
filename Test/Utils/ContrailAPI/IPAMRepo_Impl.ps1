@@ -27,7 +27,7 @@ class IPAMRepo {
         $this.API.SendRequest("Put", $this.IPAMResourceName, $IpamUuid, $Request)
     }
 
-    AddTenantDNSInformation ([TenantDNSSettings] $TenantDNSSettings, $Request) {
+    hidden AddTenantDNSInformation ([TenantDNSSettings] $TenantDNSSettings, $Request) {
         $DNSServer = @{
             "ipam_dns_server" = @{
                 "tenant_dns_server_address" = @{
@@ -39,7 +39,7 @@ class IPAMRepo {
         $Request."network-ipam"."network_ipam_mgmt" += $DNSServer
     }
 
-    AddVirtualDNSInformation ([VirtualDNSSettings] $VirtualDNSSettings, $Request) {
+    hidden AddVirtualDNSInformation ([VirtualDNSSettings] $VirtualDNSSettings, $Request) {
 
         $VirtualServerUuid = $this.API.FQNameToUuid("virtual-DNS", $VirtualDNSSettings.FQServerName)
         $VirtualServerUrl = $this.API.GetResourceUrl("virtual-DNS", $VirtualServerUuid)

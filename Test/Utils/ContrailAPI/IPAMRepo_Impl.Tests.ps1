@@ -12,7 +12,6 @@ Param (
 #       to use some fake.
 Describe 'Configure DNS Class API' -Tags CI, Systest {
     BeforeAll {
-        $TestenvConfFile = "C:\scripts\configurations\test_configuration.yaml"
         $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
         $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
         $ContrailNM = [ContrailNetworkManager]::New($OpenStackConfig, $ControllerConfig)
