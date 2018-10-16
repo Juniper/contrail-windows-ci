@@ -6,6 +6,7 @@ class DNSRecord {
     [string] $Class = "IN";
     [int] $TTLInSeconds = 86400;
     [string[]] $FQServerName;
+    # Unique InternalName is needed when creating record in Contrail
     [string] $InternalName = [GUID]::NewGuid();
     [string] $Uuid;
 
