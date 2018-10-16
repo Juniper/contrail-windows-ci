@@ -47,7 +47,7 @@ function Install-Agent {
 
     $IsOldAgentServicePresent = ($ServiceStatus -eq "Running") -or ($ServiceStatus -eq "Started")
     if ($IsOldAgentServicePresent) {
-        Disable-Service -Session $Session -ServiceName "ContrailAgent"
+        Stop-RemoteService -Session $Session -ServiceName "ContrailAgent"
     }
     New-AgentService -Session $Session
 }

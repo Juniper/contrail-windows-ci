@@ -9,7 +9,6 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
-. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
 Describe "vTest scenarios" {
