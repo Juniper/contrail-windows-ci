@@ -88,7 +88,7 @@ Describe 'Contrail DNS API' -Tags CI, Systest {
             } | Should -Not -Throw
         }
 
-        It 'needs -Force switch to remove attached to ipam DNS Server with records' {
+        It 'can remove DNS server with dependencies' {
             $Server = [DNSServer]::New("CreatedByPS1ScriptForce")
             $Record1 = [DNSRecord]::New("host1", "1.2.3.4", "A", $Server.GetFQName())
             $Record2 = [DNSRecord]::New("host2", "1.2.3.5", "A", $Server.GetFQName())
@@ -105,6 +105,12 @@ Describe 'Contrail DNS API' -Tags CI, Systest {
             {
                 $DNSServerRepo.RemoveDNSServer($Server)
             } | Should -Throw
+
+            {
+                $DNSServerRepo.RemoveDNSServerWithDependencies($Server)
+            } | Should -Not -Throw
+
+            $DNSServerRepo.AddDNSServer($Server)
 
             {
                 $DNSServerRepo.RemoveDNSServerWithDependencies($Server)

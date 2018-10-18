@@ -47,14 +47,15 @@ class DNSServerRepo {
 
         if ($Force) {
             $RemoteDNSServer = $this.API.Get($this.ServerResourceName, $DNSServer.Uuid, $null)
+            $Props = $RemoteDNSServer.'virtual-DNS'.PSobject.Properties.Name
 
-            if($RemoteDNSServer.'virtual-DNS'.'virtual_DNS_records') {
+            if($Props -contains 'virtual_DNS_records') {
                 ForEach ($VirtualDNSRecord in ($RemoteDNSServer.'virtual-DNS'.'virtual_DNS_records')) {
                     $this.API.Delete($this.RecordResourceName, $VirtualDNSRecord.'uuid', $null)
                 }
             }
 
-            if($RemoteDNSServer.'virtual-DNS'.'network_ipam_back_refs') {
+            if($Props -contains 'network_ipam_back_refs') {
                 $IPAMRepo = [IPAMRepo]::New($this.API)
                 ForEach ($NetworkIPAM in ($RemoteDNSServer.'virtual-DNS'.'network_ipam_back_refs')) {
                     $IPAM = [IPAM]::New()
