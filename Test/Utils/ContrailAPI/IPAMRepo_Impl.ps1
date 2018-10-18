@@ -24,7 +24,7 @@ class IPAMRepo {
 
         $IpamUuid = $this.API.FQNameToUuid($this.IPAMResourceName, $IPAM.GetFQName())
 
-        $this.API.SendRequest("Put", $this.IPAMResourceName, $IpamUuid, $Request)
+        $this.API.Put($this.IPAMResourceName, $IpamUuid, $Request)
     }
 
     hidden AddTenantDNSInformation ([TenantDNSSettings] $TenantDNSSettings, $Request) {

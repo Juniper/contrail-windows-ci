@@ -8,9 +8,9 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 # TODO: Those tests run on working Controller.
-#       Most probably they need to be rewrote
+#       Most probably they need to be rewritten
 #       to use some fake.
-Describe 'Configure DNS Class API' -Tags CI, Systest {
+Describe 'Contrail IPAM API' -Tags CI, Systest {
     BeforeAll {
         $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
         $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
@@ -76,14 +76,14 @@ Describe 'Configure DNS Class API' -Tags CI, Systest {
             It 'can set DNS mode to virtual' {
                 $Server = [DNSServer]::New("CreatedByPS1ScriptForIpam")
                 $DNSServerRepo = [DNSServerRepo]::New($ContrailNM)
-                $DNSServerRepo.AddContrailDNSServer($Server)
+                $DNSServerRepo.AddDNSServer($Server)
                 {
                     Try {
                         $IPAM = [IPAM]::New()
                         $IPAM.DNSSettings = [VirtualDNSSettings]::New($Server.GetFQName())
                         $IPAMRepo.SetIpamDNSMode($IPAM)
                     } Finally {
-                        $DNSServerRepo.RemoveContrailDNSServer($Server, $true)
+                        $DNSServerRepo.RemoveDNSServerWithDependencies($Server)
                     }
                 } | Should -Not -Throw
             }

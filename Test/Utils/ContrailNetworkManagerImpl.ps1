@@ -39,12 +39,28 @@ class ContrailNetworkManager {
         return $RequestUrl
     }
 
-    [PSObject] SendRequest([String] $Method, [String] $Resource,
-                           [String] $Uuid, $Request) {
+    hidden [PSObject] SendRequest([String] $Method, [String] $Resource,
+                                  [String] $Uuid, $Request) {
         $RequestUrl = $this.GetResourceUrl($Resource, $Uuid)
 
         return Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
             -Method $Method -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
+    }
+
+    [PSObject] Get([String] $Resource, [String] $Uuid, $Request) {
+        return $this.SendRequest("Get", $Resource, $Uuid, $Request)
+    }
+
+    [PSObject] Post([String] $Resource, [String] $Uuid, $Request) {
+        return $this.SendRequest("Post", $Resource, $Uuid, $Request)
+    }
+
+    [PSObject] Put([String] $Resource, [String] $Uuid, $Request) {
+        return $this.SendRequest("Put", $Resource, $Uuid, $Request)
+    }
+
+    [PSObject] Delete([String] $Resource, [String] $Uuid, $Request) {
+        return $this.SendRequest("Delete", $Resource, $Uuid, $Request)
     }
 
     [String] FQNameToUuid ([string] $Resource, [string[]] $FQName) {

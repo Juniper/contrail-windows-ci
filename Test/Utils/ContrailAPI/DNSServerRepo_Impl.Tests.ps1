@@ -8,9 +8,9 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 # TODO: Those tests run on working Controller.
-#       Most probably they need to be rewrote
+#       Most probably they need to be rewritten
 #       to use some fake.
-Describe 'Configure DNS Class API' -Tags CI, Systest {
+Describe 'Contrail DNS API' -Tags CI, Systest {
     BeforeAll {
         $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
         $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
@@ -29,36 +29,36 @@ Describe 'Configure DNS Class API' -Tags CI, Systest {
         It 'can add and remove not attached to ipam DNS server without records' {
             {
                 $Server = [DNSServer]::New("CreatedByPS1ScriptEmpty")
-                $DNSServerRepo.AddContrailDNSServer($Server)
-                $DNSServerRepo.RemoveContrailDNSServer($Server, $false)
+                $DNSServerRepo.AddDNSServer($Server)
+                $DNSServerRepo.RemoveDNSServer($Server)
             } | Should -Not -Throw
         }
 
         It 'can remove DNS server by name' {
             {
-                $DNSServerRepo.AddContrailDNSServer([DNSServer]::New("CreatedByPS1ScriptByName"))
-                $DNSServerRepo.RemoveContrailDNSServer([DNSServer]::New("CreatedByPS1ScriptByName"), $false)
+                $DNSServerRepo.AddDNSServer([DNSServer]::New("CreatedByPS1ScriptByName"))
+                $DNSServerRepo.RemoveDNSServer([DNSServer]::New("CreatedByPS1ScriptByName"))
             } | Should -Not -Throw
         }
 
         It 'can add and remove DNS server records' {
             $Server = [DNSServer]::New("CreatedByPS1ScriptRecords")
-            $DNSServerRepo.AddContrailDNSServer($Server)
+            $DNSServerRepo.AddDNSServer($Server)
             {
                 Try
                 {
                     $Record1 = [DNSRecord]::New("host1", "1.2.3.4", "A", $Server.GetFQName())
                     $Record2 = [DNSRecord]::New("host2", "1.2.3.5", "A", $Server.GetFQName())
 
-                    $DNSServerRepo.AddContrailDNSRecord($Record1)
-                    $DNSServerRepo.AddContrailDNSRecord($Record2)
+                    $DNSServerRepo.AddDNSRecord($Record1)
+                    $DNSServerRepo.AddDNSRecord($Record2)
 
-                    $DNSServerRepo.RemoveContrailDNSRecord($Record1)
-                    $DNSServerRepo.RemoveContrailDNSRecord($Record2)
+                    $DNSServerRepo.RemoveDNSRecord($Record1)
+                    $DNSServerRepo.RemoveDNSRecord($Record2)
                 }
                 Finally
                 {
-                    $DNSServerRepo.RemoveContrailDNSServer($Server, $true)
+                    $DNSServerRepo.RemoveDNSServerWithDependencies($Server)
                 }
             } | Should -Not -Throw
         }
@@ -67,22 +67,22 @@ Describe 'Configure DNS Class API' -Tags CI, Systest {
         # this test should be pending
         It 'can remove DNS server records by name' -Pending {
             $Server = [DNSServer]::New("CreatedByPS1ScriptRecordsByName")
-            $DNSServerRepo.AddContrailDNSServer($Server)
+            $DNSServerRepo.AddDNSServer($Server)
             {
                 Try
                 {
 
-                    $DNSServerRepo.AddContrailDNSRecord([DNSRecord]::New("host1", "1.2.3.4", "A", $Server.GetFQName()))
-                    $DNSServerRepo.AddContrailDNSRecord([DNSRecord]::New("host2", "1.2.3.5", "A", $Server.GetFQName()))
+                    $DNSServerRepo.AddDNSRecord([DNSRecord]::New("host1", "1.2.3.4", "A", $Server.GetFQName()))
+                    $DNSServerRepo.AddDNSRecord([DNSRecord]::New("host2", "1.2.3.5", "A", $Server.GetFQName()))
 
-                    $DNSServerRepo.RemoveContrailDNSRecord([DNSRecord]::New("host1", "1.2.3.4", "A", $Server.GetFQName()))
-                    $DNSServerRepo.RemoveContrailDNSRecord([DNSRecord]::New("host2", "1.2.3.5", "A", $Server.GetFQName()))
+                    $DNSServerRepo.RemoveDNSRecord([DNSRecord]::New("host1", "1.2.3.4", "A", $Server.GetFQName()))
+                    $DNSServerRepo.RemoveDNSRecord([DNSRecord]::New("host2", "1.2.3.5", "A", $Server.GetFQName()))
 
-                    $DNSServerRepo.RemoveContrailDNSServer($Server, $false)
+                    $DNSServerRepo.RemoveDNSServer($Server)
                 }
                 Catch
                 {
-                    $DNSServerRepo.RemoveContrailDNSServer($Server, $true)
+                    $DNSServerRepo.RemoveDNSServerWithDependencies($Server)
                     Throw
                 }
             } | Should -Not -Throw
@@ -93,9 +93,9 @@ Describe 'Configure DNS Class API' -Tags CI, Systest {
             $Record1 = [DNSRecord]::New("host1", "1.2.3.4", "A", $Server.GetFQName())
             $Record2 = [DNSRecord]::New("host2", "1.2.3.5", "A", $Server.GetFQName())
 
-            $DNSServerRepo.AddContrailDNSServer($Server)
-            $DNSServerRepo.AddContrailDNSRecord($Record1)
-            $DNSServerRepo.AddContrailDNSRecord($Record2)
+            $DNSServerRepo.AddDNSServer($Server)
+            $DNSServerRepo.AddDNSRecord($Record1)
+            $DNSServerRepo.AddDNSRecord($Record2)
 
             $IPAMRepo = [IPAMRepo]::New($ContrailNM)
             $IPAM = [IPAM]::New()
@@ -103,11 +103,11 @@ Describe 'Configure DNS Class API' -Tags CI, Systest {
             $IPAMRepo.SetIpamDNSMode($IPAM)
 
             {
-                $DNSServerRepo.RemoveContrailDNSServer($Server, $false)
+                $DNSServerRepo.RemoveDNSServer($Server)
             } | Should -Throw
 
             {
-                $DNSServerRepo.RemoveContrailDNSServer($Server, $true)
+                $DNSServerRepo.RemoveDNSServerWithDependencies($Server)
             } | Should -Not -Throw
         }
     }
