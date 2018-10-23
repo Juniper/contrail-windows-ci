@@ -31,6 +31,9 @@ $Subnet = [SubnetConfiguration]::new(
     "10.0.5.83"
 )
 $Network = [Network]::New("testnet12", $Subnet)
+
+$TenantDNSServerAddress = "10.0.5.80"
+
 $VirtualDNSServer = [DNSServer]::New("CreatedForTest")
 
 $VirtualDNSrecords = @([DNSRecord]::New("vdnsrecord-nonetest", "1.1.1.1", "A", $VirtualDNSServer.GetFQName()),
@@ -50,7 +53,8 @@ function Create-Container {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [string] $ContainerID,
         [Parameter(Mandatory=$true)] [string] $ContainerImage,
-        [Parameter(Mandatory=$true)] [string] $NetworkName
+        [Parameter(Mandatory=$true)] [string] $NetworkName,
+        [Parameter(Mandatory=$false)] [string] $IP
     )
 
     Write-Log "Creating container: $ContainerID"
@@ -58,7 +62,8 @@ function Create-Container {
         -Session $Session `
         -NetworkName $NetworkName `
         -Name $ContainerID `
-        -Image $ContainerImage
+        -Image $ContainerImage `
+        -IP $IP
 
     Write-Log "Getting container' NetAdapter Information"
 
@@ -337,12 +342,14 @@ Test-WithRetries 1 {
 
         Context "DNS mode tenant" {
             BeforeAll {
-                BeforeEachContext -DNSSetting ([TenantDNSSettings]::New(@("10.0.5.20")))
+                BeforeEachContext -DNSSetting ([TenantDNSSettings]::New(@($TenantDNSServerAddress)))
 
-                Create-Container -Session $MultiNode.Sessions[1] `
+                Create-Container `
+                    -Session $MultiNode.Sessions[1] `
                     -ContainerID $ContainersIDs[1] `
                     -ContainerImage "python-dns" `
-                    -NetworkName $Network.Name
+                    -NetworkName $Network.Name `
+                    -IP $TenantDNSServerAddress
             }
 
             AfterAll { AfterEachContext }
