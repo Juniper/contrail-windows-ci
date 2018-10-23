@@ -75,6 +75,22 @@ function Create-Container {
     return $IP
 }
 
+# This function is used only to generate command
+# that will be passed to docker exec.
+# $Hostname will be substituted.
+function Resolve-DNSLocally {
+    $resolved = (Resolve-DnsName -Name $Hostname -Type A -ErrorAction SilentlyContinue)
+
+    if($error.Count -eq 0) {
+        Write-Host "found"
+        $resolved[0].IPAddress
+    } else {
+        Write-Host "error"
+        $error[0].CategoryInfo.Category
+    }
+}
+$ResolveDNSLocallyCommand = (${function:Resolve-DNSLocally} -replace "`n|`r", ";")
+
 function Resolve-DNS {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
@@ -82,14 +98,7 @@ function Resolve-DNS {
         [Parameter(Mandatory=$true)] [String] $Hostname
     )
 
-    $Command = '$resolved = (Resolve-DnsName -Name '+$Hostname+' -Type A -ErrorAction SilentlyContinue); ' + `
-                'if($error.Count -eq 0) { ' + `
-                    'Write-Host "found"; ' + `
-                    '$resolved[0].IPAddress; ' + `
-                '} else { ' + `
-                    'Write-Host "error"; ' + `
-                    '$error[0].CategoryInfo.Category; ' + `
-                '}'
+    $Command = $ResolveDNSLocallyCommand -replace '\$Hostname', ('"'+$Hostname+'"')
 
     $Result = (Invoke-Command -Session $Session -ScriptBlock {
         docker exec $Using:ContainerName powershell $Using:Command
