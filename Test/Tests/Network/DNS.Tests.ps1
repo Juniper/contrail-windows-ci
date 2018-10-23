@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile = "C:\scripts\configurations\test_configuration.yaml",
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile = $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
@@ -48,7 +48,23 @@ $DefaultDNSrecords = @([DNSRecord]::New("defaultrecord-nonetest.com", "3.3.3.1",
                        [DNSRecord]::New("defaultrecord-tenanttest.com", "3.3.3.4", "A", "")
 )
 
-function Create-Container {
+# This function is used to generate command
+# that will be passed to docker exec.
+# $Hostname will be substituted.
+function Resolve-DNSLocally {
+    $resolved = (Resolve-DnsName -Name $Hostname -Type A -ErrorAction SilentlyContinue)
+
+    if($error.Count -eq 0) {
+        Write-Host "found"
+        $resolved[0].IPAddress
+    } else {
+        Write-Host "error"
+        $error[0].CategoryInfo.Category
+    }
+}
+$ResolveDNSLocallyCommand = (${function:Resolve-DNSLocally} -replace "`n|`r", ";")
+
+function Start-Container {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [string] $ContainerID,
@@ -65,8 +81,7 @@ function Create-Container {
         -Image $ContainerImage `
         -IP $IP
 
-    Write-Log "Getting container' NetAdapter Information"
-
+    Write-Log "Getting container NetAdapter Information"
     $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation `
         -Session $Session -ContainerID $ContainerID
     $IP = $ContainerNetInfo.IPAddress
@@ -75,21 +90,45 @@ function Create-Container {
     return $IP
 }
 
-# This function is used only to generate command
-# that will be passed to docker exec.
-# $Hostname will be substituted.
-function Resolve-DNSLocally {
-    $resolved = (Resolve-DnsName -Name $Hostname -Type A -ErrorAction SilentlyContinue)
+function Start-DNSServerOnTestBed {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+    )
+    Write-Log "Starting Test DNS Server on test bed..."
+    $DefaultDNSServerDir = "C:\DNS_Server"
+    Invoke-Command -Session $Session -ScriptBlock {
+        New-Item -ItemType Directory -Force $Using:DefaultDNSServerDir | Out-Null
+        New-Item "$($Using:DefaultDNSServerDir + '\zones')" -Type File -Force
+        foreach($Record in $Using:DefaultDNSrecords) {
+            Add-Content -Path "$($Using:DefaultDNSServerDir + '\zones')" -Value "$($Record.Name)    $($Record.Type)    $($Record.Data)"
+        }
+    }
 
-    if($error.Count -eq 0) {
-        Write-Host "found"
-        $resolved[0].IPAddress
-    } else {
-        Write-Host "error"
-        $error[0].CategoryInfo.Category
+    Copy-Item -ToSession $Session -Path ($DockerfilesPath + "python-dns\dnserver.py") -Destination $DefaultDNSServerDir
+    Invoke-Command -Session $Session -ScriptBlock {
+        $env:ZONE_FILE = "$($Using:DefaultDNSServerDir + '\zones')"
+        Start-Process -FilePath "python" -ArgumentList "$($Using:DefaultDNSServerDir + '\dnserver.py')"
     }
 }
-$ResolveDNSLocallyCommand = (${function:Resolve-DNSLocally} -replace "`n|`r", ";")
+
+function Set-DNSServerAddressOnTestBed {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $ClientSession,
+        [Parameter(Mandatory=$true)] [PSSessionT] $ServerSession
+    )
+    $DefaultDNSServerAddress = Invoke-Command -Session $ServerSession -ScriptBlock {
+        Get-NetIPAddress -InterfaceAlias "Ethernet0" | Where-Object { $_.AddressFamily -eq 2 } | Select-Object -ExpandProperty IPAddress
+    }
+    Write-Log "Setting default DNS Server on test bed for: $DefaultDNSServerAddress..."
+    $OldDNSs = Invoke-Command -Session $ClientSession -ScriptBlock {
+        Get-DnsClientServerAddress -InterfaceAlias "Ethernet0" | Where-Object {$_.AddressFamily -eq 2} | Select-Object -ExpandProperty ServerAddresses
+    }
+    Invoke-Command -Session $ClientSession -ScriptBlock {
+        Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" -ServerAddresses $Using:DefaultDNSServerAddress
+    }
+
+    return $OldDNSs
+}
 
 function Resolve-DNS {
     Param (
@@ -149,50 +188,20 @@ Test-WithRetries 1 {
     Describe "DNS tests" {
         BeforeAll {
             Initialize-PesterLogger -OutDir $LogDir
-
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
-            $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "IPAMRepo",
-                Justification="It's actually used."
-            )]
-            $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
+            Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
 
-            Write-Log "Starting Test DNS Server on second test bed..."
-            $DefaultDNSServerDir = "C:\DNS_Server"
-            Invoke-Command -Session  $MultiNode.Sessions[1] -ScriptBlock {
-                New-Item -ItemType Directory -Force $Using:DefaultDNSServerDir | Out-Null
-                New-Item "$($Using:DefaultDNSServerDir + '\zones')" -Type File -Force
-                foreach($Record in $Using:DefaultDNSrecords) {
-                    Add-Content -Path "$($Using:DefaultDNSServerDir + '\zones')" -Value "$($Record.Name)    $($Record.Type)    $($Record.Data)"
-                }
-            }
-
-            Copy-Item -ToSession $MultiNode.Sessions[1] -Path ($DockerfilesPath + "python-dns\dnserver.py") -Destination $DefaultDNSServerDir
-            Invoke-Command -Session  $MultiNode.Sessions[1] -ScriptBlock {
-                $env:ZONE_FILE = "$($Using:DefaultDNSServerDir + '\zones')"
-                Start-Process -FilePath "python" -ArgumentList "$($Using:DefaultDNSServerDir + '\dnserver.py')"
-            }
-
-            $DefaultDNSServerAddress = Invoke-Command -Session $MultiNode.Sessions[1] -ScriptBlock {
-                Get-NetIPAddress -InterfaceAlias "Ethernet0" | Where-Object { $_.AddressFamily -eq 2 } | Select-Object -ExpandProperty IPAddress
-            }
-            Write-Log "Setting default DNS Server on first test bed for: $DefaultDNSServerAddress..."
-            Write-Log "Creating virtual network: $($Network.Name)"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "OldDNSs",
                 Justification="It's actually used."
             )]
-            $OldDNSs = Invoke-Command -Session $MultiNode.Sessions[0] -ScriptBlock {
-                Get-DnsClientServerAddress -InterfaceAlias "Ethernet0" | Where-Object {$_.AddressFamily -eq 2} | Select-Object -ExpandProperty ServerAddresses
-            }
-            Invoke-Command -Session $MultiNode.Sessions[0] -ScriptBlock {
-                Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" -ServerAddresses $Using:DefaultDNSServerAddress
-            }
+            $OldDNSs = Set-DNSServerAddressOnTestBed `
+                           -ClientSession $MultiNode.Sessions[0] `
+                           -ServerSession $MultiNode.Sessions[1]
 
             Write-Log "Creating Virtual DNS Server in Contrail..."
+            $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
             $DNSServerRepo.AddDNSServer($VirtualDNSServer)
             foreach($DNSRecord in $VirtualDNSrecords) {
                 $DNSServerRepo.AddDNSRecord($DNSRecord)
@@ -205,15 +214,6 @@ Test-WithRetries 1 {
                     -OpenStackConfig $MultiNode.Configs.OpenStack `
                     -ControllerConfig $MultiNode.Configs.Controller
             }
-        }
-
-        function BeforeEachContext {
-            Param (
-                [Parameter(Mandatory=$true)] [IPAMDNSSettings] $DNSSettings
-            )
-            $IPAM = [IPAM]::New()
-            $IPAM.DNSSettings = $DNSSettings
-            $IPAMRepo.SetIpamDNSMode($IPAM)
 
             Write-Log "Creating virtual network: $($Network.Name)"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -222,6 +222,16 @@ Test-WithRetries 1 {
                 Justification="It's actually used."
             )]
             $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Network.Subnet)
+        }
+
+        function BeforeEachContext {
+            Param (
+                [Parameter(Mandatory=$true)] [IPAMDNSSettings] $DNSSettings
+            )
+            $IPAM = [IPAM]::New()
+            $IPAM.DNSSettings = $DNSSettings
+            $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
+            $IPAMRepo.SetIpamDNSMode($IPAM)
 
             foreach($Session in $MultiNode.Sessions) {
                 $ID = New-DockerNetwork -Session $Session `
@@ -232,7 +242,7 @@ Test-WithRetries 1 {
                 Write-Log "Created network id: $ID"
             }
 
-            Create-Container -Session $MultiNode.Sessions[0] `
+            Start-Container -Session $MultiNode.Sessions[0] `
                 -ContainerID $ContainersIDs[0] `
                 -ContainerImage "microsoft/windowsservercore" `
                 -NetworkName $Network.Name
@@ -249,17 +259,17 @@ Test-WithRetries 1 {
                 Remove-AllContainers -Sessions $MultiNode.Sessions
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
-
-                Write-Log "Deleting virtual network"
-                if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemoveNetwork($ContrailNetwork)
-                }
             } finally {
                 Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $MultiNode.Sessions)
             }
         }
 
         AfterAll {
+            if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
+                Write-Log "Deleting virtual network"
+                $MultiNode.NM.RemoveNetwork($ContrailNetwork)
+            }
+
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
                 foreach($Session in $MultiNode.Sessions) {
                     Clear-TestConfiguration -Session $Session `
@@ -269,10 +279,13 @@ Test-WithRetries 1 {
                 Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $MultiNode.Sessions)
 
                 if($VirtualDNSServer.Uuid) {
+                    Write-Log "Removing Virtual DNS Server from Contrail..."
+                    $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
                     $DNSServerRepo.RemoveDNSServerWithDependencies($VirtualDNSServer)
                 }
 
                 if (Get-Variable "OldDNSs" -ErrorAction SilentlyContinue) {
+                    Write-Log "Restoring old DNS servers on test bed..."
                     Invoke-Command -Session $MultiNode.Sessions[0] -ScriptBlock {
                         Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" -ServerAddresses $Using:OldDNSs
                     }
@@ -353,7 +366,7 @@ Test-WithRetries 1 {
             BeforeAll {
                 BeforeEachContext -DNSSetting ([TenantDNSSettings]::New(@($TenantDNSServerAddress)))
 
-                Create-Container `
+                Start-Container `
                     -Session $MultiNode.Sessions[1] `
                     -ContainerID $ContainersIDs[1] `
                     -ContainerImage "python-dns" `
