@@ -1,6 +1,8 @@
 . $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\Build\Repository.ps1
 
+$PdbSubfolder = "pdb"
+
 function Initialize-BuildEnvironment {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
     $Job.Step("Copying common third-party dependencies", {
@@ -136,6 +138,10 @@ function Invoke-ExtensionBuild {
     $vRouterCert = "$vRouterBuildRoot\extension\vRouter.cer"
     $utilsMSI = "$vRouterBuildRoot\utils\utils.msi"
 
+    $pdbOutputPath = "$OutputPath\$PdbSubfolder"
+    $vRouterPdbFiles = "$vRouterBuildRoot\extension\*.pdb"
+    $utilsPdbFiles = "$vRouterBuildRoot\utils\*.pdb"
+
     Write-Host "Signing utilsMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath `
                      -CertPath $CertPath `
@@ -152,6 +158,8 @@ function Invoke-ExtensionBuild {
         Copy-Item $utilsMSI $OutputPath
         Copy-Item $vRouterMSI $OutputPath
         Copy-Item $vRouterCert $OutputPath
+        Copy-Item $vRouterPdbFiles $pdbOutputPath
+        Copy-Item $utilsPdbFiles $pdbOutputPath
     })
 
     $Job.PopStep()
@@ -196,6 +204,9 @@ function Invoke-AgentBuild {
 
     $agentMSI = "build\$BuildMode\vnsw\agent\contrail\contrail-vrouter-agent.msi"
 
+    $pdbOutputPath = "$OutputPath\$PdbSubfolder"
+    $agentPdbFiles = "build\$BuildMode\vnsw\agent\contrail\*.pdb"
+
     Write-Host "Signing agentMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath `
                      -CertPath $CertPath `
@@ -204,6 +215,7 @@ function Invoke-AgentBuild {
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $agentMSI $OutputPath -Recurse
+        Copy-Item $agentPdbFiles $pdbOutputPath -Recurse
     })
 
     $Job.PopStep()
@@ -244,6 +256,14 @@ function Invoke-NodemgrBuild {
     })
 
     $Job.PopStep()
+}
+
+function Remove-PDBfiles {
+    Param ([Parameter(Mandatory = $true)] [string[]] $OutputPaths)
+
+    ForEach ($OutputPath in $OutputPaths) {
+        Remove-Item "$OutputPath\$PdbSubfolder" -Recurse
+    }
 }
 
 function Copy-DebugDlls {
