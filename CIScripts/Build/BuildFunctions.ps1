@@ -158,8 +158,11 @@ function Invoke-ExtensionBuild {
         Copy-Item $utilsMSI $OutputPath
         Copy-Item $vRouterMSI $OutputPath
         Copy-Item $vRouterCert $OutputPath
-        Copy-Item $vRouterPdbFiles $pdbOutputPath
-        Copy-Item $utilsPdbFiles $pdbOutputPath
+        if($BuildMode -eq "debug") {
+            New-Item $pdbOutputPath -Type Directory -Force
+            Copy-Item $vRouterPdbFiles $pdbOutputPath
+            Copy-Item $utilsPdbFiles $pdbOutputPath
+        }
     })
 
     $Job.PopStep()
@@ -215,7 +218,10 @@ function Invoke-AgentBuild {
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $agentMSI $OutputPath -Recurse
-        Copy-Item $agentPdbFiles $pdbOutputPath -Recurse
+        if($BuildMode -eq "debug") {
+            New-Item $pdbOutputPath -Type Directory -Force
+            Copy-Item $agentPdbFiles $pdbOutputPath -Recurse
+        }
     })
 
     $Job.PopStep()
@@ -262,7 +268,7 @@ function Remove-PDBfiles {
     Param ([Parameter(Mandatory = $true)] [string[]] $OutputPaths)
 
     ForEach ($OutputPath in $OutputPaths) {
-        Remove-Item "$OutputPath\$PdbSubfolder" -Recurse
+        Remove-Item "$OutputPath\$PdbSubfolder" -Recurse -ErrorAction Ignore
     }
 }
 
