@@ -234,9 +234,8 @@ pipeline {
         }
 
         stage('Test') {
-            if (env.NIGHLY_BUILD){
-            } else {
             agent { label 'tester' }
+            when { environment name: "NIGHTLY_BUILD", value: "1" }
             when { environment name: "DONT_CREATE_TESTBEDS", value: null }
             steps {
                 deleteDir()
@@ -262,7 +261,6 @@ pipeline {
                     }
                 }
             }
-        }
         }
     }
 
