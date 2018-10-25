@@ -234,7 +234,7 @@ pipeline {
         }
 
         stage('Test') {
-            if (env.NIGHLY_BUILD = 1){
+            if (env.NIGHLY_BUILD){
             } else {
             agent { label 'tester' }
             when { environment name: "DONT_CREATE_TESTBEDS", value: null }
