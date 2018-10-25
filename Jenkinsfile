@@ -235,8 +235,10 @@ pipeline {
 
         stage('Test') {
             agent { label 'tester' }
-            when { environment name: "NIGHTLY_BUILD", value: "1" }
-            when { environment name: "DONT_CREATE_TESTBEDS", value: null }
+            when {
+                environment name: "NIGHTLY_BUILD", value: null;
+                environment name: "DONT_CREATE_TESTBEDS", value: null
+            }
             steps {
                 deleteDir()
                 unstash 'CIScripts'
