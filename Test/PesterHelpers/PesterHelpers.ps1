@@ -126,7 +126,7 @@ function Suspend-PesterOnException {
     InModuleScope Pester {
 
         function global:CatchedExceptionHandler {
-            if($global:SuspendExecutionInput -ne "finish") {
+            if($script:SuspendExecutionInput -ne "finish") {
 
                 $result = ConvertTo-PesterResult -Name $Name -ErrorRecord $_
                 $orderedParameters = Get-OrderedParameterDictionary -ScriptBlock $ScriptBlock -Dictionary $Parameters
@@ -138,7 +138,7 @@ function Suspend-PesterOnException {
 
                 Write-Host "Press any key to continue..." -ForegroundColor Red
                 [console]::beep(440,1000)
-                $global:SuspendExecutionInput = Read-Host
+                $script:SuspendExecutionInput = Read-Host
             }
         }
 
@@ -269,8 +269,8 @@ function Set-PesterTestLoop {
                     if($CommandUsed -eq 'Describe') {
                         do {
                             $null = & $Fixture
-                            if($global:SuspendExecutionInput -eq "finish") {
-                                $global:SuspendExecutionInput = ""
+                            if($script:SuspendExecutionInput -eq "finish") {
+                                $script:SuspendExecutionInput = ""
                                 break
                             }
                         } until ($false)
