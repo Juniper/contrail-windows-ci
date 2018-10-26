@@ -145,6 +145,32 @@ Param (
 
 Note: if PowerShell session crashes, try `Ctrl`+`Shift`+`P` -> `Powershell: Restart current session`.
 
+### Pausing tests on any exception
+
+If you need to pause execution of tests on any exception that is thrown inside 'It' block, you can make it in two ways.
+
+1. Add a breakpoint in pester function:
+
+```
+Set-PSBreakpoint -Script 'C:\Program Files\WindowsPowerShell\Modules\Pester\4.2.0\Functions\It.ps1' -Line 278
+```
+
+1. Call Suspend-PesterOnException (no parameters) at the beggining of the test script.
+It is defined in `PesterHelpers\PesterHelpers.ps1`.
+To resume script execution when it suspends just press enter.
+Whole snippet may look like this:
+
+```
+if($PSScriptRoot -match "(.*?contrail-windows-ci).*") {
+    $RepositoryRootPath = $Matches[1]
+}
+else { throw "Cannot determine repository root path" }
+
+. $RepositoryRootPath\Test\PesterHelpers\PesterHelpers.ps1
+
+Suspend-PesterOnException
+```
+
 ## Manual cleanup of resource in Controller
 
 When developing tests, some stray resources may appear in Contrail Controller and cause subsequent
