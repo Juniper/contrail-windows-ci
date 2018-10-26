@@ -124,6 +124,24 @@ function Test-ResultsWithRetries {
 
 function Suspend-PesterOnException {
     InModuleScope Pester {
+
+        function global:CatchedExceptionHandler {
+            if($global:SuspendExecutionInput -ne "finish") {
+
+                $result = ConvertTo-PesterResult -Name $Name -ErrorRecord $_
+                $orderedParameters = Get-OrderedParameterDictionary -ScriptBlock $ScriptBlock -Dictionary $Parameters
+                $Pester.AddTestResult( $result.name, $result.Result, $null, $result.FailureMessage, $result.StackTrace, $ParameterizedSuiteName, $orderedParameters, $result.ErrorRecord )
+                if ($null -ne $OutputScriptBlock) { $Pester.testresult[-1] | & $OutputScriptBlock }
+                $Pester.testresult = $Pester.testresult[0..($Pester.testresult.Length-2)]
+
+                $script:resultWasShown = $true
+
+                Write-Host "Press any key to continue..." -ForegroundColor Red
+                [console]::beep(440,1000)
+                $global:SuspendExecutionInput = Read-Host
+            }
+        }
+
         function global:InvokeTest_Changed {
             [CmdletBinding(DefaultParameterSetName = 'Normal')]
             param (
@@ -152,33 +170,35 @@ function Suspend-PesterOnException {
                 elseif ($Pending) { $Pester.AddTestResult($Name, "Pending", $null) }
                 else {
                     $errorRecord = $null
+                    $script:resultWasShown = $false
                     try {
                         $pester.EnterTest()
                         Invoke-TestCaseSetupBlocks
                         do { $null = & $ScriptBlock @Parameters } until ($true)
                     }
                     catch {
-                        if($global:SuspendExecutionInput -ne "finish") {
-                            Write-Host "It: '$Name' failed." -ForegroundColor Red
-                            Write-Host "Press any key to continue..." -ForegroundColor Red
-                            [console]::beep(440,1000)
-                            $global:SuspendExecutionInput = Read-Host
-                        }
+                        CatchedExceptionHandler
                         $errorRecord = $_
                     }
                     finally {
                         try { Invoke-TestCaseTeardownBlocks }
-                        catch { $errorRecord = $_ }
+                        catch {
+                             CatchedExceptionHandler
+                             $errorRecord = $_
+                        }
                         $pester.LeaveTest()
                     }
-                    $result = ConvertTo-PesterResult -Name $Name -ErrorRecord $errorRecord
-                    $orderedParameters = Get-OrderedParameterDictionary -ScriptBlock $ScriptBlock -Dictionary $Parameters
-                    $Pester.AddTestResult( $result.name, $result.Result, $null, $result.FailureMessage, $result.StackTrace, $ParameterizedSuiteName, $orderedParameters, $result.ErrorRecord )
+                    if(-not $script:resultWasShown) {
+                        $result = ConvertTo-PesterResult -Name $Name -ErrorRecord $errorRecord
+                        $orderedParameters = Get-OrderedParameterDictionary -ScriptBlock $ScriptBlock -Dictionary $Parameters
+                        $Pester.AddTestResult( $result.name, $result.Result, $null, $result.FailureMessage, $result.StackTrace, $ParameterizedSuiteName, $orderedParameters, $result.ErrorRecord )
+                    }
                 }
             }
             finally { Exit-MockScope -ExitTestCaseOnly }
-
-            if ($null -ne $OutputScriptBlock) { $Pester.testresult[-1] | & $OutputScriptBlock }
+            if(-not $script:resultWasShown) {
+                if ($null -ne $OutputScriptBlock) { $Pester.testresult[-1] | & $OutputScriptBlock }
+            }
         }
 
         New-Alias -Name 'Invoke-Test' -Value 'InvokeTest_Changed' -Scope Global -ErrorAction Ignore
@@ -246,8 +266,8 @@ function Set-PesterTestLoop {
                         do {
                             $null = & $Fixture
                             if($global:SuspendExecutionInput -eq "finish") {
-                                break
                                 $global:SuspendExecutionInput = ""
+                                break
                             }
                         } until ($false)
                     } else {
