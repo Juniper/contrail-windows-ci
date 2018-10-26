@@ -142,6 +142,8 @@ function Suspend-PesterOnException {
             }
         }
 
+        # This function is based on function Invoke-Test from Pester 4.2.0
+        # https://github.com/pester/Pester/blob/5a8dd6b4aba799fb5115a2a832b26fad48bf0ccc/Functions/It.ps1
         function global:InvokeTest_Changed {
             [CmdletBinding(DefaultParameterSetName = 'Normal')]
             param (
@@ -209,6 +211,8 @@ function Set-PesterTestLoop {
     Suspend-PesterOnException
 
     InModuleScope Pester {
+        # This function is based on function DescribeImpl from Pester 4.2.0
+        # https://github.com/pester/Pester/blob/5a8dd6b4aba799fb5115a2a832b26fad48bf0ccc/Functions/Describe.ps1
         function global:DescribeImpl_Changed {
             param(
                 [Parameter(Mandatory = $true, Position = 0)]
