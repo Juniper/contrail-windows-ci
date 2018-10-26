@@ -158,9 +158,12 @@ function Suspend-PesterOnException {
                         do { $null = & $ScriptBlock @Parameters } until ($true)
                     }
                     catch {
-                        Write-Host "It failed, press any key to continue..." -ForegroundColor Red
-                        [console]::beep(440,1000)
-                        Read-Host
+                        if($global:SuspendExecutionInput -ne "finish") {
+                            Write-Host "It: '$Name' failed." -ForegroundColor Red
+                            Write-Host "Press any key to continue..." -ForegroundColor Red
+                            [console]::beep(440,1000)
+                            $global:SuspendExecutionInput = Read-Host
+                        }
                         $errorRecord = $_
                     }
                     finally {
@@ -179,5 +182,100 @@ function Suspend-PesterOnException {
         }
 
         New-Alias -Name 'Invoke-Test' -Value 'InvokeTest_Changed' -Scope Global -ErrorAction Ignore
+    }
+}
+
+function Set-PesterTestLoop {
+    Suspend-PesterOnException
+
+    InModuleScope Pester {
+        function global:DescribeImpl_Changed {
+            param(
+                [Parameter(Mandatory = $true, Position = 0)]
+                [string] $Name,
+                [Alias('Tags')]
+                $Tag=@(),
+                [Parameter(Position = 1)]
+                [ValidateNotNull()]
+                [ScriptBlock] $Fixture = $(Throw "No test script block is provided. (Have you put the open curly brace on the next line?)"),
+                [string] $CommandUsed = 'Describe',
+                $Pester,
+                [scriptblock] $DescribeOutputBlock,
+                [scriptblock] $TestOutputBlock,
+                [switch] $NoTestDrive
+            )
+
+            Assert-DescribeInProgress -CommandName $CommandUsed
+
+            if ($Pester.TestGroupStack.Count -eq 2) {
+                if($Pester.TestNameFilter-and -not ($Pester.TestNameFilter | & $SafeCommands['Where-Object'] { $Name -like $_ })) {
+                    return
+                }
+                if($Pester.TagFilter -and @(& $SafeCommands['Compare-Object'] $Tag $Pester.TagFilter -IncludeEqual -ExcludeDifferent).count -eq 0) {return}
+                if($Pester.ExcludeTagFilter -and @(& $SafeCommands['Compare-Object'] $Tag $Pester.ExcludeTagFilter -IncludeEqual -ExcludeDifferent).count -gt 0) {return}
+            }
+            else {
+                if ($PSBoundParameters.ContainsKey('Tag')) {
+                    Write-Warning "${CommandUsed} '$Name': Tags are only effective on the outermost test group, for now."
+                }
+            }
+
+            $Pester.EnterTestGroup($Name, $CommandUsed)
+
+            if ($null -ne $DescribeOutputBlock) {
+                & $DescribeOutputBlock $Name $CommandUsed
+            }
+
+            $testDriveAdded = $false
+            try {
+                try {
+                    if (-not $NoTestDrive) {
+                        if (-not (Test-Path TestDrive:\)) {
+                            New-TestDrive
+                            $testDriveAdded = $true
+                        }
+                        else {
+                            $TestDriveContent = Get-TestDriveChildItem
+                        }
+                    }
+
+                    Add-SetupAndTeardown -ScriptBlock $Fixture
+                    Invoke-TestGroupSetupBlocks
+
+                    if($CommandUsed -eq 'Describe') {
+                        do {
+                            $null = & $Fixture
+                            if($global:SuspendExecutionInput -eq "finish") {
+                                break
+                                $global:SuspendExecutionInput = ""
+                            }
+                        } until ($false)
+                    } else {
+                        do { $null = & $Fixture } until ($true)
+                    }
+                }
+                finally {
+                    Invoke-TestGroupTeardownBlocks
+                    if (-not $NoTestDrive) {
+                        if ($testDriveAdded) {
+                            Remove-TestDrive
+                        }
+                        else {
+                            Clear-TestDrive -Exclude ($TestDriveContent | & $SafeCommands['Select-Object'] -ExpandProperty FullName)
+                        }
+                    }
+                }
+            }
+            catch {
+                $firstStackTraceLine = $_.InvocationInfo.PositionMessage.Trim() -split "$([System.Environment]::NewLine)" | & $SafeCommands['Select-Object'] -First 1
+                $Pester.AddTestResult("Error occurred in $CommandUsed block", "Failed", $null, $_.Exception.Message, $firstStackTraceLine, $null, $null, $_)
+                if ($null -ne $TestOutputBlock)  {
+                    & $TestOutputBlock $Pester.TestResult[-1]
+                }
+            }
+            Exit-MockScope
+            $Pester.LeaveTestGroup($Name, $CommandUsed)
+        }
+        New-Alias -Name 'DescribeImpl' -Value 'DescribeImpl_Changed' -Scope Global -ErrorAction Ignore
     }
 }
