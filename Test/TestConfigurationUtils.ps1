@@ -327,7 +327,7 @@ function Initialize-ComputeServices {
             [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
         )
 
-        if (-not (Test-Path $(Get-DefaultConfigDir)) {
+        if (-not (Test-Path $(Get-DefaultConfigDir))) {
             New-Item -ItemType Directory -Path $(Get-DefaultConfigDir) -Force
         }
 
