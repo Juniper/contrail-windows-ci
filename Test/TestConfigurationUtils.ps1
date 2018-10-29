@@ -326,6 +326,11 @@ function Initialize-ComputeServices {
             [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
             [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
         )
+
+        if (-not (Test-Path $(Get-DefaultConfigDir)) {
+            New-Item -ItemType Directory -Path $(Get-DefaultConfigDir) -Force
+        }
+
         New-CNMPluginConfigFile -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
             -OpenStackConfig $OpenStackConfig `
