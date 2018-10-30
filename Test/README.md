@@ -126,6 +126,28 @@ Run selected test:
 Invoke-Pester -Script @{ Path = ".\TunnellingWithAgent.Tests.ps1"; Parameters = @{ TestenvConfFile = "testenv-conf.yaml"}; } -TestName 'Tunnelling with Agent tests'
 ```
 
+### Running tests in loop
+
+If you need to run tests in infinite loop call Set-PesterTestLoop (no parameters) at the beggining of the test script.
+It is defined in `PesterHelpers\PesterHelpers.ps1`.
+
+Whole snippet may look like this:
+
+```
+if($PSScriptRoot -match "(.*?contrail-windows-ci).*") {
+    $RepositoryRootPath = $Matches[1]
+}
+else { throw "Cannot determine repository root path" }
+
+. $RepositoryRootPath\Test\PesterHelpers\PesterHelpers.ps1
+
+Suspend-PesterOnException
+```
+
+'BeforeAll' in 'Describe' block will be run once, and everything else will be looped ('AfterAll' will not be executed at all). The test will also pause on every exception thrown inside 'It' block. To resume script execution when it suspends just press enter.
+
+If you need to finish the loop, you can write 'finish' and press enter when the script pauses or pause debbuger and set ```$global:SuspendExecutionInput = "finish"```. Current iteration of loop will finish, and 'AfterAll' block from 'Describe' will be executed.
+
 ## Debugging the tests
 
 ### Visual Studio Code

@@ -124,6 +124,26 @@ function Test-ResultsWithRetries {
 
 function Suspend-PesterOnException {
     InModuleScope Pester {
+
+        function global:CatchedExceptionHandler {
+            if($script:SuspendExecutionInput -ne "finish") {
+
+                $result = ConvertTo-PesterResult -Name $Name -ErrorRecord $_
+                $orderedParameters = Get-OrderedParameterDictionary -ScriptBlock $ScriptBlock -Dictionary $Parameters
+                $Pester.AddTestResult( $result.name, $result.Result, $null, $result.FailureMessage, $result.StackTrace, $ParameterizedSuiteName, $orderedParameters, $result.ErrorRecord )
+                if ($null -ne $OutputScriptBlock) { $Pester.testresult[-1] | & $OutputScriptBlock }
+                $Pester.testresult = $Pester.testresult[0..($Pester.testresult.Length-2)]
+
+                $script:resultWasShown = $true
+
+                Write-Host "Press any key to continue..." -ForegroundColor Red
+                [console]::beep(440,1000)
+                $script:SuspendExecutionInput = Read-Host
+            }
+        }
+
+        # This function is based on function Invoke-Test from Pester 4.2.0
+        # https://github.com/pester/Pester/blob/5a8dd6b4aba799fb5115a2a832b26fad48bf0ccc/Functions/It.ps1
         function global:InvokeTest_Changed {
             [CmdletBinding(DefaultParameterSetName = 'Normal')]
             param (
@@ -152,32 +172,134 @@ function Suspend-PesterOnException {
                 elseif ($Pending) { $Pester.AddTestResult($Name, "Pending", $null) }
                 else {
                     $errorRecord = $null
+                    $script:resultWasShown = $false
                     try {
                         $pester.EnterTest()
                         Invoke-TestCaseSetupBlocks
                         do { $null = & $ScriptBlock @Parameters } until ($true)
                     }
                     catch {
-                        Write-Host "It failed, press any key to continue..." -ForegroundColor Red
-                        [console]::beep(440,1000)
-                        Read-Host
+                        CatchedExceptionHandler
                         $errorRecord = $_
                     }
                     finally {
                         try { Invoke-TestCaseTeardownBlocks }
-                        catch { $errorRecord = $_ }
+                        catch {
+                             CatchedExceptionHandler
+                             $errorRecord = $_
+                        }
                         $pester.LeaveTest()
                     }
-                    $result = ConvertTo-PesterResult -Name $Name -ErrorRecord $errorRecord
-                    $orderedParameters = Get-OrderedParameterDictionary -ScriptBlock $ScriptBlock -Dictionary $Parameters
-                    $Pester.AddTestResult( $result.name, $result.Result, $null, $result.FailureMessage, $result.StackTrace, $ParameterizedSuiteName, $orderedParameters, $result.ErrorRecord )
+                    if(-not $script:resultWasShown) {
+                        $result = ConvertTo-PesterResult -Name $Name -ErrorRecord $errorRecord
+                        $orderedParameters = Get-OrderedParameterDictionary -ScriptBlock $ScriptBlock -Dictionary $Parameters
+                        $Pester.AddTestResult( $result.name, $result.Result, $null, $result.FailureMessage, $result.StackTrace, $ParameterizedSuiteName, $orderedParameters, $result.ErrorRecord )
+                    }
                 }
             }
             finally { Exit-MockScope -ExitTestCaseOnly }
-
-            if ($null -ne $OutputScriptBlock) { $Pester.testresult[-1] | & $OutputScriptBlock }
+            if(-not $script:resultWasShown) {
+                if ($null -ne $OutputScriptBlock) { $Pester.testresult[-1] | & $OutputScriptBlock }
+            }
         }
 
         New-Alias -Name 'Invoke-Test' -Value 'InvokeTest_Changed' -Scope Global -ErrorAction Ignore
+    }
+}
+
+function Set-PesterTestLoop {
+    Suspend-PesterOnException
+
+    InModuleScope Pester {
+        # This function is based on function DescribeImpl from Pester 4.2.0
+        # https://github.com/pester/Pester/blob/5a8dd6b4aba799fb5115a2a832b26fad48bf0ccc/Functions/Describe.ps1
+        function global:DescribeImpl_Changed {
+            param(
+                [Parameter(Mandatory = $true, Position = 0)]
+                [string] $Name,
+                [Alias('Tags')]
+                $Tag=@(),
+                [Parameter(Position = 1)]
+                [ValidateNotNull()]
+                [ScriptBlock] $Fixture = $(Throw "No test script block is provided. (Have you put the open curly brace on the next line?)"),
+                [string] $CommandUsed = 'Describe',
+                $Pester,
+                [scriptblock] $DescribeOutputBlock,
+                [scriptblock] $TestOutputBlock,
+                [switch] $NoTestDrive
+            )
+
+            Assert-DescribeInProgress -CommandName $CommandUsed
+
+            if ($Pester.TestGroupStack.Count -eq 2) {
+                if($Pester.TestNameFilter-and -not ($Pester.TestNameFilter | & $SafeCommands['Where-Object'] { $Name -like $_ })) {
+                    return
+                }
+                if($Pester.TagFilter -and @(& $SafeCommands['Compare-Object'] $Tag $Pester.TagFilter -IncludeEqual -ExcludeDifferent).count -eq 0) {return}
+                if($Pester.ExcludeTagFilter -and @(& $SafeCommands['Compare-Object'] $Tag $Pester.ExcludeTagFilter -IncludeEqual -ExcludeDifferent).count -gt 0) {return}
+            }
+            else {
+                if ($PSBoundParameters.ContainsKey('Tag')) {
+                    Write-Warning "${CommandUsed} '$Name': Tags are only effective on the outermost test group, for now."
+                }
+            }
+
+            $Pester.EnterTestGroup($Name, $CommandUsed)
+
+            if ($null -ne $DescribeOutputBlock) {
+                & $DescribeOutputBlock $Name $CommandUsed
+            }
+
+            $testDriveAdded = $false
+            try {
+                try {
+                    if (-not $NoTestDrive) {
+                        if (-not (Test-Path TestDrive:\)) {
+                            New-TestDrive
+                            $testDriveAdded = $true
+                        }
+                        else {
+                            $TestDriveContent = Get-TestDriveChildItem
+                        }
+                    }
+
+                    Add-SetupAndTeardown -ScriptBlock $Fixture
+                    Invoke-TestGroupSetupBlocks
+
+                    if($CommandUsed -eq 'Describe') {
+                        do {
+                            $null = & $Fixture
+                            if($script:SuspendExecutionInput -eq "finish") {
+                                $script:SuspendExecutionInput = ""
+                                break
+                            }
+                        } until ($false)
+                    } else {
+                        do { $null = & $Fixture } until ($true)
+                    }
+                }
+                finally {
+                    Invoke-TestGroupTeardownBlocks
+                    if (-not $NoTestDrive) {
+                        if ($testDriveAdded) {
+                            Remove-TestDrive
+                        }
+                        else {
+                            Clear-TestDrive -Exclude ($TestDriveContent | & $SafeCommands['Select-Object'] -ExpandProperty FullName)
+                        }
+                    }
+                }
+            }
+            catch {
+                $firstStackTraceLine = $_.InvocationInfo.PositionMessage.Trim() -split "$([System.Environment]::NewLine)" | & $SafeCommands['Select-Object'] -First 1
+                $Pester.AddTestResult("Error occurred in $CommandUsed block", "Failed", $null, $_.Exception.Message, $firstStackTraceLine, $null, $null, $_)
+                if ($null -ne $TestOutputBlock)  {
+                    & $TestOutputBlock $Pester.TestResult[-1]
+                }
+            }
+            Exit-MockScope
+            $Pester.LeaveTestGroup($Name, $CommandUsed)
+        }
+        New-Alias -Name 'DescribeImpl' -Value 'DescribeImpl_Changed' -Scope Global -ErrorAction Ignore
     }
 }
