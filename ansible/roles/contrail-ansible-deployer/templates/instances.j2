@@ -18,7 +18,6 @@ instances:
       analytics_database:
       analytics:
       webui:
-      vrouter:
       openstack_control:
       openstack_network:
       openstack_storage:
@@ -27,16 +26,12 @@ instances:
 contrail_configuration:
   CLOUD_ORCHESTRATOR: "{{ cloud_orchestrator }}"
   CONTRAIL_VERSION: "{{ contrail_version }}"
-  CONTROLLER_NODES: "{{ ansible_default_ipv4.address }}"
   LOG_LEVEL: SYS_DEBUG
-  PHYSICAL_INTERFACE: "{{ physical_interface }}"
-  VROUTER_GATEWAY: "{{ ansible_default_ipv4.gateway }}"
 {% if cloud_orchestrator == 'openstack' %}
   AUTH_MODE: keystone
   KEYSTONE_AUTH_ADMIN_PASSWORD: c0ntrail123
   KEYSTONE_AUTH_HOST: "{{ ansible_default_ipv4.address }}"
   KEYSTONE_AUTH_URL_VERSION: "/v3"
-  RABBITMQ_NODE_PORT: 5673
 {% endif %}
   JVM_EXTRA_OPTS: "-Xms1g -Xmx2g"
 kolla_config:
