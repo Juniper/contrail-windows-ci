@@ -27,6 +27,7 @@ pipelines:
             - ^stable/newton$
             - ^stable/ocata$
             - ^production
+            - ^R6.0-WIP
         - event: change-restored
           branch:
             - ^master$
@@ -43,6 +44,7 @@ pipelines:
             - ^stable/newton$
             - ^stable/ocata$
             - ^production
+            - ^R6.0-WIP
         - event: comment-added
           branch:
             - ^master$
@@ -58,7 +60,8 @@ pipelines:
             - ^stable/queens$
             - ^stable/newton$
             - ^stable/ocata$
-            - ^production 
+            - ^production
+            - ^R6.0-WIP
           comment: (?i)recheck(( (?:bug|lp)[\s#:]*(\d+))|( no bug))?(\s+clean)?\s*$
           reject-approval:
             - username: codilime-ci
