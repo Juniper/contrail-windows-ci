@@ -6,12 +6,20 @@
 
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 
+function Get-DefaultConfigDir {
+    return "C:\ProgramData\Contrail\etc\contrail"
+}
+
 function Get-DefaultCNMPluginsConfigPath {
-    return "C:\ProgramData\Contrail\etc\contrail\contrail-cnm-plugin.conf"
+    return Join-Path $(Get-DefaultConfigDir) "contrail-cnm-plugin.conf"
 }
 
 function Get-DefaultAgentConfigPath {
-    return "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-agent.conf"
+    return Join-Path $(Get-DefaultConfigDir) "contrail-vrouter-agent.conf"
+}
+
+function Get-DefaultNodeMgrsConfigPath {
+    return Join-Path $(Get-DefaultConfigDir) "contrail-vrouter-nodemgr.conf"
 }
 
 function New-CNMPluginConfigFile {
@@ -49,11 +57,6 @@ Os_token=
         Set-Content -Path $Using:ConfigPath -Value $Using:Config
     }
 }
-
-function Get-DefaultNodeMgrsConfigPath {
-    return "C:\ProgramData\Contrail\etc\contrail\contrail-vrouter-nodemgr.conf"
-}
-
 
 function Get-NodeManagementIP {
     Param([Parameter(Mandatory = $true)] [PSSessionT] $Session)
