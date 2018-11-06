@@ -327,9 +327,7 @@ function Initialize-ComputeServices {
             [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
         )
 
-        if (-not (Test-Path $(Get-DefaultConfigDir))) {
-            New-Item -ItemType Directory -Path $(Get-DefaultConfigDir) -Force
-        }
+        Assert-ConfigDirExists -Session $Session
 
         New-CNMPluginConfigFile -Session $Session `
             -AdapterName $SystemConfig.AdapterName `

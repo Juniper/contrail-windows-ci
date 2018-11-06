@@ -22,6 +22,20 @@ function Get-DefaultNodeMgrsConfigPath {
     return Join-Path $(Get-DefaultConfigDir) "contrail-vrouter-nodemgr.conf"
 }
 
+function Assert-ConfigDirExists {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+    )
+
+    $DefaultConfigPath = Get-DefaultConfigDir
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        if (-not (Test-Path $using:DefaultConfigPath)) {
+            New-Item -ItemType Directory -Path $using:DefaultConfigPath -Force
+        }
+    }
+}
+
 function New-CNMPluginConfigFile {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
