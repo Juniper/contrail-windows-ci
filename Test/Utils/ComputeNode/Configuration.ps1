@@ -26,13 +26,10 @@ function Assert-ConfigDirExists {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
-
     $DefaultConfigPath = Get-DefaultConfigDir
 
     Invoke-Command -Session $Session -ScriptBlock {
-        if (-not (Test-Path $using:DefaultConfigPath)) {
-            New-Item -ItemType Directory -Path $using:DefaultConfigPath -Force
-        }
+        New-Item -ItemType Directory -Path $using:DefaultConfigPath -Force
     }
 }
 
