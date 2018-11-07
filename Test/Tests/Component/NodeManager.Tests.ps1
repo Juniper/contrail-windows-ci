@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -123,10 +124,6 @@ Describe "Node manager" {
     BeforeEach {
         $Session = $MultiNode.Sessions[0]
 
-        Initialize-ComputeServices -Session $Session `
-            -SystemConfig $MultiNode.Configs.System `
-            -OpenStackConfig $MultiNode.Configs.OpenStack `
-            -ControllerConfig $MultiNode.Configs.Controller
         Clear-NodeMgrLogs -Session $Session
         Start-NodeMgr -Session $Session
     }
@@ -134,9 +131,8 @@ Describe "Node manager" {
     AfterEach {
         try {
             Stop-NodeMgr -Session $Session
-            Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
         } finally {
-            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
@@ -148,11 +144,26 @@ Describe "Node manager" {
             "MultiNode",
             Justification="It's actually used."
         )]
-        $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
+        $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+
+        foreach ($Session in $MultiNode.Sessions) {
+            Initialize-ComputeNode `
+                -Session $Session `
+                -Configs $MultiNode.Configs `
+                -PrepareEnv $PrepareEnv
+        }
     }
 
     AfterAll {
         if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
+
+            foreach ($Session in $MultiNode.Sessions) {
+                Clear-ComputeNode `
+                    -Session $Session `
+                    -SystemConfig $MultiNode.Configs.System `
+                    -PrepareEnv $PrepareEnv
+            }
+
             Remove-MultiNodeSetup -MultiNode $MultiNode
             Remove-Variable "MultiNode"
         }

@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -217,18 +218,30 @@ Test-WithRetries 3 {
             )]
             $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
 
-            Initialize-ComputeNode -Session $MultiNode.Sessions[0] -Networks @($Network) -Configs $MultiNode.Configs
-            Initialize-ComputeNode -Session $MultiNode.Sessions[1] -Networks @($Network) -Configs $MultiNode.Configs
+            foreach ($Session in $MultiNode.Sessions) {
+                Initialize-ComputeNode `
+                    -Session $Session `
+                    -Configs $MultiNode.Configs `
+                    -PrepareEnv $PrepareEnv
+
+                Initialize-DockerNetworks `
+                    -Session $Session `
+                    -Networks @($Network) `
+                    -Configs $MultiNode.Configs `
+            }
         }
 
         AfterAll {
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                $Sessions = $MultiNode.Sessions
-                $SystemConfig = $MultiNode.Configs.System
 
-                Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
-                Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
-                Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+                foreach ($Session in $MultiNode.Sessions) {
+                    Remove-DockerNetwork -Session $Session -Name $Network.Name
+
+                    Clear-ComputeNode `
+                        -Session $Session `
+                        -SystemConfig $MultiNode.Configs.System `
+                        -PrepareEnv $PrepareEnv
+                }
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {

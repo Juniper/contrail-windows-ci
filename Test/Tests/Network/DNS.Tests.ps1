@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile = $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -209,10 +210,10 @@ Test-WithRetries 1 {
 
             Write-Log "Initializing Contrail services on test beds..."
             foreach($Session in $MultiNode.Sessions) {
-                Initialize-ComputeServices -Session $Session `
-                    -SystemConfig $MultiNode.Configs.System `
-                    -OpenStackConfig $MultiNode.Configs.OpenStack `
-                    -ControllerConfig $MultiNode.Configs.Controller
+                Initialize-ComputeNode `
+                    -Session $Session `
+                    -Configs $MultiNode.Configs `
+                    -PrepareEnv $PrepareEnv
             }
 
             Write-Log "Creating virtual network: $($Network.Name)"
@@ -272,11 +273,11 @@ Test-WithRetries 1 {
 
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
                 foreach($Session in $MultiNode.Sessions) {
-                    Clear-TestConfiguration -Session $Session `
-                        -SystemConfig $MultiNode.Configs.System
+                    Clear-ComputeNode `
+                        -Session $Session `
+                        -SystemConfig $MultiNode.Configs.System `
+                        -PrepareEnv $PrepareEnv
                 }
-
-                Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $MultiNode.Sessions)
 
                 if($VirtualDNSServer.Uuid) {
                     Write-Log "Removing Virtual DNS Server from Contrail..."
