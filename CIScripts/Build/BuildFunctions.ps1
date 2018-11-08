@@ -90,10 +90,14 @@ function Invoke-DockerDriverBuild {
 
     $Job.Step("Signing MSI", {
         Push-Location $OutputPath
-        Set-MSISignature -SigntoolPath $SigntoolPath `
-                        -CertPath $CertPath `
-                        -CertPasswordFilePath $CertPasswordFilePath `
-                        -MSIPath (Get-ChildItem "*.msi").FullName
+
+        foreach ($msi in (Get-ChildItem "*.msi")) {
+            Set-MSISignature -SigntoolPath $SigntoolPath `
+                             -CertPath $CertPath `
+                             -CertPasswordFilePath $CertPasswordFilePath `
+                             -MSIPath $msi.FullName
+        }
+
         Pop-Location # $OutputPath
     })
 
