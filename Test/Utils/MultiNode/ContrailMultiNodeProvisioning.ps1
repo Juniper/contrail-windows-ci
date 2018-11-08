@@ -9,7 +9,6 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\MultiNode.ps1
 
-
 function New-MultiNodeSetup {
     Param (
         [Parameter(Mandatory=$true)] [string] $TestenvConfFile,

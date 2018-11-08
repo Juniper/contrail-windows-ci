@@ -326,7 +326,6 @@ function Initialize-ComputeServices {
             [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
             [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
         )
-        Assert-ConfigDirExists -Session $Session
 
         New-CNMPluginConfigFile -Session $Session `
             -AdapterName $SystemConfig.AdapterName `

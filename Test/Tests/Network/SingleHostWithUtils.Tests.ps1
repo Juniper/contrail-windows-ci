@@ -184,8 +184,6 @@ Describe "Single compute node protocol tests with utils" {
 
         Initialize-PesterLogger -OutDir $LogDir
 
-        Assert-ConfigDirExists -Session $Session
-
         Install-DockerDriver -Session $Session
         Install-Extension -Session $Session
         Install-Utils -Session $Session
