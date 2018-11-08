@@ -151,7 +151,7 @@ function Test-IsCnmPluginEnabled {
     }
 
     return (Test-IsCnmPluginListening) -And `
-        (Test-IsDockerPluginRegistered)
+        (Test-IsCnmPluginRegistered)
 }
 
 function Test-IfUtilsCanLoadDLLs {
