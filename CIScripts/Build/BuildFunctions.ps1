@@ -32,7 +32,7 @@ function Set-MSISignature {
     })
 }
 
-function Invoke-DockerDriverBuild {
+function Invoke-CnmPluginBuild {
     Param ([Parameter(Mandatory = $true)] [string] $DriverSrcPath,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,

@@ -12,6 +12,7 @@ Initialize-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
 $SconsBuildMode = Resolve-BuildMode
 
+$CnmPluginOutputDir = "output/cnm-plugin"
 $DockerDriverOutputDir = "output/docker-driver"
 $vRouterOutputDir = "output/vrouter"
 $vtestOutputDir = "output/vtest"
@@ -23,7 +24,7 @@ $LogsDir = "logs"
 $SconsTestsLogsDir = "unittests-logs"
 
 $Directories = @(
-    $DockerDriverOutputDir,
+    $CnmPluginOutputDir,
     $vRouterOutputDir,
     $vtestOutputDir,
     $AgentOutputDir,
@@ -41,11 +42,11 @@ foreach ($Directory in $Directories) {
 }
 
 try {
-    Invoke-DockerDriverBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
+    Invoke-CnmPluginBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
         -SigntoolPath $Env:SIGNTOOL_PATH `
         -CertPath $Env:CERT_PATH `
         -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
-        -OutputPath $DockerDriverOutputDir `
+        -OutputPath $CnmPluginOutputDir `
         -LogsPath $LogsDir
 
     Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
@@ -79,6 +80,8 @@ try {
     }
 
     if (Test-Path Env:DOCKER_REGISTRY) {
+        Copy-Item -Path $CnmPluginOutputDir -Destination $DockerDriverOutputDir -Recurse
+
         $ContainersAttributes = @(
             [ContainerAttributes]::New("vrouter", @(
                 $vRouterOutputDir,
@@ -100,7 +103,7 @@ try {
     $testDirs = Get-ChildItem ".\build\$SconsBuildMode" -Directory
     foreach ($d in $testDirs) {
         Copy-Item -Path $d.FullName -Destination $SconsTestsLogsDir `
-            -Recurse -Filter "*.exe.log" -Container
+            -Recurse -Filter "*.exe.log"
     }
 }
 
