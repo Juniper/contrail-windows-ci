@@ -323,7 +323,7 @@ pipeline {
                         echo "Flakiness detected"
                         if (isGithub()) {
                             sendGithubComment("recheck no bug")
-                        } else if (env.BRANCH_NAME == "production") {
+                        } else {
                             build job: "post-recheck-comment",
                                 wait: false,
                                 parameters: [
