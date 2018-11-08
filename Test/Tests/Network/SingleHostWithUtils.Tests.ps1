@@ -184,7 +184,7 @@ Describe "Single compute node protocol tests with utils" {
 
         Initialize-PesterLogger -OutDir $LogDir
 
-        Install-DockerDriver -Session $Session
+        Install-CnmPlugin -Session $Session
         Install-Extension -Session $Session
         Install-Utils -Session $Session
 
@@ -202,7 +202,7 @@ Describe "Single compute node protocol tests with utils" {
     AfterAll {
         if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
 
-        Uninstall-DockerDriver -Session $Session
+        Uninstall-CnmPlugin -Session $Session
         Uninstall-Extension -Session $Session
         Uninstall-Utils -Session $Session
 
