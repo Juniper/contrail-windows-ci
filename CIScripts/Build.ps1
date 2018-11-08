@@ -89,8 +89,10 @@ try {
                 $NodemgrOutputDir
             )),
             [ContainerAttributes]::New("docker-driver", @(
-                $CnmPluginOutputDir,
                 $DockerDriverOutputDir
+            )),
+            [ContainerAttributes]::New("cnm-plugin", @(
+                $CnmPluginOutputDir
             ))
         )
         Invoke-ContainersBuild -WorkDir $ContainersWorkDir `
