@@ -2,11 +2,13 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
+. $PSScriptRoot\..\ComputeNode\Directory.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\..\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\MultiNode.ps1
+
 
 function New-MultiNodeSetup {
     Param (
@@ -20,6 +22,8 @@ function New-MultiNodeSetup {
     $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
     $Sessions = New-RemoteSessions -VMs $VMs
+
+    Assert-ConfAndLogDirExist -Sessions $Sessions
 
     Write-Log "Installing components on testbeds..."
     if ($InstallNodeMgr) {
