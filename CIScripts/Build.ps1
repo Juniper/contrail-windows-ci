@@ -89,6 +89,7 @@ try {
                 $NodemgrOutputDir
             )),
             [ContainerAttributes]::New("docker-driver", @(
+                $CnmPluginOutputDir,
                 $DockerDriverOutputDir
             ))
         )
