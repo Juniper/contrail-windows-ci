@@ -8,8 +8,8 @@ function Assert-DirExists {
     )
 
     Invoke-Command -Session $Session -ScriptBlock {
-        New-Item -ItemType Directory -Path $using:DirPath -Force
-    }
+        New-Item -ItemType Directory -Path $using:DirPath -Force | Out-Null
+    } | Out-Null
 }
 
 function Assert-LogDirExists {
