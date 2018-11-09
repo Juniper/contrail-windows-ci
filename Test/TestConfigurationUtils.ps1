@@ -135,23 +135,23 @@ function Test-IsVRouterExtensionEnabled {
     return $($Ext.Enabled -and $Ext.Running)
 }
 
-function Test-IsDockerDriverEnabled {
+function Test-IsCnmPluginEnabled {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    function Test-IsDockerDriverListening {
+    function Test-IsCnmPluginListening {
         return Invoke-Command -Session $Session -ScriptBlock {
             return Test-Path //./pipe/Contrail
         }
     }
 
-    function Test-IsDockerPluginRegistered {
+    function Test-IsCnmPluginRegistered {
         return Invoke-Command -Session $Session -ScriptBlock {
             return Test-Path $Env:ProgramData/docker/plugins/Contrail.spec
         }
     }
 
-    return (Test-IsDockerDriverListening) -And `
-        (Test-IsDockerPluginRegistered)
+    return (Test-IsCnmPluginListening) -And `
+        (Test-IsCnmPluginRegistered)
 }
 
 function Test-IfUtilsCanLoadDLLs {
@@ -282,7 +282,7 @@ function Initialize-DriverAndExtension {
                 if (-not (Invoke-Command $TestCNMRunning)) {
                     throw [HardError]::new("CNM plugin service didn't start")
                 }
-                Test-IsDockerDriverEnabled -Session $Session
+                Test-IsCnmPluginEnabled -Session $Session
             } | Invoke-UntilSucceeds -Duration 600 -Interval 5
 
             Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName

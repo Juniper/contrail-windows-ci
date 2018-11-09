@@ -89,21 +89,21 @@ function Uninstall-Utils {
     Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\utils.msi"
 }
 
-function Install-DockerDriver {
+function Install-CnmPlugin {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Installing Docker Driver"
-    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\docker-driver.msi"
+    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\contrail-cnm-plugin.msi"
     New-CNMPluginService -Session $Session
 }
 
-function Uninstall-DockerDriver {
+function Uninstall-CnmPlugin {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Uninstalling Docker Driver"
 
     Remove-CNMPluginService -Session $Session
-    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\docker-driver.msi"
+    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\contrail-cnm-plugin.msi"
 }
 
 function Install-Nodemgr {
@@ -144,7 +144,7 @@ function Install-Components {
            [Parameter(Mandatory = $false)] [String] $ControllerIP)
 
     Install-Extension -Session $Session
-    Install-DockerDriver -Session $Session
+    Install-CnmPlugin -Session $Session
     Install-Agent -Session $Session
     Install-Utils -Session $Session
 
@@ -164,6 +164,6 @@ function Uninstall-Components {
 
     Uninstall-Utils -Session $Session
     Uninstall-Agent -Session $Session
-    Uninstall-DockerDriver -Session $Session
+    Uninstall-CnmPlugin -Session $Session
     Uninstall-Extension -Session $Session
 }
