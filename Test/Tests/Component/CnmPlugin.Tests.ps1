@@ -17,7 +17,7 @@ Param (
 # TODO: This path should probably come from TestenvConfFile.
 $RemoteTestModulesDir = "C:\Artifacts\"
 
-function Find-DockerDriverTests {
+function Find-CnmPluginTests {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [string] $RemoteSearchDir
@@ -29,7 +29,7 @@ function Find-DockerDriverTests {
     }
 }
 
-function Invoke-DockerDriverUnitTest {
+function Invoke-CnmPluginUnitTest {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [string] $TestModulePath,
@@ -53,7 +53,7 @@ function Invoke-DockerDriverUnitTest {
     return $Res.ExitCode
 }
 
-function Save-DockerDriverUnitTestReport {
+function Save-CnmPluginUnitTestReport {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [String] $RemoteJUnitDir,
@@ -78,7 +78,7 @@ Describe "Docker Driver" {
 
         Initialize-PesterLogger -OutDir $LogDir
 
-        $FoundTestModules = @(Find-DockerDriverTests -RemoteSearchDir $RemoteTestModulesDir -Session $Session)
+        $FoundTestModules = @(Find-CnmPluginTests -RemoteSearchDir $RemoteTestModulesDir -Session $Session)
         if ($FoundTestModules.Count -eq 0) {
             throw [System.IO.FileNotFoundException]::new(
                 "Could not find any file matching '*.test.exe' in $RemoteTestModulesDir directory."
@@ -96,12 +96,12 @@ Describe "Docker Driver" {
     foreach ($TestModule in $FoundTestModules) {
         Context "Tests for module in $($TestModule.BaseName)" {
             It "passes tests" {
-                $TestResult = Invoke-DockerDriverUnitTest -Session $Session -TestModulePath $TestModule.FullName -RemoteJUnitOutputDir $RemoteTestModulesDir
+                $TestResult = Invoke-CnmPluginUnitTest -Session $Session -TestModulePath $TestModule.FullName -RemoteJUnitOutputDir $RemoteTestModulesDir
                 $TestResult | Should Be 0
             }
 
             AfterEach {
-                Save-DockerDriverUnitTestReport -Session $Session -RemoteJUnitDir $RemoteTestModulesDir -LocalJUnitDir $AdditionalJUnitsDir
+                Save-CnmPluginUnitTestReport -Session $Session -RemoteJUnitDir $RemoteTestModulesDir -LocalJUnitDir $AdditionalJUnitsDir
             }
         }
     }

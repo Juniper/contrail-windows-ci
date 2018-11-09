@@ -27,12 +27,12 @@ function Install-Artifacts {
         New-Item -ItemType Directory -Force C:\Artifacts | Out-Null
     }
 
-    if (Test-NonemptyDir "docker-driver") {
-        Write-Host "Copying Docker driver installer"
-        Copy-Item -ToSession $Session -Path "docker-driver\docker-driver.msi" -Destination C:\Artifacts\
+    if (Test-NonemptyDir "cnm-plugin") {
+        Write-Host "Copying CNM plugin installer"
+        Copy-Item -ToSession $Session -Path "cnm-plugin\contrail-cnm-plugin.msi" -Destination C:\Artifacts\
 
-        Write-Host "Copying Docker driver tests"
-        Copy-Item -ToSession $Session -Path "docker-driver\*.test.exe" -Destination "C:\Artifacts\"
+        Write-Host "Copying CNM plugin tests"
+        Copy-Item -ToSession $Session -Path "cnm-plugin\*.test.exe" -Destination "C:\Artifacts\"
     }
 
     if (Test-NonemptyDir "agent") {

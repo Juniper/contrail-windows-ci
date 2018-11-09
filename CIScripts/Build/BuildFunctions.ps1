@@ -32,7 +32,7 @@ function Set-MSISignature {
     })
 }
 
-function Invoke-DockerDriverBuild {
+function Invoke-CnmPluginBuild {
     Param ([Parameter(Mandatory = $true)] [string] $DriverSrcPath,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
@@ -54,10 +54,6 @@ function Invoke-DockerDriverBuild {
     $Job.Step("Fetch third party packages ", {
         Invoke-NativeCommand -ScriptBlock {
             & dep ensure -v
-        }
-
-        Invoke-NativeCommand -ScriptBlock {
-            & dep prune -v
         }
     })
     Pop-Location # $srcPath

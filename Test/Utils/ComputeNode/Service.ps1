@@ -118,7 +118,7 @@ function Get-AgentExecutablePath {
 }
 
 function Get-CNMPluginExecutablePath {
-    return "C:\Program Files\Juniper Networks\contrail-windows-docker.exe"
+    return "C:\Program Files\Juniper Networks\cnm-plugin\contrail-cnm-plugin.exe"
 }
 
 function Get-AgentServiceStatus {
