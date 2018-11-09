@@ -1,7 +1,7 @@
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
-function Assert-DirExists {
+function Set-DirExists {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [string] $DirPath
@@ -12,29 +12,29 @@ function Assert-DirExists {
     } | Out-Null
 }
 
-function Assert-LogDirExists {
+function Set-LogDirExists {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
 
-    Assert-DirExists -Session $Session -DirPath $(Get-DefaultConfigDir)
+    Set-DirExists -Session $Session -DirPath $(Get-DefaultConfigDir)
 }
 
-function Assert-ConfigDirExists {
+function Set-ConfigDirExists {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
 
-    Assert-DirExists -Session $Session -DirPath $(Get-ComputeLogsDir)
+    Set-DirExists -Session $Session -DirPath $(Get-ComputeLogsDir)
 }
 
-function Assert-ConfAndLogDirExist {
+function Set-ConfAndLogDirExist {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
     )
 
     foreach($Session in $Sessions) {
-        Assert-ConfigDirExists -Session $Session
-        Assert-LogDirExists -Session $Session
+        Set-ConfigDirExists -Session $Session
+        Set-LogDirExists -Session $Session
     }
 }

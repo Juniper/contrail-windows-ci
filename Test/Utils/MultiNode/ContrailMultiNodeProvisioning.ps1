@@ -22,7 +22,7 @@ function New-MultiNodeSetup {
 
     $Sessions = New-RemoteSessions -VMs $VMs
 
-    Assert-ConfAndLogDirExist -Sessions $Sessions
+    Set-ConfAndLogDirExist -Sessions $Sessions
 
     Write-Log "Installing components on testbeds..."
     if ($InstallNodeMgr) {
