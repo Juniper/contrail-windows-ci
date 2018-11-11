@@ -140,7 +140,6 @@ function Invoke-ExtensionBuild {
 
     $pdbOutputPath = "$OutputPath\$PdbSubfolder"
     $vRouterPdbFiles = "$vRouterBuildRoot\extension\*.pdb"
-    $utilsPdbFiles = "$vRouterBuildRoot\utils\*.pdb"
 
     Write-Host "Signing utilsMSI"
     Set-MSISignature -SigntoolPath $SigntoolPath `
@@ -158,11 +157,8 @@ function Invoke-ExtensionBuild {
         Copy-Item $utilsMSI $OutputPath
         Copy-Item $vRouterMSI $OutputPath
         Copy-Item $vRouterCert $OutputPath
-        if($BuildMode -eq "debug") {
-            New-Item $pdbOutputPath -Type Directory -Force
-            Copy-Item $vRouterPdbFiles $pdbOutputPath
-            Copy-Item $utilsPdbFiles $pdbOutputPath
-        }
+        New-Item $pdbOutputPath -Type Directory -Force
+        Copy-Item $vRouterPdbFiles $pdbOutputPath
     })
 
     $Job.PopStep()
@@ -218,10 +214,8 @@ function Invoke-AgentBuild {
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $agentMSI $OutputPath -Recurse
-        if($BuildMode -eq "debug") {
-            New-Item $pdbOutputPath -Type Directory -Force
-            Copy-Item $agentPdbFiles $pdbOutputPath -Recurse
-        }
+        New-Item $pdbOutputPath -Type Directory -Force
+        Copy-Item $agentPdbFiles $pdbOutputPath -Recurse
     })
 
     $Job.PopStep()
