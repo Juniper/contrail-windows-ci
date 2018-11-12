@@ -95,17 +95,18 @@ Describe "Floating IP" {
 
                 foreach ($Session in $MultiNode.Sessions) {
                     Initialize-DockerNetworks `
-                    -Session $Session `
-                    -Networks $Networks `
-                    -Configs $MultiNode.Configs `
+                        -Session $Session `
+                        -Networks $Networks `
+                        -Configs $MultiNode.Configs `
                 }
 
             }
 
             AfterAll {
                 foreach ($Session in $MultiNode.Sessions) {
-                    Remove-DockerNetwork -Session $Session -Name $ServerNetwork.Name
-                    Remove-DockerNetwork -Session $Session -Name $ClientNetwork.Name
+                    foreach ($Network in $Networks) {
+                        Remove-DockerNetwork -Session $Session -Name $Network.Name
+                    }
                 }
 
                 Write-Log "Deleting floating IP pool"
@@ -161,7 +162,6 @@ Describe "Floating IP" {
                 }
 
                 $Sessions = $MultiNode.Sessions
-                $SystemConfig = $MultiNode.Configs.System
                 try {
                     Merge-Logs -LogSources (
                         (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $ContainerClientID),

@@ -25,7 +25,7 @@ function Set-ConfAndLogDir {
 
 function New-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
+        [Parameter(Mandatory=$true)] [string] $TestenvConfFile
     )
 
     $VMs = Read-TestbedsConfig -Path $TestenvConfFile

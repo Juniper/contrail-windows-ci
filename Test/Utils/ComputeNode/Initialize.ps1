@@ -2,7 +2,9 @@
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-
+. $PSScriptRoot\Configuration.ps1
+. $PSScriptRoot\Installation.ps1
+. $PSScriptRoot\Service.ps1
 . $PSScriptRoot\..\DockerNetwork\DockerNetwork.ps1
 
 function Initialize-ComputeNode {
@@ -13,7 +15,7 @@ function Initialize-ComputeNode {
     )
 
     if ($PrepareEnv) {
-        Write-Log "Installing components from testbed..."
+        Write-Log "Installing components on testbed..."
         Install-ComputeServices -Session $Session `
             -SystemConfig $Configs.System `
             -OpenStackConfig $Configs.OpenStack `
@@ -56,4 +58,45 @@ function Initialize-DockerNetworks {
 
         Write-Log "Created network id: $ID"
     }
+}
+
+function Install-ComputeServices {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
+        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
+    )
+    Install-Components -Session $Session
+
+    Initialize-ComputeServices `
+        -Session $Session `
+        -SystemConfig $SystemConfig `
+        -OpenStackConfig $OpenStackConfig `
+        -ControllerConfig $ControllerConfig
+}
+
+function Initialize-ComputeServices {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
+        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
+    )
+
+    New-NodeMgrConfigFile -Session $Session -ControllerIP $ControllerConfig.Address
+
+    New-CNMPluginConfigFile -Session $Session `
+        -AdapterName $SystemConfig.AdapterName `
+        -OpenStackConfig $OpenStackConfig `
+        -ControllerConfig $ControllerConfig
+
+    Initialize-DriverAndExtension -Session $Session `
+        -SystemConfig $SystemConfig
+
+    New-AgentConfigFile -Session $Session `
+        -ControllerConfig $ControllerConfig `
+        -SystemConfig $SystemConfig
+
+    Start-AgentService -Session $Session
 }

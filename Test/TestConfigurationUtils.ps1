@@ -319,49 +319,6 @@ function Clear-TestConfiguration {
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
 
-function Install-ComputeServices {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
-        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
-    )
-
-    Install-Components -Session $Session -ControllerIP $ControllerConfig.Address
-
-    Initialize-ComputeServices `
-        -Session $Session `
-        -SystemConfig $SystemConfig `
-        -OpenStackConfig $OpenStackConfig `
-        -ControllerConfig $ControllerConfig
-}
-
-
-function Initialize-ComputeServices {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
-        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
-    )
-
-    New-NodeMgrConfigFile -Session $Session -ControllerIP $ControllerConfig.Address
-
-    New-CNMPluginConfigFile -Session $Session `
-        -AdapterName $SystemConfig.AdapterName `
-        -OpenStackConfig $OpenStackConfig `
-        -ControllerConfig $ControllerConfig
-
-    Initialize-DriverAndExtension -Session $Session `
-        -SystemConfig $SystemConfig
-
-    New-AgentConfigFile -Session $Session `
-        -ControllerConfig $ControllerConfig `
-        -SystemConfig $SystemConfig
-
-    Start-AgentService -Session $Session
-}
-
 function Remove-DockerNetwork {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,

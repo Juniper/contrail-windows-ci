@@ -18,6 +18,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1

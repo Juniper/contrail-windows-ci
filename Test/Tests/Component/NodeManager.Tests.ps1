@@ -1,7 +1,6 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -13,6 +12,8 @@ Param (
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
@@ -123,16 +124,21 @@ Describe "Node manager" {
 
     BeforeEach {
         $Session = $MultiNode.Sessions[0]
+        Start-CNMPluginService -Session $Session
 
         Clear-NodeMgrLogs -Session $Session
         Start-NodeMgr -Session $Session
+
+        Start-AgentService
     }
 
     AfterEach {
         try {
+            Stop-AgentService -Session $Session
             Stop-NodeMgr -Session $Session
+            Stop-CNMPluginService -Session $Session
         } finally {
-            Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
         }
     }
 
@@ -150,7 +156,7 @@ Describe "Node manager" {
             Initialize-ComputeNode `
                 -Session $Session `
                 -Configs $MultiNode.Configs `
-                -PrepareEnv $PrepareEnv
+                -PrepareEnv $true
         }
     }
 
@@ -161,7 +167,7 @@ Describe "Node manager" {
                 Clear-ComputeNode `
                     -Session $Session `
                     -SystemConfig $MultiNode.Configs.System `
-                    -PrepareEnv $PrepareEnv
+                    -PrepareEnv $true
             }
 
             Remove-MultiNodeSetup -MultiNode $MultiNode

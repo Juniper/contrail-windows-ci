@@ -126,6 +126,15 @@ Run selected test:
 Invoke-Pester -Script @{ Path = ".\TunnellingWithAgent.Tests.ps1"; Parameters = @{ TestenvConfFile = "testenv-conf.yaml"}; } -TestName 'Tunnelling with Agent tests'
 ```
 
+### Running tests on an already deployed environment
+
+Network tests can be run on an already deployed environment (for example by contrail-ansible-deployer). Setting PrepareEnv
+flag to false will cause tests to not setup any services and become independant from deployment method:
+
+```
+ Invoke-Pester -Script @{ Path = './Tests/Network/*'; Parameters = @{ PrepareEnv = $false; TestenvConfFile="testenv-conf.yaml" };}
+```
+
 ### Running tests in loop
 
 If you need to run tests in infinite loop call Set-PesterTestLoop (no parameters) at the beggining of the test script.
