@@ -128,11 +128,11 @@ Invoke-Pester -Script @{ Path = ".\TunnellingWithAgent.Tests.ps1"; Parameters = 
 
 ### Running tests on an already deployed environment
 
-Network tests can be run on an already deployed environment (for example by contrail-ansible-deployer). Setting PrepareEnv
+Smoke tests can be run on an already deployed environment (for example by contrail-ansible-deployer). Setting PrepareEnv
 flag to false will cause tests to not setup any services and become independant from deployment method:
 
 ```
- Invoke-Pester -Script @{ Path = './Tests/Network/*'; Parameters = @{ PrepareEnv = $false; TestenvConfFile="testenv-conf.yaml" };}
+ Invoke-Pester -Tag 'Smoke' -Script @{ Path = './Tests/Network/*'; Parameters = @{ PrepareEnv = $false; TestenvConfFile="testenv-conf.yaml" };}
 ```
 
 ### Running tests in loop
