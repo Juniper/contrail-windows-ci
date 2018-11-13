@@ -126,7 +126,7 @@ function Get-AgentServiceStatus {
         [Parameter(Mandatory=$true)] $Session
     )
 
-    Get-ServiceStatus -Session $Session -ServiceName (Get-AgentServiceName)
+    Get-ServiceStatus -Session $Session -ServiceName $(Get-AgentServiceName)
 }
 
 function Get-CNMPluginServiceStatus {
@@ -198,16 +198,7 @@ function Start-AgentService {
         [Parameter(Mandatory=$true)] $Session
     )
 
-    Write-Log "Starting Agent"
-
-    $AgentServiceName = Get-AgentServiceName
-    $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
-        $Output = netstat -abq  #dial tcp bug debug output
-        #TODO: After the bugfix, use Enable-Service generic function here.
-        Start-Service $using:AgentServiceName
-        return $Output
-    } -CaptureOutput
-    Write-Log $Output.Output
+    Start-RemoteService -Session $Session -ServiceName $(Get-AgentServiceName)
 }
 
 function Start-CNMPluginService {
@@ -215,9 +206,7 @@ function Start-CNMPluginService {
         [Parameter(Mandatory=$true)] $Session
     )
 
-    $ServiceName = Get-CNMPluginServiceName
-
-    Start-RemoteService -Session $Session -ServiceName $ServiceName
+    Start-RemoteService -Session $Session -ServiceName $(Get-CNMPluginServiceName)
 }
 
 function Stop-CNMPluginService {
