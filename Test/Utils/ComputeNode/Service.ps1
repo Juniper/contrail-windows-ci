@@ -176,10 +176,6 @@ function New-CNMPluginService {
     $LogDir = Get-ComputeLogsDir
     $LogPath = Join-Path $LogDir "contrail-cnm-plugin-service.log"
 
-    Invoke-Command -Session $Session -ScriptBlock {
-        New-Item -ItemType Directory -Force -Path $using:LogDir -ErrorAction SilentlyContinue | Out-Null
-    }
-
     $ServiceName = Get-CNMPluginServiceName
     $ExecutablePath = Get-CNMPluginExecutablePath
 

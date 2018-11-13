@@ -8,6 +8,21 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\MultiNode.ps1
 
+function Set-ConfAndLogDir {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
+    )
+    $ConfigDirPath = Get-DefaultConfigDir
+    $LogDirPath = Get-ComputeLogsDir
+
+    foreach($Session in $Sessions) {
+        Invoke-Command -Session $Session -ScriptBlock {
+            New-Item -ItemType Directory -Path $using:ConfigDirPath -Force | Out-Null
+            New-Item -ItemType Directory -Path $using:LogDirPath -Force | Out-Null
+        } | Out-Null
+    }
+}
+
 function New-MultiNodeSetup {
     Param (
         [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
@@ -20,6 +35,8 @@ function New-MultiNodeSetup {
     $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
     $Sessions = New-RemoteSessions -VMs $VMs
+
+    Set-ConfAndLogDir -Sessions $Sessions
 
     Write-Log "Installing components on testbeds..."
     if ($InstallNodeMgr) {
