@@ -355,7 +355,7 @@ projects:
     template:
       - name: ci-contrail-windows-other-projects-template
       
-   - name: Juniper/contrail-deployers-containers
+  - name: Juniper/contrail-deployers-containers
     template:
       - name: ci-contrail-windows-other-projects-template
 
