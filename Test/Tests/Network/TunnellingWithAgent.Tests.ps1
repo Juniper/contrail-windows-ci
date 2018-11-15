@@ -17,6 +17,7 @@ Param (
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
@@ -219,10 +220,11 @@ Test-WithRetries 3 {
             $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
 
             foreach ($Session in $MultiNode.Sessions) {
-                Initialize-ComputeNode `
-                    -Session $Session `
-                    -Configs $MultiNode.Configs `
-                    -PrepareEnv $PrepareEnv
+                if ($PrepareEnv) {
+                    Initialize-ComputeNode `
+                        -Session $Session `
+                        -Configs $MultiNode.Configs `
+                }
 
                 Initialize-DockerNetworks `
                     -Session $Session `
@@ -237,10 +239,11 @@ Test-WithRetries 3 {
                 foreach ($Session in $MultiNode.Sessions) {
                     Remove-DockerNetwork -Session $Session -Name $Network.Name
 
-                    Clear-ComputeNode `
-                        -Session $Session `
-                        -SystemConfig $MultiNode.Configs.System `
-                        -PrepareEnv $PrepareEnv
+                    if ($PrepareEnv) {
+                        Clear-ComputeNode `
+                            -Session $Session `
+                            -SystemConfig $MultiNode.Configs.System `
+                    }
                 }
 
                 Write-Log "Deleting virtual network"

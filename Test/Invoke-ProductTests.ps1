@@ -1,7 +1,8 @@
 Param(
     [Parameter(Mandatory = $false)] [string] $TestRootDir = ".",
     [Parameter(Mandatory = $true)] [string] $TestReportDir,
-    [Parameter(Mandatory = $true)] [string] $TestenvConfFile
+    [Parameter(Mandatory = $true)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [switch] $UseExistingServices
 )
 
 . $PSScriptRoot\TestRunner.ps1
@@ -21,4 +22,5 @@ Invoke-IntegrationAndFunctionalTests `
     -TestenvConfFile $TestenvConfFile `
     -PesterOutReportPath $PesterOutReportPath `
     -DetailedLogsOutputDir $DetailedLogsDir `
-    -AdditionalJUnitsDir $DDriverJUnitLogsOutputDir
+    -AdditionalJUnitsDir $DDriverJUnitLogsOutputDir `
+    -UseExistingServices:$UseExistingServices

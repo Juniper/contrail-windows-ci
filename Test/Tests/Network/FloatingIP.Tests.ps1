@@ -186,19 +186,21 @@ Describe "Floating IP" -Tag "Smoke" {
             )]
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
-            foreach ($Session in $MultiNode.Sessions) {
-                Initialize-ComputeNode -Session $Session -Configs $MultiNode.Configs -PrepareEnv $PrepareEnv
+            if ($PrepareEnv) {
+                foreach ($Session in $MultiNode.Sessions) {
+                    Initialize-ComputeNode -Session $Session -Configs $MultiNode.Configs
+                }
             }
         }
 
         AfterAll {
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                $SystemConfig = $MultiNode.Configs.System
-                foreach ($Session in $MultiNode.Sessions) {
-                    Clear-ComputeNode `
-                        -Session $Session `
-                        -SystemConfig $SystemConfig `
-                        -PrepareEnv $PrepareEnv
+                if ($PrepareEnv){
+                    foreach ($Session in $MultiNode.Sessions) {
+                        Clear-ComputeNode `
+                            -Session $Session `
+                            -SystemConfig $MultiNode.Configs.System `
+                    }
                 }
                 Remove-MultiNodeSetup -MultiNode $MultiNode
                 Remove-Variable "MultiNode"

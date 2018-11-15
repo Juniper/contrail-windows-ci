@@ -116,6 +116,7 @@ Copy `testenv-conf.yaml.sample` to `testenv-conf.yaml` file and replace all occu
 ## Running the tests
 
 Run the whole Windows sanity suite:
+
 ```
 .\Invoke-ProductTests.ps1 -TestRootDir . -TestenvConfFile ..\testenv-conf.yaml -TestReportDir ../reports
 ```
@@ -134,6 +135,13 @@ flag to false will cause tests to not setup any services and become independant 
 ```
  Invoke-Pester -Tag 'Smoke' -Script @{ Path = './Tests/Network/*'; Parameters = @{ PrepareEnv = $false; TestenvConfFile="testenv-conf.yaml" };}
 ```
+
+You can also run it by invoking product tests script:
+
+```
+.\Invoke-ProductTests.ps1 -TestRootDir . -TestenvConfFile ..\testenv-conf.yaml -TestReportDir ../reports -UseExtistingServices
+```
+
 
 ### Running tests in loop
 

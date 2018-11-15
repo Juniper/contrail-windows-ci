@@ -10,70 +10,31 @@
 function Initialize-ComputeNode {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [TestenvConfigs] $Configs,
-        [Parameter(Mandatory=$false)] [bool] $PrepareEnv=$true
+        [Parameter(Mandatory=$true)] [TestenvConfigs] $Configs
     )
 
-    if ($PrepareEnv) {
-        Write-Log "Installing components on testbed..."
-        Install-ComputeServices -Session $Session `
-            -SystemConfig $Configs.System `
-            -OpenStackConfig $Configs.OpenStack `
-            -ControllerConfig $Configs.Controller
-    } else {
-        Write-Log "Not performing environment setup because PrepareEnv flag is set to $PrepareEnv"
-    }
+    Write-Log "Installing components on testbed..."
+    Install-Components -Session $Session
+
+    Write-Log "Initializing components on testbed..."
+    Initialize-ComputeServices -Session $Session `
+        -SystemConfig $Configs.System `
+        -OpenStackConfig $Configs.OpenStack `
+        -ControllerConfig $Configs.Controller
 }
 
 function Clear-ComputeNode {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-        [Parameter(Mandatory=$false)] [bool] $PrepareEnv=$true
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
-    if ($PrepareEnv) {
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+    Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
 
-        Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+    Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
 
-        Write-Log "Uninstalling components from testbed..."
-        Uninstall-Components -Session $Session
-    } else {
-        Write-Log "Not performing environment cleanup because PrepareEnv flag is set to $PrepareEnv"
-    }
-}
-
-function Initialize-DockerNetworks {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [TestenvConfigs] $Configs,
-        [Parameter(Mandatory=$true)] [Network[]] $Networks
-    )
-    foreach ($Network in $Networks) {
-        $ID = New-DockerNetwork -Session $Session `
-            -TenantName $Configs.Controller.DefaultProject `
-            -Name $Network.Name `
-            -Subnet "$( $Network.Subnet.IpPrefix )/$( $Network.Subnet.IpPrefixLen )"
-
-        Write-Log "Created network id: $ID"
-    }
-}
-
-function Install-ComputeServices {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
-        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
-    )
-    Install-Components -Session $Session
-
-    Initialize-ComputeServices `
-        -Session $Session `
-        -SystemConfig $SystemConfig `
-        -OpenStackConfig $OpenStackConfig `
-        -ControllerConfig $ControllerConfig
+    Write-Log "Uninstalling components from testbed..."
+    Uninstall-Components -Session $Session
 }
 
 function Initialize-ComputeServices {
