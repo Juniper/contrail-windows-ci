@@ -85,6 +85,72 @@ class FileLogSource : LogSource {
     }
 }
 
+class EventLogLogSource : LogSource {
+    [String] $EventLogName
+    [String] $EventLogSource
+    [int64] $StartEventIdx
+
+    EventLogLogSource($Session, $EventLogName, $EventLogSource) {
+        $This.Session = $Session
+        $this.EventLogName = $EventLogName
+        $this.EventLogSource = $EventLogSource
+        $this.StartEventIdx = $this.GetLatestEventIdx()
+    }
+
+    [CollectedLog[]] GetContent() {
+        $LogGetterBody = {
+            Param([Parameter(Mandatory = $true)] [string] $LogName,
+                  [Parameter(Mandatory = $true)] [string] $LogSource,
+                  [Parameter(Mandatory = $true)] [int64] $StartEventIdx,
+                  [Parameter(Mandatory = $true)] [int64] $EndEventIdx)
+
+            $Content = Get-EventLog `
+                -LogName $LogName `
+                -Source $LogSource `
+                -Index ($StartEventIdx..$EndEventIdx) | Out-String
+
+            $Name = "$LogSource - $LogName"
+            return @{
+                Name = "EventLog from $Name"
+                Tag = "$Name"
+                Content = $Content
+            }
+        }
+
+        $Start = $this.StartEventIdx
+        $End = $this.GetLatestEventIdx()
+
+        return Invoke-CommandRemoteOrLocal -Func $LogGetterBody -Session $this.Session -Arguments @($this.EventLogName, $this.EventLogSource, $Start, $End) |
+            ForEach-Object {
+                if ($_['Err']) {
+                    [InvalidCollectedLog] $_
+                } else {
+                    [ValidCollectedLog] $_
+                }
+            }
+    }
+
+    ClearContent() {
+        $this.StartEventIdx = $this.GetLatestEventIdx()
+    }
+
+    [int64] GetLatestEventIdx() {
+        $Getter = {
+            Param([Parameter(Mandatory = $true)] [string] $LogName,
+                  [Parameter(Mandatory = $true)] [string] $LogSource)
+            try {
+                return Get-EventLog -LogName $LogName -Source $LogSource -Newest 1 | Select-Object -Expand Index
+            } catch [System.ArgumentException] {
+                # This may happen if we instantiate EventLogLogCollector before the corresponding EventLog exist.
+                # In such case, the EventLog should start numbering from 1 anyways, so just return 1.
+                return 1
+            }
+        }
+        return Invoke-CommandRemoteOrLocal -Func $Getter -Session $this.Session -Arguments @($this.EventLogName, $this.EventLogSource)
+    }
+}
+
+
 class ContainerLogSource : LogSource {
     [String] $Container
 
@@ -110,8 +176,9 @@ class ContainerLogSource : LogSource {
     }
 
     ClearContent() {
-        # It's not possible to clear docker container logs,
-        # but the --since flag may be used in GetContent instead.
+        # It's not possible to clear docker container logs, but it's OK because we have fresh
+        # containers in each test case.
+        # If we really need to cleanup though, we could use --since flag in GetContent.
     }
 }
 
@@ -139,6 +206,16 @@ function New-FileLogSource {
             Session = $_
             Path = $Path
         }
+    }
+}
+
+function New-EventLogLogSource {
+    Param([Parameter(Mandatory = $true)] [string] $EventLogName,
+          [Parameter(Mandatory = $true)] [string] $EventLogSource,
+          [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
+
+    return $Sessions | ForEach-Object {
+        [EventLogLogSource]::new($_, $EventLogName, $EventLogSource)
     }
 }
 

@@ -237,7 +237,7 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
     Test-MultipleSourcesAndSessions
 
-    Context "Docker logs" {
+    Context "Container logs" {
         BeforeEach {
             Initialize-PesterLogger -OutDir "TestDrive:\"
         }
@@ -246,7 +246,7 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
             New-Container -Session $Sess1 -Name foo -Network nat
 
             Merge-Logs (New-ContainerLogSource -Sessions $Sess1 -ContainerNames foo)
-            $ContentRaw = Get-Content -Raw "TestDrive:\*.Docker logs.captures logs of container.txt"
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Container logs.captures logs of container.txt"
             $ContentRaw | Should -BeLike "*Microsoft Windows*"
         }
 
@@ -259,6 +259,49 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
         AfterEach {
             Remove-AllContainers -Session $Sess1
+        }
+    }
+
+    Context "Windows Eventlog" {
+        BeforeEach {
+            Invoke-Command -Session $Sess1 {
+                New-EventLog -Source "Test" -LogName "TestLog"
+            }
+        }
+        AfterEach {
+            Invoke-Command -Session $Sess1 {
+                Remove-EventLog -LogName "TestLog"
+            }
+        }
+        It "writing and clearing works" {
+            # We are using a single, two step integration test here for brevity.
+            # TODO: consider refactoring when more test cases are added.
+
+            # TEST 1. Verify that getting logs from event log works
+            $Source = New-EventLogLogSource -Sessions $Sess1 -EventLogName "TestLog" -EventLogSource "Test"
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+
+            Invoke-Command -Session $Sess1 {
+                Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "first entry" -ID 1
+            }
+            Merge-Logs -LogSources $Source
+
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.writing and clearing works.txt"
+            $ContentRaw | Should -BeLike "*first entry*"
+
+            # TEST 2. Verify that clearing works - previous messages are not pulled
+            Clear-Content "TestDrive:\*.Windows Eventlog.writing and clearing works.txt"
+            $Source = New-EventLogLogSource -Sessions $Sess1 -EventLogName "TestLog" -EventLogSource "Test"
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+
+            Invoke-Command -Session $Sess1 {
+                Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "second entry" -ID 1
+            }
+            Merge-Logs -LogSources $Source
+
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.writing and clearing works.txt"
+            $ContentRaw | Should -BeLike "*second entry*"
+            $ContentRaw | Should -Not -BeLike "*first entry*"
         }
     }
 }
