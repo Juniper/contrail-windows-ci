@@ -120,7 +120,8 @@ class EventLogLogSource : LogSource {
         $Start = $this.StartEventIdx
         $End = $this.GetLatestEventIdx()
 
-        return Invoke-CommandRemoteOrLocal -Func $LogGetterBody -Session $this.Session -Arguments @($this.EventLogName, $this.EventLogSource, $Start, $End) |
+        return Invoke-CommandRemoteOrLocal -Func $LogGetterBody -Session $this.Session `
+                -Arguments @($this.EventLogName, $this.EventLogSource, $Start, $End) |
             ForEach-Object {
                 if ($_['Err']) {
                     [InvalidCollectedLog] $_
@@ -146,7 +147,8 @@ class EventLogLogSource : LogSource {
                 return 1
             }
         }
-        return Invoke-CommandRemoteOrLocal -Func $Getter -Session $this.Session -Arguments @($this.EventLogName, $this.EventLogSource)
+        return Invoke-CommandRemoteOrLocal -Func $Getter -Session $this.Session `
+            -Arguments @($this.EventLogName, $this.EventLogSource)
     }
 }
 

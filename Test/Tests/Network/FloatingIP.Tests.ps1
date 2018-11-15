@@ -163,7 +163,10 @@ Describe "Floating IP" {
                     Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                     Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
                 } finally {
-                    Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+                    Merge-Logs -DontCleanUp -LogSources (
+                        (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
+                        (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
+                    )
                 }
             }
         }

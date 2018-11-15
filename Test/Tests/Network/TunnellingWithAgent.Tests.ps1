@@ -287,7 +287,10 @@ Test-WithRetries 3 {
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
             } finally {
-                Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+                Merge-Logs -DontCleanUp -LogSources (
+                    (New-FileLogSource  -Sessions $Sessions -Path (Get-ComputeLogsPath)),
+                    (New-EventLogLogSource -Sessions $Sessions -EventLogName "Application" -EventLogSource "Docker")
+                )
             }
         }
     }

@@ -260,7 +260,10 @@ Test-WithRetries 1 {
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $MultiNode.Sessions)
+                Merge-Logs -DontCleanUp -LogSources (
+                    (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
+                    (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
+                )
             }
         }
 

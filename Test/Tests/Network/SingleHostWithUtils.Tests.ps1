@@ -155,7 +155,9 @@ Describe "Single compute node protocol tests with utils" {
 
     AfterEach {
         try {
-            Merge-Logs -LogSources (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
+            Merge-Logs -LogSources (
+                (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
+            )
 
             Write-Log "Removing containers"
             Remove-AllContainers -Session $Session
@@ -166,7 +168,10 @@ Describe "Single compute node protocol tests with utils" {
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            Merge-Logs -DontCleanUp -LogSources (
+                (New-FileLogSource  -Sessions $Session -Path (Get-ComputeLogsPath)),
+                (New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker")
+            )
         }
     }
 

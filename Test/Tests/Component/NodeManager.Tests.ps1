@@ -136,7 +136,10 @@ Describe "Node manager" {
             Stop-NodeMgr -Session $Session
             Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
         } finally {
-            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            Merge-Logs -DontCleanUp -LogSources (
+                (New-FileLogSource  -Sessions $Session -Path (Get-ComputeLogsPath)),
+                (New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker")
+            )
         }
     }
 
