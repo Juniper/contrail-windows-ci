@@ -223,13 +223,13 @@ Test-WithRetries 3 {
                 if ($PrepareEnv) {
                     Initialize-ComputeNode `
                         -Session $Session `
-                        -Configs $MultiNode.Configs `
+                        -Configs $MultiNode.Configs
                 }
 
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -Configs $MultiNode.Configs `
+                    -Configs $MultiNode.Configs
             }
         }
 
@@ -242,7 +242,7 @@ Test-WithRetries 3 {
                     if ($PrepareEnv) {
                         Clear-ComputeNode `
                             -Session $Session `
-                            -SystemConfig $MultiNode.Configs.System `
+                            -SystemConfig $MultiNode.Configs.System
                     }
                 }
 

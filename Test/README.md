@@ -139,7 +139,7 @@ flag to false will cause tests to not setup any services and become independant 
 You can also run it by invoking product tests script:
 
 ```
-.\Invoke-ProductTests.ps1 -TestRootDir . -TestenvConfFile ..\testenv-conf.yaml -TestReportDir ../reports -UseExtistingServices
+.\Invoke-ProductTests.ps1 -TestRootDir . -TestenvConfFile ..\testenv-conf.yaml -TestReportDir ../reports -UseExistingServices
 ```
 
 

@@ -241,7 +241,7 @@ Test-WithRetries 1 {
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -Configs $MultiNode.Configs `
+                    -Configs $MultiNode.Configs
             }
 
 
@@ -278,7 +278,7 @@ Test-WithRetries 1 {
                     foreach($Session in $MultiNode.Sessions) {
                         Clear-ComputeNode `
                             -Session $Session `
-                            -SystemConfig $MultiNode.Configs.System `
+                            -SystemConfig $MultiNode.Configs.System
                     }
                 }
 

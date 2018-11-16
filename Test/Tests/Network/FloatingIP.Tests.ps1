@@ -97,7 +97,7 @@ Describe "Floating IP" -Tag "Smoke" {
                     Initialize-DockerNetworks `
                         -Session $Session `
                         -Networks $Networks `
-                        -Configs $MultiNode.Configs `
+                        -Configs $MultiNode.Configs
                 }
 
             }
@@ -199,7 +199,7 @@ Describe "Floating IP" -Tag "Smoke" {
                     foreach ($Session in $MultiNode.Sessions) {
                         Clear-ComputeNode `
                             -Session $Session `
-                            -SystemConfig $MultiNode.Configs.System `
+                            -SystemConfig $MultiNode.Configs.System
                     }
                 }
                 Remove-MultiNodeSetup -MultiNode $MultiNode
