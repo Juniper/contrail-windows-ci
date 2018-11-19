@@ -151,6 +151,15 @@ Describe "Single compute node protocol tests with utils" {
             -Container1NetInfo $Container1NetInfo -Container2NetInfo $Container2NetInfo `
             -Session $Session
 
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "LogSources",
+            Justification="It's used in AfterEach."
+        )]
+        $LogSources = @(
+            (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
+            (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
+        )
     }
 
     AfterEach {
@@ -168,10 +177,7 @@ Describe "Single compute node protocol tests with utils" {
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -DontCleanUp -LogSources (
-                (New-FileLogSource  -Sessions $Session -Path (Get-ComputeLogsPath)),
-                (New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker")
-            )
+            Merge-Logs -DontCleanUp -LogSources $LogSources
         }
     }
 

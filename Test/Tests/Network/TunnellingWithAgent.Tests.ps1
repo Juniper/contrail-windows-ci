@@ -274,6 +274,16 @@ Test-WithRetries 3 {
                 -Session $MultiNode.Sessions[1] -ContainerID $Container2ID
             $IP = $Container2NetInfo.IPAddress
             Write-Log "IP of ${Container2ID}: $IP"
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "LogSources",
+                Justification="It's used in AfterEach."
+            )]
+            $LogSources = @(
+                (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
+                (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
+            )
         }
 
         AfterEach {
@@ -287,10 +297,7 @@ Test-WithRetries 3 {
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
             } finally {
-                Merge-Logs -DontCleanUp -LogSources (
-                    (New-FileLogSource  -Sessions $Sessions -Path (Get-ComputeLogsPath)),
-                    (New-EventLogLogSource -Sessions $Sessions -EventLogName "Application" -EventLogSource "Docker")
-                )
+                Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }
     }

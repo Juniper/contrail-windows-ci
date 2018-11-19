@@ -246,6 +246,16 @@ Test-WithRetries 1 {
                 -ContainerID $ContainersIDs[0] `
                 -ContainerImage "microsoft/windowsservercore" `
                 -NetworkName $Network.Name
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "LogSources",
+                Justification="It's used in AfterEach."
+            )]
+            $LogSources = @(
+                (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
+                (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
+            )
         }
 
         function AfterEachContext {
@@ -260,10 +270,7 @@ Test-WithRetries 1 {
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources (
-                    (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
-                    (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
-                )
+                Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }
 

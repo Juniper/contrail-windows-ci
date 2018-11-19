@@ -141,6 +141,16 @@ Describe "Floating IP" {
                                                                   $ServerFloatingIpAddress)
 
                 $MultiNode.NM.AssignFloatingIpToAllPortsInNetwork($ContrailFloatingIp, $ContrailServerNetwork)
+
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseDeclaredVarsMoreThanAssignments",
+                    "LogSources",
+                    Justification="It's used in AfterEach."
+                )]
+                $LogSources = @(
+                    (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
+                    (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
+                )
             }
 
             AfterEach {
@@ -163,11 +173,7 @@ Describe "Floating IP" {
                     Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                     Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
                 } finally {
-                    Merge-Logs -DontCleanUp -LogSources (
-                        (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
-                        (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
-                    )
-                }
+                    Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }
 
