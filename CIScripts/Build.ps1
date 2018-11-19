@@ -13,7 +13,6 @@ Initialize-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 $SconsBuildMode = Resolve-BuildMode
 
 $CnmPluginOutputDir = "output/cnm-plugin"
-$DockerDriverOutputDir = "output/docker-driver"
 $vRouterOutputDir = "output/vrouter"
 $vtestOutputDir = "output/vtest"
 $AgentOutputDir = "output/agent"
@@ -80,16 +79,11 @@ try {
     }
 
     if (Test-Path Env:DOCKER_REGISTRY) {
-        Copy-Item -Path $CnmPluginOutputDir -Destination $DockerDriverOutputDir -Recurse
-
         $ContainersAttributes = @(
             [ContainerAttributes]::New("vrouter", @(
                 $vRouterOutputDir,
                 $AgentOutputDir,
                 $NodemgrOutputDir
-            )),
-            [ContainerAttributes]::New("docker-driver", @(
-                $DockerDriverOutputDir
             )),
             [ContainerAttributes]::New("cnm-plugin", @(
                 $CnmPluginOutputDir
