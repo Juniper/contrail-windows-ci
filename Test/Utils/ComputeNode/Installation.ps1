@@ -120,12 +120,17 @@ function Install-Nodemgr {
             pip install "C:\Artifacts\nodemgr\$Using:A"
         } | Out-Null
     }
+
+    New-NodeMgrService -Session $Session
 }
 
 function Uninstall-Nodemgr {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Uninstalling Nodemgr"
+
+    Remove-NodeMgrService -Session $Session
+
     $Res = Invoke-NativeCommand -Session $Session -AllowNonZero -CaptureOutput -ScriptBlock {
         Get-ChildItem "C:\Artifacts\nodemgr\*.tar.gz" -Name
     }
