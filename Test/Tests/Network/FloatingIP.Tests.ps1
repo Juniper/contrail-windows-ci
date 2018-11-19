@@ -174,6 +174,7 @@ Describe "Floating IP" {
                     Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
                 } finally {
                     Merge-Logs -DontCleanUp -LogSources $LogSources
+                }
             }
         }
 
