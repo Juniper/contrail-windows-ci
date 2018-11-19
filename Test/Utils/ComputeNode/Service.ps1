@@ -134,7 +134,7 @@ function Get-CNMPluginServiceConfiguration {
         "ServiceName" = $ServiceName;
         "ExecutablePath" = $ExecutablePath;
         "LogPath" = $LogPath;
-        "CommandLineParams" = @("");
+        "CommandLineParams" = "";
     }
 }
 
