@@ -134,7 +134,7 @@ function Get-CNMPluginServiceConfiguration {
         "ServiceName" = $ServiceName;
         "ExecutablePath" = $ExecutablePath;
         "LogPath" = $LogPath;
-        "CommandLineParams" = "";
+        "CommandLineParams" = @("");
     }
 }
 
@@ -190,7 +190,7 @@ function New-RemoteService {
         [Parameter(Mandatory=$true)] $ServiceName,
         [Parameter(Mandatory=$true)] $ExecutablePath,
         [Parameter(Mandatory=$true)] $LogPath,
-        [Parameter(Mandatory=$true)] [string[]] $CommandLineParams
+        [Parameter(Mandatory=$true)] [AllowEmptyCollection()] [string[]] $CommandLineParams
     )
 
     Install-ServiceWithNSSM `
