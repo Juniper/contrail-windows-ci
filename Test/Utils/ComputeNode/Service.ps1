@@ -134,7 +134,7 @@ function Get-CNMPluginServiceConfiguration {
         "ServiceName" = $ServiceName;
         "ExecutablePath" = $ExecutablePath;
         "LogPath" = $LogPath;
-        "CommandLineParams" = @();
+        "CommandLineParams" = @("");
     }
 }
 
@@ -317,7 +317,7 @@ function Remove-CNMPluginService {
     )
 
     $ServiceName = Get-CNMPluginServiceName
-    $ServiceStatus = Get-CNMPluginServiceStatus -Session $Session
+    $ServiceStatus = Get-ServiceStatus -ServiceName $ServiceName -Session $Session
 
     if ($ServiceStatus -ne "Stopped") {
         Stop-CNMPluginService -Session $Session
