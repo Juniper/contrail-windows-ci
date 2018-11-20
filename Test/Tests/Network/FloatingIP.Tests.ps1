@@ -147,7 +147,7 @@ Describe "Floating IP" {
                     "LogSources",
                     Justification="It's used in AfterEach."
                 )]
-                $LogSources = @(
+                [LogSource[]] $LogSources = @(
                     (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
                     (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
                 )

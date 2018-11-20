@@ -135,7 +135,7 @@ Describe "Node manager" {
             "LogSources",
             Justification="It's used in AfterEach."
         )]
-        $LogSources = @(
+        [LogSource[]] $LogSources = @(
             (New-FileLogSource  -Sessions $Session -Path (Get-ComputeLogsPath)),
             (New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker")
         )
