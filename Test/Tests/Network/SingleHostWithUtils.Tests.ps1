@@ -119,7 +119,7 @@ Describe "Single compute node protocol tests with utils" {
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
-        Initialize-DriverAndExtension -Session $Session `
+        Initialize-CnmPluginAndExtension -Session $Session `
             -SystemConfig $SystemConfig `
 
         New-DockerNetwork -Session $Session `

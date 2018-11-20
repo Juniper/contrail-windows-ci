@@ -71,7 +71,7 @@ function Save-CnmPluginUnitTestReport {
     Copy-Item $FoundRemoteJUnitReports.FullName -Destination $LocalJUnitDir -FromSession $Session
 }
 
-Describe "Docker Driver" {
+Describe "CNM Plugin" {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         $Session = $Sessions[0]

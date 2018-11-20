@@ -2,7 +2,7 @@
 openStack:
   username: admin
   password: c0ntrail123
-  project: admin # Used only for auth (eg. by Docker Driver)
+  project: admin # Used only for auth (eg. by CNM plugin)
   address: <CONTROLLER_IP>
   port: 5000
 

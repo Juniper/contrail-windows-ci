@@ -258,7 +258,7 @@ function Wait-RemoteInterfaceIP {
 
 # Before running this function make sure CNM-Plugin config file is created.
 # It can be done by function New-CNMPluginConfigFile.
-function Initialize-DriverAndExtension {
+function Initialize-CnmPluginAndExtension {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
@@ -332,7 +332,7 @@ function Initialize-ComputeServices {
             -OpenStackConfig $OpenStackConfig `
             -ControllerConfig $ControllerConfig
 
-        Initialize-DriverAndExtension -Session $Session `
+        Initialize-CnmPluginAndExtension -Session $Session `
             -SystemConfig $SystemConfig
 
         New-AgentConfigFile -Session $Session `
