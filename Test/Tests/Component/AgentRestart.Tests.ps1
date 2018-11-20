@@ -62,8 +62,8 @@ function Get-NumberOfStoredPorts {
 
 Test-WithRetries 3 {
     # "Unpendify" once "Replay add port" is merged.
-    Describe "Agent restart tests" -Pending {
-        It "Ports are correctly restored after Agent restart" {
+    Describe "Agent restart tests" {
+        It "Ports are correctly restored after Agent restart" -Pending {
             Write-Log "Testing ping before Agent restart..."
             Test-Ping `
                 -Session $Sessions[0] `
