@@ -160,7 +160,7 @@ function Get-ServiceName {
         [Parameter(Mandatory = $true)] [PSCustomObject] $Configuration
     )
 
-    return $Configuration.GetEnumerator() | Where-Object { $_.Key -eq "ServiceName" }
+    return $($Configuration.ServiceName)
 }
 
 function Get-AgentServiceName {
