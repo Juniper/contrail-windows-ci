@@ -144,13 +144,14 @@ Describe "Floating IP" {
 
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
-                    "LogSources",
+                    "StaticLogSources",
                     Justification="It's used in AfterEach."
                 )]
-                [LogSource[]] $LogSources = @(
+                [LogSource[]] $StaticLogSources = @(
                     (New-FileLogSource  -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)),
                     (New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker")
                 )
+                Write-Log $StaticLogSources
             }
 
             AfterEach {
@@ -173,7 +174,7 @@ Describe "Floating IP" {
                     Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                     Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
                 } finally {
-                    Merge-Logs -DontCleanUp -LogSources $LogSources
+                    Merge-Logs -DontCleanUp -LogSources $StaticLogSources
                 }
             }
         }
