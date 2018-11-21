@@ -92,7 +92,7 @@ function Uninstall-Utils {
 function Install-CnmPlugin {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Log "Installing Docker Driver"
+    Write-Log "Installing CNM Plugin"
     Invoke-MsiExec -Session $Session -Path "C:\Artifacts\contrail-cnm-plugin.msi"
     New-CNMPluginService -Session $Session
 }
@@ -100,7 +100,7 @@ function Install-CnmPlugin {
 function Uninstall-CnmPlugin {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Log "Uninstalling Docker Driver"
+    Write-Log "Uninstalling CNM plugin"
 
     Remove-CNMPluginService -Session $Session
     Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\contrail-cnm-plugin.msi"

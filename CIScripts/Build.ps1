@@ -41,7 +41,7 @@ foreach ($Directory in $Directories) {
 }
 
 try {
-    Invoke-CnmPluginBuild -DriverSrcPath $Env:DRIVER_SRC_PATH `
+    Invoke-CnmPluginBuild -PluginSrcPath $Env:CNM_PLUGIN_SRC_PATH `
         -SigntoolPath $Env:SIGNTOOL_PATH `
         -CertPath $Env:CERT_PATH `
         -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
