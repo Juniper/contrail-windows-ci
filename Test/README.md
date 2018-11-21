@@ -123,7 +123,7 @@ Run the whole Windows sanity suite:
 Run selected test:
 
 ```
-Invoke-Pester -Script @{ Path = ".\TunnellingWithAgent.Tests.ps1"; Parameters = @{ TestenvConfFile = "testenv-conf.yaml"}; } -TestName 'Tunnelling with Agent tests'
+.\FloatingIP.Tests.ps1 -TestenvConfFile ..\testenv-conf.yaml.sample
 ```
 
 ### Running tests in loop

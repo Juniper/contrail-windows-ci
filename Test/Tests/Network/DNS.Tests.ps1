@@ -260,7 +260,7 @@ Test-WithRetries 1 {
 
         function AfterEachContext {
             try {
-                Merge-Logs -LogSources (
+                Merge-Logs -LogSources @(
                     (New-ContainerLogSource -Sessions $MultiNode.Sessions[0] -ContainerNames $ContainersIDs[0]),
                     (New-ContainerLogSource -Sessions $MultiNode.Sessions[1] -ContainerNames $ContainersIDs[1])
                 )
