@@ -164,7 +164,7 @@ function Get-NodeMgrServiceConfiguration {
         -ServiceName "contrail-vrouter-nodemgr" `
         -ExecutablePath "C:\Python27\Scripts\contrail-nodemgr.exe" `
         -LogFileName "contrail-vrouter-nodemgr-service.log" `
-        -CommandLineParams = @($NodeTypeParam)
+        -CommandLineParams @($NodeTypeParam)
 }
 
 function Get-ServiceName {
