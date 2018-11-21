@@ -3,6 +3,24 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 . $PSScriptRoot\Configuration.ps1
 
+class Service {
+    [string] $ServiceName;
+    [string] $ExecutablePath;
+    [string] $LogPath;
+    [AllowEmptyCollection()] [string[]] $CommandLineParams;
+
+    [void] init([string] $ServiceName, [string] $ExecutablePath, [string] $LogPath, [string[]] $CommandLineParams) {
+        $this.ServiceName = $ServiceName
+        $this.ExecutablePath = $ExecutablePath
+        $this.LogPath = $LogPath
+        $this.CommandLineParams = $CommandLineParams
+    }
+
+    Service ([string] $ServiceName, [string] $ExecutablePath, [string] $LogPath, [string[]] $CommandLineParams) {
+        $this.init($ServiceName, $ExecutablePath, $LogPath, $CommandLineParams)
+    }
+}
+
 function Install-ServiceWithNSSM {
     Param (
         [Parameter(Mandatory=$true)] $Session,
@@ -105,59 +123,53 @@ function Out-StdoutAndStderrToLogFile {
     Write-Log $Output.Output
 }
 
-function Get-AgentServiceConfiguration {
+function New-ServiceConfiguration {
+    Param (
+        [Parameter(Mandatory=$true)] [string] $ServiceName,
+        [Parameter(Mandatory=$true)] [string] $ExecutablePath,
+        [Parameter(Mandatory=$true)] [string] $LogFileName,
+        [Parameter(Mandatory=$true)] [string[]] [AllowEmptyCollection()] $CommandLineParams
+    )
+
     $LogDir = Get-ComputeLogsDir
-    $LogPath = Join-Path $LogDir "contrail-vrouter-agent-service.log"
+    $LogPath = Join-Path $LogDir $LogFileName
 
-    $ExecutablePath = "C:\Program Files\Juniper Networks\agent\contrail-vrouter-agent.exe"
-    $ServiceName = "contrail-vrouter-agent"
+    return [Service]::new($ServiceName, $ExecutablePath, $LogPath, $CommandLineParams)
+}
 
+function Get-AgentServiceConfiguration {
     $ConfigPath = Get-DefaultAgentConfigPath
     $ConfigFileParam = "--config_file=$ConfigPath"
 
-    return @{
-        "ServiceName" = $ServiceName;
-        "ExecutablePath" = $ExecutablePath;
-        "LogPath" = $LogPath;
-        "CommandLineParams" = @($ConfigFileParam);
-    }
+    New-ServiceConfiguration `
+        -ServiceName "contrail-vrouter-agent" `
+        -ExecutablePath "agent\contrail-vrouter-agent.exe" `
+        -LogFileName "contrail-vrouter-agent-service.log" `
+        -CommandLineParams @($ConfigFileParam)
 }
 
 function Get-CNMPluginServiceConfiguration {
-    $LogDir = Get-ComputeLogsDir
-    $LogPath = Join-Path $LogDir "contrail-cnm-plugin-service.log"
-
-    $ExecutablePath = "C:\Program Files\Juniper Networks\cnm-plugin\contrail-cnm-plugin.exe"
-    $ServiceName = "contrail-cnm-plugin"
-
-    return @{
-        "ServiceName" = $ServiceName;
-        "ExecutablePath" = $ExecutablePath;
-        "LogPath" = $LogPath;
-        "CommandLineParams" = @();
-    }
+    New-ServiceConfiguration `
+        -ServiceName "contrail-cnm-plugin" `
+        -ExecutablePath "C:\Program Files\Juniper Networks\cnm-plugin\contrail-cnm-plugin.exe" `
+        -LogFileName "contrail-cnm-plugin-service.log" `
+        -CommandLineParams @()
 }
 
 function Get-NodeMgrServiceConfiguration {
-    $LogDir = Get-ComputeLogsDir
-    $LogPath = Join-Path $LogDir "contrail-vrouter-nodemgr-service.log"
-
-    $ExecutablePath = "C:\Python27\Scripts\contrail-nodemgr.exe"
-    $ServiceName = "contrail-vrouter-nodemgr"
 
     $NodeTypeParam = "--nodetype contrail-vrouter"
 
-    return @{
-        "ServiceName" = $ServiceName;
-        "ExecutablePath" = $ExecutablePath;
-        "LogPath" = $LogPath;
-        "CommandLineParams" = @($NodeTypeParam);
-    }
+    New-ServiceConfiguration `
+        -ServiceName "contrail-vrouter-nodemgr" `
+        -ExecutablePath "C:\Python27\Scripts\contrail-nodemgr.exe" `
+        -LogFileName "contrail-vrouter-nodemgr-service.log" `
+        -CommandLineParams = @($NodeTypeParam)
 }
 
 function Get-ServiceName {
     Param (
-        [Parameter(Mandatory = $true)] [PSCustomObject] $Configuration
+        [Parameter(Mandatory = $true)] [Service] $Configuration
     )
 
     return $($Configuration.ServiceName)
@@ -187,22 +199,19 @@ function Test-IsCNMPluginServiceRunning {
 function New-RemoteService {
     Param (
         [Parameter(Mandatory=$true)] $Session,
-        [Parameter(Mandatory=$true)] $ServiceName,
-        [Parameter(Mandatory=$true)] $ExecutablePath,
-        [Parameter(Mandatory=$true)] $LogPath,
-        [Parameter(Mandatory=$true)] [AllowEmptyCollection()] [string[]] $CommandLineParams
+        [Parameter(Mandatory=$true)] [Service] $Configuration
     )
 
     Install-ServiceWithNSSM `
         -Session $Session `
-        -ServiceName $ServiceName `
-        -ExecutablePath $ExecutablePath `
-        -CommandLineParams $CommandLineParams
+        -ServiceName $Configuration.ServiceName `
+        -ExecutablePath $Configuration.ExecutablePath `
+        -CommandLineParams $Configuration.CommandLineParams
 
     Out-StdoutAndStderrToLogFile `
         -Session $Session `
-        -ServiceName $ServiceName `
-        -LogPath $LogPath
+        -ServiceName $Configuration.ServiceName `
+        -LogPath $Configuration.LogPath
 }
 
 function New-AgentService {
@@ -210,11 +219,9 @@ function New-AgentService {
         [Parameter(Mandatory=$true)] $Session
     )
 
-    $Conf = Get-AgentServiceConfiguration
-
     New-RemoteService `
         -Session $Session `
-        @Conf
+        -Configuration $(Get-AgentServiceConfiguration)
 }
 
 function New-CNMPluginService {
@@ -222,11 +229,9 @@ function New-CNMPluginService {
         [Parameter(Mandatory=$true)] $Session
     )
 
-    $Conf = Get-CNMPluginServiceConfiguration
-
     New-RemoteService `
         -Session $Session `
-        @Conf
+        -Configuration $(Get-CNMPluginServiceConfiguration)
 }
 
 function New-NodeMgrService {
@@ -234,11 +239,9 @@ function New-NodeMgrService {
         [Parameter(Mandatory=$true)] $Session
     )
 
-    $Conf = Get-NodeMgrServiceConfiguration
-
     New-RemoteService `
         -Session $Session `
-        @Conf
+        -Configuration $(Get-NodeMgrServiceConfiguration)
 }
 
 function Start-AgentService {
