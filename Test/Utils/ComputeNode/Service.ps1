@@ -26,7 +26,7 @@ function Install-ServiceWithNSSM {
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName,
         [Parameter(Mandatory=$true)] $ExecutablePath,
-        [Parameter(Mandatory=$false)] [string[]] $CommandLineParams = @()
+        [Parameter(Mandatory=$false)] [AllowEmptyCollection()] [string[]] $CommandLineParams
     )
 
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
