@@ -4,11 +4,11 @@ Param (
     [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
-. $PSScriptRoot\..\CIScripts\Testenv\Testenv.ps1
-. $PSScriptRoot\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
-. $PSScriptRoot\TestConfigurationUtils.ps1
-. $PSScriptRoot\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\Containers.ps1
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 
 $NetworkName = "nat"
 
