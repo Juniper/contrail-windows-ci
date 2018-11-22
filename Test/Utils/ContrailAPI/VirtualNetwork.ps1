@@ -2,31 +2,17 @@
 . $PSScriptRoot\Constants.ps1
 
 function Get-ContrailVirtualNetworkUuidByName {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $true)] [string] $NetworkName)
 
-    $RequestUrl = $ContrailUrl + "/virtual-networks"
-    $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Get
-    $Networks = $Response.'virtual-networks'
-
     $ExpectedFqName = @("default-domain", $TenantName, $NetworkName)
-    foreach ($Network in $Networks) {
-        $FqName = $Network.fq_name
-        $AreFqNamesEqual = $null -eq $(Compare-Object $FqName $ExpectedFqName)
 
-        if ($AreFqNamesEqual) {
-            return $Network.uuid
-        }
-    }
-
-    throw "Contrail virtual network with name '$($ExpectedFqname -join ":")' cannot be found."
+    return $API.FQNameToUuid('virtual-network', $ExpectedFqName)
 }
 
 function Add-ContrailVirtualNetwork {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [SubnetConfiguration] $SubnetConfig = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200"))
@@ -60,59 +46,98 @@ function Add-ContrailVirtualNetwork {
         }
     }
 
-    $RequestUrl = $ContrailUrl + "/virtual-networks"
-    $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
+    $Response = $API.Post('virtual-network', $null, $Request)
 
     return $Response.'virtual-network'.'uuid'
 }
 
 function Remove-ContrailVirtualNetwork {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $NetworkUuid,
            [bool] $Force = $false)
 
-    $NetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
-    $Network = Invoke-RestMethod -Method Get -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken}
+    $Network = $API.Get('virtual-network', $NetworkUuid, $null)
 
-    if ($Force) {
-        # TODO remove this outer if, this is only a quick workaround,
-        # because sometimes the fields below are empty,
-        # and that's a failure in strict mode (I guess).
+    $Props = $Network.'virtual-network'.PSobject.Properties.Name
+
+    $VirtualMachines = $null
+    $IpInstances = $null
+
+    if($Props -contains 'virtual_machine_interface_back_refs') {
         $VirtualMachines = $Network.'virtual-network'.virtual_machine_interface_back_refs
+    }
+
+    if($Props -contains 'instance_ip_back_refs') {
         $IpInstances = $Network.'virtual-network'.instance_ip_back_refs
+    }
 
-        if ($VirtualMachines -or $IpInstances) {
-            if (!$Force) {
-                Write-Error "Couldn't remove network. Resources are still referred. Use force mode"
-                return
-            }
+    if ($VirtualMachines -or $IpInstances) {
+        if (!$Force) {
+            Write-Error "Couldn't remove network. Resources are still referred. Use force mode"
+            return
+        }
 
-            # First we have to remove resources referred by network instance in correct order:
-            #   - Instance IPs
-            #   - Virtual machines
+        # First we have to remove resources referred by network instance in correct order:
+        #   - Instance IPs
+        #   - Virtual machines
+        if($IpInstances) {
             ForEach ($IpInstance in $IpInstances) {
-                Invoke-RestMethod -Uri $IpInstance.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+                $API.Delete('instance-ip', $IpInstance.'uuid', $null)
             }
+        }
 
+        if($VirtualMachines) {
             ForEach ($VirtualMachine in $VirtualMachines) {
-                Invoke-RestMethod -Uri $VirtualMachine.href -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+                $API.Delete('virtual-machine-interface', $VirtualMachine.'uuid', $null)
             }
         }
     }
 
-    # We can now remove the network
-    Invoke-RestMethod -Uri $NetworkUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+    $API.Delete('virtual-network', $NetworkUuid, $null)
+}
+
+# TODO support multiple subnets per network
+# TODO return a class (perhaps use the class from MultiTenancy test?)
+function Add-OrReplaceNetwork {
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
+           [Parameter(Mandatory = $true)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $Name,
+           [Parameter(Mandatory = $true)] [SubnetConfiguration] $SubnetConfig)
+
+    try {
+        return Add-ContrailVirtualNetwork `
+            -API $API `
+            -TenantName $TenantName `
+            -NetworkName $Name `
+            -SubnetConfig $SubnetConfig
+    } catch {
+        if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
+            throw
+        }
+
+        $NetworkUuid = Get-ContrailVirtualNetworkUuidByName `
+            -API $API `
+            -TenantName $TenantName `
+            -NetworkName $Name
+
+        Remove-ContrailVirtualNetwork `
+            -API $API `
+            -NetworkUuid $NetworkUuid
+
+        return Add-ContrailVirtualNetwork `
+            -API $API `
+            -TenantName $TenantName `
+            -NetworkName $Name `
+            -SubnetConfig $SubnetConfig
+    }
 }
 
 function Get-ContrailVirtualNetworkPorts {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $NetworkUuid)
 
-    $VirtualNetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
-    $VirtualNetwork = Invoke-RestMethod -Uri $VirtualNetworkUrl -Headers @{"X-Auth-Token" = $AuthToken}
+    $VirtualNetwork = $API.Get('virtual-network', $NetworkUuid, $null)
+
     $Interfaces = $VirtualNetwork.'virtual-network'.virtual_machine_interface_back_refs
 
     $Result = @()
@@ -125,8 +150,7 @@ function Get-ContrailVirtualNetworkPorts {
 }
 
 function Add-ContrailPolicyToNetwork {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $PolicyUuid,
            [Parameter(Mandatory = $true)] [string] $NetworkUuid)
     $PolicyRef = @{
@@ -146,12 +170,5 @@ function Add-ContrailPolicyToNetwork {
         }
     }
 
-    $NetworkUrl = $ContrailUrl + "/virtual-network/" + $NetworkUuid
-    $Body = ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $BodyObject
-    Invoke-RestMethod `
-        -Uri $NetworkUrl `
-        -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Put `
-        -ContentType "application/json" `
-        -Body $Body | Out-Null
+    $API.Put('virtual-network', $NetworkUuid, $BodyObject)
 }

@@ -1,14 +1,13 @@
 . $PSScriptRoot\Constants.ps1
 
 function Add-ContrailFloatingIp {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $PoolUuid,
            [Parameter(Mandatory = $true)] [string] $IPName,
            [Parameter(Mandatory = $true)] [string] $IPAddress)
 
-    $PoolUrl = $ContrailUrl + "/floating-ip-pool/" + $PoolUuid
-    $Pool = Invoke-RestMethod -Uri $PoolUrl -Headers @{"X-Auth-Token" = $AuthToken}
+
+    $Pool = $API.Get('floating-ip-pool', $PoolUuid, $null)
 
     $PoolFqName = $Pool."floating-ip-pool".fq_name
     $FipFqName = $PoolFqName + $IPName
@@ -21,34 +20,25 @@ function Add-ContrailFloatingIp {
             "uuid" = $null
         }
     }
-    $RequestUrl = $ContrailUrl + "/floating-ips"
-    $Response = Invoke-RestMethod `
-        -Uri $RequestUrl `
-        -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Post `
-        -ContentType "application/json" `
-        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
+    $Response = $API.Post('floating-ip', $null, $Request)
+
     return $Response.'floating-ip'.'uuid'
 }
 
 function Remove-ContrailFloatingIp {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $IpUuid)
 
-    $RequestUrl = $ContrailUrl + "/floating-ip/" + $IpUuid
-    Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+    $API.Delete('floating-ip', $IpUuid, $null)
 }
 
 function Set-ContrailFloatingIpPorts {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $IpUuid,
            [Parameter(Mandatory = $true)] [string[]] $PortFqNames,
            [Parameter(Mandatory = $false)] [string] $TenantName)
 
-    $FipUrl = $ContrailUrl + "/floating-ip/" + $IpUuid
-    $Fip = Invoke-RestMethod -Uri $FipUrl -Headers @{"X-Auth-Token" = $AuthToken}
+    $Fip = $API.Get('floating-ip', $IpUuid, $null)
 
     $InterfaceRefs = @()
     foreach ($PortFqName in $PortFqNames) {
@@ -67,10 +57,6 @@ function Set-ContrailFloatingIpPorts {
             "virtual_machine_interface_refs" = $InterfaceRefs
         }
     }
-    Invoke-RestMethod `
-        -Uri $FipUrl `
-        -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Put `
-        -ContentType "application/json" `
-        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $RequestBody)
+
+    $API.Put('floating-ip', $IpUuid, $RequestBody)
 }

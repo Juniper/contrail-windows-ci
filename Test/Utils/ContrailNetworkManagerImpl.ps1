@@ -43,8 +43,12 @@ class ContrailNetworkManager {
                                   [String] $Uuid, $Request) {
         $RequestUrl = $this.GetResourceUrl($Resource, $Uuid)
 
+        # We need to escape '<>' in 'direction' field because reasons
+        # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
         return Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
-            -Method $Method -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
+            -Method $Method -ContentType "application/json" `
+            -Body (ConvertTo-Json `
+            -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request | ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
     }
 
     [PSObject] Get([String] $Resource, [String] $Uuid, $Request) {
@@ -110,39 +114,16 @@ class ContrailNetworkManager {
             $TenantName = $this.DefaultTenantName
         }
 
-        try {
-            return Add-ContrailVirtualNetwork `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -TenantName $TenantName `
-                -NetworkName $Name `
-                -SubnetConfig $SubnetConfig
-        } catch {
-            if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
-                throw
-            }
-
-            $NetworkUuid = Get-ContrailVirtualNetworkUuidByName `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -TenantName $TenantName `
-                -NetworkName $Name
-
-            $this.RemoveNetwork($NetworkUuid)
-
-            return Add-ContrailVirtualNetwork `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -TenantName $TenantName `
-                -NetworkName $Name `
-                -SubnetConfig $SubnetConfig
-        }
+        return Add-OrReplaceNetwork `
+            -API $this `
+            -TenantName $TenantName `
+            -Name $Name `
+            -SubnetConfig $SubnetConfig
     }
 
     RemoveNetwork([String] $Uuid) {
         Remove-ContrailVirtualNetwork `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
+            -API $this `
             -NetworkUuid $Uuid
     }
 
@@ -186,83 +167,5 @@ class ContrailNetworkManager {
             -ContrailUrl $this.ContrailUrl `
             -AuthToken $this.AuthToken `
             -PrioritiesList $PrioritiesList
-    }
-
-    [String] AddFloatingIpPool([String] $TenantName, [String] $NetworkName, [String] $PoolName) {
-        if (-not $TenantName) {
-            $TenantName = $this.DefaultTenantName
-        }
-
-        return Add-ContrailFloatingIpPool `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -TenantName $TenantName `
-            -NetworkName $NetworkName `
-            -PoolName $PoolName
-    }
-
-    RemoveFloatingIpPool([String] $PoolUuid) {
-        Remove-ContrailFloatingIpPool `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -PoolUuid $PoolUuid
-    }
-
-    [String] AddFloatingIp([String] $PoolUuid,
-                           [String] $IPName,
-                           [String] $IPAddress) {
-        return Add-ContrailFloatingIp `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -PoolUuid $PoolUuid `
-            -IPName $IPName `
-            -IPAddress $IPAddress
-    }
-
-    AssignFloatingIpToAllPortsInNetwork([String] $IpUuid,
-                                        [String] $NetworkUuid) {
-        $PortFqNames = Get-ContrailVirtualNetworkPorts `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -NetworkUuid $NetworkUuid
-
-        Set-ContrailFloatingIpPorts `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -IpUuid $IpUuid `
-            -PortFqNames $PortFqNames
-    }
-
-    RemoveFloatingIp([String] $IpUuid) {
-        Remove-ContrailFloatingIp `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -IpUuid $IpUuid
-    }
-
-    [String] AddPassAllPolicyOnDefaultTenant([String] $Name) {
-        $TenantName = $this.DefaultTenantName
-
-        return Add-ContrailPassAllPolicy `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -TenantName $TenantName `
-            -Name $Name
-    }
-
-    RemovePolicy([String] $Uuid) {
-        Remove-ContrailPolicy `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -Uuid $Uuid
-    }
-
-    AddPolicyToNetwork([String] $PolicyUuid,
-                       [String] $NetworkUuid) {
-        Add-ContrailPolicyToNetwork `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -PolicyUuid $PolicyUuid `
-            -NetworkUuid $NetworkUuid
     }
 }

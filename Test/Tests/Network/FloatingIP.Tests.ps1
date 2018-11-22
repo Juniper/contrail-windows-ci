@@ -63,7 +63,10 @@ Describe "Floating IP" {
                     "ContrailPolicy",
                     Justification="It's actually used."
                 )]
-                $ContrailPolicy = $MultiNode.NM.AddPassAllPolicyOnDefaultTenant($PolicyName)
+                $ContrailPolicy = Add-ContrailPassAllPolicy `
+                    -API $MultiNode.NM `
+                    -Name $PolicyName `
+                    -TenantName $MultiNode.NM.DefaultTenantName
 
                 Write-Log "Creating virtual network: $ClientNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -71,7 +74,11 @@ Describe "Floating IP" {
                     "ContrailClientNetwork",
                     Justification="It's actually used."
                 )]
-                $ContrailClientNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $ClientNetwork.Name, $ClientNetwork.Subnet)
+                $ContrailClientNetwork = Add-OrReplaceNetwork `
+                    -API $MultiNode.NM `
+                    -TenantName $MultiNode.NM.DefaultTenantName `
+                    -Name $ClientNetwork.Name `
+                    -SubnetConfig $ClientNetwork.Subnet
 
                 Write-Log "Creating virtual network: $ServerNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -79,7 +86,11 @@ Describe "Floating IP" {
                     "ContrailServerNetwork",
                     Justification="It's actually used."
                 )]
-                $ContrailServerNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $ServerNetwork.Name, $ServerNetwork.Subnet)
+                $ContrailServerNetwork = Add-OrReplaceNetwork `
+                    -API $MultiNode.NM `
+                    -TenantName $MultiNode.NM.DefaultTenantName `
+                    -Name $ServerNetwork.Name `
+                    -SubnetConfig $ServerNetwork.Subnet
 
                 Write-Log "Creating floating IP pool: $ServerFloatingIpPoolName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -87,31 +98,50 @@ Describe "Floating IP" {
                     "ContrailFloatingIpPool",
                     Justification="It's actually used."
                 )]
-                $ContrailFloatingIpPool = $MultiNode.NM.AddFloatingIpPool($null, $ServerNetwork.Name, $ServerFloatingIpPoolName)
+                $ContrailFloatingIpPool = Add-ContrailFloatingIpPool `
+                    -API $MultiNode.NM `
+                    -TenantName $MultiNode.NM.DefaultTenantName `
+                    -NetworkName $ServerNetwork.Name `
+                    -PoolName $ServerFloatingIpPoolName
 
-                $MultiNode.NM.AddPolicyToNetwork($ContrailPolicy, $ContrailClientNetwork)
-                $MultiNode.NM.AddPolicyToNetwork($ContrailPolicy, $ContrailServerNetwork)
+                Add-ContrailPolicyToNetwork `
+                    -API $MultiNode.NM `
+                    -PolicyUuid $ContrailPolicy `
+                    -NetworkUuid $ContrailClientNetwork
+
+                Add-ContrailPolicyToNetwork `
+                    -API $MultiNode.NM `
+                    -PolicyUuid $ContrailPolicy `
+                    -NetworkUuid $ContrailServerNetwork
             }
 
             AfterAll {
                 Write-Log "Deleting floating IP pool"
                 if (Get-Variable ContrailFloatingIpPool -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemoveFloatingIpPool($ContrailFloatingIpPool)
+                    Remove-ContrailFloatingIpPool `
+                        -API $MultiNode.NM `
+                        -PoolUuid $ContrailFloatingIpPool
                 }
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailServerNetwork -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemoveNetwork($ContrailServerNetwork)
+                    Remove-ContrailVirtualNetwork `
+                        -API $MultiNode.NM `
+                        -NetworkUuid $ContrailServerNetwork
                 }
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailClientNetwork -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemoveNetwork($ContrailClientNetwork)
+                    Remove-ContrailVirtualNetwork `
+                        -API $MultiNode.NM `
+                        -NetworkUuid $ContrailClientNetwork
                 }
 
                 Write-Log "Deleting network policy"
                 if (Get-Variable ContrailPolicy -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemovePolicy($ContrailPolicy)
+                    Remove-ContrailPolicy `
+                        -API $MultiNode.NM `
+                        -Uuid $ContrailPolicy
                 }
             }
 
@@ -138,17 +168,28 @@ Describe "Floating IP" {
                     -Image $ContainerImage
 
                 Write-Log "Creating floating IP: $ServerFloatingIpPoolName"
-                $ContrailFloatingIp = $MultiNode.NM.AddFloatingIp($ContrailFloatingIpPool,
-                                                                  $ServerFloatingIpName,
-                                                                  $ServerFloatingIpAddress)
+                $ContrailFloatingIp = Add-ContrailFloatingIp `
+                    -API $MultiNode.NM `
+                    -PoolUuid $ContrailFloatingIpPool `
+                    -IPName $ServerFloatingIpName `
+                    -IPAddress $ServerFloatingIpAddress
 
-                $MultiNode.NM.AssignFloatingIpToAllPortsInNetwork($ContrailFloatingIp, $ContrailServerNetwork)
+                $PortFqNames = Get-ContrailVirtualNetworkPorts `
+                    -API $MultiNode.NM `
+                    -NetworkUuid $ContrailServerNetwork
+
+                Set-ContrailFloatingIpPorts `
+                    -API $MultiNode.NM `
+                    -IpUuid $ContrailFloatingIp `
+                    -PortFqNames $PortFqNames
             }
 
             AfterEach {
                 Write-Log "Deleting floating IP"
                 if (Get-Variable ContrailFloatingIp -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemoveFloatingIp($ContrailFloatingIp)
+                    Remove-ContrailFloatingIp `
+                        -API $MultiNode.NM `
+                        -IpUuid $ContrailFloatingIp
                 }
 
                 $Sessions = $MultiNode.Sessions
