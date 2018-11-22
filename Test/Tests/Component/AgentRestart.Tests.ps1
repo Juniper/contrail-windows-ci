@@ -181,6 +181,10 @@ Test-WithRetries 3 {
                 -Session $MultiNode.Sessions[1] -ContainerID $Container2ID
             $IP = $Container2NetInfo.IPAddress
             Write-Log "IP of ${Container2ID}: $IP"
+
+            [LogSource[]] $StaticLogSources = @()
+            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
         }
 
         AfterEach {
@@ -196,7 +200,7 @@ Test-WithRetries 3 {
                 Remove-AllContainers -Sessions $Sessions
                 Start-AgentService -Session $Sessions[0]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+                Merge-Logs -LogSources $StaticLogSources
             }
         }
     }
