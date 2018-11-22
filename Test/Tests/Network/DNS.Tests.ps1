@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile = $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
@@ -231,7 +231,11 @@ Test-WithRetries 1 {
                 "ContrailNetwork",
                 Justification="It's actually used."
             )]
-            $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Network.Subnet)
+            $ContrailNetwork = Add-OrReplaceNetwork `
+                -API $MultiNode.NM `
+                -TenantName $MultiNode.NM.DefaultTenantName `
+                -Name $Network.Name `
+                -SubnetConfig $Network.Subnet
         }
 
         function BeforeEachContext {
@@ -275,7 +279,9 @@ Test-WithRetries 1 {
         AfterAll {
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
                 Write-Log "Deleting virtual network"
-                $MultiNode.NM.RemoveNetwork($ContrailNetwork)
+                Remove-ContrailVirtualNetwork `
+                    -API $MultiNode.NM `
+                    -NetworkUuid $ContrailNetwork
             }
 
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {

@@ -101,7 +101,9 @@ Test-WithRetries 3 {
             Context "Tunneling $TunnelingMethod" {
                 BeforeEach {
                     $EncapPrioritiesList = @($TunnelingMethod)
-                    $MultiNode.NM.SetEncapPriorities($EncapPrioritiesList)
+                    Set-EncapPriorities `
+                        -API $MultiNode.NM `
+                        -PrioritiesList $EncapPrioritiesList
 
                     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                         "PSUseDeclaredVarsMoreThanAssignments",
@@ -217,7 +219,11 @@ Test-WithRetries 3 {
                 "ContrailNetwork",
                 Justification="It's actually used."
             )]
-            $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
+            $ContrailNetwork = Add-OrReplaceNetwork `
+                -API $MultiNode.NM `
+                -TenantName $MultiNode.NM.DefaultTenantName `
+                -Name $Network.Name `
+                -SubnetConfig $Subnet
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
@@ -241,7 +247,9 @@ Test-WithRetries 3 {
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemoveNetwork($ContrailNetwork)
+                    Remove-ContrailVirtualNetwork `
+                        -API $MultiNode.NM `
+                        -NetworkUuid $ContrailNetwork
                 }
 
                 Remove-MultiNodeSetup -MultiNode $MultiNode

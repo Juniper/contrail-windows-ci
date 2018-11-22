@@ -114,7 +114,11 @@ Describe "Single compute node protocol tests with utils" {
             "ContrailNetwork",
             Justification="It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
-        $ContrailNetwork = $ContrailNM.AddOrReplaceNetwork($null, $NetworkName, $Subnet)
+        $ContrailNetwork = Add-OrReplaceNetwork `
+            -API $ContrailNM `
+            -TenantName $ContrailNM.DefaultTenantName `
+            -Name $NetworkName `
+            -SubnetConfig $Subnet
 
         New-CNMPluginConfigFile -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
@@ -164,7 +168,9 @@ Describe "Single compute node protocol tests with utils" {
 
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
-                $ContrailNM.RemoveNetwork($ContrailNetwork)
+                Remove-ContrailVirtualNetwork `
+                    -API $ContrailNM `
+                    -NetworkUuid $ContrailNetwork
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
@@ -205,7 +211,9 @@ Describe "Single compute node protocol tests with utils" {
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-        $ContrailNM.EnsureProject($null)
+        Ensure-ContrailProject `
+            -API $ContrailNM `
+            -ProjectName $ContrailNM.DefaultTenantName
 
         Test-IfUtilsCanLoadDLLs -Session $Session
     }

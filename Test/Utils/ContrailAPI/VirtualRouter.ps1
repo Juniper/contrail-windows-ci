@@ -1,30 +1,16 @@
 . $PSScriptRoot\Constants.ps1
 
 function Get-ContrailVirtualRouterUuidByName {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $RouterName)
 
-    $RequestUrl = $ContrailUrl + "/virtual-routers"
-    $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Get
-    $Routers = $Response.'virtual-routers'
+    $ExpectedFqName = @("default-global-system-config", $RouterName)
 
-    $ExpectedFqname = @("default-global-system-config", $RouterName)
-    foreach ($Router in $Routers) {
-        $FqName = $Router.fq_name
-        $AreFqNamesEqual = $null -eq $(Compare-Object $FqName $ExpectedFqname)
-
-        if ($AreFqNamesEqual) {
-            return $Router.uuid
-        }
-    }
-
-    throw "Contrail virtual router with name '$($ExpectedFqname -join ":")' cannot be found."
+    return $API.FQNameToUuid('virtual-router', $ExpectedFqName)
 }
 
 function Add-ContrailVirtualRouter {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $RouterName,
            [Parameter(Mandatory = $true)] [string] $RouterIp)
 
@@ -36,18 +22,43 @@ function Add-ContrailVirtualRouter {
         }
     }
 
-    $RequestUrl = $ContrailUrl + "/virtual-routers"
-    $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
+    $Response = $API.Post('virtual-router', $null, $Request)
 
     return $Response.'virtual-router'.'uuid'
 }
 
 function Remove-ContrailVirtualRouter {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $RouterUuid)
 
-    $RequestUrl = $ContrailUrl + "/virtual-router/" + $RouterUuid
-    Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+    $API.Delete('virtual-router', $RouterUuid, $null)
+}
+
+function Add-OrReplaceVirtualRouter {
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
+           [Parameter(Mandatory = $true)] [string] $RouterName,
+           [Parameter(Mandatory = $true)] [string] $RouterIp)
+    try {
+        return Add-ContrailVirtualRouter `
+            -API $API `
+            -RouterName $RouterName `
+            -RouterIp $RouterIp
+    } catch {
+        if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
+            throw
+        }
+
+        $RouterUuid = Get-ContrailVirtualRouterUuidByName `
+            -API $API `
+            -RouterName $RouterName
+
+        Remove-ContrailVirtualRouter `
+            -API $API `
+            -RouterUuid $RouterUuid
+
+        return Add-ContrailVirtualRouter `
+            -API $API `
+            -RouterName $RouterName `
+            -RouterIp $RouterIp
+    }
 }

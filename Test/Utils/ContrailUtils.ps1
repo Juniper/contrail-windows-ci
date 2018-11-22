@@ -25,8 +25,7 @@ function Get-AccessTokenFromKeystone {
 }
 
 function Add-ContrailProject {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $ProjectName)
 
     $Request = @{
@@ -35,9 +34,23 @@ function Add-ContrailProject {
         }
     }
 
-    $RequestUrl = $ContrailUrl + "/projects"
-    $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Post -ContentType "application/json" -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request)
+    $Response = $API.Post('project', $null, $Request)
 
     return $Response.'project'.'uuid'
+}
+
+function Ensure-ContrailProject {
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
+           [Parameter(Mandatory = $true)] [string] $ProjectName)
+
+    try {
+        Add-ContrailProject `
+            -API $API `
+            -ProjectName $ProjectName
+    }
+    catch {
+        if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
+            throw
+        }
+    }
 }
