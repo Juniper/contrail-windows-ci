@@ -16,6 +16,7 @@ Param (
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
@@ -70,35 +71,6 @@ function Test-ControllerReceivesNodeStatus {
     return $true
 }
 
-function Start-NodeMgr {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
-    )
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-        "PSUseDeclaredVarsMoreThanAssignments", "",
-        Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $NodeMgrJob = Start-Job -ScriptBlock {
-            contrail-nodemgr --nodetype contrail-vrouter
-        }
-    }
-}
-
-function Stop-NodeMgr {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
-    )
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        if(Get-Variable "NodeMgrJob" -ErrorAction SilentlyContinue) {
-            $NodeMgrJob | Stop-Job
-            Remove-Variable "NodeMgrJob"
-        }
-    }
-}
-
 Describe "Node manager" {
     It "starts" {
         Eventually {
@@ -128,12 +100,12 @@ Describe "Node manager" {
             -OpenStackConfig $MultiNode.Configs.OpenStack `
             -ControllerConfig $MultiNode.Configs.Controller
         Clear-NodeMgrLogs -Session $Session
-        Start-NodeMgr -Session $Session
+        Start-NodeMgrService -Session $Session
     }
 
     AfterEach {
         try {
-            Stop-NodeMgr -Session $Session
+            Stop-NodeMgrService -Session $Session
             Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
         } finally {
             Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)

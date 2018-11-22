@@ -308,8 +308,8 @@ function Clear-TestConfiguration {
 
     Write-Log "Cleaning up test configuration"
 
-    Write-Log "Agent service status: $( Get-AgentServiceStatus -Session $Session )"
-    Write-Log "CNMPlugin service status: $( Get-CNMPluginServiceStatus -Session $Session )"
+    Write-Log "Agent service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-AgentServiceName))"
+    Write-Log "CNMPlugin service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-CNMPluginServiceName))"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Stop-CNMPluginService -Session $Session
