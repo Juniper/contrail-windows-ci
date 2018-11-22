@@ -148,10 +148,9 @@ Describe "Floating IP" {
                     "StaticLogSources",
                     Justification="It's used in AfterEach."
                 )]
-                [LogSource[]] $StaticLogSources = @(
-                    # New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath),
-                    New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
-                )
+                [LogSource[]] $StaticLogSources = @()
+                $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+                $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
                 Write-Log "Static log sources: "
                 Write-Log $StaticLogSources
                 Write-Log "Done"
