@@ -5,6 +5,8 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
 
 function Get-DefaultConfigDir {
     return "C:\ProgramData\Contrail\etc\contrail"
@@ -184,5 +186,12 @@ function New-AgentConfigFile {
                 -PhysIfName $Using:AdaptersInfo.PhysIfName
 
             Set-Content -Path $Using:SystemConfig.AgentConfigFilePath -Value $ConfigFileContent
+    }
+}
+
+function New-ComputeNodeLogSources {
+    Param([Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
+    return Get-ServicesLogPaths | ForEach-Object {
+        New-FileLogSource -Path $_ -Sessions $Sessions
     }
 }

@@ -18,6 +18,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
+. $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
+
 . $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
 
@@ -189,6 +191,13 @@ Test-WithRetries 1 {
         BeforeAll {
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "FileLogSources",
+                Justification="It's actually used in 'AfterEach' block."
+            )]
+            $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
             Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -260,7 +269,7 @@ Test-WithRetries 1 {
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $MultiNode.Sessions)
+                Merge-Logs -DontCleanUp -LogSources $FileLogSources
             }
         }
 
@@ -276,7 +285,7 @@ Test-WithRetries 1 {
                         -SystemConfig $MultiNode.Configs.System
                 }
 
-                Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $MultiNode.Sessions)
+                Clear-Logs -LogSources $FileLogSources
 
                 if($VirtualDNSServer.Uuid) {
                     Write-Log "Removing Virtual DNS Server from Contrail..."

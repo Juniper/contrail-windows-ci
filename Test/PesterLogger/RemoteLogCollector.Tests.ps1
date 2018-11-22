@@ -37,6 +37,8 @@ $DummyLog2Basename = "remotelog_second"
 Describe "RemoteLogCollector" -Tags CI, Unit {
     It "appends collected logs to correct output file" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+        "remote log text" | Add-Content $DummyLog1
+
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
@@ -50,6 +52,8 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     It "cleans logs in source directory" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+        "remote log text" | Add-Content $DummyLog1
+
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $Source1
@@ -59,6 +63,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     It "doesn't clean logs in source directory if DontCleanUp flag passed" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+        "remote log text" | Add-Content $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -DontCleanUp -LogSources $Source1
@@ -68,6 +73,8 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     It "tags the messages with file basename" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+        "remote log text" | Add-Content $DummyLog1
+
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
@@ -79,6 +86,8 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     It "adds a prefix describing source directory" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+        "remote log text" | Add-Content $DummyLog1
+
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
@@ -90,9 +99,12 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 
     It "works with multiple lines in remote logs" {
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+
+        "remote log text" | Add-Content $DummyLog1
         "second line" | Add-Content $DummyLog1
         "third line" | Add-Content $DummyLog1
-        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $Source1
@@ -104,6 +116,9 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     It "works when specifying a wildcard path" {
         $WildcardPath = ((Get-Item $TestDrive).FullName) + "\*.log"
         $WildcardSource = New-FileLogSource -Sessions $Sess1 -Path $WildcardPath
+
+        "remote log text" | Add-Content $DummyLog1
+        "another file content" | Add-Content $DummyLog2
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $WildcardSource
@@ -115,6 +130,8 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
     It "works with multiple sessions in single log source" {
         $Source2 = New-FileLogSource -Sessions @($Sess1, $Sess2) -Path $DummyLog1
+        "remote log text" | Add-Content $DummyLog1
+
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
@@ -130,6 +147,9 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     It "works with multiple log sources" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         $Source2 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog2
+
+        "remote log text" | Add-Content $DummyLog1
+        "another file content" | Add-Content $DummyLog2
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
@@ -165,7 +185,6 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 
     It "inserts a message if log file was empty" {
-        Clear-Content $DummyLog1
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
@@ -175,14 +194,30 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         $ContentRaw | Should -BeLike "*$DummyLog1*<EMPTY>*"
     }
 
+    It "doesn't show messages from before initialization" {
+        "remote log text" | Add-Content $DummyLog1
+
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+
+        "new line" | Add-Content $DummyLog1
+        Initialize-PesterLogger -OutDir "TestDrive:\"
+
+        Merge-Logs -LogSources $Source1
+
+        $Messages = Get-Content "TestDrive:\RemoteLogCollector.doesn't show messages from before initialization.txt" |
+            ConvertTo-LogItem | Foreach-Object Message
+        "first message" | Should -Not -BeIn $Messages
+        "new line" | Should -BeIn $Messages
+    }
+
     Test-MultipleSourcesAndSessions
 
     BeforeEach {
         $DummyLog1 = Join-Path ((Get-Item $TestDrive).FullName) ($DummyLog1Basename + ".log")
-        "remote log text" | Out-File $DummyLog1
-
         $DummyLog2 = Join-Path ((Get-Item $TestDrive).FullName) ($DummyLog2Basename + ".log")
-        "another file content" | Out-File $DummyLog2
+
+        New-Item $DummyLog1 -ItemType File
+        New-Item $DummyLog2 -ItemType File
     }
 
 
