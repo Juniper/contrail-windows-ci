@@ -130,15 +130,9 @@ Describe "Node manager" {
         Clear-NodeMgrLogs -Session $Session
         Start-NodeMgr -Session $Session
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "LogSources",
-            Justification="It's used in AfterEach."
-        )]
-        [LogSource[]] $LogSources = @(
-            (New-FileLogSource  -Sessions $Session -Path (Get-ComputeLogsPath)),
-            (New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker")
-        )
+        [LogSource[]] $StaticLogSources = @()
+        $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+        $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
     }
 
     AfterEach {
@@ -146,7 +140,7 @@ Describe "Node manager" {
             Stop-NodeMgr -Session $Session
             Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
         } finally {
-            Merge-Logs -DontCleanUp -LogSources $LogSources
+            Merge-Logs -LogSources $StaticLogSources
         }
     }
 

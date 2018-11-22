@@ -104,12 +104,20 @@ class EventLogLogSource : LogSource {
                   [Parameter(Mandatory = $true)] [int64] $StartEventIdx,
                   [Parameter(Mandatory = $true)] [int64] $EndEventIdx)
 
-            $Content = Get-EventLog `
-                -LogName $LogName `
-                -Source $LogSource `
-                -Index ($StartEventIdx..$EndEventIdx) | Out-String
-
             $Name = "$LogSource - $LogName"
+
+            try {
+                $Content = Get-EventLog `
+                    -LogName $LogName `
+                    -Source $LogSource `
+                    -Index ($StartEventIdx..$EndEventIdx) | Out-String
+            } catch {
+                return @{
+                    Name = $Name
+                    Err = "event log retrieval error: $($_.Exception.Message)"
+                }
+            }
+
             return @{
                 Name = "EventLog from $Name"
                 Tag = "$Name"
@@ -117,7 +125,7 @@ class EventLogLogSource : LogSource {
             }
         }
 
-        $Start = $this.StartEventIdx 
+        $Start = $this.StartEventIdx
         $End = $this.GetLatestEventIdx()
 
         return Invoke-CommandRemoteOrLocal -Func $LogGetterBody -Session $this.Session `
@@ -141,7 +149,9 @@ class EventLogLogSource : LogSource {
                   [Parameter(Mandatory = $true)] [string] $LogSource)
             try {
                 return Get-EventLog -LogName $LogName -Source $LogSource -Newest 1 | Select-Object -Expand Index
-            } catch [System.ArgumentException] {
+            } catch {
+                # Not sure why catching [System.ArgumentException] doesn't work here.
+                #
                 # This may happen if we instantiate EventLogLogCollector before the corresponding EventLog exist.
                 # In such case, the EventLog should start numbering from 1 anyways, so just return 1.
                 return 1

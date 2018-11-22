@@ -267,21 +267,20 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
             Invoke-Command -Session $Sess1 {
                 New-EventLog -Source "Test" -LogName "TestLog"
             }
-            Invoke-Command -Session $Sess2 {
-                New-EventLog -Source "Test" -LogName "TestLog"
-            }
         }
         AfterEach {
             Invoke-Command -Session $Sess1 {
                 Remove-EventLog -LogName "TestLog"
             }
-            Invoke-Command -Session $Sess2 {
-                Remove-EventLog -LogName "TestLog"
-            }
         }
-        It "factory function works with multiple sessions" {
-            $Source = New-EventLogLogSource -Sessions @($Sess1, $Sess2) -EventLogName "TestLog" -EventLogSource "Test"
-            $Source | Should -Not -Be $null
+        It "reading from non-existing log collector returns proper error in logs" {
+            $Source = New-EventLogLogSource -Sessions $Sess1 -EventLogName "Invalid Name" -EventLogSource "Invalid source"
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+
+            Merge-Logs -LogSources $Source
+
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.reading from non-existing log collector returns proper error in logs.txt"
+            $ContentRaw | Should -BeLike "*event log retrieval error:*"
         }
         It "writing and clearing works" {
             # We are using a single, two step integration test here for brevity.

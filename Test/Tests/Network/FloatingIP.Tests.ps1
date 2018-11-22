@@ -142,18 +142,9 @@ Describe "Floating IP" {
 
                 $MultiNode.NM.AssignFloatingIpToAllPortsInNetwork($ContrailFloatingIp, $ContrailServerNetwork)
 
-                Write-Log "Just before static log sources"
-                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                    "PSUseDeclaredVarsMoreThanAssignments",
-                    "StaticLogSources",
-                    Justification="It's used in AfterEach."
-                )]
                 [LogSource[]] $StaticLogSources = @()
                 $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
                 $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
-                Write-Log "Static log sources: "
-                Write-Log $StaticLogSources
-                Write-Log "Done"
             }
 
             AfterEach {
