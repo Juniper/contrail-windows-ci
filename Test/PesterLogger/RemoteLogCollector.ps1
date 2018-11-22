@@ -155,28 +155,33 @@ function Merge-Logs {
     Param([Parameter(Mandatory = $true)] [LogSource[]] $LogSources,
           [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
 
+    $Tag = "remote-log-collector"
+
     foreach ($LogSource in $LogSources) {
         $SourceHost = if ($LogSource.Session) {
             $LogSource.Session.ComputerName
         } else {
             "localhost"
         }
-        $ComputerNamePrefix = "Logs from $($SourceHost): "
-        Write-Log ("=" * 100)
-        Write-Log $ComputerNamePrefix
+        $ComputerNamePrefix = "Logs from host $($SourceHost)"
+        Write-Log -Tag $Tag ([Environment]::NewLine*3)
+        Write-Log -Tag $Tag ("=" * 100)
+        Write-Log -Tag $Tag $ComputerNamePrefix
+        Write-Log -Tag $Tag ([Environment]::NewLine)
 
         foreach ($Log in $LogSource.GetContent()) {
             if ($Log -is [ValidCollectedLog]) {
-                Write-Log ("-" * 100)
-                Write-Log "Contents of $( $Log.Name ):"
+                Write-Log -Tag $Tag ([Environment]::NewLine*3)
+                Write-Log -Tag $Tag ("-" * 100)
+                Write-Log -Tag $Tag "Contents of $( $Log.Name ):"
                 if ($Log.Content) {
                     Write-Log -NoTimestamp -Tag $Log.Tag $Log.Content
                 } else {
                     Write-Log "<EMPTY>"
                 }
             } else {
-                Write-Log "Error retrieving $( $Log.Name ):"
-                Write-Log $Log.Err
+                Write-Log -Tag $Tag "Error retrieving $( $Log.Name ):"
+                Write-Log -Tag $Tag $Log.Err
             }
         }
         
@@ -184,8 +189,6 @@ function Merge-Logs {
             $LogSource.ClearContent()
         }
     }
-
-    Write-Log ("=" * 100)
 }
 
 function Clear-Logs {
