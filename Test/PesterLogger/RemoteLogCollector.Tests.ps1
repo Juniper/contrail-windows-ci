@@ -245,7 +245,7 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
         It "captures logs of container" {
             New-Container -Session $Sess1 -Name foo -Network nat
-            
+
             Merge-Logs (New-ContainerLogSource -Sessions $Sess1 -ContainerNames foo)
             $ContentRaw = Get-Content -Raw "TestDrive:\*.Docker logs.captures logs of container.txt"
             $ContentRaw | Should -BeLike "*Microsoft Windows*"
