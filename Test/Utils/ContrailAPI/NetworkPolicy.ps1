@@ -1,5 +1,3 @@
-. $PSScriptRoot\Constants.ps1
-
 function New-ContrailPassAllPolicyDefinition {
     Param ([Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $true)] [string] $Name)
@@ -58,10 +56,10 @@ function New-ContrailPassAllPolicyDefinition {
     return $BodyObject
 }
 
-function Add-ContrailPassAllPolicy {
+function New-ContrailPassAllPolicy {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
-           [Parameter(Mandatory = $true)] [string] $TenantName,
-           [Parameter(Mandatory = $true)] [string] $Name)
+           [Parameter(Mandatory = $true)] [string] $Name,
+           [Parameter(Mandatory = $true)] [string] $TenantName)
 
     $BodyObject = New-ContrailPassAllPolicyDefinition $TenantName $Name
     $Response = $API.Post('network-policy', $null, $BodyObject)

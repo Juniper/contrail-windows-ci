@@ -17,12 +17,15 @@ Param (
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
 
@@ -281,7 +284,7 @@ Test-WithRetries 1 {
                 Write-Log "Deleting virtual network"
                 Remove-ContrailVirtualNetwork `
                     -API $MultiNode.NM `
-                    -NetworkUuid $ContrailNetwork
+                    -Uuid $ContrailNetwork
             }
 
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {

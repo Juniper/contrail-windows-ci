@@ -1,20 +1,16 @@
-. $PSScriptRoot\Constants.ps1
-
-function Add-ContrailFloatingIp {
+function New-ContrailFloatingIp {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $PoolUuid,
-           [Parameter(Mandatory = $true)] [string] $IPName,
-           [Parameter(Mandatory = $true)] [string] $IPAddress)
-
+           [Parameter(Mandatory = $true)] [string] $Name,
+           [Parameter(Mandatory = $true)] [string] $Address)
 
     $Pool = $API.Get('floating-ip-pool', $PoolUuid, $null)
-
     $PoolFqName = $Pool."floating-ip-pool".fq_name
-    $FipFqName = $PoolFqName + $IPName
+    $FipFqName = $PoolFqName + $Name
 
     $Request = @{
         "floating-ip" = @{
-            "floating_ip_address" = $IPAddress
+            "floating_ip_address" = $Address
             "fq_name" = $FipFqName
             "parent_type" = "floating-ip-pool"
             "uuid" = $null
@@ -27,16 +23,15 @@ function Add-ContrailFloatingIp {
 
 function Remove-ContrailFloatingIp {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
-           [Parameter(Mandatory = $true)] [string] $IpUuid)
+           [Parameter(Mandatory = $true)] [string] $Uuid)
 
-    $API.Delete('floating-ip', $IpUuid, $null)
+    $API.Delete('floating-ip', $Uuid, $null)
 }
 
 function Set-ContrailFloatingIpPorts {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $IpUuid,
-           [Parameter(Mandatory = $true)] [string[]] $PortFqNames,
-           [Parameter(Mandatory = $false)] [string] $TenantName)
+           [Parameter(Mandatory = $true)] [string[]] $PortFqNames)
 
     $Fip = $API.Get('floating-ip', $IpUuid, $null)
 

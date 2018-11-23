@@ -23,6 +23,9 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+. $PSScriptRoot\..\..\Utils\ContrailAPI\Project.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 
@@ -170,7 +173,7 @@ Describe "Single compute node protocol tests with utils" {
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
                 Remove-ContrailVirtualNetwork `
                     -API $ContrailNM `
-                    -NetworkUuid $ContrailNetwork
+                    -Uuid $ContrailNetwork
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
@@ -211,9 +214,9 @@ Describe "Single compute node protocol tests with utils" {
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-        Ensure-ContrailProject `
+        Add-OrReplaceContrailProject `
             -API $ContrailNM `
-            -ProjectName $ContrailNM.DefaultTenantName
+            -Name $ContrailNM.DefaultTenantName
 
         Test-IfUtilsCanLoadDLLs -Session $Session
     }

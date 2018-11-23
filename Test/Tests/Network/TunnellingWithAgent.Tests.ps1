@@ -22,6 +22,11 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
+
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\GlobalVrouterConfig.ps1
+
 $TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -77,7 +82,7 @@ function Get-VrfStats {
     return $Stats
 }
 
-Test-WithRetries 3 {
+Test-WithRetries 1 {
     Describe "Tunneling with Agent tests" {
 
         #
@@ -249,7 +254,7 @@ Test-WithRetries 3 {
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
                     Remove-ContrailVirtualNetwork `
                         -API $MultiNode.NM `
-                        -NetworkUuid $ContrailNetwork
+                        -Uuid $ContrailNetwork
                 }
 
                 Remove-MultiNodeSetup -MultiNode $MultiNode

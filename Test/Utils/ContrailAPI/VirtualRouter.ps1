@@ -1,24 +1,22 @@
-. $PSScriptRoot\Constants.ps1
-
 function Get-ContrailVirtualRouterUuidByName {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
-           [Parameter(Mandatory = $true)] [string] $RouterName)
+           [Parameter(Mandatory = $true)] [string] $Name)
 
-    $ExpectedFqName = @("default-global-system-config", $RouterName)
+    $ExpectedFqName = @("default-global-system-config", $Name)
 
     return $API.FQNameToUuid('virtual-router', $ExpectedFqName)
 }
 
-function Add-ContrailVirtualRouter {
+function New-ContrailVirtualRouter {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
-           [Parameter(Mandatory = $true)] [string] $RouterName,
-           [Parameter(Mandatory = $true)] [string] $RouterIp)
+           [Parameter(Mandatory = $true)] [string] $Name,
+           [Parameter(Mandatory = $true)] [string] $Ip)
 
     $Request = @{
         "virtual-router" = @{
             parent_type               = "global-system-config"
-            fq_name                   = @("default-global-system-config", $RouterName)
-            virtual_router_ip_address = $RouterIp
+            fq_name                   = @("default-global-system-config", $Name)
+            virtual_router_ip_address = $Ip
         }
     }
 
@@ -29,9 +27,9 @@ function Add-ContrailVirtualRouter {
 
 function Remove-ContrailVirtualRouter {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
-           [Parameter(Mandatory = $true)] [string] $RouterUuid)
+           [Parameter(Mandatory = $true)] [string] $Uuid)
 
-    $API.Delete('virtual-router', $RouterUuid, $null)
+    $API.Delete('virtual-router', $Uuid, $null)
 }
 
 function Add-OrReplaceVirtualRouter {
@@ -39,10 +37,10 @@ function Add-OrReplaceVirtualRouter {
            [Parameter(Mandatory = $true)] [string] $RouterName,
            [Parameter(Mandatory = $true)] [string] $RouterIp)
     try {
-        return Add-ContrailVirtualRouter `
+        return New-ContrailVirtualRouter `
             -API $API `
-            -RouterName $RouterName `
-            -RouterIp $RouterIp
+            -Name $RouterName `
+            -Ip $RouterIp
     } catch {
         if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
             throw
@@ -50,15 +48,15 @@ function Add-OrReplaceVirtualRouter {
 
         $RouterUuid = Get-ContrailVirtualRouterUuidByName `
             -API $API `
-            -RouterName $RouterName
+            -Name $RouterName
 
         Remove-ContrailVirtualRouter `
             -API $API `
-            -RouterUuid $RouterUuid
+            -Uuid $RouterUuid
 
-        return Add-ContrailVirtualRouter `
+        return New-ContrailVirtualRouter `
             -API $API `
-            -RouterName $RouterName `
-            -RouterIp $RouterIp
+            -Name $RouterName `
+            -Ip $RouterIp
     }
 }

@@ -152,7 +152,7 @@ Test-WithRetries 3 {
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
                     Remove-ContrailVirtualNetwork `
                         -API $MultiNode.NM `
-                        -NetworkUuid $ContrailNetwork
+                        -Uuid $ContrailNetwork
                 }
 
                 Remove-MultiNodeSetup -MultiNode $MultiNode

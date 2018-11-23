@@ -1,5 +1,3 @@
-. $PSScriptRoot\Constants.ps1
-
 function Set-EncapPriorities {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string[]] $PrioritiesList)

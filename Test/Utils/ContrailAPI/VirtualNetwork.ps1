@@ -1,39 +1,38 @@
 . $PSScriptRoot\..\DockerNetwork\DockerNetwork.ps1
-. $PSScriptRoot\Constants.ps1
 
 function Get-ContrailVirtualNetworkUuidByName {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $TenantName,
-           [Parameter(Mandatory = $true)] [string] $NetworkName)
+           [Parameter(Mandatory = $true)] [string] $Name)
 
-    $ExpectedFqName = @("default-domain", $TenantName, $NetworkName)
+    $ExpectedFqName = @("default-domain", $TenantName, $Name)
 
     return $API.FQNameToUuid('virtual-network', $ExpectedFqName)
 }
 
-function Add-ContrailVirtualNetwork {
+function New-ContrailVirtualNetwork {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $TenantName,
-           [Parameter(Mandatory = $true)] [string] $NetworkName,
-           [SubnetConfiguration] $SubnetConfig = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200"))
+           [Parameter(Mandatory = $true)] [string] $Name,
+           [SubnetConfiguration] $Subnet = [SubnetConfiguration]::new("10.0.0.0", 24, "10.0.0.1", "10.0.0.100", "10.0.0.200"))
 
-    $Subnet = @{
+    $IpamSubnet = @{
         subnet           = @{
-            ip_prefix     = $SubnetConfig.IpPrefix
-            ip_prefix_len = $SubnetConfig.IpPrefixLen
+            ip_prefix     = $Subnet.IpPrefix
+            ip_prefix_len = $Subnet.IpPrefixLen
         }
         addr_from_start  = $true
         enable_dhcp      = $true
-        default_gateway  = $SubnetConfig.DefaultGateway
+        default_gateway  = $Subnet.DefaultGateway
         allocation_pools = @(@{
-                start = $SubnetConfig.AllocationPoolsStart
-                end   = $SubnetConfig.AllocationPoolsEnd
+                start = $Subnet.AllocationPoolsStart
+                end   = $Subnet.AllocationPoolsEnd
             })
     }
 
     $NetworkImap = @{
         attr = @{
-            ipam_subnets = @($Subnet)
+            ipam_subnets = @($IpamSubnet)
         }
         to   = @("default-domain", "default-project", "default-network-ipam")
     }
@@ -41,7 +40,7 @@ function Add-ContrailVirtualNetwork {
     $Request = @{
         "virtual-network" = @{
             parent_type       = "project"
-            fq_name           = @("default-domain", $TenantName, $NetworkName)
+            fq_name           = @("default-domain", $TenantName, $Name)
             network_ipam_refs = @($NetworkImap)
         }
     }
@@ -53,10 +52,10 @@ function Add-ContrailVirtualNetwork {
 
 function Remove-ContrailVirtualNetwork {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
-           [Parameter(Mandatory = $true)] [string] $NetworkUuid,
+           [Parameter(Mandatory = $true)] [string] $Uuid,
            [bool] $Force = $false)
 
-    $Network = $API.Get('virtual-network', $NetworkUuid, $null)
+    $Network = $API.Get('virtual-network', $Uuid, $null)
 
     $Props = $Network.'virtual-network'.PSobject.Properties.Name
 
@@ -93,7 +92,7 @@ function Remove-ContrailVirtualNetwork {
         }
     }
 
-    $API.Delete('virtual-network', $NetworkUuid, $null)
+    $API.Delete('virtual-network', $Uuid, $null)
 }
 
 # TODO support multiple subnets per network
@@ -105,11 +104,11 @@ function Add-OrReplaceNetwork {
            [Parameter(Mandatory = $true)] [SubnetConfiguration] $SubnetConfig)
 
     try {
-        return Add-ContrailVirtualNetwork `
+        return New-ContrailVirtualNetwork `
             -API $API `
             -TenantName $TenantName `
-            -NetworkName $Name `
-            -SubnetConfig $SubnetConfig
+            -Name $Name `
+            -Subnet $SubnetConfig
     } catch {
         if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
             throw
@@ -122,13 +121,13 @@ function Add-OrReplaceNetwork {
 
         Remove-ContrailVirtualNetwork `
             -API $API `
-            -NetworkUuid $NetworkUuid
+            -Uuid $NetworkUuid
 
-        return Add-ContrailVirtualNetwork `
+        return New-ContrailVirtualNetwork `
             -API $API `
             -TenantName $TenantName `
-            -NetworkName $Name `
-            -SubnetConfig $SubnetConfig
+            -Name $Name `
+            -Subnet $SubnetConfig
     }
 }
 

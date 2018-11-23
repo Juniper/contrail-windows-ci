@@ -1,14 +1,12 @@
-. $PSScriptRoot\Constants.ps1
-
-function Add-ContrailFloatingIpPool {
+function New-ContrailFloatingIpPool {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
+           [Parameter(Mandatory = $true)] [string] $Name,
            [Parameter(Mandatory = $true)] [string] $TenantName,
-           [Parameter(Mandatory = $true)] [string] $NetworkName,
-           [Parameter(Mandatory = $true)] [string] $PoolName)
+           [Parameter(Mandatory = $true)] [string] $NetworkName)
 
     $Request = @{
         "floating-ip-pool" = @{
-            "fq_name" = @("default-domain", $TenantName, $NetworkName, $PoolName)
+            "fq_name" = @("default-domain", $TenantName, $NetworkName, $Name)
             "parent_type" = "virtual-network"
             "uuid" = $null
         }
@@ -21,7 +19,7 @@ function Add-ContrailFloatingIpPool {
 
 function Remove-ContrailFloatingIpPool {
     Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
-           [Parameter(Mandatory = $true)] [string] $PoolUuid)
+           [Parameter(Mandatory = $true)] [string] $Uuid)
 
-    $API.Delete('floating-ip-pool', $PoolUuid, $null)
+    $API.Delete('floating-ip-pool', $Uuid, $null)
 }

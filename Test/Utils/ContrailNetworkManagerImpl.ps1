@@ -1,11 +1,3 @@
-. $PSScriptRoot\ContrailAPI\FloatingIP.ps1
-. $PSScriptRoot\ContrailAPI\FloatingIPPool.ps1
-. $PSScriptRoot\ContrailAPI\NetworkPolicy.ps1
-. $PSScriptRoot\ContrailAPI\VirtualNetwork.ps1
-. $PSScriptRoot\ContrailAPI\VirtualRouter.ps1
-. $PSScriptRoot\ContrailUtils.ps1
-. $PSScriptRoot\ContrailAPI\GlobalVrouterConfig.ps1
-
 class ContrailNetworkManager {
     [Int] $CONVERT_TO_JSON_MAX_DEPTH = 100;
 
@@ -78,4 +70,28 @@ class ContrailNetworkManager {
             -Method "Post" -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
         return $Response.'uuid'
     }
+}
+
+function Get-AccessTokenFromKeystone {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
+        "", Justification="We don't care that it's plaintext, it's just test env.")]
+    Param ([Parameter(Mandatory = $true)] [string] $AuthUrl,
+           [Parameter(Mandatory = $true)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $Username,
+           [Parameter(Mandatory = $true)] [string] $Password)
+
+    $Request = @{
+        auth = @{
+            tenantName          = $TenantName
+            passwordCredentials = @{
+                username = $Username
+                password = $Password
+            }
+        }
+    }
+
+    $AuthUrl += "/tokens"
+    $Response = Invoke-RestMethod -Uri $AuthUrl -Method Post -ContentType "application/json" `
+        -Body (ConvertTo-Json -Depth 100 $Request)
+    return $Response.access.token.id
 }

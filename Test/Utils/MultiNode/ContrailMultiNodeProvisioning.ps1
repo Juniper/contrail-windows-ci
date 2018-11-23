@@ -2,9 +2,10 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
+. $PSScriptRoot\..\ContrailAPI\Project.ps1
+. $PSScriptRoot\..\ContrailAPI\VirtualRouter.ps1
 
 # Import order is chosen explicitly because of class dependency
-. $PSScriptRoot\..\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\MultiNode.ps1
 
@@ -48,9 +49,9 @@ function New-MultiNodeSetup {
     }
 
     $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-    Ensure-ContrailProject `
+    Add-OrReplaceContrailProject `
         -API $ContrailNM `
-        -ProjectName $ControllerConfig.DefaultProject
+        -Name $ControllerConfig.DefaultProject
 
     $Testbed1Address = $VMs[0].Address
     $Testbed1Name = $VMs[0].Name
@@ -84,7 +85,7 @@ function Remove-MultiNodeSetup {
         Write-Log "Removing virtual router: $VRouterUuid"
         Remove-ContrailVirtualRouter `
             -API $MultiNode.NM `
-            -RouterUuid $VRouterUuid
+            -Uuid $VRouterUuid
     }
     $MultiNode.VRoutersUuids = $null
 
