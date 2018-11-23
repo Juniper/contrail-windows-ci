@@ -57,10 +57,6 @@ Describe "Floating IP" {
                     -DstIP $ServerFloatingIpAddress | Should Be 0
             }
 
-            It "dummy" {
-                # PLEASE REMEMBER TO REMOVE ME 
-            }
-
             BeforeAll {
                 Write-Log "Creating network policy: $PolicyName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
