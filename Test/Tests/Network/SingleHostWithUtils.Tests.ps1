@@ -11,6 +11,7 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
