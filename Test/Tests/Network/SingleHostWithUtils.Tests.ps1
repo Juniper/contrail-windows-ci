@@ -174,7 +174,7 @@ Describe "Single compute node protocol tests with utils" {
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+            Merge-Logs -LogSources $StaticLogSources
         }
     }
 
