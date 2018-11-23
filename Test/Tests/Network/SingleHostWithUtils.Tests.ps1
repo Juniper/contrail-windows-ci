@@ -153,7 +153,7 @@ Describe "Single compute node protocol tests with utils" {
             -Container1NetInfo $Container1NetInfo -Container2NetInfo $Container2NetInfo `
             -Session $Session
 
-        $StaticLogSources.Clear()
+        $StaticLogSources = @() # Resetting global variable
         $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
         $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
     }

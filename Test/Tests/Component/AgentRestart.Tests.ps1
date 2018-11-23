@@ -184,7 +184,7 @@ Test-WithRetries 3 {
             $IP = $Container2NetInfo.IPAddress
             Write-Log "IP of ${Container2ID}: $IP"
 
-            $StaticLogSources.Clear()
+            $StaticLogSources = @() # Resetting global variable
             $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
             $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
         }

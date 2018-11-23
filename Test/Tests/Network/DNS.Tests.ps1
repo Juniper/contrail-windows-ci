@@ -249,7 +249,7 @@ Test-WithRetries 1 {
                 -ContainerImage "microsoft/windowsservercore" `
                 -NetworkName $Network.Name
 
-            $StaticLogSources.Clear()
+            $StaticLogSources = @() # Resetting global variable
             $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
             $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
         }
