@@ -164,7 +164,7 @@ function Merge-Logs {
 
         foreach ($Log in $LogSource.GetContent()) {
             if ($Log -is [ValidCollectedLog]) {
-                $Tag = "$SourceHost | $($Log.Tag)"
+                $Tag = "$SourceHost -> $($Log.Tag)"
                 Write-Log -NoTimestamp -Tag $Tag "<$($Log.Name)>"
                 if ($Log.Content) {
                     Write-Log -NoTimestamp -Tag $Tag $Log.Content
@@ -172,7 +172,7 @@ function Merge-Logs {
                     Write-Log -Tag $Tag "<EMPTY>"
                 }
             } else {
-                $Tag = "$SourceHost | ERROR"
+                $Tag = "$SourceHost -> ERROR"
                 Write-Log -Tag $Tag "Error retrieving $($Log.Name): $($Log.Err)"
             }
         }

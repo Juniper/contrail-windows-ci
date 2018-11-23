@@ -43,7 +43,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         Merge-Logs -LogSources $Source1
 
         $Messages = Get-Content "TestDrive:\RemoteLogCollector.appends collected logs to correct output file.txt" |
-            ConvertTo-LogItem | Foreach-Object Message
+            ConvertTo-LogItem | ForEach-Object { $_.Message }
         "first message" | Should -BeIn $Messages
         "remote log text" | Should -BeIn $Messages
     }
@@ -64,17 +64,6 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         Merge-Logs -DontCleanUp -LogSources $Source1
 
         Get-Content $DummyLog1 | Should -Not -Be $null
-    }
-
-    It "tags the messages with file basename" {
-        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
-        Initialize-PesterLogger -OutDir "TestDrive:\"
-        Write-Log "first message"
-
-        Merge-Logs -LogSources $Source1
-
-        Get-Content "TestDrive:\RemoteLogCollector.tags the messages with file basename.txt" |
-            ConvertTo-LogItem | ForEach-Object Tag | Should -Contain $DummyLog1Basename
     }
 
     It "adds a prefix describing source directory" {
