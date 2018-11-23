@@ -266,7 +266,7 @@ Test-WithRetries 1 {
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+                Merge-Logs -LogSources $StaticLogSources
             }
         }
 

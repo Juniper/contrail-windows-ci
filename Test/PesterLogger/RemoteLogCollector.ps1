@@ -104,13 +104,13 @@ class EventLogLogSource : LogSource {
                   [Parameter(Mandatory = $true)] [int64] $StartEventIdx,
                   [Parameter(Mandatory = $true)] [int64] $EndEventIdx)
 
-            $Name = "$LogSource - $LogName"
+            $Name = "$LogSource - $LogName event log"
 
             try {
                 $Content = Get-EventLog `
                     -LogName $LogName `
                     -Source $LogSource `
-                    -Index ($StartEventIdx..$EndEventIdx) | Out-String
+                    -Index ($StartEventIdx..$EndEventIdx) | Format-Table -Wrap | Out-String
             } catch {
                 return @{
                     Name = $Name

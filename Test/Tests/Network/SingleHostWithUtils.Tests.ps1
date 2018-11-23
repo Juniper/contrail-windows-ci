@@ -154,8 +154,8 @@ Describe "Single compute node protocol tests with utils" {
             -Session $Session
 
         $StaticLogSources.Clear()
-        $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-        $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+        $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
+        $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
     }
 
     AfterEach {

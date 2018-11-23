@@ -56,6 +56,10 @@ Describe "Floating IP" {
                     -DstIP $ServerFloatingIpAddress | Should Be 0
             }
 
+            It "dummy" {
+                # PLEASE REMEMBER TO REMOVE ME 
+            }
+
             BeforeAll {
                 Write-Log "Creating network policy: $PolicyName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -169,7 +173,7 @@ Describe "Floating IP" {
                     Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                     Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
                 } finally {
-                    Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+                    Merge-Logs -LogSources $StaticLogSources
                 }
             }
         }

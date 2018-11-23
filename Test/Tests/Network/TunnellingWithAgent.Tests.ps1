@@ -277,9 +277,13 @@ Test-WithRetries 3 {
             $IP = $Container2NetInfo.IPAddress
             Write-Log "IP of ${Container2ID}: $IP"
 
+            Write-Log "Before $StaticLogSources"
             $StaticLogSources.Clear()
+            Write-Log "AfterClear $StaticLogSources"
             $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+            Write-Log "After New-FileLogSource $StaticLogSources"
             $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+            Write-Log "After New-EventLogLogSource $StaticLogSources"
         }
 
         AfterEach {
@@ -293,7 +297,7 @@ Test-WithRetries 3 {
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
             } finally {
-                Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+                Merge-Logs -LogSources $StaticLogSources
             }
         }
     }
