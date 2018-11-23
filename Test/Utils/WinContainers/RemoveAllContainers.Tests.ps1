@@ -9,6 +9,7 @@ Param (
 
 . $PSScriptRoot\Containers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
 $NetworkName = "nat"
 
