@@ -17,6 +17,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
+[LogSource[]] $StaticLogSources = @()
+
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
 $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
@@ -130,7 +132,7 @@ Describe "Node manager" {
         Clear-NodeMgrLogs -Session $Session
         Start-NodeMgr -Session $Session
 
-        [LogSource[]] $StaticLogSources = @()
+        $StaticLogSources.Clear()
         $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
         $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
     }

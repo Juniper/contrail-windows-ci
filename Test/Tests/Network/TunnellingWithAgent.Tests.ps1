@@ -20,6 +20,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
+[LogSource[]] $StaticLogSources = @()
+
 $TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -275,7 +277,7 @@ Test-WithRetries 3 {
             $IP = $Container2NetInfo.IPAddress
             Write-Log "IP of ${Container2ID}: $IP"
 
-            [LogSource[]] $StaticLogSources = @()
+            $StaticLogSources.Clear()
             $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
             $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
         }

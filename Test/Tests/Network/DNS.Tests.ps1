@@ -21,6 +21,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
 
+[LogSource[]] $StaticLogSources = @()
+
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
 
 $Subnet = [SubnetConfiguration]::new(
@@ -247,7 +249,7 @@ Test-WithRetries 1 {
                 -ContainerImage "microsoft/windowsservercore" `
                 -NetworkName $Network.Name
 
-            [LogSource[]] $StaticLogSources = @()
+            $StaticLogSources.Clear()
             $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
             $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
         }
