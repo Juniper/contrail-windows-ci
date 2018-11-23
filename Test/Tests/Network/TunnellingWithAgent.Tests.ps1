@@ -294,7 +294,7 @@ Test-WithRetries 3 {
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
             } finally {
-                Merge-Logs -LogSources $StaticLogSources
+                Merge-Logs -DontCleanUp -LogSources $StaticLogSources
             }
         }
     }
