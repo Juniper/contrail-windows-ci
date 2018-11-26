@@ -27,7 +27,7 @@ function Initialize-PesterLogger {
             [parameter(ValueFromRemainingArguments=$true)] $WriterArgs,
             [Parameter(Mandatory=$false)] [string] $Tag = "test-runner",
             [Switch] $NoTimestamps,
-            [Switch] $TagOnce,
+            [Switch] $TagOnce
         )
 
         $Scope = & $DeducerFunc
@@ -48,7 +48,7 @@ function Write-LogToFile {
         [Parameter(Mandatory=$true)] [object] $Value,
         [Parameter(Mandatory=$true)] [bool] $UseTimestamps,
         [Parameter(Mandatory=$false)] [string] $Tag,
-        [Parameter(Mandatory=$false)] [switch] $TagOnce
+        [Parameter(Mandatory=$false)] [bool] $TagOnce = $false
     )
 
     $TimestampFormatString = 'yyyy-MM-dd HH:mm:ss.ffffff'
@@ -69,7 +69,7 @@ function Write-LogToFile {
         }
     } | ForEach-Object {
         $Ret = if ($SkipPrefix) {
-            "|" + $_
+            "| " + $_
         } else { 
             if ($TagOnce) { $SkipPrefix = $true }
             $Prefix + $_

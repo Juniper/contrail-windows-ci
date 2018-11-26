@@ -72,19 +72,6 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         Get-Content $DummyLog1 | Should -Not -Be $null
     }
 
-    It "tags the messages with file basename" {
-        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
-        "remote log text" | Add-Content $DummyLog1
-
-        Initialize-PesterLogger -OutDir "TestDrive:\"
-        Write-Log "first message"
-
-        Merge-Logs -LogSources $Source1
-
-        Get-Content "TestDrive:\RemoteLogCollector.tags the messages with file basename.txt" |
-            ConvertTo-LogItem | ForEach-Object { $_.Tag } | Should -BeLike "*$DummyLog1Basename*"
-    }
-
     It "adds a prefix describing source directory" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         "remote log text" | Add-Content $DummyLog1
