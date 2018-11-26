@@ -26,7 +26,8 @@ function Initialize-PesterLogger {
             [Parameter(Mandatory = $true)] [object] $Message,
             [parameter(ValueFromRemainingArguments=$true)] $WriterArgs,
             [Parameter(Mandatory=$false)] [string] $Tag = "test-runner",
-            [Switch] $NoTimestamps
+            [Switch] $NoTimestamps,
+            [Switch] $TagOnce,
         )
 
         $Scope = & $DeducerFunc
@@ -35,7 +36,7 @@ function Initialize-PesterLogger {
             throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':', '/', etc."
         }
         $Outpath = Join-Path $Script:ConstOutdir $Filename
-        & $WriterFunc -Path $Outpath -Value $Message -Tag $Tag -UseTimestamps (-not $NoTimestamps)
+        & $WriterFunc -Path $Outpath -Value $Message -Tag $Tag -UseTimestamps (-not $NoTimestamps) -TagOnce $TagOnce
     }.GetNewClosure()
 
     Register-NewFunc -Name "Write-LogImpl" -Func $WriteLogFunc
