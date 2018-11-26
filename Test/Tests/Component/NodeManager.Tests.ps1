@@ -114,7 +114,7 @@ Describe "Node manager" {
             Stop-NodeMgrService -Session $Session
             Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
         } finally {
-            Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+            Merge-Logs -DontCleanUp -LogSources $LogSources
         }
     }
 
@@ -128,10 +128,9 @@ Describe "Node manager" {
         )]
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
 
-        [LogSource[]] $StaticLogSources = @() # Resetting global variable
-        $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
-        $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
-        $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions[0]
+        [LogSource[]] $LogSources = @()
+        $LogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
+        $LogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions[0]
     }
 
     AfterAll {

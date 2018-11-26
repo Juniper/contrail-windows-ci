@@ -169,7 +169,7 @@ Describe "Single compute node protocol tests with utils" {
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+            Merge-Logs -DontCleanUp -LogSources $LogSources
         }
     }
 
@@ -193,10 +193,9 @@ Describe "Single compute node protocol tests with utils" {
 
         $InstalledServicesLogs = @((Get-VrouterLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath))
 
-        [LogSource[]] $StaticLogSources = @() # Resetting global variable
-        $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
-        $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
-        $StaticLogSources += $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }
+        [LogSource[]] $LogSources = @()
+        $LogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
+        $LogSources += $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",

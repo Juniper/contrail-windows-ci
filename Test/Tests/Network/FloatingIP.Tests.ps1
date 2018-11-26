@@ -165,7 +165,7 @@ Describe "Floating IP" {
                     Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                     Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
                 } finally {
-                    Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+                    Merge-Logs -DontCleanUp -LogSources $LogSources
                 }
             }
         }
@@ -180,10 +180,9 @@ Describe "Floating IP" {
             )]
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
-            [LogSource[]] $StaticLogSources = @() # Resetting global variable
-            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
-            $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = @()
+            $LogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+            $LogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
         }
 
         AfterAll {

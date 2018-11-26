@@ -124,10 +124,9 @@ Test-WithRetries 3 {
             )]
             $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
 
-            [LogSource[]] $StaticLogSources = @() # Resetting global variable
-            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
-            $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = @()
+            $LogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+            $LogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             Initialize-ComputeNode -Session $MultiNode.Sessions[0] -Networks @($Network) -Configs $MultiNode.Configs
             Initialize-ComputeNode -Session $MultiNode.Sessions[1] -Networks @($Network) -Configs $MultiNode.Configs
@@ -140,7 +139,7 @@ Test-WithRetries 3 {
 
                 Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                 Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
-                Clear-Logs -LogSources $StaticLogSources
+                Clear-Logs -LogSources $LogSources
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
@@ -201,7 +200,7 @@ Test-WithRetries 3 {
                 Remove-AllContainers -Sessions $Sessions
                 Start-AgentService -Session $Sessions[0]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+                Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }
     }

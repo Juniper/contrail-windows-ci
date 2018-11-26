@@ -193,10 +193,9 @@ Test-WithRetries 1 {
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
-            [LogSource[]] $StaticLogSources = @() # Resetting global variable
-            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
-            $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = @()
+            $LogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+            $LogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
 
@@ -286,7 +285,7 @@ Test-WithRetries 1 {
                         -SystemConfig $MultiNode.Configs.System
                 }
 
-                Clear-Logs -LogSources $StaticLogSources
+                Clear-Logs -LogSources $LogSources
 
                 if($VirtualDNSServer.Uuid) {
                     Write-Log "Removing Virtual DNS Server from Contrail..."
@@ -307,7 +306,7 @@ Test-WithRetries 1 {
         }
 
         AfterEach {
-            Merge-Logs -DontCleanUp -LogSources $StaticLogSources
+            Merge-Logs -DontCleanUp -LogSources $LogSources
         }
 
         Context "DNS mode none" {
