@@ -50,7 +50,7 @@ function Initialize-ComputeServices {
         -OpenStackConfig $OpenStackConfig `
         -ControllerConfig $ControllerConfig
 
-    Initialize-DriverAndExtension -Session $Session `
+    Initialize-CnmPluginAndExtension -Session $Session `
         -SystemConfig $SystemConfig
 
     New-AgentConfigFile -Session $Session `
@@ -58,4 +58,5 @@ function Initialize-ComputeServices {
         -SystemConfig $SystemConfig
 
     Start-AgentService -Session $Session
+    Start-NodeMgrService -Session $Session
 }
