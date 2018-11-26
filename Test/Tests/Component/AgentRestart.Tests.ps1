@@ -22,6 +22,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 $Container3ID = "mountain-mama"
