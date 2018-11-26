@@ -244,6 +244,10 @@ Test-WithRetries 3 {
         }
 
         BeforeEach {
+            $StaticLogSources = @() # Resetting global variable
+            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+
             Write-Log "Creating containers"
             Write-Log "Creating container: $Container1ID"
             New-Container `
@@ -277,10 +281,6 @@ Test-WithRetries 3 {
                 -Session $MultiNode.Sessions[1] -ContainerID $Container2ID
             $IP = $Container2NetInfo.IPAddress
             Write-Log "IP of ${Container2ID}: $IP"
-
-            $StaticLogSources = @() # Resetting global variable
-            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
         }
 
         AfterEach {

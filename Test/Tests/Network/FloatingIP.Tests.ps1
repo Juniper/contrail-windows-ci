@@ -117,6 +117,10 @@ Describe "Floating IP" {
             }
 
             BeforeEach {
+                $StaticLogSources = @() # Resetting global variable
+                $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+                $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+
                 $Networks = @($ClientNetwork, $ServerNetwork)
                 foreach ($Session in $MultiNode.Sessions) {
                     Initialize-ComputeNode -Session $Session -Networks $Networks -Configs $MultiNode.Configs
@@ -144,10 +148,6 @@ Describe "Floating IP" {
                                                                   $ServerFloatingIpAddress)
 
                 $MultiNode.NM.AssignFloatingIpToAllPortsInNetwork($ContrailFloatingIp, $ContrailServerNetwork)
-
-                $StaticLogSources = @() # Resetting global variable
-                $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-                $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
             }
 
             AfterEach {

@@ -97,16 +97,16 @@ Describe "Node manager" {
     BeforeEach {
         $Session = $MultiNode.Sessions[0]
 
+        $StaticLogSources = @() # Resetting global variable
+        $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
+        $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
+
         Initialize-ComputeServices -Session $Session `
             -SystemConfig $MultiNode.Configs.System `
             -OpenStackConfig $MultiNode.Configs.OpenStack `
             -ControllerConfig $MultiNode.Configs.Controller
         Clear-NodeMgrLogs -Session $Session
         Start-NodeMgrService -Session $Session
-
-        $StaticLogSources = @() # Resetting global variable
-        $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-        $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
     }
 
     AfterEach {

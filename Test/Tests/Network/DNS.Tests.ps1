@@ -231,6 +231,11 @@ Test-WithRetries 1 {
             Param (
                 [Parameter(Mandatory=$true)] [IPAMDNSSettings] $DNSSettings
             )
+
+            $global:StaticLogSources = @() # Resetting global variable
+            $global:StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+            $global:StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+
             $IPAM = [IPAM]::New()
             $IPAM.DNSSettings = $DNSSettings
             $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
@@ -249,10 +254,6 @@ Test-WithRetries 1 {
                 -ContainerID $ContainersIDs[0] `
                 -ContainerImage "microsoft/windowsservercore" `
                 -NetworkName $Network.Name
-
-            $global:StaticLogSources = @() # Resetting global variable
-            $global:StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-            $global:StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
         }
 
         function AfterEachContext {
