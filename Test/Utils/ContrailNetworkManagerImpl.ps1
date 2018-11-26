@@ -35,12 +35,14 @@ class ContrailNetworkManager {
                                   [String] $Uuid, $Request) {
         $RequestUrl = $this.GetResourceUrl($Resource, $Uuid)
 
+        $Body = (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request |
+                    ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
+        Write-Log "[Contrail][$Method]=>[$RequestUrl] $Body"
         # We need to escape '<>' in 'direction' field because reasons
         # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
         return Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
             -Method $Method -ContentType "application/json" `
-            -Body (ConvertTo-Json `
-            -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request | ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
+            -Body $Body
     }
 
     [PSObject] Get([String] $Resource, [String] $Uuid, $Request) {
