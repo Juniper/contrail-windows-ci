@@ -232,9 +232,9 @@ Test-WithRetries 1 {
                 [Parameter(Mandatory=$true)] [IPAMDNSSettings] $DNSSettings
             )
 
-            $global:StaticLogSources = @() # Resetting global variable
-            $global:StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-            $global:StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+            $script:StaticLogSources = @() # Resetting global variable
+            $script:StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+            $script:StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
 
             $IPAM = [IPAM]::New()
             $IPAM.DNSSettings = $DNSSettings
@@ -268,7 +268,7 @@ Test-WithRetries 1 {
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
             } finally {
-                Merge-Logs -LogSources $global:StaticLogSources
+                Merge-Logs -LogSources $script:StaticLogSources
             }
         }
 
