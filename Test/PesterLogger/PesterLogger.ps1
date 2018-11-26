@@ -46,7 +46,8 @@ function Write-LogToFile {
         [Parameter(Mandatory=$true)] [string] $Path,
         [Parameter(Mandatory=$true)] [object] $Value,
         [Parameter(Mandatory=$true)] [bool] $UseTimestamps,
-        [Parameter(Mandatory=$false)] [string] $Tag
+        [Parameter(Mandatory=$false)] [string] $Tag,
+        [Parameter(Mandatory=$false)] [switch] $TagOnce
     )
 
     $TimestampFormatString = 'yyyy-MM-dd HH:mm:ss.ffffff'
@@ -57,6 +58,7 @@ function Write-LogToFile {
         " " * $TimestampFormatString.Length
     }
     $Prefix += " | " + $Tag + " | "
+    $SkipPrefix = $false
 
     $PrefixedValue = $Value | ForEach-Object {
         if ($_ -is [String]) {
@@ -65,7 +67,13 @@ function Write-LogToFile {
             $_
         }
     } | ForEach-Object {
-        $Prefix + $_
+        $Ret = if ($SkipPrefix) {
+            "|" + $_
+        } else { 
+            if ($TagOnce) { $SkipPrefix = $true }
+            $Prefix + $_
+        }
+        $Ret
     }
 
     Add-ContentForce -Path $Path -Value $PrefixedValue | Out-Null

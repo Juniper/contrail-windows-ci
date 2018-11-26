@@ -164,10 +164,10 @@ function Merge-Logs {
 
         foreach ($Log in $LogSource.GetContent()) {
             if ($Log -is [ValidCollectedLog]) {
-                $Tag = "$SourceHost -> $($Log.Tag)"
+                $Tag = "Testbed machine $SourceHost -> $($Log.Tag)"
                 Write-Log -NoTimestamp -Tag $Tag "<$($Log.Name)>"
                 if ($Log.Content) {
-                    Write-Log -NoTimestamp -Tag $Tag $Log.Content
+                    Write-Log -NoTimestamp -TagOnce -Tag $Tag $Log.Content
                 } else {
                     Write-Log -Tag $Tag "<EMPTY>"
                 }
