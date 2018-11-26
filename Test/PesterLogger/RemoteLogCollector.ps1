@@ -205,7 +205,7 @@ function Merge-Logs {
                 $Tag = "Testbed machine $SourceHost -> $($Log.Tag)"
                 Write-Log -NoTimestamp -Tag $Tag "<$($Log.Name)>"
                 if ($Log.Content) {
-                    Write-Log -NoTimestamp -TagOnce -Tag $Tag $Log.Content
+                    Write-Log -NoTimestamp -PrefixOnce -Tag $Tag $Log.Content
                 } else {
                     Write-Log -Tag $Tag "<EMPTY>"
                 }
