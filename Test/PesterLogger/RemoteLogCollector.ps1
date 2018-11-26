@@ -106,7 +106,7 @@ class FileLogSource : LogSource {
                     Write-Warning "$File was not cleared due to $_"
                 }
             } else {
-                Write-Warning "$What was not cleared, it is not a valid path to file"
+                Write-Warning "$What was not cleared, it is not a valid path to a file"
             }
     }
         Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $this.Session -Arguments $this.FilePath

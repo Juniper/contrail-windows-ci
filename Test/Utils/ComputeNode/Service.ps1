@@ -175,10 +175,6 @@ function Get-ServicesLogPaths {
     return @((Get-VrouterLogPath), (Get-AgentLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath), (Get-NodeMgrLogPath))
 }
 
-function Get-AgentExecutablePath {
-    return "C:\Program Files\Juniper Networks\agent\contrail-vrouter-agent.exe"
-}
-
 function Get-NodeMgrServiceConfiguration {
 
     $NodeTypeParam = "--nodetype contrail-vrouter"
