@@ -58,8 +58,8 @@ class ContrailNetworkManager {
         return $this.SendRequest("Put", $Resource, $Uuid, $Request)
     }
 
-    [PSObject] Delete([String] $Resource, [String] $Uuid, $Request) {
-        return $this.SendRequest("Delete", $Resource, $Uuid, $Request)
+    [Void] Delete([String] $Resource, [String] $Uuid, $Request) {
+        $this.SendRequest("Delete", $Resource, $Uuid, $Request)
     }
 
     [String] FQNameToUuid ([string] $Resource, [string[]] $FQName) {
