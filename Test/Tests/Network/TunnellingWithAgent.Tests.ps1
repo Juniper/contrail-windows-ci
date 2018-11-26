@@ -82,7 +82,7 @@ function Get-VrfStats {
     return $Stats
 }
 
-Test-WithRetries 1 {
+Test-WithRetries 3 {
     Describe "Tunneling with Agent tests" {
 
         #
