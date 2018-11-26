@@ -124,6 +124,11 @@ Test-WithRetries 3 {
             )]
             $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
 
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "FileLogSources",
+                Justification="It's actually used."
+            )]
             $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             Initialize-ComputeNode -Session $MultiNode.Sessions[0] -Networks @($Network) -Configs $MultiNode.Configs

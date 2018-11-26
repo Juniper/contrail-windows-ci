@@ -258,7 +258,7 @@ Test-WithRetries 1 {
         }
 
         function AfterEachContext {
-            try {
+            Invoke-Command -ErrorAction SilentlyContinue {
                 Merge-Logs -LogSources (
                     (New-ContainerLogSource -Sessions $MultiNode.Sessions[0] -ContainerNames $ContainersIDs[0]),
                     (New-ContainerLogSource -Sessions $MultiNode.Sessions[1] -ContainerNames $ContainersIDs[1])
@@ -268,8 +268,6 @@ Test-WithRetries 1 {
                 Remove-AllContainers -Sessions $MultiNode.Sessions
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
-            } finally {
-                Merge-Logs -DontCleanUp -LogSources $FileLogSources
             }
         }
 
@@ -303,6 +301,10 @@ Test-WithRetries 1 {
                 Remove-MultiNodeSetup -MultiNode $MultiNode
                 Remove-Variable "MultiNode"
             }
+        }
+
+        AfterEach {
+            Merge-Logs -DontCleanUp -LogSources $FileLogSources
         }
 
         Context "DNS mode none" {
