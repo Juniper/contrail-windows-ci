@@ -13,6 +13,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
@@ -117,10 +118,6 @@ Describe "Floating IP" {
             }
 
             BeforeEach {
-                $StaticLogSources = @() # Resetting global variable
-                $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-                $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
-
                 $Networks = @($ClientNetwork, $ServerNetwork)
                 foreach ($Session in $MultiNode.Sessions) {
                     Initialize-ComputeNode -Session $Session -Networks $Networks -Configs $MultiNode.Configs
@@ -170,7 +167,7 @@ Describe "Floating IP" {
                     Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                     Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
                 } finally {
-                    Merge-Logs -LogSources $StaticLogSources
+                    Merge-Logs -DontCleanUp -LogSources $StaticLogSources
                 }
             }
         }
@@ -184,6 +181,11 @@ Describe "Floating IP" {
                 Justification="It's actually used."
             )]
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+
+            $StaticLogSources = @() # Resetting global variable
+            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+            $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
         }
 
         AfterAll {

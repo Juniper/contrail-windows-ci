@@ -18,6 +18,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
@@ -220,6 +221,11 @@ Test-WithRetries 3 {
             )]
             $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
 
+            $StaticLogSources = @() # Resetting global variable
+            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+            $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+
             Initialize-ComputeNode -Session $MultiNode.Sessions[0] -Networks @($Network) -Configs $MultiNode.Configs
             Initialize-ComputeNode -Session $MultiNode.Sessions[1] -Networks @($Network) -Configs $MultiNode.Configs
         }
@@ -231,7 +237,7 @@ Test-WithRetries 3 {
 
                 Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                 Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
-                Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+                Clear-Logs -LogSources $StaticLogSources
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
@@ -244,10 +250,6 @@ Test-WithRetries 3 {
         }
 
         BeforeEach {
-            $StaticLogSources = @() # Resetting global variable
-            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
-
             Write-Log "Creating containers"
             Write-Log "Creating container: $Container1ID"
             New-Container `

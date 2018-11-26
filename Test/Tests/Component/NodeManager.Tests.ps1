@@ -13,6 +13,9 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
+
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
@@ -22,7 +25,9 @@ Param (
 
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
-$LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
+
+$LogPath = Get-NodeMgrLogPath
+
 
 function Clear-NodeMgrLogs {
     Param (
@@ -97,14 +102,11 @@ Describe "Node manager" {
     BeforeEach {
         $Session = $MultiNode.Sessions[0]
 
-        $StaticLogSources = @() # Resetting global variable
-        $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
-        $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
-
         Initialize-ComputeServices -Session $Session `
             -SystemConfig $MultiNode.Configs.System `
             -OpenStackConfig $MultiNode.Configs.OpenStack `
             -ControllerConfig $MultiNode.Configs.Controller
+
         Clear-NodeMgrLogs -Session $Session
         Start-NodeMgrService -Session $Session
     }
@@ -114,7 +116,7 @@ Describe "Node manager" {
             Stop-NodeMgrService -Session $Session
             Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
         } finally {
-            Merge-Logs -LogSources $StaticLogSources
+            Merge-Logs -DontCleanUp -LogSources $StaticLogSources
         }
     }
 
@@ -127,6 +129,11 @@ Describe "Node manager" {
             Justification="It's actually used."
         )]
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
+
+        $StaticLogSources = @() # Resetting global variable
+        $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
+        $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
+        $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions[0]
     }
 
     AfterAll {

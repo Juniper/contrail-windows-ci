@@ -14,6 +14,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
@@ -99,10 +100,6 @@ Describe "Single compute node protocol tests with utils" {
     }
 
     BeforeEach {
-        $StaticLogSources = @() # Resetting global variable
-        $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
-        $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
-
         $Subnet = [SubnetConfiguration]::new(
             "10.0.0.0",
             24,
@@ -174,7 +171,7 @@ Describe "Single compute node protocol tests with utils" {
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -LogSources $StaticLogSources
+            Merge-Logs -DontCleanUp -LogSources $StaticLogSources
         }
     }
 
@@ -195,6 +192,13 @@ Describe "Single compute node protocol tests with utils" {
         Install-CnmPlugin -Session $Session
         Install-Extension -Session $Session
         Install-Utils -Session $Session
+
+        $InstalledServicesLogs = @((Get-VrouterLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath))
+
+        $StaticLogSources = @() # Resetting global variable
+        $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
+        $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
+        $StaticLogSources += $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
