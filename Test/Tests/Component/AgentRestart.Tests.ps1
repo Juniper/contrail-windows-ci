@@ -14,6 +14,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
@@ -61,9 +62,8 @@ function Get-NumberOfStoredPorts {
 }
 
 Test-WithRetries 3 {
-    # "Unpendify" once "Replay add port" is merged.
     Describe "Agent restart tests" {
-        It "Ports are correctly restored after Agent restart" -Pending {
+        It "Ports are correctly restored after Agent restart" {
             Write-Log "Testing ping before Agent restart..."
             Test-Ping `
                 -Session $Sessions[0] `
@@ -124,6 +124,13 @@ Test-WithRetries 3 {
             )]
             $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
 
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "FileLogSources",
+                Justification="It's actually used."
+            )]
+            $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+
             Initialize-ComputeNode -Session $MultiNode.Sessions[0] -Networks @($Network) -Configs $MultiNode.Configs
             Initialize-ComputeNode -Session $MultiNode.Sessions[1] -Networks @($Network) -Configs $MultiNode.Configs
         }
@@ -135,7 +142,7 @@ Test-WithRetries 3 {
 
                 Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
                 Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
-                Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+                Clear-Logs -LogSources $FileLogSources
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
@@ -196,7 +203,7 @@ Test-WithRetries 3 {
                 Remove-AllContainers -Sessions $Sessions
                 Start-AgentService -Session $Sessions[0]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+                Merge-Logs -DontCleanUp -LogSources $FileLogSources
             }
         }
     }

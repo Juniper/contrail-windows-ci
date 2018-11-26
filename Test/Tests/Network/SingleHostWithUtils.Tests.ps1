@@ -11,8 +11,10 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
@@ -166,7 +168,7 @@ Describe "Single compute node protocol tests with utils" {
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            Merge-Logs -DontCleanUp -LogSources $FileLogSources
         }
     }
 
@@ -187,6 +189,15 @@ Describe "Single compute node protocol tests with utils" {
         Install-CnmPlugin -Session $Session
         Install-Extension -Session $Session
         Install-Utils -Session $Session
+
+        $InstalledServicesLogs = @((Get-VrouterLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath))
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "FileLogSources",
+            Justification="It's actually used in 'AfterEach' block."
+        )]
+        $FileLogSources = $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",

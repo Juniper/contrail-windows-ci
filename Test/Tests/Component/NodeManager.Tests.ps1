@@ -13,13 +13,19 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
+
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
-$LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
+
+$LogPath = Get-NodeMgrLogPath
+
 
 function Clear-NodeMgrLogs {
     Param (
@@ -70,35 +76,6 @@ function Test-ControllerReceivesNodeStatus {
     return $true
 }
 
-function Start-NodeMgr {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
-    )
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-        "PSUseDeclaredVarsMoreThanAssignments", "",
-        Justification="Analyzer doesn't understand relation of Pester blocks"
-        )]
-        $NodeMgrJob = Start-Job -ScriptBlock {
-            contrail-nodemgr --nodetype contrail-vrouter
-        }
-    }
-}
-
-function Stop-NodeMgr {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
-    )
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        if(Get-Variable "NodeMgrJob" -ErrorAction SilentlyContinue) {
-            $NodeMgrJob | Stop-Job
-            Remove-Variable "NodeMgrJob"
-        }
-    }
-}
-
 Describe "Node manager" {
     It "starts" {
         Eventually {
@@ -127,16 +104,17 @@ Describe "Node manager" {
             -SystemConfig $MultiNode.Configs.System `
             -OpenStackConfig $MultiNode.Configs.OpenStack `
             -ControllerConfig $MultiNode.Configs.Controller
+
         Clear-NodeMgrLogs -Session $Session
-        Start-NodeMgr -Session $Session
+        Start-NodeMgrService -Session $Session
     }
 
     AfterEach {
         try {
-            Stop-NodeMgr -Session $Session
+            Stop-NodeMgrService -Session $Session
             Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
         } finally {
-            Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+            Merge-Logs -DontCleanUp -LogSources $FileLogSources
         }
     }
 
@@ -149,6 +127,13 @@ Describe "Node manager" {
             Justification="It's actually used."
         )]
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "FileLogSources",
+            Justification="It's actually used."
+        )]
+        $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions[0]
     }
 
     AfterAll {

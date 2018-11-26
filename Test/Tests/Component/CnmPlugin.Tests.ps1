@@ -11,6 +11,7 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
@@ -77,6 +78,12 @@ Describe "CNM Plugin" {
         $Session = $Sessions[0]
 
         Initialize-PesterLogger -OutDir $LogDir
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "FileLogSources",
+            Justification="It's actually used in 'AfterEach' block."
+        )]
+        $FileLogSources = New-FileLogSource -Path (Get-CNMPluginLogPath) -Sessions $Session
 
         $FoundTestModules = @(Find-CnmPluginTests -RemoteSearchDir $RemoteTestModulesDir -Session $Session)
         if ($FoundTestModules.Count -eq 0) {
@@ -107,6 +114,6 @@ Describe "CNM Plugin" {
     }
 
     AfterEach {
-        Merge-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
+        Merge-Logs -DontCleanUp -LogSources $FileLogSources
     }
 }
