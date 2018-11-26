@@ -30,35 +30,61 @@ class LogSource {
 }
 
 class FileLogSource : LogSource {
-    [String] $Path
+    [String] $FilePath
+    [int64] $StartLine
 
-    [CollectedLog[]] GetContent() {
-        $ContentGetterBody = {
+    FileLogSource($Session, $FilePath) {
+        $this.Session = $Session
+        $this.FilePath = $FilePath
+        $this.StartLine = $this.GetLineCount()
+    }
+
+    [int64] GetLineCount() {
+        $GetLineCountBody = {
             Param([Parameter(Mandatory = $true)] [string] $From)
-            $Files = Get-ChildItem -Path $From -ErrorAction SilentlyContinue
-            $Logs = @()
-            if (-not $Files) {
-                $Logs += @{
+            if (Test-Path -PathType Leaf $From) {
+                return @(Get-Content $From).Count
+            } else {
+                return 0
+            }
+        }
+        return Invoke-CommandRemoteOrLocal -Func $GetLineCountBody -Session $this.Session -Arguments $this.FilePath
+    }
+
+    [CollectedLog] GetContent() {
+        $ContentGetterBody = {
+            Param([Parameter(Mandatory = $true)] [string] $From,
+                  [Parameter(Mandatory = $true)] [int64] $StartLine,
+                  [Parameter(Mandatory = $true)] [int64] $LineCount)
+            if (Test-Path -PathType Leaf $From) {
+                $File = Get-Item $From
+                $FullContent = @(Get-Content $File)
+                if ($LineCount -gt $StartLine){
+                    $Content = $FullContent[$StartLine..($LineCount - 1)] | Out-String
+                } else {
+                    $Content = ""
+                }
+                return @{
+                    Name = $File
+                    Tag = $File.BaseName
+                    Content = $Content
+                }
+
+            } else {
+                return @{
                     Name = $From
                     Err = "<FILE NOT FOUND>"
                 }
-            } else {
-                foreach ($File in $Files) {
-                    $Content = Get-Content -Raw $File
-                    $Logs += @{
-                        Name = $File
-                        Tag = $File.BaseName
-                        Content = $Content
-                    }
-                }
             }
-            return $Logs
         }
+        $Start = $this.StartLine
+        $LineCount = $this.GetLineCount()
+        $this.StartLine = $LineCount
 
         # We cannot create [ValidCollectedLog] and [InvalidCollectedLog] classes directly
         # in the closure, as it may be executed in remote session, so as a workaround
         # we need to fix the types afterwards.
-        return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $this.Session -Arguments $this.Path |
+        return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $this.Session -Arguments @($this.FilePath, $Start, $LineCount) |
             ForEach-Object {
                 if ($_['Err']) {
                     [InvalidCollectedLog] $_
@@ -71,17 +97,19 @@ class FileLogSource : LogSource {
     ClearContent() {
         $LogCleanerBody = {
             Param([Parameter(Mandatory = $true)] [string] $What)
-            $Files = Get-ChildItem -Path $What -ErrorAction SilentlyContinue
-            foreach ($File in $Files) {
+            if (Test-Path -PathType Leaf $What) {
+                $File = Get-Item -Path $What -ErrorAction SilentlyContinue
                 try {
                     Clear-Content $File -Force
                 }
                 catch {
                     Write-Warning "$File was not cleared due to $_"
                 }
+            } else {
+                Write-Warning "$What was not cleared, it is not a valid path to a file"
             }
-        }
-        Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $this.Session -Arguments $this.Path
+    }
+        Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $this.Session -Arguments $this.FilePath
     }
 }
 
@@ -134,12 +162,22 @@ function New-FileLogSource {
     Param([Parameter(Mandatory = $true)] [string] $Path,
           [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
 
-    return $Sessions | ForEach-Object {
-        [FileLogSource] @{
-            Session = $_
-            Path = $Path
+        $GetFilesPath = {
+            Param([Parameter(Mandatory = $true)] [string] $Path)
+            $Files = Get-ChildItem -Path $Path -File -ErrorAction SilentlyContinue
+            if ($Files) {
+                return $Files.FullName
+            }
+            return $Path
         }
-    }
+
+        return $Sessions | ForEach-Object {
+            $Session = $_
+            $FilePaths = @(Invoke-CommandRemoteOrLocal -Func $GetFilesPath -Session $Session -Arguments $Path)
+            $FilePaths | ForEach-Object {
+                [FileLogSource]::new($Session, $_)
+            }
+        }
 }
 
 function Invoke-CommandRemoteOrLocal {
