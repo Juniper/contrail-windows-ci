@@ -33,20 +33,20 @@ function Set-MSISignature {
 }
 
 function Invoke-CnmPluginBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $DriverSrcPath,
+    Param ([Parameter(Mandatory = $true)] [string] $PluginSrcPath,
            [Parameter(Mandatory = $true)] [string] $SigntoolPath,
            [Parameter(Mandatory = $true)] [string] $CertPath,
            [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath)
 
-    $Job.PushStep("Docker driver build")
+    $Job.PushStep("CNM plugin build")
     $GoPath = Get-Location
     if (Test-Path Env:GOPATH) {
         $GoPath +=  ";$Env:GOPATH"
     }
     $Env:GOPATH = $GoPath
-    $srcPath = "$GoPath/src/$DriverSrcPath"
+    $srcPath = "$GoPath/src/$PluginSrcPath"
 
     New-Item -ItemType Directory ./bin | Out-Null
 
@@ -70,7 +70,7 @@ function Invoke-CnmPluginBuild {
         }
     })
 
-    $Job.Step("Building driver and precompiling tests", {
+    $Job.Step("Building plugin and precompiling tests", {
         # TODO: Handle new name properly
         Push-Location $srcPath
         Invoke-NativeCommand -ScriptBlock {

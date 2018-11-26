@@ -11,8 +11,10 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
@@ -171,7 +173,7 @@ Describe "Floating IP" -Tag "Smoke" {
                     Write-Log "Removing all containers"
                     Remove-AllContainers -Sessions $Sessions
                 } finally {
-                    Merge-Logs -DontCleanUp -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Sessions)
+                    Merge-Logs -DontCleanUp -LogSources $FileLogSources
                 }
             }
         }
@@ -185,6 +187,13 @@ Describe "Floating IP" -Tag "Smoke" {
                 Justification="It's actually used."
             )]
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "FileLogSources",
+                Justification="It's actually used in 'AfterEach' block."
+            )]
+            $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             if ($PrepareEnv) {
                 foreach ($Session in $MultiNode.Sessions) {
@@ -201,6 +210,7 @@ Describe "Floating IP" -Tag "Smoke" {
                             -Session $Session `
                             -SystemConfig $MultiNode.Configs.System
                     }
+                    Clear-Logs -LogSources $FileLogSources
                 }
                 Remove-MultiNodeSetup -MultiNode $MultiNode
                 Remove-Variable "MultiNode"

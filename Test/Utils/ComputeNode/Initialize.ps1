@@ -26,12 +26,10 @@ function Initialize-ComputeNode {
 function Clear-ComputeNode {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory=$true)] [SystemConfig] $SystemConfig
     )
 
     Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-
-    Clear-Logs -LogSources (New-FileLogSource -Path (Get-ComputeLogsPath) -Sessions $Session)
 
     Write-Log "Uninstalling components from testbed..."
     Uninstall-Components -Session $Session

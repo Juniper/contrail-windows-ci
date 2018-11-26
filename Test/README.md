@@ -33,7 +33,7 @@ Artifacts can be deployed from nightly build. The easiest way is to use ansible 
 alias run_tb='ansible -i inventory --vault-password-file ~/ansible-vault-key testbed -m win_shell -a'
 
 run_tb "mkdir C:/Artifacts"
-run_tb "docker run -v C:\Artifacts:C:\Artifacts opencontrailnightly/contrail-windows-docker-driver"
+run_tb "docker run -v C:\Artifacts:C:\Artifacts opencontrailnightly/contrail-windows-cnm-plugin"
 run_tb "docker run -v C:\Artifacts:C:\Artifacts opencontrailnightly/contrail-windows-vrouter"
 run_tb "Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ C:\Artifacts\vrouter\vRouter.cer"
 run_tb "Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ C:\Artifacts\vrouter\vRouter.cer"
