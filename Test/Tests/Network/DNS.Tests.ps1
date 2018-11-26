@@ -250,9 +250,9 @@ Test-WithRetries 1 {
                 -ContainerImage "microsoft/windowsservercore" `
                 -NetworkName $Network.Name
 
-            $StaticLogSources = @() # Resetting global variable
-            $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
-            $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
+            $global:StaticLogSources = @() # Resetting global variable
+            $global:StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
+            $global:StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
         }
 
         function AfterEachContext {
@@ -267,7 +267,7 @@ Test-WithRetries 1 {
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
                 Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
             } finally {
-                Merge-Logs -LogSources $StaticLogSources
+                Merge-Logs -LogSources $global:StaticLogSources
             }
         }
 
