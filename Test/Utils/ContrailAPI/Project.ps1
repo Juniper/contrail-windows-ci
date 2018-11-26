@@ -20,7 +20,7 @@ function Add-OrReplaceContrailProject {
     try {
         New-ContrailProject `
             -API $API `
-            -Name $Name
+            -Name $Name | Out-Null
     }
     catch {
         if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {

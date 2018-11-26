@@ -169,5 +169,5 @@ function Add-ContrailPolicyToNetwork {
         }
     }
 
-    $API.Put('virtual-network', $NetworkUuid, $BodyObject)
+    $API.Put('virtual-network', $NetworkUuid, $BodyObject) | Out-Null
 }

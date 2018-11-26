@@ -19,5 +19,5 @@ function Set-EncapPriorities {
         }
     }
 
-    $API.Put('global-vrouter-config', $Uuid, $Request)
+    $API.Put('global-vrouter-config', $Uuid, $Request) | Out-Null
 }
