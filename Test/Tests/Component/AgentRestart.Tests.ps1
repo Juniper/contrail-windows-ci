@@ -22,8 +22,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
-[LogSource[]] $StaticLogSources = @()
-
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 $Container3ID = "mountain-mama"
@@ -126,7 +124,7 @@ Test-WithRetries 3 {
             )]
             $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
 
-            $StaticLogSources = @() # Resetting global variable
+            [LogSource[]] $StaticLogSources = @() # Resetting global variable
             $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
             $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
             $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions

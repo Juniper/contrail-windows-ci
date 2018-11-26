@@ -24,8 +24,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
 
-[LogSource[]] $StaticLogSources = @()
-
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
 
 $Subnet = [SubnetConfiguration]::new(
@@ -195,7 +193,7 @@ Test-WithRetries 1 {
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
-            $StaticLogSources = @() # Resetting global variable
+            [LogSource[]] $StaticLogSources = @() # Resetting global variable
             $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
             $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
             $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions

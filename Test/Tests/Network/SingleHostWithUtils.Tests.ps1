@@ -23,8 +23,6 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-[LogSource[]] $StaticLogSources = @()
-
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 
@@ -195,7 +193,7 @@ Describe "Single compute node protocol tests with utils" {
 
         $InstalledServicesLogs = @((Get-VrouterLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath))
 
-        $StaticLogSources = @() # Resetting global variable
+        [LogSource[]] $StaticLogSources = @() # Resetting global variable
         $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
         $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
         $StaticLogSources += $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }

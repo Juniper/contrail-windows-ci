@@ -18,8 +18,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
-[LogSource[]] $StaticLogSources = @()
-
 $PolicyName = "passallpolicy"
 
 $ClientNetworkSubnet = [SubnetConfiguration]::new(
@@ -182,7 +180,7 @@ Describe "Floating IP" {
             )]
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
-            $StaticLogSources = @() # Resetting global variable
+            [LogSource[]] $StaticLogSources = @() # Resetting global variable
             $StaticLogSources += New-FileLogSource -Sessions $MultiNode.Sessions -Path (Get-ComputeLogsPath)
             $StaticLogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
             $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions

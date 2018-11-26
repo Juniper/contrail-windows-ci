@@ -21,8 +21,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 
-[LogSource[]] $StaticLogSources = @()
-
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
 
@@ -130,7 +128,7 @@ Describe "Node manager" {
         )]
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
 
-        $StaticLogSources = @() # Resetting global variable
+        [LogSource[]] $StaticLogSources = @() # Resetting global variable
         $StaticLogSources += New-FileLogSource -Sessions $Session -Path (Get-ComputeLogsPath)
         $StaticLogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
         $StaticLogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions[0]
