@@ -193,9 +193,12 @@ Test-WithRetries 1 {
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
-            [LogSource[]] $LogSources = @()
-            $LogSources += New-EventLogLogSource -Sessions $MultiNode.Sessions -EventLogName "Application" -EventLogSource "Docker"
-            $LogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "LogSources",
+                Justification="It's actually used."
+            )]
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
 

@@ -146,6 +146,15 @@ class EventLogLogSource : LogSource {
                 }
             }
 
+            # Check the index range after getting content from event log, so that we get a chance
+            # to catch any other exceptions thrown by Get-EventLog.
+            if ($StartEventIdx -gt $EndEventIdx) {
+                return @{
+                    Name = $Name
+                    Err = "<EMPTY>"
+                }
+            }
+
             return @{
                 Name = "EventLog from $Name"
                 Tag = "$Name"
@@ -168,7 +177,7 @@ class EventLogLogSource : LogSource {
     }
 
     ClearContent() {
-        $this.StartEventIdx = $this.GetLatestEventIdx()
+        $this.StartEventIdx = $this.GetLatestEventIdx() + 1
     }
 
     [int64] GetLatestEventIdx() {
@@ -179,10 +188,8 @@ class EventLogLogSource : LogSource {
                 return Get-EventLog -LogName $LogName -Source $LogSource -Newest 1 | Select-Object -Expand Index
             } catch {
                 # Not sure why catching [System.ArgumentException] doesn't work here.
-                #
                 # This may happen if we instantiate EventLogLogCollector before the corresponding EventLog exist.
-                # In such case, the EventLog should start numbering from 1 anyways, so just return 1.
-                return 1
+                return 0
             }
         }
         return Invoke-CommandRemoteOrLocal -Func $Getter -Session $this.Session `

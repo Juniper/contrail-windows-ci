@@ -193,9 +193,12 @@ Describe "Single compute node protocol tests with utils" {
 
         $InstalledServicesLogs = @((Get-VrouterLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath))
 
-        [LogSource[]] $LogSources = @()
-        $LogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
-        $LogSources += $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "LogSources",
+            Justification="It's actually used."
+        )]
+        [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",

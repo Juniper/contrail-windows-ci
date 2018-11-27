@@ -318,11 +318,7 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
             $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.reading from non-existing log collector returns proper error in logs.txt"
             $ContentRaw | Should -BeLike "*event log retrieval error:*"
         }
-        It "writing and clearing works" {
-            # We are using a single, two step integration test here for brevity.
-            # TODO: consider refactoring when more test cases are added.
-
-            # TEST 1. Verify that getting logs from event log works
+        It "getting logs from event log works" {
             $Source = New-EventLogLogSource -Sessions $Sess1 -EventLogName "TestLog" -EventLogSource "Test"
             Initialize-PesterLogger -OutDir "TestDrive:\"
 
@@ -331,22 +327,55 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
             }
             Merge-Logs -LogSources $Source
 
-            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.writing and clearing works.txt"
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.getting logs from event log works.txt"
             $ContentRaw | Should -BeLike "*first entry*"
-
-            # TEST 2. Verify that clearing works - previous messages are not pulled
-            Clear-Content "TestDrive:\*.Windows Eventlog.writing and clearing works.txt"
+        }
+        It "ignores messages from before initialization" {
+            Invoke-Command -Session $Sess1 {
+                Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "entry before initialization" -ID 1
+            }
             $Source = New-EventLogLogSource -Sessions $Sess1 -EventLogName "TestLog" -EventLogSource "Test"
             Initialize-PesterLogger -OutDir "TestDrive:\"
 
             Invoke-Command -Session $Sess1 {
-                Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "second entry" -ID 1
+                Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "first entry" -ID 1
             }
             Merge-Logs -LogSources $Source
 
-            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.writing and clearing works.txt"
-            $ContentRaw | Should -BeLike "*second entry*"
-            $ContentRaw | Should -Not -BeLike "*first entry*"
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.ignores messages from before initialization.txt"
+            $ContentRaw | Should -Not -BeLike "*entry before initialization*"
+            $ContentRaw | Should -BeLike "*first entry*"
+        }
+        It "ignores messages from before clearing content" {
+            $Source = New-EventLogLogSource -Sessions $Sess1 -EventLogName "TestLog" -EventLogSource "Test"
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            Invoke-Command -Session $Sess1 {
+                Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "entry before clearing" -ID 1
+            }
+
+            $Source.ClearContent()
+            Invoke-Command -Session $Sess1 {
+                Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "first entry" -ID 1
+            }
+            Merge-Logs -LogSources $Source
+
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.ignores messages from before clearing content.txt"
+            $ContentRaw | Should -Not -BeLike "*entry before clearing*"
+            $ContentRaw | Should -BeLike "*first entry*"
+        }
+        It "doesn't read previous entries if nothing was added to event log" {
+            # Regression test for a case pointed by Magdalena during code review.
+            Invoke-Command -Session $Sess1 {
+                Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "previous entry" -ID 1
+            }
+            $Source = New-EventLogLogSource -Sessions $Sess1 -EventLogName "TestLog" -EventLogSource "Test"
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+
+            Merge-Logs -LogSources $Source
+
+            $ContentRaw = Get-Content -Raw "TestDrive:\*.Windows Eventlog.doesn't read previous entries if nothing was added to event log.txt"
+            $ContentRaw | Should -Not -BeLike "*previous entry*"
+            $ContentRaw | Should -BeLike "*EMPTY*"
         }
     }
 }

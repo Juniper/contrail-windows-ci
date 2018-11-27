@@ -98,8 +98,6 @@ Describe "Node manager" {
     }
 
     BeforeEach {
-        $Session = $MultiNode.Sessions[0]
-
         Initialize-ComputeServices -Session $Session `
             -SystemConfig $MultiNode.Configs.System `
             -OpenStackConfig $MultiNode.Configs.OpenStack `
@@ -119,6 +117,8 @@ Describe "Node manager" {
     }
 
     BeforeAll {
+        $Session = $MultiNode.Sessions[0]
+
         Initialize-PesterLogger -OutDir $LogDir
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -128,9 +128,12 @@ Describe "Node manager" {
         )]
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
 
-        [LogSource[]] $LogSources = @()
-        $LogSources += New-EventLogLogSource -Sessions $Session -EventLogName "Application" -EventLogSource "Docker"
-        $LogSources += New-ComputeNodeLogSources -Sessions $MultiNode.Sessions[0]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "LogSources",
+            Justification="It's actually used."
+        )]
+        [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
     }
 
     AfterAll {

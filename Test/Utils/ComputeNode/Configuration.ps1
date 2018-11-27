@@ -191,7 +191,10 @@ function New-AgentConfigFile {
 
 function New-ComputeNodeLogSources {
     Param([Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
-    return Get-ServicesLogPaths | ForEach-Object {
+    [LogSource[]] $LogSources = @()
+    $LogSources +=  Get-ServicesLogPaths | ForEach-Object {
         New-FileLogSource -Path $_ -Sessions $Sessions
     }
+    $LogSources += New-EventLogLogSource -Sessions $Sessions -EventLogName "Application" -EventLogSource "Docker"
+    return $LogSources
 }
