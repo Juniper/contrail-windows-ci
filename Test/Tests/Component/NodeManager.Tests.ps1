@@ -97,25 +97,8 @@ Describe "Node manager" {
         } -Duration 60
     }
 
-    BeforeEach {
-        $Session = $MultiNode.Sessions[0]
-        Initialize-ComputeServices `
-            -Session $Session `
-            -SystemConfig $MultiNode.Configs.System `
-            -OpenStackConfig $MultiNode.Configs.OpenStack `
-            -ControllerConfig $MultiNode.Configs.Controller
-
-        Clear-NodeMgrLogs -Session $Session
-        Start-NodeMgrService -Session $Session
-    }
-
     AfterEach {
-        try {
-            Stop-NodeMgrService -Session $Session
-            Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
-        } finally {
-            Merge-Logs -DontCleanUp -LogSources $FileLogSources
-        }
+        Merge-Logs -DontCleanUp -LogSources $FileLogSources
     }
 
     BeforeAll {
@@ -126,19 +109,28 @@ Describe "Node manager" {
             "MultiNode",
             Justification="It's actually used."
         )]
-
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
         foreach ($Session in $MultiNode.Sessions) {
             Install-Components -Session $Session
         }
 
+        $Session = $MultiNode.Sessions[0]
+
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "FileLogSources",
             Justification="It's actually used."
         )]
-        $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions[0]
+        $FileLogSources = New-ComputeNodeLogSources -Sessions $Session
+
+        Clear-NodeMgrLogs -Session $Session
+
+        Initialize-ComputeServices `
+            -Session $Session `
+            -SystemConfig $MultiNode.Configs.System `
+            -OpenStackConfig $MultiNode.Configs.OpenStack `
+            -ControllerConfig $MultiNode.Configs.Controller
     }
 
     AfterAll {
