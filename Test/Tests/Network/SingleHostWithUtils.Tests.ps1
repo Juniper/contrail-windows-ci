@@ -191,8 +191,6 @@ Describe "Single compute node protocol tests with utils" {
         Install-Extension -Session $Session
         Install-Utils -Session $Session
 
-        $InstalledServicesLogs = @((Get-VrouterLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath))
-
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "LogSources",
