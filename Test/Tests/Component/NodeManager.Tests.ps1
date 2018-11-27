@@ -117,8 +117,6 @@ Describe "Node manager" {
     }
 
     BeforeAll {
-        $Session = $MultiNode.Sessions[0]
-
         Initialize-PesterLogger -OutDir $LogDir
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -127,6 +125,8 @@ Describe "Node manager" {
             Justification="It's actually used."
         )]
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
+
+        $Session = $MultiNode.Sessions[0]
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",

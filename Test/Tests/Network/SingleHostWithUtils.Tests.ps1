@@ -198,7 +198,7 @@ Describe "Single compute node protocol tests with utils" {
             "LogSources",
             Justification="It's actually used."
         )]
-        [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+        [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
