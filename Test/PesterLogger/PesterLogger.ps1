@@ -27,7 +27,7 @@ function Initialize-PesterLogger {
             [parameter(ValueFromRemainingArguments=$true)] $WriterArgs,
             [Parameter(Mandatory=$false)] [string] $Tag = "test-runner",
             [Switch] $NoTimestamps,
-            [Switch] $PrefixOnce
+            [Switch] $NoTag
         )
 
         $Scope = & $DeducerFunc
@@ -36,7 +36,7 @@ function Initialize-PesterLogger {
             throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':', '/', etc."
         }
         $Outpath = Join-Path $Script:ConstOutdir $Filename
-        & $WriterFunc -Path $Outpath -Value $Message -Tag $Tag -UseTimestamps (-not $NoTimestamps) -PrefixOnce $PrefixOnce
+        & $WriterFunc -Path $Outpath -Value $Message -Tag $Tag -NoTimestamps $NoTimestamps -NoTag $NoTag
     }.GetNewClosure()
 
     Register-NewFunc -Name "Write-LogImpl" -Func $WriteLogFunc
@@ -46,31 +46,38 @@ function Write-LogToFile {
     Param(
         [Parameter(Mandatory=$true)] [string] $Path,
         [Parameter(Mandatory=$true)] [object] $Value,
-        [Parameter(Mandatory=$true)] [bool] $UseTimestamps,
         [Parameter(Mandatory=$false)] [string] $Tag,
-        [Parameter(Mandatory=$false)] [bool] $PrefixOnce = $false
+        [Parameter(Mandatory=$true)] [bool] $NoTimestamps,
+        [Parameter(Mandatory=$true)] [bool] $NoTag = $false
     )
 
     $TimestampFormatString = 'yyyy-MM-dd HH:mm:ss.ffffff'
 
-    $Prefix = if ($UseTimestamps) {
+    $Prefix = if (-not ($NoTimestamps)) {
         Get-Date -Format $TimestampFormatString
     } else {
         " " * $TimestampFormatString.Length
     }
-    $Prefix += " | " + $Tag + " | "
-    $SkipPrefix = $false
-
-    $PrefixedValue = $Value | ForEach-Object {
-        $Ret = if ($SkipPrefix) {
-            "| " + $_
-        } else { 
-            if ($PrefixOnce) { $SkipPrefix = $true }
-            $Prefix + $_ 
+    $Prefix += if (-not ($NoTag)) {
+        " | $Tag | "
+    } else {
+        " | "
+    }
+    
+    $SplitValue = $Value | ForEach-Object {
+        if ($_ -is [string]) {
+            $_.Split([Environment]::Newline) `
+                | Where-Object { $_.Length -gt 0 } # Filter out empty duplicate lines,
+                                                   # caused by split by newline
+        } else {
+            $_
         }
-        $Ret
     }
 
+    $PrefixedValue = $SplitValue | ForEach-Object {
+        $Prefix + $_
+    }
+    
     Add-ContentForce -Path $Path -Value $PrefixedValue | Out-Null
 }
 
@@ -124,10 +131,16 @@ function ConvertTo-LogItem {
 
         $Tuple = $Line.Split("|")
         if ($Tuple.Length -eq 2) {
-            # The was one separator
-            $Message = $Tuple
+            # The was one separator, e.g.
+            # ```
+            #                            | remote log text
+            # ```
+            $Message = $Tuple[1]
         } elseif ($Tuple.Length -eq 3) {
-            # There were two separators
+            # There were two separators, e.g.
+            # ```
+            # 2018-11-27 11:53:44.544036 | test-runner | foo
+            # ```
             $Timestamp, $Tag, $Message = $Tuple
         }
         

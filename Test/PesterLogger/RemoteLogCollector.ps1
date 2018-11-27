@@ -195,19 +195,19 @@ function Merge-Logs {
 
     foreach ($LogSource in $LogSources) {
         $SourceHost = if ($LogSource.Session) {
-            $LogSource.Session.ComputerName
+            "Testbed machine $($LogSource.Session.ComputerName)"
         } else {
             "localhost"
         }
 
         foreach ($Log in $LogSource.GetContent()) {
             if ($Log -is [ValidCollectedLog]) {
-                $Tag = "Testbed machine $SourceHost -> $($Log.Tag)"
+                $Tag = "$SourceHost -> $($Log.Tag)"
                 Write-Log -NoTimestamp -Tag $Tag "<$($Log.Name)>"
                 if ($Log.Content) {
-                    Write-Log -NoTimestamp -PrefixOnce -Tag $Tag $Log.Content
+                    Write-Log -NoTimestamp -NoTag $Log.Content
                 } else {
-                    Write-Log -Tag $Tag "<EMPTY>"
+                    Write-Log -NoTimestamp -NoTag "<EMPTY>"
                 }
             } else {
                 $Tag = "$SourceHost -> ERROR"
