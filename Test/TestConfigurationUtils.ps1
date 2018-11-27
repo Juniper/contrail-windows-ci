@@ -319,29 +319,6 @@ function Clear-TestConfiguration {
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
 
-function Initialize-ComputeServices {
-        Param (
-            [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-            [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-            [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
-            [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
-        )
-
-        New-CNMPluginConfigFile -Session $Session `
-            -AdapterName $SystemConfig.AdapterName `
-            -OpenStackConfig $OpenStackConfig `
-            -ControllerConfig $ControllerConfig
-
-        Initialize-CnmPluginAndExtension -Session $Session `
-            -SystemConfig $SystemConfig
-
-        New-AgentConfigFile -Session $Session `
-            -ControllerConfig $ControllerConfig `
-            -SystemConfig $SystemConfig
-
-        Start-AgentService -Session $Session
-}
-
 function Remove-DockerNetwork {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
