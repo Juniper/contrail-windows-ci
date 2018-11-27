@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -47,11 +48,13 @@ $ServerFloatingIpPoolName = "pool"
 $ServerFloatingIpName = "fip"
 $ServerFloatingIpAddress = "10.2.2.10"
 
+$Networks = @($ClientNetwork, $ServerNetwork)
+
 $ContainerImage = "microsoft/windowsservercore"
 $ContainerClientID = "fip-client"
 $ContainerServer1ID = "fip-server1"
 
-Describe "Floating IP" {
+Describe "Floating IP" -Tag "Smoke" {
     Context "Multinode" {
         Context "2 networks" {
             It "ICMP works" {
@@ -118,9 +121,22 @@ Describe "Floating IP" {
                     -API $MultiNode.NM `
                     -PolicyUuid $ContrailPolicy `
                     -NetworkUuid $ContrailServerNetwork
+
+                foreach ($Session in $MultiNode.Sessions) {
+                    Initialize-DockerNetworks `
+                        -Session $Session `
+                        -Networks $Networks `
+                        -Configs $MultiNode.Configs
+                }
             }
 
             AfterAll {
+                foreach ($Session in $MultiNode.Sessions) {
+                    foreach ($Network in $Networks) {
+                        Remove-DockerNetwork -Session $Session -Name $Network.Name
+                    }
+                }
+
                 Write-Log "Deleting floating IP pool"
                 if (Get-Variable ContrailFloatingIpPool -ErrorAction SilentlyContinue) {
                     Remove-ContrailFloatingIpPool `
@@ -151,11 +167,6 @@ Describe "Floating IP" {
             }
 
             BeforeEach {
-                $Networks = @($ClientNetwork, $ServerNetwork)
-                foreach ($Session in $MultiNode.Sessions) {
-                    Initialize-ComputeNode -Session $Session -Networks $Networks -Configs $MultiNode.Configs
-                }
-
                 Write-Log "Creating containers"
                 Write-Log "Creating container: $ContainerClientID"
                 New-Container `
@@ -198,7 +209,6 @@ Describe "Floating IP" {
                 }
 
                 $Sessions = $MultiNode.Sessions
-                $SystemConfig = $MultiNode.Configs.System
                 try {
                     Merge-Logs -LogSources (
                         (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $ContainerClientID),
@@ -207,9 +217,6 @@ Describe "Floating IP" {
 
                     Write-Log "Removing all containers"
                     Remove-AllContainers -Sessions $Sessions
-
-                    Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
-                    Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
                 } finally {
                     Merge-Logs -DontCleanUp -LogSources $FileLogSources
                 }
@@ -232,10 +239,24 @@ Describe "Floating IP" {
                 Justification="It's actually used in 'AfterEach' block."
             )]
             $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+
+            if ($PrepareEnv) {
+                foreach ($Session in $MultiNode.Sessions) {
+                    Initialize-ComputeNode -Session $Session -Configs $MultiNode.Configs
+                }
+            }
         }
 
         AfterAll {
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
+                if ($PrepareEnv){
+                    foreach ($Session in $MultiNode.Sessions) {
+                        Clear-ComputeNode `
+                            -Session $Session `
+                            -SystemConfig $MultiNode.Configs.System
+                    }
+                    Clear-Logs -LogSources $FileLogSources
+                }
                 Remove-MultiNodeSetup -MultiNode $MultiNode
                 Remove-Variable "MultiNode"
             }

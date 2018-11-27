@@ -21,6 +21,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
+
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
@@ -135,10 +137,18 @@ Test-WithRetries 3 {
                 "FileLogSources",
                 Justification="It's actually used."
             )]
-            $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            $FileLogSources = New-ComputeNodeLogSources -Sessions $Sessions
 
-            Initialize-ComputeNode -Session $MultiNode.Sessions[0] -Networks @($Network) -Configs $MultiNode.Configs
-            Initialize-ComputeNode -Session $MultiNode.Sessions[1] -Networks @($Network) -Configs $MultiNode.Configs
+            foreach ($Session in $Sessions) {
+                Initialize-ComputeNode `
+                    -Session $Session `
+                    -Configs $MultiNode.Configs
+
+                Initialize-DockerNetworks `
+                    -Session $Session `
+                    -Networks @($Network) `
+                    -Configs $MultiNode.Configs
+            }
         }
 
         AfterAll {
@@ -146,8 +156,12 @@ Test-WithRetries 3 {
                 $Sessions = $MultiNode.Sessions
                 $SystemConfig = $MultiNode.Configs.System
 
-                Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
-                Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
+                foreach ($Session in $Sessions) {
+                    Remove-DockerNetwork -Session $Session -Name $Network.Name
+                    Clear-ComputeNode `
+                        -Session $Session `
+                        -SystemConfig $SystemConfig
+                }
                 Clear-Logs -LogSources $FileLogSources
 
                 Write-Log "Deleting virtual network"

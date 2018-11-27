@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -19,6 +20,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
@@ -191,7 +194,7 @@ function ResolveWithError {
 }
 
 Test-WithRetries 1 {
-    Describe "DNS tests" {
+    Describe "DNS tests" -Tag "Smoke" {
         BeforeAll {
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
@@ -220,12 +223,13 @@ Test-WithRetries 1 {
                 $DNSServerRepo.AddDNSRecord($DNSRecord)
             }
 
-            Write-Log "Initializing Contrail services on test beds..."
-            foreach($Session in $MultiNode.Sessions) {
-                Initialize-ComputeServices -Session $Session `
-                    -SystemConfig $MultiNode.Configs.System `
-                    -OpenStackConfig $MultiNode.Configs.OpenStack `
-                    -ControllerConfig $MultiNode.Configs.Controller
+            if ($PrepareEnv) {
+                Write-Log "Initializing Contrail services on test beds..."
+                foreach($Session in $MultiNode.Sessions) {
+                    Initialize-ComputeNode `
+                        -Session $Session `
+                        -Configs $MultiNode.Configs `
+                }
             }
 
             Write-Log "Creating virtual network: $($Network.Name)"
@@ -251,13 +255,12 @@ Test-WithRetries 1 {
             $IPAMRepo.SetIpamDNSMode($IPAM)
 
             foreach($Session in $MultiNode.Sessions) {
-                $ID = New-DockerNetwork -Session $Session `
-                    -TenantName $MultiNode.Configs.Controller.DefaultProject `
-                    -Name $Network.Name `
-                    -Subnet "$( $Network.Subnet.IpPrefix )/$( $Network.Subnet.IpPrefixLen )"
-
-                Write-Log "Created network id: $ID"
+                Initialize-DockerNetworks `
+                    -Session $Session `
+                    -Networks @($Network) `
+                    -Configs $MultiNode.Configs
             }
+
 
             Start-Container -Session $MultiNode.Sessions[0] `
                 -ContainerID $ContainersIDs[0] `
@@ -288,12 +291,14 @@ Test-WithRetries 1 {
             }
 
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                foreach($Session in $MultiNode.Sessions) {
-                    Clear-TestConfiguration -Session $Session `
-                        -SystemConfig $MultiNode.Configs.System
+                if ($PrepareEnv) {
+                    foreach($Session in $MultiNode.Sessions) {
+                        Clear-ComputeNode `
+                            -Session $Session `
+                            -SystemConfig $MultiNode.Configs.System
+                    }
+                    Clear-Logs -LogSources $FileLogSources
                 }
-
-                Clear-Logs -LogSources $FileLogSources
 
                 if($VirtualDNSServer.Uuid) {
                     Write-Log "Removing Virtual DNS Server from Contrail..."

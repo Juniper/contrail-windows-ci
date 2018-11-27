@@ -116,6 +116,7 @@ Copy `testenv-conf.yaml.sample` to `testenv-conf.yaml` file and replace all occu
 ## Running the tests
 
 Run the whole Windows sanity suite:
+
 ```
 .\Invoke-ProductTests.ps1 -TestRootDir . -TestenvConfFile ..\testenv-conf.yaml -TestReportDir ../reports
 ```
@@ -125,6 +126,22 @@ Run selected test:
 ```
 Invoke-Pester -Script @{ Path = ".\TunnellingWithAgent.Tests.ps1"; Parameters = @{ TestenvConfFile = "testenv-conf.yaml"}; } -TestName 'Tunnelling with Agent tests'
 ```
+
+### Running tests on an already deployed environment
+
+Smoke tests can be run on an already deployed environment (for example by contrail-ansible-deployer). Setting PrepareEnv
+flag to false will cause tests to not setup any services and become independant from deployment method:
+
+```
+ Invoke-Pester -Tag 'Smoke' -Script @{ Path = './Tests/Network/*'; Parameters = @{ PrepareEnv = $false; TestenvConfFile="testenv-conf.yaml" };}
+```
+
+You can also run it by invoking product tests script:
+
+```
+.\Invoke-ProductTests.ps1 -TestRootDir . -TestenvConfFile ..\testenv-conf.yaml -TestReportDir ../reports -UseExistingServices
+```
+
 
 ### Running tests in loop
 

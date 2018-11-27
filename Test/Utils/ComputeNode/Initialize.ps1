@@ -2,27 +2,61 @@
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-
+. $PSScriptRoot\Configuration.ps1
+. $PSScriptRoot\Installation.ps1
+. $PSScriptRoot\Service.ps1
 . $PSScriptRoot\..\DockerNetwork\DockerNetwork.ps1
 
 function Initialize-ComputeNode {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [TestenvConfigs] $Configs,
-        [Parameter(Mandatory=$true)] [Network[]] $Networks
+        [Parameter(Mandatory=$true)] [TestenvConfigs] $Configs
     )
 
+    Write-Log "Installing components on testbed..."
+    Install-Components -Session $Session
+
+    Write-Log "Initializing components on testbed..."
     Initialize-ComputeServices -Session $Session `
         -SystemConfig $Configs.System `
         -OpenStackConfig $Configs.OpenStack `
         -ControllerConfig $Configs.Controller
+}
 
-    foreach ($Network in $Networks) {
-        $ID = New-DockerNetwork -Session $Session `
-            -TenantName $Configs.Controller.DefaultProject `
-            -Name $Network.Name `
-            -Subnet "$( $Network.Subnet.IpPrefix )/$( $Network.Subnet.IpPrefixLen )"
+function Clear-ComputeNode {
+    Param (
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
+        [Parameter(Mandatory=$true)] [SystemConfig] $SystemConfig
+    )
 
-        Write-Log "Created network id: $ID"
-    }
+    Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+
+    Write-Log "Uninstalling components from testbed..."
+    Uninstall-Components -Session $Session
+}
+
+function Initialize-ComputeServices {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
+        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
+    )
+
+    New-NodeMgrConfigFile -Session $Session -ControllerIP $ControllerConfig.Address
+
+    New-CNMPluginConfigFile -Session $Session `
+        -AdapterName $SystemConfig.AdapterName `
+        -OpenStackConfig $OpenStackConfig `
+        -ControllerConfig $ControllerConfig
+
+    Initialize-CnmPluginAndExtension -Session $Session `
+        -SystemConfig $SystemConfig
+
+    New-AgentConfigFile -Session $Session `
+        -ControllerConfig $ControllerConfig `
+        -SystemConfig $SystemConfig
+
+    Start-AgentService -Session $Session
+    Start-NodeMgrService -Session $Session
 }
