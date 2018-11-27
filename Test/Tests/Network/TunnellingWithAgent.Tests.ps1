@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -17,6 +18,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
@@ -78,7 +80,7 @@ function Get-VrfStats {
 }
 
 Test-WithRetries 3 {
-    Describe "Tunneling with Agent tests" {
+    Describe "Tunneling with Agent tests" -Tag "Smoke" {
 
         #
         #               !!!!!! IMPORTANT: DEBUGGING/DEVELOPING THESE TESTS !!!!!!
@@ -226,18 +228,35 @@ Test-WithRetries 3 {
             )]
             [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
-            Initialize-ComputeNode -Session $MultiNode.Sessions[0] -Networks @($Network) -Configs $MultiNode.Configs
-            Initialize-ComputeNode -Session $MultiNode.Sessions[1] -Networks @($Network) -Configs $MultiNode.Configs
+            foreach ($Session in $MultiNode.Sessions) {
+                if ($PrepareEnv) {
+                    Initialize-ComputeNode `
+                        -Session $Session `
+                        -Configs $MultiNode.Configs
+                }
+
+                Initialize-DockerNetworks `
+                    -Session $Session `
+                    -Networks @($Network) `
+                    -Configs $MultiNode.Configs
+            }
         }
 
         AfterAll {
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                $Sessions = $MultiNode.Sessions
-                $SystemConfig = $MultiNode.Configs.System
 
-                Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
-                Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
-                Clear-Logs -LogSources $LogSources
+                foreach ($Session in $MultiNode.Sessions) {
+                    Remove-DockerNetwork -Session $Session -Name $Network.Name
+                }
+
+                if ($PrepareEnv) {
+                    foreach ($Session in $MultiNode.Sessions) {
+                        Clear-ComputeNode `
+                            -Session $Session `
+                            -SystemConfig $MultiNode.Configs.System
+                    }
+                    Clear-Logs -LogSources $LogSources
+                }
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {

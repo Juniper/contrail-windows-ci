@@ -101,6 +101,7 @@ class FileLogSource : LogSource {
                 $File = Get-Item -Path $What -ErrorAction SilentlyContinue
                 try {
                     Clear-Content $File -Force
+                    return $true
                 }
                 catch {
                     Write-Warning "$File was not cleared due to $_"
@@ -108,8 +109,11 @@ class FileLogSource : LogSource {
             } else {
                 Write-Warning "$What was not cleared, it is not a valid path to a file"
             }
-    }
-        Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $this.Session -Arguments $this.FilePath
+            return $false
+        }
+        if (Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $this.Session -Arguments $this.FilePath){
+            $this.StartLine = 0
+        }
     }
 }
 

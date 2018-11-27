@@ -25,8 +25,7 @@ function Set-ConfAndLogDir {
 
 function New-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory=$true)] [string] $TestenvConfFile,
-        [Parameter(Mandatory=$false)] [Switch] $InstallNodeMgr
+        [Parameter(Mandatory=$true)] [string] $TestenvConfFile
     )
 
     $VMs = Read-TestbedsConfig -Path $TestenvConfFile
@@ -35,17 +34,7 @@ function New-MultiNodeSetup {
     $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
     $Sessions = New-RemoteSessions -VMs $VMs
-
     Set-ConfAndLogDir -Sessions $Sessions
-
-    Write-Log "Installing components on testbeds..."
-    if ($InstallNodeMgr) {
-        Install-Components -Session $Sessions[0] -InstallNodeMgr -ControllerIP $ControllerConfig.Address
-        Install-Components -Session $Sessions[1] -InstallNodeMgr -ControllerIP $ControllerConfig.Address
-    } else {
-        Install-Components -Session $Sessions[0]
-        Install-Components -Session $Sessions[1]
-    }
 
     $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
     $ContrailNM.EnsureProject($ControllerConfig.DefaultProject)
@@ -64,7 +53,7 @@ function New-MultiNodeSetup {
 
     $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
     $VRoutersUuids = @($VRouter1Uuid, $VRouter2Uuid)
-    return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids, $InstallNodeMgr)
+    return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids)
 }
 
 function Remove-MultiNodeSetup {
@@ -77,15 +66,6 @@ function Remove-MultiNodeSetup {
         $MultiNode.NM.RemoveVirtualRouter($VRouterUuid)
     }
     $MultiNode.VRoutersUuids = $null
-
-    Write-Log "Uninstalling components from testbeds..."
-    foreach ($Session in $MultiNode.Sessions) {
-        if ($MultiNode.InstalledNodeMgr) {
-            Uninstall-Components -Session $Session -UninstallNodeMgr
-        } else {
-            Uninstall-Components -Session $Session
-        }
-    }
 
     Write-Log "Removing PS sessions.."
     Remove-PSSession $MultiNode.Sessions

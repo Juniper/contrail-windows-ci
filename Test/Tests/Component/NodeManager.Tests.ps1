@@ -12,14 +12,14 @@ Param (
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
-
+. $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
+
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
-. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
@@ -97,23 +97,8 @@ Describe "Node manager" {
         } -Duration 60
     }
 
-    BeforeEach {
-        Initialize-ComputeServices -Session $Session `
-            -SystemConfig $MultiNode.Configs.System `
-            -OpenStackConfig $MultiNode.Configs.OpenStack `
-            -ControllerConfig $MultiNode.Configs.Controller
-
-        Clear-NodeMgrLogs -Session $Session
-        Start-NodeMgrService -Session $Session
-    }
-
     AfterEach {
-        try {
-            Stop-NodeMgrService -Session $Session
-            Clear-TestConfiguration -Session $Session -SystemConfig $MultiNode.Configs.System
-        } finally {
-            Merge-Logs -DontCleanUp -LogSources $LogSources
-        }
+        Merge-Logs -DontCleanUp -LogSources $LogSources
     }
 
     BeforeAll {
@@ -124,7 +109,13 @@ Describe "Node manager" {
             "MultiNode",
             Justification="It's actually used."
         )]
-        $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile -InstallNodeMgr
+        $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+
+        foreach ($Session in $MultiNode.Sessions) {
+            Install-Components -Session $Session
+        }
+
+        $Session = $MultiNode.Sessions[0]
 
         $Session = $MultiNode.Sessions[0]
 
@@ -134,10 +125,24 @@ Describe "Node manager" {
             Justification="It's actually used."
         )]
         [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
+
+        Clear-NodeMgrLogs -Session $Session
+
+        Initialize-ComputeServices `
+            -Session $Session `
+            -SystemConfig $MultiNode.Configs.System `
+            -OpenStackConfig $MultiNode.Configs.OpenStack `
+            -ControllerConfig $MultiNode.Configs.Controller
     }
 
     AfterAll {
         if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
+
+            foreach ($Session in $MultiNode.Sessions) {
+                Uninstall-Components -Session $Session
+            }
+            Clear-Logs -LogSources $LogSources
+
             Remove-MultiNodeSetup -MultiNode $MultiNode
             Remove-Variable "MultiNode"
         }

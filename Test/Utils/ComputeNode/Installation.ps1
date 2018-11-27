@@ -144,29 +144,19 @@ function Uninstall-Nodemgr {
 }
 
 function Install-Components {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $false)] [Switch] $InstallNodeMgr,
-           [Parameter(Mandatory = $false)] [String] $ControllerIP)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Install-Extension -Session $Session
     Install-CnmPlugin -Session $Session
     Install-Agent -Session $Session
     Install-Utils -Session $Session
-
-    if ($InstallNodeMgr -and $ControllerIP) {
-        Install-Nodemgr -Session $Session
-        New-NodeMgrConfigFile -Session $Session -ControllerIP $ControllerIP
-    }
+    Install-Nodemgr -Session $Session
 }
 
 function Uninstall-Components {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $false)] [Switch] $UninstallNodeMgr)
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    if ($UninstallNodeMgr) {
-        Uninstall-Nodemgr -Session $Session
-    }
-
+    Uninstall-Nodemgr -Session $Session
     Uninstall-Utils -Session $Session
     Uninstall-Agent -Session $Session
     Uninstall-CnmPlugin -Session $Session
