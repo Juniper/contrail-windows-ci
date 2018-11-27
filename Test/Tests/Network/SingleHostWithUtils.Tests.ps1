@@ -23,6 +23,9 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+. $PSScriptRoot\..\..\Utils\ContrailAPI\Project.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 
@@ -114,7 +117,11 @@ Describe "Single compute node protocol tests with utils" {
             "ContrailNetwork",
             Justification="It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
-        $ContrailNetwork = $ContrailNM.AddOrReplaceNetwork($null, $NetworkName, $Subnet)
+        $ContrailNetwork = Add-OrReplaceNetwork `
+            -API $ContrailNM `
+            -TenantName $ContrailNM.DefaultTenantName `
+            -Name $NetworkName `
+            -SubnetConfig $Subnet
 
         New-CNMPluginConfigFile -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
@@ -164,7 +171,9 @@ Describe "Single compute node protocol tests with utils" {
 
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
-                $ContrailNM.RemoveNetwork($ContrailNetwork)
+                Remove-ContrailVirtualNetwork `
+                    -API $ContrailNM `
+                    -Uuid $ContrailNetwork
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
@@ -205,7 +214,9 @@ Describe "Single compute node protocol tests with utils" {
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-        $ContrailNM.EnsureProject($null)
+        Add-OrReplaceContrailProject `
+            -API $ContrailNM `
+            -Name $ContrailNM.DefaultTenantName
 
         Test-IfUtilsCanLoadDLLs -Session $Session
     }

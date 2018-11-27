@@ -24,6 +24,11 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
+
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\GlobalVrouterConfig.ps1
+
 $TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -103,7 +108,9 @@ Test-WithRetries 3 {
             Context "Tunneling $TunnelingMethod" {
                 BeforeEach {
                     $EncapPrioritiesList = @($TunnelingMethod)
-                    $MultiNode.NM.SetEncapPriorities($EncapPrioritiesList)
+                    Set-EncapPriorities `
+                        -API $MultiNode.NM `
+                        -PrioritiesList $EncapPrioritiesList
 
                     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                         "PSUseDeclaredVarsMoreThanAssignments",
@@ -219,7 +226,11 @@ Test-WithRetries 3 {
                 "ContrailNetwork",
                 Justification="It's actually used."
             )]
-            $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
+            $ContrailNetwork = Add-OrReplaceNetwork `
+                -API $MultiNode.NM `
+                -TenantName $MultiNode.NM.DefaultTenantName `
+                -Name $Network.Name `
+                -SubnetConfig $Subnet
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
@@ -260,7 +271,9 @@ Test-WithRetries 3 {
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemoveNetwork($ContrailNetwork)
+                    Remove-ContrailVirtualNetwork `
+                        -API $MultiNode.NM `
+                        -Uuid $ContrailNetwork
                 }
 
                 Remove-MultiNodeSetup -MultiNode $MultiNode

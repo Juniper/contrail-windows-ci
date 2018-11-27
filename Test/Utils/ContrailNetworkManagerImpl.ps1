@@ -1,11 +1,3 @@
-. $PSScriptRoot\ContrailAPI\FloatingIP.ps1
-. $PSScriptRoot\ContrailAPI\FloatingIPPool.ps1
-. $PSScriptRoot\ContrailAPI\NetworkPolicy.ps1
-. $PSScriptRoot\ContrailAPI\VirtualNetwork.ps1
-. $PSScriptRoot\ContrailAPI\VirtualRouter.ps1
-. $PSScriptRoot\ContrailUtils.ps1
-. $PSScriptRoot\ContrailAPI\GlobalVrouterConfig.ps1
-
 class ContrailNetworkManager {
     [Int] $CONVERT_TO_JSON_MAX_DEPTH = 100;
 
@@ -41,10 +33,17 @@ class ContrailNetworkManager {
 
     hidden [PSObject] SendRequest([String] $Method, [String] $Resource,
                                   [String] $Uuid, $Request) {
-        $RequestUrl = $this.GetResourceUrl($Resource, $Uuid)
-
-        return Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
-            -Method $Method -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
+        $RequestUrl = $this.GetResourceUrl($Resource, $Uuid.Trim())
+        # We need to escape '<>' in 'direction' field because reasons
+        # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
+        $Body = (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request |
+                    ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
+        Write-Log "[Contrail][$Method]=>[$RequestUrl] " + ($Body -replace "`n|`r", "")
+        $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
+            -Method $Method -ContentType "application/json" `
+            -Body $Body
+        Write-Log "[Contrail]<= " + ($Response -replace "`n|`r", "")
+        return $Response
     }
 
     [PSObject] Get([String] $Resource, [String] $Uuid, $Request) {
@@ -59,8 +58,8 @@ class ContrailNetworkManager {
         return $this.SendRequest("Put", $Resource, $Uuid, $Request)
     }
 
-    [PSObject] Delete([String] $Resource, [String] $Uuid, $Request) {
-        return $this.SendRequest("Delete", $Resource, $Uuid, $Request)
+    [Void] Delete([String] $Resource, [String] $Uuid, $Request) {
+        $this.SendRequest("Delete", $Resource, $Uuid, $Request)
     }
 
     [String] FQNameToUuid ([string] $Resource, [string[]] $FQName) {
@@ -74,195 +73,28 @@ class ContrailNetworkManager {
             -Method "Post" -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
         return $Response.'uuid'
     }
+}
 
-    [String] AddProject([String] $TenantName) {
-        if (-not $TenantName) {
-            $TenantName = $this.DefaultTenantName
-        }
+function Get-AccessTokenFromKeystone {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
+        "", Justification="We don't care that it's plaintext, it's just test env.")]
+    Param ([Parameter(Mandatory = $true)] [string] $AuthUrl,
+           [Parameter(Mandatory = $true)] [string] $TenantName,
+           [Parameter(Mandatory = $true)] [string] $Username,
+           [Parameter(Mandatory = $true)] [string] $Password)
 
-        return Add-ContrailProject `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -ProjectName $TenantName
-    }
-
-    EnsureProject([String] $TenantName) {
-        if (-not $TenantName) {
-            $TenantName = $this.DefaultTenantName
-        }
-
-        try {
-            $this.AddProject($TenantName)
-        }
-        catch {
-            if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
-                throw
+    $Request = @{
+        auth = @{
+            tenantName          = $TenantName
+            passwordCredentials = @{
+                username = $Username
+                password = $Password
             }
         }
     }
 
-    # TODO support multiple subnets per network
-    # TODO return a class (perhaps use the class from MultiTenancy test?)
-    # We cannot add a type to $SubnetConfig parameter,
-    # because the class is parsed before the files are sourced.
-    [String] AddOrReplaceNetwork([String] $TenantName, [String] $Name, $SubnetConfig) {
-        if (-not $TenantName) {
-            $TenantName = $this.DefaultTenantName
-        }
-
-        try {
-            return Add-ContrailVirtualNetwork `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -TenantName $TenantName `
-                -NetworkName $Name `
-                -SubnetConfig $SubnetConfig
-        } catch {
-            if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
-                throw
-            }
-
-            $NetworkUuid = Get-ContrailVirtualNetworkUuidByName `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -TenantName $TenantName `
-                -NetworkName $Name
-
-            $this.RemoveNetwork($NetworkUuid)
-
-            return Add-ContrailVirtualNetwork `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -TenantName $TenantName `
-                -NetworkName $Name `
-                -SubnetConfig $SubnetConfig
-        }
-    }
-
-    RemoveNetwork([String] $Uuid) {
-        Remove-ContrailVirtualNetwork `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -NetworkUuid $Uuid
-    }
-
-    [String] AddOrReplaceVirtualRouter([String] $RouterName, [String] $RouterIp) {
-        try {
-            return Add-ContrailVirtualRouter `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -RouterName $RouterName `
-                -RouterIp $RouterIp
-        } catch {
-            if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
-                throw
-            }
-
-            $RouterUuid = Get-ContrailVirtualRouterUuidByName `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -RouterName $RouterName
-
-            $this.RemoveVirtualRouter($RouterUuid)
-
-            return Add-ContrailVirtualRouter `
-                -ContrailUrl $this.ContrailUrl `
-                -AuthToken $this.AuthToken `
-                -RouterName $RouterName `
-                -RouterIp $RouterIp
-        }
-    }
-
-    RemoveVirtualRouter([String] $RouterUuid) {
-        Remove-ContrailVirtualRouter `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -RouterUuid $RouterUuid
-    }
-
-    SetEncapPriorities([String[]] $PrioritiesList) {
-        # PrioritiesList is a list of (in any order) "MPLSoGRE", "MPLSoUDP", "VXLAN".
-        Set-EncapPriorities `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -PrioritiesList $PrioritiesList
-    }
-
-    [String] AddFloatingIpPool([String] $TenantName, [String] $NetworkName, [String] $PoolName) {
-        if (-not $TenantName) {
-            $TenantName = $this.DefaultTenantName
-        }
-
-        return Add-ContrailFloatingIpPool `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -TenantName $TenantName `
-            -NetworkName $NetworkName `
-            -PoolName $PoolName
-    }
-
-    RemoveFloatingIpPool([String] $PoolUuid) {
-        Remove-ContrailFloatingIpPool `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -PoolUuid $PoolUuid
-    }
-
-    [String] AddFloatingIp([String] $PoolUuid,
-                           [String] $IPName,
-                           [String] $IPAddress) {
-        return Add-ContrailFloatingIp `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -PoolUuid $PoolUuid `
-            -IPName $IPName `
-            -IPAddress $IPAddress
-    }
-
-    AssignFloatingIpToAllPortsInNetwork([String] $IpUuid,
-                                        [String] $NetworkUuid) {
-        $PortFqNames = Get-ContrailVirtualNetworkPorts `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -NetworkUuid $NetworkUuid
-
-        Set-ContrailFloatingIpPorts `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -IpUuid $IpUuid `
-            -PortFqNames $PortFqNames
-    }
-
-    RemoveFloatingIp([String] $IpUuid) {
-        Remove-ContrailFloatingIp `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -IpUuid $IpUuid
-    }
-
-    [String] AddPassAllPolicyOnDefaultTenant([String] $Name) {
-        $TenantName = $this.DefaultTenantName
-
-        return Add-ContrailPassAllPolicy `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -TenantName $TenantName `
-            -Name $Name
-    }
-
-    RemovePolicy([String] $Uuid) {
-        Remove-ContrailPolicy `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -Uuid $Uuid
-    }
-
-    AddPolicyToNetwork([String] $PolicyUuid,
-                       [String] $NetworkUuid) {
-        Add-ContrailPolicyToNetwork `
-            -ContrailUrl $this.ContrailUrl `
-            -AuthToken $this.AuthToken `
-            -PolicyUuid $PolicyUuid `
-            -NetworkUuid $NetworkUuid
-    }
+    $AuthUrl += "/tokens"
+    $Response = Invoke-RestMethod -Uri $AuthUrl -Method Post -ContentType "application/json" `
+        -Body (ConvertTo-Json -Depth 100 $Request)
+    return $Response.access.token.id
 }

@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile = $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
     [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
@@ -18,14 +18,17 @@ Param (
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
 
@@ -235,7 +238,11 @@ Test-WithRetries 1 {
                 "ContrailNetwork",
                 Justification="It's actually used."
             )]
-            $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Network.Subnet)
+            $ContrailNetwork = Add-OrReplaceNetwork `
+                -API $MultiNode.NM `
+                -TenantName $MultiNode.NM.DefaultTenantName `
+                -Name $Network.Name `
+                -SubnetConfig $Network.Subnet
         }
 
         function BeforeEachContext {
@@ -278,7 +285,9 @@ Test-WithRetries 1 {
         AfterAll {
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
                 Write-Log "Deleting virtual network"
-                $MultiNode.NM.RemoveNetwork($ContrailNetwork)
+                Remove-ContrailVirtualNetwork `
+                    -API $MultiNode.NM `
+                    -Uuid $ContrailNetwork
             }
 
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
