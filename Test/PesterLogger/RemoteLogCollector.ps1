@@ -168,6 +168,7 @@ class EventLogLogSource : LogSource {
 
         $Start = $this.StartEventIdx
         $End = $this.GetLatestEventIdx()
+        $this.StartEventIdx = $End + 1
 
         return Invoke-CommandRemoteOrLocal -Func $LogGetterBody -Session $this.Session `
                 -Arguments @($this.EventLogName, $this.EventLogSource, $Start, $End) |
