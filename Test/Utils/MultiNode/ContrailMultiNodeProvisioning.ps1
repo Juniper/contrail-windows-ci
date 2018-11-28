@@ -33,11 +33,12 @@ function New-MultiNodeSetup {
     $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
     $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
     $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+    $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
 
     $Sessions = New-RemoteSessions -VMs $VMs
     Set-ConfAndLogDir -Sessions $Sessions
 
-    $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
+    $ContrailNM = [ContrailNetworkManager]::new($Configs)
     Add-OrReplaceContrailProject `
         -API $ContrailNM `
         -Name $ControllerConfig.DefaultProject
@@ -60,7 +61,6 @@ function New-MultiNodeSetup {
         -RouterIp $Testbed2Address
     Write-Log "Reported UUID of new virtual router: $VRouter2Uuid"
 
-    $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
     $VRoutersUuids = @($VRouter1Uuid, $VRouter2Uuid)
     return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids)
 }

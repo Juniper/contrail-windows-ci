@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory=$false)] [string] $TestenvConfFile = "C:\scripts\configurations\test_configuration.yaml",
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
     [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams

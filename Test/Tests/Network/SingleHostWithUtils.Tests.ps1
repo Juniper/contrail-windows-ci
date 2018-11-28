@@ -213,7 +213,7 @@ Describe "Single compute node protocol tests with utils" {
             "ContrailNM",
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
-        $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
+        $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
         Add-OrReplaceContrailProject `
             -API $ContrailNM `
             -Name $ContrailNM.DefaultTenantName
