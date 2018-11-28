@@ -1,4 +1,4 @@
-#docker_registry: "10.84.12.27:5000"
+docker_registry: "opencontrailnightly"
 contrail_version: "ocata-master-latest"
 kolla_version: "ocata"
 contrail_ansible_deployer_version: "cd9571b183886aed5e722d2b263a92c278c0f9d3"
