@@ -29,7 +29,7 @@ Param (
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 
-Describe "Single compute node protocol tests with utils" {
+Describe "Single compute node protocol tests with utils" -Tag "Utils" {
 
     function Initialize-ContainersConnection {
         Param (
