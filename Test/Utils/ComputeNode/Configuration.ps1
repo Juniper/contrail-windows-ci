@@ -49,6 +49,8 @@ AuthMethod=$( $ControllerConfig.AuthMethod )
 "@
     if($OpenStackConfig) {
         $Config += @"
+
+
 [KEYSTONE]
 Os_auth_url=$( $OpenStackConfig.AuthUrl() )
 Os_username=$( $OpenStackConfig.Username )
