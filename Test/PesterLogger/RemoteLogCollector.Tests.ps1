@@ -364,7 +364,6 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
             $ContentRaw | Should -BeLike "*first entry*"
         }
         It "doesn't read previous entries if nothing was added to event log" {
-            # Regression test for a case pointed by Magdalena during code review.
             Invoke-Command -Session $Sess1 {
                 Write-EventLog -LogName "TestLog" -Source "Test" -EntryType Information -Message "previous entry" -ID 1
             }
