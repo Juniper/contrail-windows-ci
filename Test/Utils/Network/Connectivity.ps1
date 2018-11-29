@@ -17,7 +17,7 @@ function Test-Ping {
         docker exec $Using:SrcContainerName powershell `
             "ping -l $Using:BufferSize $Using:DstIP; `$LASTEXITCODE;"
     }
-    $Output = $Res[0..($Res.length - 2)]
+    $Output = $Res[0..($Res.length - 2)] -join [Environment]::Newline
     Write-Log "Ping output: $Output"
 
     if ($Res[-1] -eq "0") {
@@ -51,7 +51,7 @@ function Test-TCP {
         docker exec $Using:SrcContainerName powershell `
             "Invoke-WebRequest -Uri http://${Using:DstIP}:8080/ -UseBasicParsing -ErrorAction Continue; `$LASTEXITCODE"
     }
-    $Output = $Res[0..($Res.length - 2)]
+    $Output = $Res[0..($Res.length - 2)] -join [Environment]::Newline
     Write-Log "Web request output: $Output"
     return $Res[-1]
 }

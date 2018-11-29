@@ -47,7 +47,7 @@ function Stop-EchoServerInContainer {
         $Output = Receive-Job -Job $UDPEchoServerJob
         return $Output
     }
-
+    $Output = $Output -join [Environment]::Newline
     Write-Log "Output from UDP echo server running in remote session: $Output"
 }
 

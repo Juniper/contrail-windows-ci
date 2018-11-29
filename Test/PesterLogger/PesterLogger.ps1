@@ -66,9 +66,7 @@ function Write-LogToFile {
     
     $SplitValue = $Value | ForEach-Object {
         if ($_ -is [string]) {
-            $_.Split([Environment]::Newline) `
-                | Where-Object { $_.Length -gt 0 } # Filter out empty duplicate lines,
-                                                   # caused by split by newline
+            $_.Split([Environment]::Newline, [StringSplitOptions]::RemoveEmptyEntries)
         } else {
             $_
         }
@@ -77,8 +75,7 @@ function Write-LogToFile {
     $PrefixedValue = $SplitValue | ForEach-Object {
         $Prefix + $_
     }
-    
-    Write-Host $PrefixedValue
+
     Add-ContentForce -Path $Path -Value $PrefixedValue | Out-Null
 }
 
