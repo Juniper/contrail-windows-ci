@@ -134,8 +134,6 @@ function New-ServiceConfiguration {
 }
 
 function Get-AgentServiceConfiguration {
-    $ConfigPath = Get-DefaultAgentConfigPath
-
     New-ServiceConfiguration `
         -ServiceName "contrail-vrouter-agent" `
         -ExecutablePath "C:\Program Files\Juniper Networks\agent\contrail-vrouter-agent.exe" `
