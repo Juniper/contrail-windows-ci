@@ -61,7 +61,7 @@ function Write-LogToFile {
     $Prefix += if (-not ($NoTag)) {
         " | $Tag | "
     } else {
-        " | "
+        "        | "
     }
     
     $SplitValue = $Value | ForEach-Object {
@@ -78,6 +78,7 @@ function Write-LogToFile {
         $Prefix + $_
     }
     
+    Write-Host $PrefixedValue
     Add-ContentForce -Path $Path -Value $PrefixedValue | Out-Null
 }
 
