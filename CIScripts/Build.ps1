@@ -12,6 +12,8 @@ Initialize-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
 $SconsBuildMode = Resolve-BuildMode
 
+Write-Host "### SconsBuildMode #### $SconsBuildMode"
+
 $CnmPluginOutputDir = "output/cnm-plugin"
 $vRouterOutputDir = "output/vrouter"
 $vtestOutputDir = "output/vtest"
@@ -83,7 +85,7 @@ try {
     } else {
         $ContainerMode = "release"
     }
-    
+
     if (Test-Path Env:DOCKER_REGISTRY) {
         $ContainersAttributes = @(
             [ContainerAttributes]::New("vrouter", @(
