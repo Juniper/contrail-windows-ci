@@ -169,7 +169,7 @@ Test-WithRetries 3 {
                             -Session $Session `
                             -SystemConfig $SystemConfig
                     }
-                    Clear-Logs -LogSources $FileLogSources
+                    Clear-Logs -LogSources $LogSources
                 }
 
                 Write-Log "Deleting virtual network"
