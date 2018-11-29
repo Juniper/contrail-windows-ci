@@ -112,14 +112,13 @@ Describe "Node manager" -Tag "Smoke" {
         )]
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
+        $Session = $MultiNode.Sessions[0]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "LogSources",
             Justification="It's actually used."
         )]
         [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
-
-        $Session = $MultiNode.Sessions[0]
 
         if ($PrepareEnv) {
             Install-Components -Session $Session
