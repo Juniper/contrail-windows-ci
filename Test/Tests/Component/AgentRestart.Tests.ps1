@@ -21,6 +21,10 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
+
+
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -122,17 +126,29 @@ Test-WithRetries 3 {
                 "ContrailNetwork",
                 Justification="It's actually used."
             )]
-            $ContrailNetwork = $MultiNode.NM.AddOrReplaceNetwork($null, $Network.Name, $Subnet)
+            $ContrailNetwork = Add-OrReplaceNetwork `
+                -API $MultiNode.NM `
+                -TenantName $MultiNode.NM.DefaultTenantName `
+                -Name $Network.Name `
+                -SubnetConfig $Subnet
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
-                "FileLogSources",
+                "LogSources",
                 Justification="It's actually used."
             )]
-            $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
-            Initialize-ComputeNode -Session $MultiNode.Sessions[0] -Networks @($Network) -Configs $MultiNode.Configs
-            Initialize-ComputeNode -Session $MultiNode.Sessions[1] -Networks @($Network) -Configs $MultiNode.Configs
+            foreach ($Session in $Sessions) {
+                Initialize-ComputeNode `
+                    -Session $Session `
+                    -Configs $MultiNode.Configs
+
+                Initialize-DockerNetworks `
+                    -Session $Session `
+                    -Networks @($Network) `
+                    -Configs $MultiNode.Configs
+            }
         }
 
         AfterAll {
@@ -140,13 +156,19 @@ Test-WithRetries 3 {
                 $Sessions = $MultiNode.Sessions
                 $SystemConfig = $MultiNode.Configs.System
 
-                Clear-TestConfiguration -Session $Sessions[0] -SystemConfig $SystemConfig
-                Clear-TestConfiguration -Session $Sessions[1] -SystemConfig $SystemConfig
-                Clear-Logs -LogSources $FileLogSources
+                foreach ($Session in $Sessions) {
+                    Remove-DockerNetwork -Session $Session -Name $Network.Name
+                    Clear-ComputeNode `
+                        -Session $Session `
+                        -SystemConfig $SystemConfig
+                }
+                Clear-Logs -LogSources $LogSources
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-                    $MultiNode.NM.RemoveNetwork($ContrailNetwork)
+                    Remove-ContrailVirtualNetwork `
+                        -API $MultiNode.NM `
+                        -Uuid $ContrailNetwork
                 }
 
                 Remove-MultiNodeSetup -MultiNode $MultiNode
@@ -203,7 +225,7 @@ Test-WithRetries 3 {
                 Remove-AllContainers -Sessions $Sessions
                 Start-AgentService -Session $Sessions[0]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources $FileLogSources
+                Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }
     }

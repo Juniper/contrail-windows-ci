@@ -1,12 +1,8 @@
-. $PSScriptRoot\Constants.ps1
-
 function Set-EncapPriorities {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string[]] $PrioritiesList)
 
-    $GetResponse = Invoke-RestMethod -Method GET -Uri ($ContrailUrl + "/global-vrouter-configs") `
-        -Headers @{"X-Auth-Token" = $AuthToken}
+    $GetResponse = $API.Get('global-vrouter-config', $null, $null)
 
     # Assume there's only one global-vrouter-config
     $Uuid = $GetResponse."global-vrouter-configs"[0].uuid
@@ -23,8 +19,5 @@ function Set-EncapPriorities {
         }
     }
 
-    Invoke-RestMethod -Method PUT -Uri ($ContrailUrl + "/global-vrouter-config/$Uuid") `
-        -Body (ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $Request) `
-        -Headers @{"X-Auth-Token" = $AuthToken} `
-        -ContentType "application/json" 
+    $API.Put('global-vrouter-config', $Uuid, $Request) | Out-Null
 }

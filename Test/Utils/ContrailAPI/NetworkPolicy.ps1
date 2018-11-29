@@ -1,5 +1,3 @@
-. $PSScriptRoot\Constants.ps1
-
 function New-ContrailPassAllPolicyDefinition {
     Param ([Parameter(Mandatory = $true)] [string] $TenantName,
            [Parameter(Mandatory = $true)] [string] $Name)
@@ -58,31 +56,19 @@ function New-ContrailPassAllPolicyDefinition {
     return $BodyObject
 }
 
-function Add-ContrailPassAllPolicy {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
-           [Parameter(Mandatory = $true)] [string] $TenantName,
-           [Parameter(Mandatory = $true)] [string] $Name)
+function New-ContrailPassAllPolicy {
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
+           [Parameter(Mandatory = $true)] [string] $Name,
+           [Parameter(Mandatory = $true)] [string] $TenantName)
 
-    $Url = $ContrailUrl + "/network-policys"
     $BodyObject = New-ContrailPassAllPolicyDefinition $TenantName $Name
-    # We need to escape '<>' in 'direction' field because reasons
-    # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
-    $Body = ConvertTo-Json -Depth $CONVERT_TO_JSON_MAX_DEPTH $BodyObject | ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) }
-    $Response = Invoke-RestMethod `
-        -Uri $Url `
-        -Headers @{"X-Auth-Token" = $AuthToken} `
-        -Method Post `
-        -ContentType "application/json" `
-        -Body $Body
+    $Response = $API.Post('network-policy', $null, $BodyObject)
     return $Response.'network-policy'.'uuid'
 }
 
 function Remove-ContrailPolicy {
-    Param ([Parameter(Mandatory = $true)] [string] $ContrailUrl,
-           [Parameter(Mandatory = $true)] [string] $AuthToken,
+    Param ([Parameter(Mandatory = $true)] [ContrailNetworkManager] $API,
            [Parameter(Mandatory = $true)] [string] $Uuid)
 
-    $Url = $ContrailUrl + "/network-policy/" + $Uuid
-    Invoke-RestMethod -Uri $Url -Headers @{"X-Auth-Token" = $AuthToken} -Method Delete | Out-Null
+    $API.Delete('network-policy', $Uuid, $null)
 }

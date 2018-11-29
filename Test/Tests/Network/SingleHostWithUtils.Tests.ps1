@@ -23,6 +23,9 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+. $PSScriptRoot\..\..\Utils\ContrailAPI\Project.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 
@@ -114,7 +117,11 @@ Describe "Single compute node protocol tests with utils" {
             "ContrailNetwork",
             Justification="It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
-        $ContrailNetwork = $ContrailNM.AddOrReplaceNetwork($null, $NetworkName, $Subnet)
+        $ContrailNetwork = Add-OrReplaceNetwork `
+            -API $ContrailNM `
+            -TenantName $ContrailNM.DefaultTenantName `
+            -Name $NetworkName `
+            -SubnetConfig $Subnet
 
         New-CNMPluginConfigFile -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
@@ -152,23 +159,26 @@ Describe "Single compute node protocol tests with utils" {
         Initialize-ContainersConnection -VMNetInfo $VMNetInfo -VHostInfo $VHostInfo `
             -Container1NetInfo $Container1NetInfo -Container2NetInfo $Container2NetInfo `
             -Session $Session
-
     }
 
     AfterEach {
         try {
-            Merge-Logs -LogSources (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
+            Merge-Logs -LogSources (
+                (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
+            )
 
             Write-Log "Removing containers"
             Remove-AllContainers -Session $Session
 
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
-                $ContrailNM.RemoveNetwork($ContrailNetwork)
+                Remove-ContrailVirtualNetwork `
+                    -API $ContrailNM `
+                    -Uuid $ContrailNetwork
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -DontCleanUp -LogSources $FileLogSources
+            Merge-Logs -DontCleanUp -LogSources $LogSources
         }
     }
 
@@ -190,14 +200,12 @@ Describe "Single compute node protocol tests with utils" {
         Install-Extension -Session $Session
         Install-Utils -Session $Session
 
-        $InstalledServicesLogs = @((Get-VrouterLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath))
-
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
-            "FileLogSources",
-            Justification="It's actually used in 'AfterEach' block."
+            "LogSources",
+            Justification="It's actually used."
         )]
-        $FileLogSources = $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }
+        [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
@@ -205,7 +213,9 @@ Describe "Single compute node protocol tests with utils" {
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
-        $ContrailNM.EnsureProject($null)
+        Add-OrReplaceContrailProject `
+            -API $ContrailNM `
+            -Name $ContrailNM.DefaultTenantName
 
         Test-IfUtilsCanLoadDLLs -Session $Session
     }
