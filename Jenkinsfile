@@ -155,7 +155,7 @@ pipeline {
                     post {
                         always {
                             stash name: "unitTestsLogs", allowEmpty: true, includes: "unittests-logs/**"
-                            deleteDir()
+                            //deleteDir()
                         }
                     }
                 }
