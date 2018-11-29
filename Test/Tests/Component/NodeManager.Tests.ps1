@@ -137,6 +137,7 @@ Describe "Node manager" -Tag "Smoke" {
         if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
 
             if ($PrepareEnv) {
+                Clear-ComputeNode -Session $Session -SystemConfig $MultiNode.Configs
                 Uninstall-Components -Session $Session
                 Clear-Logs -LogSources $FileLogSources
             }
