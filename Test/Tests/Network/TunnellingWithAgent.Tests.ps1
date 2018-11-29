@@ -234,10 +234,10 @@ Test-WithRetries 3 {
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
-                "FileLogSources",
-                Justification="It's actually used in 'AfterEach' block."
+                "LogSources",
+                Justification="It's actually used."
             )]
-            $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             foreach ($Session in $MultiNode.Sessions) {
                 if ($PrepareEnv) {
@@ -266,7 +266,7 @@ Test-WithRetries 3 {
                             -Session $Session `
                             -SystemConfig $MultiNode.Configs.System
                     }
-                    Clear-Logs -LogSources $FileLogSources
+                    Clear-Logs -LogSources $LogSources
                 }
 
                 Write-Log "Deleting virtual network"
@@ -328,7 +328,7 @@ Test-WithRetries 3 {
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
             } finally {
-                Merge-Logs -DontCleanUp -LogSources $FileLogSources
+                Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }
     }

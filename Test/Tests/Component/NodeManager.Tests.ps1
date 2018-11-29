@@ -98,7 +98,7 @@ Describe "Node manager" {
     }
 
     AfterEach {
-        Merge-Logs -DontCleanUp -LogSources $FileLogSources
+        Merge-Logs -DontCleanUp -LogSources $LogSources
     }
 
     BeforeAll {
@@ -117,12 +117,14 @@ Describe "Node manager" {
 
         $Session = $MultiNode.Sessions[0]
 
+        $Session = $MultiNode.Sessions[0]
+
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
-            "FileLogSources",
+            "LogSources",
             Justification="It's actually used."
         )]
-        $FileLogSources = New-ComputeNodeLogSources -Sessions $Session
+        [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
 
         Clear-NodeMgrLogs -Session $Session
 
@@ -139,7 +141,7 @@ Describe "Node manager" {
             foreach ($Session in $MultiNode.Sessions) {
                 Uninstall-Components -Session $Session
             }
-            Clear-Logs -LogSources $FileLogSources
+            Clear-Logs -LogSources $LogSources
 
             Remove-MultiNodeSetup -MultiNode $MultiNode
             Remove-Variable "MultiNode"

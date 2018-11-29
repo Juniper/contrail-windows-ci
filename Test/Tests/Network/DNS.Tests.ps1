@@ -201,10 +201,11 @@ Test-WithRetries 1 {
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
-                "FileLogSources",
-                Justification="It's actually used in 'AfterEach' block."
+                "LogSources",
+                Justification="It's actually used."
             )]
-            $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+
             Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -249,6 +250,9 @@ Test-WithRetries 1 {
             Param (
                 [Parameter(Mandatory=$true)] [IPAMDNSSettings] $DNSSettings
             )
+
+
+
             $IPAM = [IPAM]::New()
             $IPAM.DNSSettings = $DNSSettings
             $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
@@ -297,7 +301,7 @@ Test-WithRetries 1 {
                             -Session $Session `
                             -SystemConfig $MultiNode.Configs.System
                     }
-                    Clear-Logs -LogSources $FileLogSources
+                    Clear-Logs -LogSources $LogSources
                 }
 
                 if($VirtualDNSServer.Uuid) {
@@ -319,7 +323,7 @@ Test-WithRetries 1 {
         }
 
         AfterEach {
-            Merge-Logs -DontCleanUp -LogSources $FileLogSources
+            Merge-Logs -DontCleanUp -LogSources $LogSources
         }
 
         Context "DNS mode none" {

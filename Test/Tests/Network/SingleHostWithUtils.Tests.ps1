@@ -159,12 +159,13 @@ Describe "Single compute node protocol tests with utils" {
         Initialize-ContainersConnection -VMNetInfo $VMNetInfo -VHostInfo $VHostInfo `
             -Container1NetInfo $Container1NetInfo -Container2NetInfo $Container2NetInfo `
             -Session $Session
-
     }
 
     AfterEach {
         try {
-            Merge-Logs -LogSources (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
+            Merge-Logs -LogSources (
+                (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
+            )
 
             Write-Log "Removing containers"
             Remove-AllContainers -Session $Session
@@ -177,7 +178,7 @@ Describe "Single compute node protocol tests with utils" {
                 Remove-Variable "ContrailNetwork"
             }
         } finally {
-            Merge-Logs -DontCleanUp -LogSources $FileLogSources
+            Merge-Logs -DontCleanUp -LogSources $LogSources
         }
     }
 
@@ -199,14 +200,12 @@ Describe "Single compute node protocol tests with utils" {
         Install-Extension -Session $Session
         Install-Utils -Session $Session
 
-        $InstalledServicesLogs = @((Get-VrouterLogPath), (Get-CNMPluginLogPath), (Get-CNMPluginServiceLogPath))
-
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
-            "FileLogSources",
-            Justification="It's actually used in 'AfterEach' block."
+            "LogSources",
+            Justification="It's actually used."
         )]
-        $FileLogSources = $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }
+        [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",

@@ -134,10 +134,10 @@ Test-WithRetries 3 {
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
-                "FileLogSources",
+                "LogSources",
                 Justification="It's actually used."
             )]
-            $FileLogSources = New-ComputeNodeLogSources -Sessions $Sessions
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             foreach ($Session in $Sessions) {
                 Initialize-ComputeNode `
@@ -162,7 +162,7 @@ Test-WithRetries 3 {
                         -Session $Session `
                         -SystemConfig $SystemConfig
                 }
-                Clear-Logs -LogSources $FileLogSources
+                Clear-Logs -LogSources $LogSources
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
@@ -225,7 +225,7 @@ Test-WithRetries 3 {
                 Remove-AllContainers -Sessions $Sessions
                 Start-AgentService -Session $Sessions[0]
             } finally {
-                Merge-Logs -DontCleanUp -LogSources $FileLogSources
+                Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }
     }

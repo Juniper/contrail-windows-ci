@@ -218,7 +218,7 @@ Describe "Floating IP" -Tag "Smoke" {
                     Write-Log "Removing all containers"
                     Remove-AllContainers -Sessions $Sessions
                 } finally {
-                    Merge-Logs -DontCleanUp -LogSources $FileLogSources
+                    Merge-Logs -DontCleanUp -LogSources $LogSources
                 }
             }
         }
@@ -235,10 +235,10 @@ Describe "Floating IP" -Tag "Smoke" {
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
-                "FileLogSources",
-                Justification="It's actually used in 'AfterEach' block."
+                "LogSources",
+                Justification="It's actually used."
             )]
-            $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             if ($PrepareEnv) {
                 foreach ($Session in $MultiNode.Sessions) {
@@ -255,7 +255,7 @@ Describe "Floating IP" -Tag "Smoke" {
                             -Session $Session `
                             -SystemConfig $MultiNode.Configs.System
                     }
-                    Clear-Logs -LogSources $FileLogSources
+                    Clear-Logs -LogSources $LogSources
                 }
                 Remove-MultiNodeSetup -MultiNode $MultiNode
                 Remove-Variable "MultiNode"
