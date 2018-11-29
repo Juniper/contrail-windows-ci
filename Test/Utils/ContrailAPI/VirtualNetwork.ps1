@@ -117,7 +117,7 @@ function Add-OrReplaceNetwork {
         $NetworkUuid = Get-ContrailVirtualNetworkUuidByName `
             -API $API `
             -TenantName $TenantName `
-            -NetworkName $Name
+            -Name $Name
 
         Remove-ContrailVirtualNetwork `
             -API $API `

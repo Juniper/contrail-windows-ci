@@ -24,6 +24,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\Project.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\SecurityGroup.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
 $Container1ID = "jolly-lumberjack"
@@ -217,6 +218,10 @@ Describe "Single compute node protocol tests with utils" {
         Add-OrReplaceContrailProject `
             -API $ContrailNM `
             -Name $ContrailNM.DefaultTenantName
+        Add-OrReplaceContrailSecurityGroup `
+            -API $ContrailNM `
+            -TenantName $ContrailNM.DefaultTenantName `
+            -Name 'default' | Out-Null
 
         Test-IfUtilsCanLoadDLLs -Session $Session
     }

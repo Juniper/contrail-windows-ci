@@ -3,6 +3,7 @@
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\ContrailAPI\Project.ps1
+. $PSScriptRoot\..\ContrailAPI\SecurityGroup.ps1
 . $PSScriptRoot\..\ContrailAPI\VirtualRouter.ps1
 
 # Import order is chosen explicitly because of class dependency
@@ -42,6 +43,10 @@ function New-MultiNodeSetup {
     Add-OrReplaceContrailProject `
         -API $ContrailNM `
         -Name $ControllerConfig.DefaultProject
+    Add-OrReplaceContrailSecurityGroup `
+        -API $ContrailNM `
+        -TenantName $ContrailNM.DefaultTenantName `
+        -Name 'default' | Out-Null
 
     $Testbed1Address = $VMs[0].Address
     $Testbed1Name = $VMs[0].Name

@@ -5,8 +5,6 @@ class ContrailNetworkManager {
     [String] $ContrailUrl;
     [String] $DefaultTenantName;
 
-    # We cannot add a type to the parameters,
-    # because the class is parsed before the files are sourced.
     ContrailNetworkManager([TestenvConfigs] $TestenvConfig) {
 
         $this.ContrailUrl = $TestenvConfig.Controller.RestApiUrl()
