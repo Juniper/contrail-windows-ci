@@ -48,7 +48,7 @@ function Write-LogToFile {
         [Parameter(Mandatory=$true)] [object] $Value,
         [Parameter(Mandatory=$false)] [string] $Tag,
         [Parameter(Mandatory=$true)] [bool] $NoTimestamps,
-        [Parameter(Mandatory=$true)] [bool] $NoTag = $false
+        [Parameter(Mandatory=$true)] [bool] $NoTag
     )
 
     $TimestampFormatString = 'yyyy-MM-dd HH:mm:ss.ffffff'
