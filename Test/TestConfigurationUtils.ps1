@@ -312,6 +312,7 @@ function Clear-TestConfiguration {
     Write-Log "CNMPlugin service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-CNMPluginServiceName))"
 
     Remove-AllUnusedDockerNetworks -Session $Session
+    Stop-NodeMgrService -Session $Session
     Stop-CNMPluginService -Session $Session
     Stop-AgentService -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
