@@ -8,7 +8,7 @@ function Test-Ping {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [String] $SrcContainerName,
         [Parameter(Mandatory=$true)] [String] $DstIP,
-        [Parameter(Mandatory=$false)] [String] $DstContainerName = $DstIP,
+        [Parameter(Mandatory=$true)] [String] $DstContainerName,
         [Parameter(Mandatory=$false)] [Int] $BufferSize = 32
     )
 
@@ -59,7 +59,7 @@ function Test-TCP {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [String] $SrcContainerName,
         [Parameter(Mandatory=$true)] [String] $DstIP,
-        [Parameter(Mandatory=$false)] [String] $DstContainerName = $DspTIP
+        [Parameter(Mandatory=$true)] [String] $DstContainerName
     )
 
     Write-Log "Container $SrcContainerName is sending HTTP request to $DstContainerName..."
@@ -101,6 +101,16 @@ function Test-UDP {
         -ContainerName $ClientContainerName `
         -ListenerPort $UDPClientPort
 
+    Assert-IsUDPPortListening `
+        -Session $ListenerContainerSession `
+        -ContainerName $ListenerContainerName `
+        -PortNumber $UDPServerPort
+
+    Assert-IsUDPPortListening `
+        -Session $ClientContainerSession `
+        -ContainerName $ClientContainerName `
+        -PortNumber $UDPClientPort
+
     Write-Log "Sending message:"
     Write-Log -NoTimestamp -NoTag "$Message"
 
@@ -110,7 +120,7 @@ function Test-UDP {
         -ContainerName $ClientContainerName `
         -ListenerIP $ListenerContainerIP `
         -Message $Message `
-        -ListenerPort $UDPServerPort `
+        -EchoServerPort $UDPServerPort `
         -NumberOfAttempts 10 `
         -WaitSeconds 1
 
