@@ -71,7 +71,7 @@ function Remove-MultiNodeSetup {
     )
 
     $VirtualRouterRepo = [VirtualRouterRepo]::new($MultiNode.NM)
-    $ProjectRepo = [ProjectRepo]::new($ContrailNM)
+    $ProjectRepo = [ProjectRepo]::new($MultiNode.NM)
 
     foreach ($VRouterUuid in $MultiNode.VRoutersUuids) {
         Write-Log "Removing virtual router: $VRouterUuid"
@@ -81,7 +81,7 @@ function Remove-MultiNodeSetup {
     }
     $MultiNode.VRoutersUuids = $null
 
-    $Project = [Project]::new($ContrailNM.DefaultTenantName)
+    $Project = [Project]::new($MultiNode.NM.DefaultTenantName)
     $ProjectRepo.RemoveWithDependencies($Project)
 
     Write-Log "Removing PS sessions.."
