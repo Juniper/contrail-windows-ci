@@ -10,8 +10,8 @@ class ContrailNetworkManager {
         $this.ContrailUrl = $TestenvConfig.Controller.RestApiUrl()
         $this.DefaultTenantName = $TestenvConfig.Controller.DefaultProject
 
-        if($TestenvConfig.Controller.AuthMethod -eq "keystone") {
-            if(!$TestenvConfig.OpenStack) {
+        if ($TestenvConfig.Controller.AuthMethod -eq "keystone") {
+            if (!$TestenvConfig.OpenStack) {
                 throw "AuthMethod is keystone, but no OpenStack config provided."
             }
 
@@ -44,9 +44,10 @@ class ContrailNetworkManager {
     [PSObject] GetResourceUrl([String] $Resource, [String] $Uuid) {
         $RequestUrl = $this.ContrailUrl + "/" + $Resource
 
-        if(-not $Uuid) {
+        if (-not $Uuid) {
             $RequestUrl += "s"
-        } else {
+        }
+        else {
             $RequestUrl += ("/" + $Uuid)
         }
 
@@ -54,25 +55,25 @@ class ContrailNetworkManager {
     }
 
     hidden [PSObject] SendRequest([String] $Method, [String] $Resource,
-                                  [String] $Uuid, $Request) {
+        [String] $Uuid, $Request) {
 
         $RequestUrl = $this.GetResourceUrl($Resource, $Uuid)
 
         # We need to escape '<>' in 'direction' field because reasons
         # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
         $Body = (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request |
-                    ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
+                ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
 
         $Headers = $null
-        if($this.AuthToken) {
+        if ($this.AuthToken) {
             $Headers = @{"X-Auth-Token" = $this.AuthToken}
         }
 
-        Write-Log "[Contrail][$Method]=>[$RequestUrl] " + ($Body -replace "`n|`r", "")
+        Write-Log ("[Contrail][$Method]=>[$RequestUrl] " + ($Body -replace "`n|`r", ""))
         $Response = Invoke-RestMethod -Uri $RequestUrl -Headers $Headers `
             -Method $Method -ContentType "application/json" `
             -Body $Body
-        Write-Log "[Contrail]<= " + ($Response -replace "`n|`r", "")
+        Write-Log ("[Contrail]<= " + ($Response -replace "`n|`r", ""))
         return $Response
     }
 
@@ -94,8 +95,8 @@ class ContrailNetworkManager {
 
     [String] FQNameToUuid ([string] $Resource, [string[]] $FQName) {
         $Request = @{
-            type     = $Resource
-            fq_name  = $FQName
+            type    = $Resource
+            fq_name = $FQName
         }
 
         $RequestUrl = $this.ContrailUrl + "/fqname-to-id"

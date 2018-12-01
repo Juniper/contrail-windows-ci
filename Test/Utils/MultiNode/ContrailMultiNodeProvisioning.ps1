@@ -2,9 +2,10 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
-. $PSScriptRoot\..\ContrailAPI\Project.ps1
 . $PSScriptRoot\..\ContrailAPI\SecurityGroup.ps1
-. $PSScriptRoot\..\ContrailAPI\VirtualRouter.ps1
+
+. $PSScriptRoot\..\ContrailAPI_New\Project.ps1
+. $PSScriptRoot\..\ContrailAPI_New\VirtualRouter.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
@@ -17,7 +18,7 @@ function Set-ConfAndLogDir {
     $ConfigDirPath = Get-DefaultConfigDir
     $LogDirPath = Get-ComputeLogsDir
 
-    foreach($Session in $Sessions) {
+    foreach ($Session in $Sessions) {
         Invoke-Command -Session $Session -ScriptBlock {
             New-Item -ItemType Directory -Path $using:ConfigDirPath -Force | Out-Null
             New-Item -ItemType Directory -Path $using:LogDirPath -Force | Out-Null
@@ -27,7 +28,7 @@ function Set-ConfAndLogDir {
 
 function New-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+        [Parameter(Mandatory = $true)] [string] $TestenvConfFile
     )
 
     $VMs = Read-TestbedsConfig -Path $TestenvConfFile
@@ -37,51 +38,51 @@ function New-MultiNodeSetup {
     $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
 
     $Sessions = New-RemoteSessions -VMs $VMs
+
     Set-ConfAndLogDir -Sessions $Sessions
 
     $ContrailNM = [ContrailNetworkManager]::new($Configs)
-    Add-OrReplaceContrailProject `
-        -API $ContrailNM `
-        -Name $ControllerConfig.DefaultProject
+    $ProjectRepo = [ProjectRepo]::new($ContrailNM)
+    $VirtualRouterRepo = [VirtualRouterRepo]::new($ContrailNM)
+
+    $Project = [Project]::new($ContrailNM.DefaultTenantName)
+    $ProjectRepo.AddOrReplace($Project) | Out-Null
+
     Add-OrReplaceContrailSecurityGroup `
         -API $ContrailNM `
         -TenantName $ContrailNM.DefaultTenantName `
         -Name 'default' | Out-Null
 
-    $Testbed1Address = $VMs[0].Address
-    $Testbed1Name = $VMs[0].Name
-    Write-Log "Creating virtual router. Name: $Testbed1Name; Address: $Testbed1Address"
-    $VRouter1Uuid = Add-OrReplaceVirtualRouter `
-        -API $ContrailNM `
-        -RouterName $Testbed1Name `
-        -RouterIp $Testbed1Address
-    Write-Log "Reported UUID of new virtual router: $VRouter1Uuid"
+    $VRoutersUuids = @()
+    foreach ($VM in $VMs) {
+        Write-Log "Creating virtual router. Name: $($VM.Name); Address: $($VM.Address)"
+        $VirtualRouter = [VirtualRouter]::new($VM.Name, $VM.Address)
+        $VRouterUuid = $VirtualRouterRepo.AddOrReplace($VirtualRouter)
+        Write-Log "Reported UUID of new virtual router: $VRouterUuid"
+        $VRoutersUuids += $VRouterUuid
+    }
 
-    $Testbed2Address = $VMs[1].Address
-    $Testbed2Name = $VMs[1].Name
-    Write-Log "Creating virtual router. Name: $Testbed2Name; Address: $Testbed2Address"
-    $VRouter2Uuid = Add-OrReplaceVirtualRouter `
-        -API $ContrailNM `
-        -RouterName $Testbed2Name `
-        -RouterIp $Testbed2Address
-    Write-Log "Reported UUID of new virtual router: $VRouter2Uuid"
-
-    $VRoutersUuids = @($VRouter1Uuid, $VRouter2Uuid)
     return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids)
 }
 
 function Remove-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory=$true)] [MultiNode] $MultiNode
+        [Parameter(Mandatory = $true)] [MultiNode] $MultiNode
     )
+
+    $VirtualRouterRepo = [VirtualRouterRepo]::new($MultiNode.NM)
+    $ProjectRepo = [ProjectRepo]::new($ContrailNM)
 
     foreach ($VRouterUuid in $MultiNode.VRoutersUuids) {
         Write-Log "Removing virtual router: $VRouterUuid"
-        Remove-ContrailVirtualRouter `
-            -API $MultiNode.NM `
-            -Uuid $VRouterUuid
+        $VirtualRouter = [VirtualRouter]::new('unknown', 'unknown')
+        $VirtualRouter.Uuid = $VRouterUuid
+        $VirtualRouterRepo.Remove($VirtualRouter)
     }
     $MultiNode.VRoutersUuids = $null
+
+    $Project = [Project]::new($ContrailNM.DefaultTenantName)
+    $ProjectRepo.RemoveWithDependencies($Project)
 
     Write-Log "Removing PS sessions.."
     Remove-PSSession $MultiNode.Sessions

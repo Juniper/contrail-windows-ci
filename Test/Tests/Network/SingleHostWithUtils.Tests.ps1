@@ -23,9 +23,10 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI\Project.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\SecurityGroup.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\Project.ps1
 
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -215,9 +216,11 @@ Describe "Single compute node protocol tests with utils" {
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
-        Add-OrReplaceContrailProject `
-            -API $ContrailNM `
-            -Name $ContrailNM.DefaultTenantName
+        $ProjectRepo = [ProjectRepo]::new($ContrailNM)
+
+        $Project = [Project]::new($ContrailNM.DefaultTenantName)
+        $ProjectRepo.AddOrReplace($Project)
+
         Add-OrReplaceContrailSecurityGroup `
             -API $ContrailNM `
             -TenantName $ContrailNM.DefaultTenantName `
