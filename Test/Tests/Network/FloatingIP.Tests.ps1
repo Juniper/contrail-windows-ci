@@ -74,11 +74,6 @@ Describe "Floating IP" -Tag "Smoke" {
                 )]
                 $ContrailPolicy = $NetworkPolicyRepo.Add($NetworkPolicy)
 
-                New-ContrailPassAllPolicy `
-                    -API $MultiNode.NM `
-                    -Name $PolicyName `
-                    -TenantName $MultiNode.NM.DefaultTenantName
-
                 Write-Log "Creating virtual network: $ClientNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
