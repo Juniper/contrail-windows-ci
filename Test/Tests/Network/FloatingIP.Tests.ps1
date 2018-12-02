@@ -235,6 +235,11 @@ Describe "Floating IP" -Tag "Smoke" {
                 Justification = "It's actually used."
             )]
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "NetworkPolicyRepo",
+                Justification = "It's actually used."
+            )]
             $NetworkPolicyRepo = [NetworkPolicyRepo]::new($MultiNode.NM)
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
