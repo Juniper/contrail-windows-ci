@@ -1,7 +1,7 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
@@ -23,10 +23,11 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI\SecurityGroup.ps1
+
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\Project.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\SecurityGroup.ps1
 
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -35,15 +36,15 @@ Describe "Single compute node protocol tests with utils" {
 
     function Initialize-ContainersConnection {
         Param (
-            [Parameter(Mandatory=$true)] $VMNetInfo,
-            [Parameter(Mandatory=$true)] $VHostInfo,
-            [Parameter(Mandatory=$true)] $Container1NetInfo,
-            [Parameter(Mandatory=$true)] $Container2NetInfo,
+            [Parameter(Mandatory = $true)] $VMNetInfo,
+            [Parameter(Mandatory = $true)] $VHostInfo,
+            [Parameter(Mandatory = $true)] $Container1NetInfo,
+            [Parameter(Mandatory = $true)] $Container2NetInfo,
             [Parameter(Mandatory = $true)] [PSSessionT] $Session
         )
 
         Write-Log $("Setting a connection between " + $Container1NetInfo.MACAddress + `
-        " and " + $Container2NetInfo.MACAddress + "...")
+                " and " + $Container2NetInfo.MACAddress + "...")
 
         Invoke-Command -Session $Session -ScriptBlock {
             vif.exe --add $Using:VMNetInfo.IfName --mac $Using:VMNetInfo.MACAddress --vrf 0 --type physical
@@ -117,7 +118,7 @@ Describe "Single compute node protocol tests with utils" {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "ContrailNetwork",
-            Justification="It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
+            Justification = "It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNetwork = Add-OrReplaceNetwork `
             -API $ContrailNM `
@@ -178,7 +179,8 @@ Describe "Single compute node protocol tests with utils" {
                     -Uuid $ContrailNetwork
                 Remove-Variable "ContrailNetwork"
             }
-        } finally {
+        }
+        finally {
             Merge-Logs -DontCleanUp -LogSources $FileLogSources
         }
     }
@@ -191,7 +193,7 @@ Describe "Single compute node protocol tests with utils" {
         $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Analyzer doesn't understand relation of Pester blocks"
+            Justification = "Analyzer doesn't understand relation of Pester blocks"
         )]
         $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
 
@@ -206,25 +208,24 @@ Describe "Single compute node protocol tests with utils" {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "FileLogSources",
-            Justification="It's actually used in 'AfterEach' block."
+            Justification = "It's actually used in 'AfterEach' block."
         )]
         $FileLogSources = $InstalledServicesLogs | ForEach-Object { New-FileLogSource -Path $_ -Sessions $Session }
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "ContrailNM",
-            Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
+            Justification = "It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
         $ProjectRepo = [ProjectRepo]::new($ContrailNM)
+        $SecurityGroupRepo = [SecurityGroupRepo]::new($ContrailNM)
 
         $Project = [Project]::new($ContrailNM.DefaultTenantName)
-        $ProjectRepo.AddOrReplace($Project)
+        $ProjectRepo.AddOrReplace($Project) | Out-Null
 
-        Add-OrReplaceContrailSecurityGroup `
-            -API $ContrailNM `
-            -TenantName $ContrailNM.DefaultTenantName `
-            -Name 'default' | Out-Null
+        $SecurityGroup = [SecurityGroup]::new_Default($ContrailNM.DefaultTenantName)
+        $SecurityGroupRepo.AddOrReplace($SecurityGroup) | Out-Null
 
         Test-IfUtilsCanLoadDLLs -Session $Session
     }

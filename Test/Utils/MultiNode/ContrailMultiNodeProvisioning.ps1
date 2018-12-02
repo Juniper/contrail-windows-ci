@@ -2,10 +2,10 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
-. $PSScriptRoot\..\ContrailAPI\SecurityGroup.ps1
 
 . $PSScriptRoot\..\ContrailAPI_New\Project.ps1
 . $PSScriptRoot\..\ContrailAPI_New\VirtualRouter.ps1
+. $PSScriptRoot\..\ContrailAPI_New\SecurityGroup.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
@@ -44,14 +44,13 @@ function New-MultiNodeSetup {
     $ContrailNM = [ContrailNetworkManager]::new($Configs)
     $ProjectRepo = [ProjectRepo]::new($ContrailNM)
     $VirtualRouterRepo = [VirtualRouterRepo]::new($ContrailNM)
+    $SecurityGroupRepo = [SecurityGroupRepo]::new($ContrailNM)
 
     $Project = [Project]::new($ContrailNM.DefaultTenantName)
     $ProjectRepo.AddOrReplace($Project) | Out-Null
 
-    Add-OrReplaceContrailSecurityGroup `
-        -API $ContrailNM `
-        -TenantName $ContrailNM.DefaultTenantName `
-        -Name 'default' | Out-Null
+    $SecurityGroup = [SecurityGroup]::new_Default($ContrailNM.DefaultTenantName)
+    $SecurityGroupRepo.AddOrReplace($SecurityGroup) | Out-Null
 
     $VRoutersUuids = @()
     foreach ($VM in $VMs) {

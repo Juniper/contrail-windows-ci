@@ -1,6 +1,6 @@
 class Project : BaseModel {
-    [string] $Name;
-    [string] $DomainName = 'default-domain';
+    [string] $Name
+    [string] $DomainName = 'default-domain'
 
     Project([String] $Name) {
         $this.Name = $Name
