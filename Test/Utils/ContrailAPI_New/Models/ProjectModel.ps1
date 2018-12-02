@@ -1,4 +1,4 @@
-class Project : BaseModel {
+class Project : BaseRepoModel {
     [string] $Name
     [string] $DomainName = 'default-domain'
 

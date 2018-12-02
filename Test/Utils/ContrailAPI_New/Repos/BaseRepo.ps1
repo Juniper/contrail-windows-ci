@@ -8,15 +8,15 @@ class BaseRepo {
     }
 
     # Override in derivered
-    hidden [void] RemoveDependencies([BaseModel] $Object) {
+    hidden [void] RemoveDependencies([BaseRepoModel] $Object) {
     }
 
     # Override in derivered
-    hidden [PSobject] GetAddRequest([BaseModel] $Object) {
+    hidden [PSobject] GetAddRequest([BaseRepoModel] $Object) {
         throw "Operation Add not permited on object: $($Object.GetType().Name)"
     }
 
-    [String] Add([BaseModel] $Object) {
+    [String] Add([BaseRepoModel] $Object) {
 
         $Request = $this.GetAddRequest($Object)
 
@@ -25,7 +25,7 @@ class BaseRepo {
         return $Object.Uuid
     }
 
-    [String] AddOrReplace([BaseModel] $Object) {
+    [String] AddOrReplace([BaseRepoModel] $Object) {
         try {
             return $this.Add($Object)
         }
@@ -38,7 +38,7 @@ class BaseRepo {
         return $this.Add($Object)
     }
 
-    Hidden [Void] RemoveObject([BaseModel] $Object, [bool] $WithDependencies) {
+    Hidden [Void] RemoveObject([BaseRepoModel] $Object, [bool] $WithDependencies) {
         if (-not $Object.Uuid) {
             $Object.Uuid = $this.API.FQNameToUuid($this.ResourceName, $Object.GetFQName())
         }
@@ -51,11 +51,11 @@ class BaseRepo {
         $Object.Uuid = $null
     }
 
-    [Void] RemoveWithDependencies([BaseModel] $Object) {
+    [Void] RemoveWithDependencies([BaseRepoModel] $Object) {
         $this.RemoveObject($Object, $true)
     }
 
-    [Void] Remove([BaseModel] $Object) {
+    [Void] Remove([BaseRepoModel] $Object) {
         $this.RemoveObject($Object, $false)
     }
 }

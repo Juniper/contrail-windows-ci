@@ -1,8 +1,8 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
@@ -19,7 +19,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI\NetworkPolicy.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\NetworkPolicy.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIPPool.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIP.ps1
@@ -66,12 +66,15 @@ Describe "Floating IP" -Tag "Smoke" {
 
             BeforeAll {
                 Write-Log "Creating network policy: $PolicyName"
+                $NetworkPolicy = [NetworkPolicy]::new_PassAll($PolicyName, $MultiNode.NM.DefaultTenantName)
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailPolicy",
-                    Justification="It's actually used."
+                    Justification = "It's actually used."
                 )]
-                $ContrailPolicy = New-ContrailPassAllPolicy `
+                $ContrailPolicy = $NetworkPolicyRepo.Add($NetworkPolicy)
+
+                New-ContrailPassAllPolicy `
                     -API $MultiNode.NM `
                     -Name $PolicyName `
                     -TenantName $MultiNode.NM.DefaultTenantName
@@ -80,7 +83,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailClientNetwork",
-                    Justification="It's actually used."
+                    Justification = "It's actually used."
                 )]
                 $ContrailClientNetwork = Add-OrReplaceNetwork `
                     -API $MultiNode.NM `
@@ -92,7 +95,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailServerNetwork",
-                    Justification="It's actually used."
+                    Justification = "It's actually used."
                 )]
                 $ContrailServerNetwork = Add-OrReplaceNetwork `
                     -API $MultiNode.NM `
@@ -104,7 +107,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailFloatingIpPool",
-                    Justification="It's actually used."
+                    Justification = "It's actually used."
                 )]
                 $ContrailFloatingIpPool = New-ContrailFloatingIpPool `
                     -API $MultiNode.NM `
@@ -160,9 +163,8 @@ Describe "Floating IP" -Tag "Smoke" {
 
                 Write-Log "Deleting network policy"
                 if (Get-Variable ContrailPolicy -ErrorAction SilentlyContinue) {
-                    Remove-ContrailPolicy `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailPolicy
+                    $NetworkPolicy = [NetworkPolicy]::new($PolicyName, $MultiNode.NM.DefaultTenantName)
+                    $NetworkPolicyRepo.Remove($NetworkPolicy) | Out-Null
                 }
             }
 
@@ -217,7 +219,8 @@ Describe "Floating IP" -Tag "Smoke" {
 
                     Write-Log "Removing all containers"
                     Remove-AllContainers -Sessions $Sessions
-                } finally {
+                }
+                finally {
                     Merge-Logs -DontCleanUp -LogSources $FileLogSources
                 }
             }
@@ -229,14 +232,15 @@ Describe "Floating IP" -Tag "Smoke" {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "MultiNode",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+            $NetworkPolicyRepo = [NetworkPolicyRepo]::new($MultiNode.NM)
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "FileLogSources",
-                Justification="It's actually used in 'AfterEach' block."
+                Justification = "It's actually used in 'AfterEach' block."
             )]
             $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
@@ -249,7 +253,7 @@ Describe "Floating IP" -Tag "Smoke" {
 
         AfterAll {
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                if ($PrepareEnv){
+                if ($PrepareEnv) {
                     foreach ($Session in $MultiNode.Sessions) {
                         Clear-ComputeNode `
                             -Session $Session `

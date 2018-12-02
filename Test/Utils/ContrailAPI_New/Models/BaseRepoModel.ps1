@@ -1,3 +1,3 @@
-class BaseModel {
+class BaseRepoModel {
     [string] $Uuid;
 }

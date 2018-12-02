@@ -5,5 +5,5 @@
 . $PSScriptRoot\Models\AddressModel.ps1
 . $PSScriptRoot\Models\PortRangeModel.ps1
 . $PSScriptRoot\Models\PolicyRuleModel.ps1
-. $PSScriptRoot\Models\SecurityGroupModel.ps1
-. $PSScriptRoot\Repos\SecurityGroupRepo.ps1
+. $PSScriptRoot\Models\NetworkPolicyModel.ps1
+. $PSScriptRoot\Repos\NetworkPolicyRepo.ps1

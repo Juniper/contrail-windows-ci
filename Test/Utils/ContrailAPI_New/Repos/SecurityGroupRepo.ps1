@@ -4,19 +4,19 @@ class SecurityGroupRepo : BaseRepo {
     SecurityGroupRepo([ContrailNetworkManager] $API) : base($API) {}
 
     [PSobject] GetAddRequest([SecurityGroup] $SecurityGroup) {
-        $SecurityGroupAllowAllEntries = @{
+        $SecurityGroupEntries = @{
             policy_rule = @()
         }
 
         foreach ($PolicyRule in $SecurityGroup.PolicyRules) {
-            $SecurityGroupAllowAllEntries.policy_rule += $PolicyRule.GetRequest()
+            $SecurityGroupEntries.policy_rule += $PolicyRule.GetRequest()
         }
 
         $Request = @{
             "security-group" = @{
                 fq_name                = $SecurityGroup.GetFQName()
                 parent_type            = 'project'
-                security_group_entries = $SecurityGroupAllowAllEntries
+                security_group_entries = $SecurityGroupEntries
             }
         }
 

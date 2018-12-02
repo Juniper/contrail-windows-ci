@@ -1,7 +1,7 @@
 # Those are just informative to show dependencies
 #include "PolicyRuleModel.ps1"
 
-class SecurityGroup : BaseModel {
+class SecurityGroup : BaseRepoModel {
     [string] $Name
     [string] $ProjectName
     [string] $DomainName = 'default-domain'

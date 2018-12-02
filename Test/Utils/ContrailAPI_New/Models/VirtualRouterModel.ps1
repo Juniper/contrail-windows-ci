@@ -1,4 +1,4 @@
-class VirtualRouter : BaseModel {
+class VirtualRouter : BaseRepoModel {
     [string] $Name;
     [string] $Ip;
     [string] $ParentName = 'default-global-system-config';

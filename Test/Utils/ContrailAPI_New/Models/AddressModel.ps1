@@ -34,3 +34,13 @@ class SecurityGroupAddress : Address {
         }
     }
 }
+
+class VirtualNetworkAddress : Address {
+    [String] $VirtualNetwork = 'any'
+
+    [PSobject] GetRequest() {
+        return @{
+            virtual_network = $this.VirtualNetwork
+        }
+    }
+}
