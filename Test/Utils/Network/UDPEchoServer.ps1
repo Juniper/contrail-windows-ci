@@ -48,7 +48,8 @@ function Stop-EchoServerInContainer {
         return $Output
     }
     $Output = $Output -join [Environment]::Newline
-    Write-Log "Output from UDP echo server running in remote session: $Output"
+    Write-Log "Output from UDP echo server running in remote session:"
+    Write-Log -NoTimestamp -NoTag $Output
 }
 
 function Start-UDPListenerInContainer {
@@ -86,6 +87,7 @@ function Stop-UDPListenerInContainerAndFetchResult {
         $ReceivedMessage = Receive-Job -Job $UDPListenerJob
         return $ReceivedMessage
     }
-    Write-Log "UDP listener output from remote session: $Message"
+    Write-Log "UDP listener output from remote session:"
+    Write-Log -NoTimestamp -NoTag $Message
     return $Message
 }

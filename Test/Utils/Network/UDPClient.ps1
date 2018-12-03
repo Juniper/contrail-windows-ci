@@ -23,5 +23,6 @@ function Send-UDPFromContainer {
         docker exec $Using:ContainerName powershell "$Using:UDPSendCommand"
     }
     $Output = $Output -join [Environment]::Newline
-    Write-Log "Send UDP output from remote session: $Output"
+    Write-Log "Send UDP output from remote session:"
+    Write-Log -NoTimestamp -NoTag $Output
 }
