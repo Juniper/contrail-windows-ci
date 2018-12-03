@@ -1,3 +1,2 @@
 class BaseRepoModel {
-    [string] $Uuid;
 }

@@ -52,16 +52,16 @@ function New-MultiNodeSetup {
     $SecurityGroup = [SecurityGroup]::new_Default($ContrailNM.DefaultTenantName)
     $SecurityGroupRepo.AddOrReplace($SecurityGroup) | Out-Null
 
-    $VRoutersUuids = @()
+    $VRouters = @()
     foreach ($VM in $VMs) {
         Write-Log "Creating virtual router. Name: $($VM.Name); Address: $($VM.Address)"
         $VirtualRouter = [VirtualRouter]::new($VM.Name, $VM.Address)
         $VRouterUuid = $VirtualRouterRepo.AddOrReplace($VirtualRouter)
         Write-Log "Reported UUID of new virtual router: $VRouterUuid"
-        $VRoutersUuids += $VRouterUuid
+        $VRouters += $VirtualRouter
     }
 
-    return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids)
+    return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRouters, $Project)
 }
 
 function Remove-MultiNodeSetup {
@@ -72,18 +72,16 @@ function Remove-MultiNodeSetup {
     $VirtualRouterRepo = [VirtualRouterRepo]::new($MultiNode.NM)
     $ProjectRepo = [ProjectRepo]::new($MultiNode.NM)
 
-    foreach ($VRouterUuid in $MultiNode.VRoutersUuids) {
-        Write-Log "Removing virtual router: $VRouterUuid"
-        $VirtualRouter = [VirtualRouter]::new('unknown', 'unknown')
-        $VirtualRouter.Uuid = $VRouterUuid
-        $VirtualRouterRepo.Remove($VirtualRouter)
+    foreach ($VRouter in $MultiNode.VRouters) {
+        Write-Log "Removing virtual router: $($VRouter.Name)"
+        $VirtualRouterRepo.Remove($VRouter)
     }
-    $MultiNode.VRoutersUuids = $null
+    $MultiNode.VRouters = $null
 
-    $Project = [Project]::new($MultiNode.NM.DefaultTenantName)
-    $ProjectRepo.RemoveWithDependencies($Project)
+    Write-Log "Removing project: $($MultiNode.Project) with dependencies"
+    $ProjectRepo.RemoveWithDependencies($MultiNode.Project)
 
-    Write-Log "Removing PS sessions.."
+    Write-Log "Removing PS sessions"
     Remove-PSSession $MultiNode.Sessions
 
     $MultiNode.Sessions = $null

@@ -21,8 +21,7 @@ class BaseRepo {
         $Request = $this.GetAddRequest($Object)
 
         $Response = $this.API.Post($this.ResourceName, $null, $Request)
-        $Object.Uuid = $Response."$($this.ResourceName)".'uuid'
-        return $Object.Uuid
+        return $Response."$($this.ResourceName)".'uuid'
     }
 
     [String] AddOrReplace([BaseRepoModel] $Object) {
@@ -39,16 +38,13 @@ class BaseRepo {
     }
 
     Hidden [Void] RemoveObject([BaseRepoModel] $Object, [bool] $WithDependencies) {
-        if (-not $Object.Uuid) {
-            $Object.Uuid = $this.API.FQNameToUuid($this.ResourceName, $Object.GetFQName())
-        }
+        $Uuid = $this.API.FQNameToUuid($this.ResourceName, $Object.GetFQName())
 
         if ($WithDependencies) {
             $this.RemoveDependencies($Object)
         }
 
-        $this.API.Delete($this.ResourceName, $Object.Uuid, $null)
-        $Object.Uuid = $null
+        $this.API.Delete($this.ResourceName, $Uuid, $null)
     }
 
     [Void] RemoveWithDependencies([BaseRepoModel] $Object) {

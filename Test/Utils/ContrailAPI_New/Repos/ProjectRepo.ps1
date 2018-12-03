@@ -12,7 +12,8 @@ class ProjectRepo : BaseRepo {
     }
 
     [void] RemoveDependencies([Project] $Project) {
-        $ProjectResponse = $this.API.Get($this.ResourceName, $Project.Uuid, $null)
+        $Uuid = $this.API.FQNameToUuid($this.ResourceName, $Project.GetFQName())
+        $ProjectResponse = $this.API.Get($this.ResourceName, $Uuid, $null)
         $Props = $ProjectResponse.'project'.PSobject.Properties.Name
 
         if($Props -contains 'security_groups') {
