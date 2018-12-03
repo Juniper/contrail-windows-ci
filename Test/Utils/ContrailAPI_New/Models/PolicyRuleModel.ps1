@@ -20,7 +20,7 @@ class RuleSequence {
     }
 
     [PSobject] GetRequest() {
-        return = @{
+        return @{
             major = $this.Major
             minor = $this.Minor
         }
