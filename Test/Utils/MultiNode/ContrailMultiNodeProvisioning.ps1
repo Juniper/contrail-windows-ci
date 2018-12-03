@@ -80,10 +80,11 @@ function Remove-MultiNodeSetup {
 
     Write-Log "Removing project: $($MultiNode.Project) with dependencies"
     $ProjectRepo.RemoveWithDependencies($MultiNode.Project)
+    $MultiNode.Project = $null
 
     Write-Log "Removing PS sessions"
     Remove-PSSession $MultiNode.Sessions
-
     $MultiNode.Sessions = $null
+
     $MultiNode.NM = $null
 }

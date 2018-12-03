@@ -16,15 +16,14 @@ class BaseRepo {
         throw "Operation Add not permited on object: $($Object.GetType().Name)"
     }
 
-    [String] Add([BaseRepoModel] $Object) {
-
+    [PSobject] Add([BaseRepoModel] $Object) {
         $Request = $this.GetAddRequest($Object)
 
         $Response = $this.API.Post($this.ResourceName, $null, $Request)
-        return $Response."$($this.ResourceName)".'uuid'
+        return $Response
     }
 
-    [String] AddOrReplace([BaseRepoModel] $Object) {
+    [PSobject] AddOrReplace([BaseRepoModel] $Object) {
         try {
             return $this.Add($Object)
         }
@@ -44,7 +43,7 @@ class BaseRepo {
             $this.RemoveDependencies($Object)
         }
 
-        $this.API.Delete($this.ResourceName, $Uuid, $null)
+        $this.API.Delete($this.ResourceName, $Uuid, $null) | Out-Null
     }
 
     [Void] RemoveWithDependencies([BaseRepoModel] $Object) {

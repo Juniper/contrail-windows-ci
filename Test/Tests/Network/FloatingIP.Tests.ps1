@@ -20,8 +20,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\NetworkPolicy.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\FloatingIPPool.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIPPool.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIP.ps1
 
 $PolicyName = "passallpolicy"
@@ -72,7 +72,8 @@ Describe "Floating IP" -Tag "Smoke" {
                     "ContrailPolicy",
                     Justification = "It's actually used."
                 )]
-                $ContrailPolicy = $NetworkPolicyRepo.Add($NetworkPolicy)
+                $Response = $NetworkPolicyRepo.AddOrReplace($NetworkPolicy)
+                $ContrailPolicy = $Response.'network-policy'.'uuid'
 
                 Write-Log "Creating virtual network: $ClientNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -99,16 +100,14 @@ Describe "Floating IP" -Tag "Smoke" {
                     -SubnetConfig $ServerNetwork.Subnet
 
                 Write-Log "Creating floating IP pool: $ServerFloatingIpPoolName"
+                $FloatingIpPool = [FloatingIpPool]::new($ServerFloatingIpPoolName, $ServerNetwork.Name, $MultiNode.NM.DefaultTenantName)
+                $Response = $FloatingIpPoolRepo.AddOrReplace($FloatingIpPool)
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailFloatingIpPool",
                     Justification = "It's actually used."
                 )]
-                $ContrailFloatingIpPool = New-ContrailFloatingIpPool `
-                    -API $MultiNode.NM `
-                    -TenantName $MultiNode.NM.DefaultTenantName `
-                    -NetworkName $ServerNetwork.Name `
-                    -Name $ServerFloatingIpPoolName
+                $ContrailFloatingIpPool = $Response.'floating-ip-pool'.'uuid'
 
                 Add-ContrailPolicyToNetwork `
                     -API $MultiNode.NM `
@@ -137,9 +136,8 @@ Describe "Floating IP" -Tag "Smoke" {
 
                 Write-Log "Deleting floating IP pool"
                 if (Get-Variable ContrailFloatingIpPool -ErrorAction SilentlyContinue) {
-                    Remove-ContrailFloatingIpPool `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailFloatingIpPool
+                    $FloatingIpPool = [FloatingIpPool]::new($ServerFloatingIpPoolName, $ServerNetwork.Name, $MultiNode.NM.DefaultTenantName)
+                    $FloatingIpPoolRepo.Remove($FloatingIpPool) | Out-Null
                 }
 
                 Write-Log "Deleting virtual network"
@@ -236,6 +234,12 @@ Describe "Floating IP" -Tag "Smoke" {
                 Justification = "It's actually used."
             )]
             $NetworkPolicyRepo = [NetworkPolicyRepo]::new($MultiNode.NM)
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "FloatingIpPoolRepo",
+                Justification = "It's actually used."
+            )]
+            $FloatingIpPoolRepo = [FloatingIpPoolRepo]::new($MultiNode.NM)
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",

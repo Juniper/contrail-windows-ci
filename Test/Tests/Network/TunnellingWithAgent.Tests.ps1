@@ -107,6 +107,7 @@ Test-WithRetries 3 {
         foreach($TunnelingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
             Context "Tunneling $TunnelingMethod" {
                 BeforeEach {
+                    # TODO Restore setting that was before test
                     $GlobalVrouterConfig = [GlobalVrouterConfig]::new(@($TunnelingMethod))
                     $GlobalVrouterConfigRepo.SetEncapPriorities($GlobalVrouterConfig)
 
