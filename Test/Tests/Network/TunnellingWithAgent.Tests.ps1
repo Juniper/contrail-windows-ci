@@ -27,7 +27,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\GlobalVrouterConfig.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\GlobalVrouterConfig.ps1
 
 $TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
@@ -107,10 +107,8 @@ Test-WithRetries 3 {
         foreach($TunnelingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
             Context "Tunneling $TunnelingMethod" {
                 BeforeEach {
-                    $EncapPrioritiesList = @($TunnelingMethod)
-                    Set-EncapPriorities `
-                        -API $MultiNode.NM `
-                        -PrioritiesList $EncapPrioritiesList
+                    $GlobalVrouterConfig = [GlobalVrouterConfig]::new(@($TunnelingMethod))
+                    $GlobalVrouterConfigRepo.SetEncapPriorities($GlobalVrouterConfig)
 
                     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                         "PSUseDeclaredVarsMoreThanAssignments",
@@ -219,6 +217,12 @@ Test-WithRetries 3 {
         BeforeAll {
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "GlobalVrouterConfigRepo",
+                Justification="It's actually used."
+            )]
+            $GlobalVrouterConfigRepo = [GlobalVrouterConfigRepo]::new($MultiNode.NM)
 
             Write-Log "Creating virtual network: $($Network.Name)"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
