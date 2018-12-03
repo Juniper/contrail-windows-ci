@@ -23,6 +23,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\FloatingIPPool.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIP.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\FloatingIP.ps1
 
 $PolicyName = "passallpolicy"
 
@@ -179,11 +180,9 @@ Describe "Floating IP" -Tag "Smoke" {
                     -Image $ContainerImage
 
                 Write-Log "Creating floating IP: $ServerFloatingIpPoolName"
-                $ContrailFloatingIp = New-ContrailFloatingIp `
-                    -API $MultiNode.NM `
-                    -PoolUuid $ContrailFloatingIpPool `
-                    -Name $ServerFloatingIpName `
-                    -Address $ServerFloatingIpAddress
+                $ContrailFloatingIp = [FloatingIp]::new($ServerFloatingIpName, $FloatingIpPool.GetFQName(), $ServerFloatingIpAddress)
+                $Response = $FloatingIpRepo.AddOrReplace($ContrailFloatingIp)
+                $ContrailFloatingIpUuid = $Response.'floating-ip'.'uuid'
 
                 $PortFqNames = Get-ContrailVirtualNetworkPorts `
                     -API $MultiNode.NM `
@@ -191,16 +190,14 @@ Describe "Floating IP" -Tag "Smoke" {
 
                 Set-ContrailFloatingIpPorts `
                     -API $MultiNode.NM `
-                    -IpUuid $ContrailFloatingIp `
+                    -IpUuid $ContrailFloatingIpUuid `
                     -PortFqNames $PortFqNames
             }
 
             AfterEach {
                 Write-Log "Deleting floating IP"
                 if (Get-Variable ContrailFloatingIp -ErrorAction SilentlyContinue) {
-                    Remove-ContrailFloatingIp `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailFloatingIp
+                    $FloatingIpRepo.Remove($ContrailFloatingIp)
                 }
 
                 $Sessions = $MultiNode.Sessions
@@ -240,6 +237,12 @@ Describe "Floating IP" -Tag "Smoke" {
                 Justification = "It's actually used."
             )]
             $FloatingIpPoolRepo = [FloatingIpPoolRepo]::new($MultiNode.NM)
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "FloatingIpRepo",
+                Justification = "It's actually used."
+            )]
+            $FloatingIpRepo = [FloatingIpRepo]::new($MultiNode.NM)
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
