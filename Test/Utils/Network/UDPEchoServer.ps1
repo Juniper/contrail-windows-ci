@@ -88,6 +88,6 @@ function Stop-UDPListenerInContainerAndFetchResult {
         return $ReceivedMessage
     }
     Write-Log "UDP listener output from remote session:"
-    Write-Log -NoTimestamp -NoTag $Message
+    Write-Log -NoTimestamp -NoTag "$Message"
     return $Message
 }

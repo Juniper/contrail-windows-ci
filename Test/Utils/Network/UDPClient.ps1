@@ -24,5 +24,5 @@ function Send-UDPFromContainer {
     }
     $Output = $Output -join [Environment]::Newline
     Write-Log "Send UDP output from remote session:"
-    Write-Log -NoTimestamp -NoTag $Output
+    Write-Log -NoTimestamp -NoTag "$Output"
 }

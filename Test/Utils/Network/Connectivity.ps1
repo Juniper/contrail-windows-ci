@@ -21,7 +21,7 @@ function Test-Ping {
     $ExitCode = $Res[-1]
 
     Write-Log "Ping output:"
-    Write-Log -NoTimestamp -NoTag $Output
+    Write-Log -NoTimestamp -NoTag "$Output"
 
     if ($ExitCode -eq "0") {
         # Ping's exit code suggests everything worked, but
@@ -71,7 +71,7 @@ function Test-TCP {
     $ExitCode = $Res[-1]
 
     Write-Log "Web request output:"
-    Write-Log -NoTimestamp -NoTag $Output
+    Write-Log -NoTimestamp -NoTag "$Output"
 
     return $ExitCode
 }
@@ -101,6 +101,9 @@ function Test-UDP {
         -ContainerName $ClientContainerName `
         -ListenerPort $UDPClientPort
 
+    Write-Log "Sending message:"
+    Write-Log -NoTimestamp -NoTag "$Message"
+
     Write-Log "Sending UDP packet from container $ClientContainerName..."
     Send-UDPFromContainer `
         -Session $ClientContainerSession `
@@ -115,10 +118,8 @@ function Test-UDP {
     $ReceivedMessage = Stop-UDPListenerInContainerAndFetchResult -Session $ClientContainerSession
     Stop-EchoServerInContainer -Session $ListenerContainerSession
 
-    Write-Log "Sent message:"
-    Write-Log -NoTimestamp -NoTag $Message
     Write-Log "Received message:"
-    Write-Log -NoTimestamp -NoTag $ReceivedMessage
+    Write-Log -NoTimestamp -NoTag "$ReceivedMessage"
     if ($ReceivedMessage -eq $Message) {
         return $true
     } else {
