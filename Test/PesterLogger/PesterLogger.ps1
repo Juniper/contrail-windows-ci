@@ -67,7 +67,8 @@ function Write-LogToFile {
         if ($_ -is [string]) {
             $_.Split([Environment]::Newline, [StringSplitOptions]::RemoveEmptyEntries)
         } else {
-            $_
+            # Trim, because Out-String sometimes adds whitespace for some reason
+            ($_ | Out-String).Trim()
         }
     }
 
