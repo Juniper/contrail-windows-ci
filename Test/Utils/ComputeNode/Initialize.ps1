@@ -43,7 +43,9 @@ function Initialize-ComputeServices {
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
 
-    New-NodeMgrConfigFile -Session $Session -ControllerIP $ControllerConfig.Address
+    New-NodeMgrConfigFile -Session $Session  `
+        -ControllerIP $ControllerConfig.Address `
+        -MgmtAdapterName $SystemConfig.MgmtAdapterName
 
     New-CNMPluginConfigFile -Session $Session `
         -AdapterName $SystemConfig.AdapterName `

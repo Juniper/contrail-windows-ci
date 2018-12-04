@@ -4,6 +4,7 @@
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\ContrailAPI\Project.ps1
 . $PSScriptRoot\..\ContrailAPI\VirtualRouter.ps1
+. $PSScriptRoot\..\Initialize-Testbed.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
@@ -36,6 +37,7 @@ function New-MultiNodeSetup {
 
     $Sessions = New-RemoteSessions -VMs $VMs
     Set-ConfAndLogDir -Sessions $Sessions
+    Initialize-Testbeds -Sessions $Sessions
 
     $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
     Add-OrReplaceContrailProject `

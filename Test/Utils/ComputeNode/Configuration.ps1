@@ -61,9 +61,12 @@ Os_token=
 }
 
 function Get-NodeManagementIP {
-    Param([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param(
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [string] $MgmtAdapterName
+    )
     return Invoke-Command -Session $Session -ScriptBlock { Get-NetIPAddress |
-        Where-Object InterfaceAlias -like "Ethernet0*" | # TODO: this is hardcoded and bad.
+        Where-Object InterfaceAlias -like $Using:MgmtAdapterName |
         Where-Object AddressFamily -eq IPv4 |
         Select-Object -ExpandProperty IPAddress
     }
@@ -72,13 +75,14 @@ function Get-NodeManagementIP {
 function New-NodeMgrConfigFile {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $ControllerIP
+        [Parameter(Mandatory = $true)] [string] $ControllerIP,
+        [Parameter(Mandatory = $true)] [string] $MgmtAdapterName
     )
 
     $ConfigPath = Get-DefaultNodeMgrsConfigPath
     $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
 
-    $HostIP = Get-NodeManagementIP -Session $Session
+    $HostIP = Get-NodeManagementIP -Session $Session -MgmtAdapterName $MgmtAdapterName
 
     $Config = @"
 [DEFAULTS]
