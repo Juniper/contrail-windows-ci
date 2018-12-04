@@ -54,6 +54,13 @@ Describe "PesterLogger" -Tags CI, Unit {
                 ConvertTo-LogItem | Foreach-Object Message | Should -Be ("msg1", "msg2")
         }
 
+        It "allows for null messages" {
+            Initialize-PesterLogger -OutDir "TestDrive:\"
+            Write-Log $null
+            Get-Content "TestDrive:\PesterLogger.Write-Log.allows for null messages.txt" |
+                ConvertTo-LogItem | Foreach-Object Message | Should -Be ("<EMPTY>")
+        }
+
         It "can write non-strings" {
             Initialize-PesterLogger -OutDir "TestDrive:\"
             Write-Log $true

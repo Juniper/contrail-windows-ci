@@ -26,7 +26,7 @@ function Initialize-PesterLogger {
             [Parameter(Mandatory=$false)] [Switch] $NoTimestamps,
             [Parameter(Mandatory=$false)] [Switch] $NoTag,
             [Parameter(Mandatory=$false)] [string] $Tag = "test-runner",
-            [Parameter(Position=0,Mandatory=$true)] [object] $Message
+            [Parameter(Position=0,Mandatory=$true)][AllowNull()] [object] $Message
         )
 
         $Scope = & $DeducerFunc
@@ -44,11 +44,15 @@ function Initialize-PesterLogger {
 function Write-LogToFile {
     Param(
         [Parameter(Mandatory=$true)] [string] $Path,
-        [Parameter(Mandatory=$true)] [object] $Value,
+        [Parameter(Mandatory=$true)][AllowNull()] [object] $Value,
         [Parameter(Mandatory=$false)] [string] $Tag,
         [Parameter(Mandatory=$true)] [bool] $NoTimestamps,
         [Parameter(Mandatory=$true)] [bool] $NoTag
     )
+
+    if (-not $Value) {
+        $Value = "<EMPTY>"
+    }
 
     $TimestampFormatString = 'yyyy-MM-dd HH:mm:ss.ffffff'
 
