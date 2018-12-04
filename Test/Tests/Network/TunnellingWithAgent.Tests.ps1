@@ -238,6 +238,8 @@ Test-WithRetries 3 {
                 Justification="It's actually used."
             )]
             [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            $LogSources += New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID
+            $LogSources += New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID
 
             foreach ($Session in $MultiNode.Sessions) {
                 if ($PrepareEnv) {
@@ -320,11 +322,6 @@ Test-WithRetries 3 {
         AfterEach {
             $Sessions = $MultiNode.Sessions
             try {
-                Merge-Logs -LogSources (
-                    (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID),
-                    (New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID)
-                )
-
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
             } finally {
