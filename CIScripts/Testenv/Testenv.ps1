@@ -59,6 +59,9 @@ function Read-TestenvFile {
 function Read-OpenStackConfig {
     Param ([Parameter(Mandatory=$true)] [string] $Path)
     $Parsed = Read-TestenvFile -Path $Path
+    if($Parsed.keys -notcontains 'OpenStack') {
+        return $null
+    }
     return [OpenStackConfig] $Parsed.OpenStack
 }
 

@@ -28,7 +28,7 @@ function New-CNMPluginConfigFile {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [string] $AdapterName,
-        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig,
+        [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
     $ConfigPath = Get-DefaultCNMPluginsConfigPath
@@ -46,6 +46,10 @@ LogLevel=Debug
 
 [AUTH]
 AuthMethod=$( $ControllerConfig.AuthMethod )
+"@
+    if($OpenStackConfig) {
+        $Config += @"
+
 
 [KEYSTONE]
 Os_auth_url=$( $OpenStackConfig.AuthUrl() )
@@ -54,6 +58,7 @@ Os_tenant_name=$( $OpenStackConfig.Project )
 Os_password=$( $OpenStackConfig.Password )
 Os_token=
 "@
+    }
 
     Invoke-Command -Session $Session -ScriptBlock {
         Set-Content -Path $Using:ConfigPath -Value $Using:Config
