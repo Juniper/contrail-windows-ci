@@ -28,7 +28,7 @@ Param (
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\VirtualNetwork.ps1
 
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
 
@@ -201,6 +201,13 @@ Test-WithRetries 1 {
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
+                "VirtualNetworkRepo",
+                Justification = "It's actually used."
+            )]
+            $VirtualNetworkRepo = [VirtualNetworkRepo]::new($MultiNode.NM)
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
                 "FileLogSources",
                 Justification="It's actually used in 'AfterEach' block."
             )]
@@ -233,16 +240,20 @@ Test-WithRetries 1 {
             }
 
             Write-Log "Creating virtual network: $($Network.Name)"
+            $VirtualNetworkSubnet = [Subnet]::new(
+                $Subnet.IpPrefix,
+                $Subnet.IpPrefixLen,
+                $Subnet.DefaultGateway,
+                $Subnet.AllocationPoolsStart,
+                $Subnet.AllocationPoolsEnd)
+            $VirtualNetwork = [VirtualNetwork]::new($Network.Name, $MultiNode.NM.DefaultTenantName, $VirtualNetworkSubnet)
+            $Response = $VirtualNetworkRepo.AddOrReplace($VirtualNetwork)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "ContrailNetwork",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
-            $ContrailNetwork = Add-OrReplaceNetwork `
-                -API $MultiNode.NM `
-                -TenantName $MultiNode.NM.DefaultTenantName `
-                -Name $Network.Name `
-                -SubnetConfig $Network.Subnet
+            $ContrailNetwork = $Response.'virtual-network'.'uuid'
         }
 
         function BeforeEachContext {
@@ -285,9 +296,7 @@ Test-WithRetries 1 {
         AfterAll {
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
                 Write-Log "Deleting virtual network"
-                Remove-ContrailVirtualNetwork `
-                    -API $MultiNode.NM `
-                    -Uuid $ContrailNetwork
+                $VirtualNetworkRepo.RemoveWithDependencies($VirtualNetwork) | Out-Null
             }
 
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {

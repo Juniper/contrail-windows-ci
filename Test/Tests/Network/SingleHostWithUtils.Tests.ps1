@@ -24,8 +24,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
-
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\Project.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\SecurityGroup.ps1
 
@@ -115,16 +114,20 @@ Describe "Single compute node protocol tests with utils" {
         Write-Log "Creating ContrailNetwork"
         $NetworkName = "testnet"
 
+        $VirtualNetworkSubnet = [Subnet]::new(
+            $Subnet.IpPrefix,
+            $Subnet.IpPrefixLen,
+            $Subnet.DefaultGateway,
+            $Subnet.AllocationPoolsStart,
+            $Subnet.AllocationPoolsEnd)
+        $VirtualNetwork = [VirtualNetwork]::new($NetworkName, $ContrailNM.DefaultTenantName, $VirtualNetworkSubnet)
+        $Response = $VirtualNetworkRepo.AddOrReplace($VirtualNetwork)
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "ContrailNetwork",
-            Justification = "It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
+            Justification = "It's actually used."
         )]
-        $ContrailNetwork = Add-OrReplaceNetwork `
-            -API $ContrailNM `
-            -TenantName $ContrailNM.DefaultTenantName `
-            -Name $NetworkName `
-            -SubnetConfig $Subnet
+        $ContrailNetwork = $Response.'virtual-network'.'uuid'
 
         New-CNMPluginConfigFile -Session $Session `
             -AdapterName $SystemConfig.AdapterName `
@@ -174,9 +177,7 @@ Describe "Single compute node protocol tests with utils" {
 
             Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
             if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
-                Remove-ContrailVirtualNetwork `
-                    -API $ContrailNM `
-                    -Uuid $ContrailNetwork
+                $VirtualNetworkRepo.RemoveWithDependencies($VirtualNetwork) | Out-Null
                 Remove-Variable "ContrailNetwork"
             }
         }
@@ -220,6 +221,12 @@ Describe "Single compute node protocol tests with utils" {
         $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
         $ProjectRepo = [ProjectRepo]::new($ContrailNM)
         $SecurityGroupRepo = [SecurityGroupRepo]::new($ContrailNM)
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments",
+            "VirtualNetworkRepo",
+            Justification = "It's actually used."
+        )]
+        $VirtualNetworkRepo = [VirtualNetworkRepo]::new($ContrailNM)
 
         $Project = [Project]::new($ContrailNM.DefaultTenantName)
         $ProjectRepo.AddOrReplace($Project) | Out-Null

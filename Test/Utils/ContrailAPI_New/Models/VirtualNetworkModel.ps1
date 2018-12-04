@@ -1,5 +1,6 @@
 # Those are just informative to show dependencies
 #include "SubnetModel.ps1"
+#include "NetworkPolicyModel.ps1"
 
 class VirtualNetwork : BaseRepoModel {
     [string] $Name

@@ -1,8 +1,8 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
@@ -26,7 +26,7 @@ Param (
 
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\GlobalVrouterConfig.ps1
 
 $TCPServerDockerImage = "python-http"
@@ -42,19 +42,19 @@ $Subnet = [SubnetConfiguration]::new(
 $Network = [Network]::New("testnet12", $Subnet)
 
 function Get-MaxIPv4DataSizeForMTU {
-    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    Param ([Parameter(Mandatory = $true)] [Int] $MTU)
     $MinimalIPHeaderSize = 20
     return $MTU - $MinimalIPHeaderSize
 }
 
 function Get-MaxICMPDataSizeForMTU {
-    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    Param ([Parameter(Mandatory = $true)] [Int] $MTU)
     $ICMPHeaderSize = 8
     return $(Get-MaxIPv4DataSizeForMTU -MTU $MTU) - $ICMPHeaderSize
 }
 
 function Get-MaxUDPDataSizeForMTU {
-    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    Param ([Parameter(Mandatory = $true)] [Int] $MTU)
     $UDPHeaderSize = 8
     return $(Get-MaxIPv4DataSizeForMTU -MTU $MTU) - $UDPHeaderSize
 }
@@ -77,7 +77,7 @@ function Get-VrfStats {
         return @{
             MPLSoUDP = $PktCountMPLSoUDP
             MPLSoGRE = $PktCountMPLSoGRE
-            VXLAN = $PktCountVXLAN
+            VXLAN    = $PktCountVXLAN
         }
     }
     Write-Log "vrfstats for vif $VifIdx : $($Stats | Out-String)"
@@ -104,7 +104,7 @@ Test-WithRetries 3 {
         # Do it especially when logging in via WebUI for the first time.
         #
 
-        foreach($TunnelingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
+        foreach ($TunnelingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
             Context "Tunneling $TunnelingMethod" {
                 BeforeEach {
                     # TODO Restore setting that was before test
@@ -114,7 +114,7 @@ Test-WithRetries 3 {
                     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                         "PSUseDeclaredVarsMoreThanAssignments",
                         "Sessions",
-                        Justification="It's actually used in 'It' blocks."
+                        Justification = "It's actually used in 'It' blocks."
                     )]
                     $Sessions = $MultiNode.Sessions
                 }
@@ -221,26 +221,36 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "GlobalVrouterConfigRepo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $GlobalVrouterConfigRepo = [GlobalVrouterConfigRepo]::new($MultiNode.NM)
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "VirtualNetworkRepo",
+                Justification = "It's actually used."
+            )]
+            $VirtualNetworkRepo = [VirtualNetworkRepo]::new($MultiNode.NM)
 
             Write-Log "Creating virtual network: $($Network.Name)"
+            $VirtualNetworkSubnet = [Subnet]::new(
+                $Subnet.IpPrefix,
+                $Subnet.IpPrefixLen,
+                $Subnet.DefaultGateway,
+                $Subnet.AllocationPoolsStart,
+                $Subnet.AllocationPoolsEnd)
+            $VirtualNetwork = [VirtualNetwork]::new($Network.Name, $MultiNode.NM.DefaultTenantName, $VirtualNetworkSubnet)
+            $Response = $VirtualNetworkRepo.AddOrReplace($VirtualNetwork)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "ContrailNetwork",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
-            $ContrailNetwork = Add-OrReplaceNetwork `
-                -API $MultiNode.NM `
-                -TenantName $MultiNode.NM.DefaultTenantName `
-                -Name $Network.Name `
-                -SubnetConfig $Subnet
+            $ContrailNetwork = $Response.'virtual-network'.'uuid'
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "FileLogSources",
-                Justification="It's actually used in 'AfterEach' block."
+                Justification = "It's actually used in 'AfterEach' block."
             )]
             $FileLogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
@@ -276,9 +286,7 @@ Test-WithRetries 3 {
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailNetwork
+                    $VirtualNetworkRepo.RemoveWithDependencies($VirtualNetwork) | Out-Null
                 }
 
                 Remove-MultiNodeSetup -MultiNode $MultiNode
@@ -305,7 +313,7 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Container1NetInfo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
                 -Session $MultiNode.Sessions[0] -ContainerID $Container1ID
@@ -314,7 +322,7 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Container2NetInfo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
                 -Session $MultiNode.Sessions[1] -ContainerID $Container2ID
@@ -332,7 +340,8 @@ Test-WithRetries 3 {
 
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
-            } finally {
+            }
+            finally {
                 Merge-Logs -DontCleanUp -LogSources $FileLogSources
             }
         }

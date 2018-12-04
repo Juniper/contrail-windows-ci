@@ -1,7 +1,7 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
@@ -24,7 +24,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\VirtualNetwork.ps1
 
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -41,7 +41,7 @@ $Network = [Network]::New("testnet14", $Subnet)
 
 function Restart-Agent {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
 
     $ServiceName = Get-AgentServiceName
@@ -52,7 +52,7 @@ function Restart-Agent {
 
 function Get-NumberOfStoredPorts {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
 
     $NumberOfStoredPorts = Invoke-Command -Session $Session -ScriptBlock {
@@ -116,26 +116,37 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Sessions",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Sessions = $MultiNode.Sessions
 
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "VirtualNetworkRepo",
+                Justification = "It's actually used."
+            )]
+            $VirtualNetworkRepo = [VirtualNetworkRepo]::new($MultiNode.NM)
+
             Write-Log "Creating virtual network: $($Network.Name)"
+            $VirtualNetworkSubnet = [Subnet]::new(
+                    $Subnet.IpPrefix,
+                    $Subnet.IpPrefixLen,
+                    $Subnet.DefaultGateway,
+                    $Subnet.AllocationPoolsStart,
+                    $Subnet.AllocationPoolsEnd)
+            $VirtualNetwork = [VirtualNetwork]::new($Network.Name, $MultiNode.NM.DefaultTenantName, $VirtualNetworkSubnet)
+            $Response = $VirtualNetworkRepo.AddOrReplace($VirtualNetwork)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "ContrailNetwork",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
-            $ContrailNetwork = Add-OrReplaceNetwork `
-                -API $MultiNode.NM `
-                -TenantName $MultiNode.NM.DefaultTenantName `
-                -Name $Network.Name `
-                -SubnetConfig $Subnet
+            $ContrailNetwork = $Response.'virtual-network'.'uuid'
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "FileLogSources",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $FileLogSources = New-ComputeNodeLogSources -Sessions $Sessions
 
@@ -166,9 +177,7 @@ Test-WithRetries 3 {
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailNetwork
+                    $VirtualNetworkRepo.RemoveWithDependencies($VirtualNetwork) | Out-Null
                 }
 
                 Remove-MultiNodeSetup -MultiNode $MultiNode
@@ -195,7 +204,7 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Container1NetInfo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
                 -Session $MultiNode.Sessions[0] -ContainerID $Container1ID
@@ -204,7 +213,7 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Container2NetInfo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
                 -Session $MultiNode.Sessions[1] -ContainerID $Container2ID
@@ -224,7 +233,8 @@ Test-WithRetries 3 {
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
                 Start-AgentService -Session $Sessions[0]
-            } finally {
+            }
+            finally {
                 Merge-Logs -DontCleanUp -LogSources $FileLogSources
             }
         }
