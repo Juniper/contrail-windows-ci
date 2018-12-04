@@ -141,11 +141,11 @@ function Get-ContrailVirtualNetworkPorts {
 
     $Result = @()
     foreach ($Interface in $Interfaces) {
-        $FqName = $Interface.to -Join ":"
-        $Result = $Result + $FqName
+        $FqName = $Interface.to
+        $Result += ,$FqName
     }
 
-    return $Result
+    return ,$Result
 }
 
 function Add-ContrailPolicyToNetwork {
