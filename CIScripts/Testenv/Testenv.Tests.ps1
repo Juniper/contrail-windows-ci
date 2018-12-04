@@ -33,7 +33,6 @@ Describe "Testenv" {
             $System.AdapterName | Should Be "Eth1"
             $System.VMSwitchName() | Should Be "Layered Eth1"
             $System.ForwardingExtensionName | Should Be "MyExtension"
-            $System.AgentConfigFilePath | Should Be "MyFile"
         }
 
         It "can read locations and credentials of testbeds from .yaml file" {
@@ -64,7 +63,6 @@ system:
   AdapterName: Eth1
   VHostName: vEth
   ForwardingExtensionName: MyExtension
-  AgentConfigFilePath: MyFile
 
 testbeds:
   - name: Testbed1
