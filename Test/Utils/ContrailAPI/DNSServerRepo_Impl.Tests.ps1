@@ -14,7 +14,7 @@ Describe 'Contrail DNS API' -Tags CI, Systest {
     BeforeAll {
         $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
         $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-        $ContrailNM = [ContrailNetworkManager]::New($OpenStackConfig, $ControllerConfig)
+        $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",

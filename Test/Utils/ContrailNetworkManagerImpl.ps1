@@ -5,18 +5,40 @@ class ContrailNetworkManager {
     [String] $ContrailUrl;
     [String] $DefaultTenantName;
 
-    # We cannot add a type to the parameters,
-    # because the class is parsed before the files are sourced.
-    ContrailNetworkManager($OpenStackConfig, $ControllerConfig) {
+    ContrailNetworkManager([TestenvConfigs] $TestenvConfig) {
 
-        $this.ContrailUrl = $ControllerConfig.RestApiUrl()
-        $this.DefaultTenantName = $ControllerConfig.DefaultProject
+        $this.ContrailUrl = $TestenvConfig.Controller.RestApiUrl()
+        $this.DefaultTenantName = $TestenvConfig.Controller.DefaultProject
 
-        $this.AuthToken = Get-AccessTokenFromKeystone `
-            -AuthUrl $OpenStackConfig.AuthUrl() `
-            -Username $OpenStackConfig.Username `
-            -Password $OpenStackConfig.Password `
-            -Tenant $OpenStackConfig.Project
+        if($TestenvConfig.Controller.AuthMethod -eq "keystone") {
+            if(!$TestenvConfig.OpenStack) {
+                throw "AuthMethod is keystone, but no OpenStack config provided."
+            }
+
+            $this.AuthToken = $this.GetAccessTokenFromKeystone($TestenvConfig.OpenStack)
+        }
+        elseif ($TestenvConfig.Controller.AuthMethod -eq "noauth") {
+            $this.AuthToken = $null
+        }
+        else {
+            throw "Unknown authentification method: $($TestenvConfig.Controller.AuthMethod). Supported: keystone, noauth."
+        }
+    }
+
+    hidden [String] GetAccessTokenFromKeystone([OpenStackConfig] $OpenStackConfig) {
+        $Request = @{
+            auth = @{
+                tenantName          = $OpenStackConfig.Project
+                passwordCredentials = @{
+                    username = $OpenStackConfig.Username
+                    password = $OpenStackConfig.Password
+                }
+            }
+        }
+        $AuthUrl = $OpenStackConfig.AuthUrl() + "/tokens"
+        $Response = Invoke-RestMethod -Uri $AuthUrl -Method Post -ContentType "application/json" `
+            -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
+        return $Response.access.token.id
     }
 
     [PSObject] GetResourceUrl([String] $Resource, [String] $Uuid) {
@@ -33,15 +55,22 @@ class ContrailNetworkManager {
 
     hidden [PSObject] SendRequest([String] $Method, [String] $Resource,
                                   [String] $Uuid, $Request) {
-        $RequestUrl = $this.GetResourceUrl($Resource, $Uuid.Trim())
+
+        $RequestUrl = $this.GetResourceUrl($Resource, $Uuid)
+
         # We need to escape '<>' in 'direction' field because reasons
         # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
         $Body = (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request |
                     ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
-        Write-Log "[Contrail][$Method]=>[$RequestUrl]"
-        Write-Log -NoTimestamp -NoTag "$Body"
+        $Headers = $null
+        if($this.AuthToken) {
+            $Headers = @{"X-Auth-Token" = $this.AuthToken}
+        }
 
-        $Response = Invoke-RestMethod -Uri $RequestUrl -Headers @{"X-Auth-Token" = $this.AuthToken} `
+        Write-Log "[Contrail][$Method]=>[$RequestUrl]"
+        Write-Log -NoTimestamp -NoTag "Headers:`n$Headers;`nBody:`n$Body"
+
+        $Response = Invoke-RestMethod -Uri $RequestUrl -Headers $Headers `
             -Method $Method -ContentType "application/json" `
             -Body $Body
         Write-Log "[Contrail]<= "
@@ -76,28 +105,4 @@ class ContrailNetworkManager {
             -Method "Post" -ContentType "application/json" -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
         return $Response.'uuid'
     }
-}
-
-function Get-AccessTokenFromKeystone {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingUserNameAndPassWordParams",
-        "", Justification="We don't care that it's plaintext, it's just test env.")]
-    Param ([Parameter(Mandatory = $true)] [string] $AuthUrl,
-           [Parameter(Mandatory = $true)] [string] $TenantName,
-           [Parameter(Mandatory = $true)] [string] $Username,
-           [Parameter(Mandatory = $true)] [string] $Password)
-
-    $Request = @{
-        auth = @{
-            tenantName          = $TenantName
-            passwordCredentials = @{
-                username = $Username
-                password = $Password
-            }
-        }
-    }
-
-    $AuthUrl += "/tokens"
-    $Response = Invoke-RestMethod -Uri $AuthUrl -Method Post -ContentType "application/json" `
-        -Body (ConvertTo-Json -Depth 100 $Request)
-    return $Response.access.token.id
 }

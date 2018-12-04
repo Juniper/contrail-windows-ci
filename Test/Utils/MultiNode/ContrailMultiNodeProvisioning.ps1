@@ -3,6 +3,7 @@
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\ContrailAPI\Project.ps1
+. $PSScriptRoot\..\ContrailAPI\SecurityGroup.ps1
 . $PSScriptRoot\..\ContrailAPI\VirtualRouter.ps1
 
 # Import order is chosen explicitly because of class dependency
@@ -33,14 +34,19 @@ function New-MultiNodeSetup {
     $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
     $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
     $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+    $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
 
     $Sessions = New-RemoteSessions -VMs $VMs
     Set-ConfAndLogDir -Sessions $Sessions
 
-    $ContrailNM = [ContrailNetworkManager]::new($OpenStackConfig, $ControllerConfig)
+    $ContrailNM = [ContrailNetworkManager]::new($Configs)
     Add-OrReplaceContrailProject `
         -API $ContrailNM `
         -Name $ControllerConfig.DefaultProject
+    Add-OrReplaceContrailSecurityGroup `
+        -API $ContrailNM `
+        -TenantName $ContrailNM.DefaultTenantName `
+        -Name 'default' | Out-Null
 
     $Testbed1Address = $VMs[0].Address
     $Testbed1Name = $VMs[0].Name
@@ -60,7 +66,6 @@ function New-MultiNodeSetup {
         -RouterIp $Testbed2Address
     Write-Log "Reported UUID of new virtual router: $VRouter2Uuid"
 
-    $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
     $VRoutersUuids = @($VRouter1Uuid, $VRouter2Uuid)
     return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids)
 }
