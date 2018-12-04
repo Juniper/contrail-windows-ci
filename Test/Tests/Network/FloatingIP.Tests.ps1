@@ -22,7 +22,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\NetworkPolicy.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\FloatingIPPool.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIP.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\FloatingIP.ps1
 
 $PolicyName = "passallpolicy"
@@ -181,17 +180,15 @@ Describe "Floating IP" -Tag "Smoke" {
 
                 Write-Log "Creating floating IP: $ServerFloatingIpPoolName"
                 $ContrailFloatingIp = [FloatingIp]::new($ServerFloatingIpName, $FloatingIpPool.GetFQName(), $ServerFloatingIpAddress)
-                $Response = $FloatingIpRepo.AddOrReplace($ContrailFloatingIp)
-                $ContrailFloatingIpUuid = $Response.'floating-ip'.'uuid'
+                $FloatingIpRepo.AddOrReplace($ContrailFloatingIp) | Out-Null
 
                 $PortFqNames = Get-ContrailVirtualNetworkPorts `
                     -API $MultiNode.NM `
                     -NetworkUuid $ContrailServerNetwork
 
-                Set-ContrailFloatingIpPorts `
-                    -API $MultiNode.NM `
-                    -IpUuid $ContrailFloatingIpUuid `
-                    -PortFqNames $PortFqNames
+                $ContrailFloatingIp.PortFqNames = $PortFqNames
+
+                $FloatingIpRepo.SetPorts($ContrailFloatingIp)
             }
 
             AfterEach {

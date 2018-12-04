@@ -2,6 +2,7 @@ class FloatingIp : BaseRepoModel {
     [string] $Name
     [string[]] $PoolFqName
     [string] $Address
+    [string[][]] $PortFqNames
 
     FloatingIp([string] $Name, [string[]] $PoolFqName, [string] $Address) {
         $this.Name = $Name
