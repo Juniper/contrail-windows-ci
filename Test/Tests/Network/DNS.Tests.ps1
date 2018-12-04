@@ -15,7 +15,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\Utils\Initialize-Testbeds.ps1
+. $PSScriptRoot\..\..\Utils\Initialize-Testbed.ps1
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
@@ -200,7 +200,6 @@ Test-WithRetries 1 {
         BeforeAll {
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
-            Install-DNSTestDependencies -Sessions $MultiNode.Sessions
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
@@ -209,15 +208,15 @@ Test-WithRetries 1 {
             )]
             [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
+            Install-DNSTestDependencies -Sessions $MultiNode.Sessions
             Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
 
+            $MgmtAdapterName = $MultiNode.Configs.System.MgmtAdapterName
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "OldDNSs",
                 Justification="It's actually used."
             )]
-
-            $MgmtAdapterName = $MultiNode.Configs.System.MgmtAdapterName
             $OldDNSs = Set-DNSServerAddressOnTestBed `
                            -ClientSession $MultiNode.Sessions[0] `
                            -ServerSession $MultiNode.Sessions[1] `

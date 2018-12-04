@@ -65,7 +65,8 @@ function Get-NodeManagementIP {
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [string] $MgmtAdapterName
     )
-    return Invoke-Command -Session $Session -ScriptBlock { Get-NetIPAddress |
+    return Invoke-Command -Session $Session -ScriptBlock {
+        Get-NetIPAddress |
         Where-Object InterfaceAlias -like $Using:MgmtAdapterName |
         Where-Object AddressFamily -eq IPv4 |
         Select-Object -ExpandProperty IPAddress
