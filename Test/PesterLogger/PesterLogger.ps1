@@ -23,10 +23,10 @@ function Initialize-PesterLogger {
 
     $WriteLogFunc = {
         Param(
-            [Switch] $NoTimestamps,
-            [Switch] $NoTag,
+            [Parameter(Mandatory=$false)] [Switch] $NoTimestamps,
+            [Parameter(Mandatory=$false)] [Switch] $NoTag,
             [Parameter(Mandatory=$false)] [string] $Tag = "test-runner",
-            [Parameter(Mandatory = $true)] [object] $Message
+            [Parameter(Position=0,Mandatory=$true)] [object] $Message
         )
 
         $Scope = & $DeducerFunc
