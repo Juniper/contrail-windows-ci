@@ -21,7 +21,7 @@ Param (
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\NetworkPolicy.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\FloatingIPPool.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\FloatingIP.ps1
 
 $PolicyName = "passallpolicy"
@@ -67,37 +67,39 @@ Describe "Floating IP" -Tag "Smoke" {
             BeforeAll {
                 Write-Log "Creating network policy: $PolicyName"
                 $NetworkPolicy = [NetworkPolicy]::new_PassAll($PolicyName, $MultiNode.NM.DefaultTenantName)
-                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                    "PSUseDeclaredVarsMoreThanAssignments",
-                    "ContrailPolicy",
-                    Justification = "It's actually used."
-                )]
-                $Response = $NetworkPolicyRepo.AddOrReplace($NetworkPolicy)
-                $ContrailPolicy = $Response.'network-policy'.'uuid'
+                $NetworkPolicyRepo.AddOrReplace($NetworkPolicy) | Out-Null
 
-                Write-Log "Creating virtual network: $ClientNetwork.Name"
+                Write-Log "Creating virtual network: $($ClientNetwork.Name)"
+                $ClientSubnet = [Subnet]::new(
+                    $ClientNetworkSubnet.IpPrefix,
+                    $ClientNetworkSubnet.IpPrefixLen,
+                    $ClientNetworkSubnet.DefaultGateway,
+                    $ClientNetworkSubnet.AllocationPoolsStart,
+                    $ClientNetworkSubnet.AllocationPoolsEnd)
+                $ClientVirtualNetwork = [VirtualNetwork]::new($ClientNetwork.Name, $MultiNode.NM.DefaultTenantName, $ClientSubnet)
+                $Response = $VirtualNetworkRepo.AddOrReplace($ClientVirtualNetwork)
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailClientNetwork",
                     Justification = "It's actually used."
                 )]
-                $ContrailClientNetwork = Add-OrReplaceNetwork `
-                    -API $MultiNode.NM `
-                    -TenantName $MultiNode.NM.DefaultTenantName `
-                    -Name $ClientNetwork.Name `
-                    -SubnetConfig $ClientNetwork.Subnet
+                $ContrailClientNetwork = $Response.'virtual-network'.'uuid'
 
-                Write-Log "Creating virtual network: $ServerNetwork.Name"
+                Write-Log "Creating virtual network: $($ServerNetwork.Name)"
+                $ServerSubnet = [Subnet]::new(
+                    $ServerNetworkSubnet.IpPrefix,
+                    $ServerNetworkSubnet.IpPrefixLen,
+                    $ServerNetworkSubnet.DefaultGateway,
+                    $ServerNetworkSubnet.AllocationPoolsStart,
+                    $ServerNetworkSubnet.AllocationPoolsEnd)
+                $ServerVirtualNetwork = [VirtualNetwork]::new($ServerNetwork.Name, $MultiNode.NM.DefaultTenantName, $ServerSubnet)
+                $Response = $VirtualNetworkRepo.AddOrReplace($ServerVirtualNetwork)
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
                     "ContrailServerNetwork",
                     Justification = "It's actually used."
                 )]
-                $ContrailServerNetwork = Add-OrReplaceNetwork `
-                    -API $MultiNode.NM `
-                    -TenantName $MultiNode.NM.DefaultTenantName `
-                    -Name $ServerNetwork.Name `
-                    -SubnetConfig $ServerNetwork.Subnet
+                $ContrailServerNetwork = $Response.'virtual-network'.'uuid'
 
                 Write-Log "Creating floating IP pool: $ServerFloatingIpPoolName"
                 $FloatingIpPool = [FloatingIpPool]::new($ServerFloatingIpPoolName, $ServerNetwork.Name, $MultiNode.NM.DefaultTenantName)
@@ -109,15 +111,10 @@ Describe "Floating IP" -Tag "Smoke" {
                 )]
                 $ContrailFloatingIpPool = $Response.'floating-ip-pool'.'uuid'
 
-                Add-ContrailPolicyToNetwork `
-                    -API $MultiNode.NM `
-                    -PolicyUuid $ContrailPolicy `
-                    -NetworkUuid $ContrailClientNetwork
-
-                Add-ContrailPolicyToNetwork `
-                    -API $MultiNode.NM `
-                    -PolicyUuid $ContrailPolicy `
-                    -NetworkUuid $ContrailServerNetwork
+                $ClientVirtualNetwork.NetworkPolicys = @($NetworkPolicy)
+                $ServerVirtualNetwork.NetworkPolicys = @($NetworkPolicy)
+                $VirtualNetworkRepo.SetPolicy($ClientVirtualNetwork)
+                $VirtualNetworkRepo.SetPolicy($ServerVirtualNetwork)
 
                 foreach ($Session in $MultiNode.Sessions) {
                     Initialize-DockerNetworks `
@@ -142,16 +139,12 @@ Describe "Floating IP" -Tag "Smoke" {
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailServerNetwork -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailServerNetwork
+                    $VirtualNetworkRepo.RemoveWithDependencies($ServerVirtualNetwork) | Out-Null
                 }
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailClientNetwork -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailClientNetwork
+                    $VirtualNetworkRepo.RemoveWithDependencies($ClientVirtualNetwork) | Out-Null
                 }
 
                 Write-Log "Deleting network policy"
@@ -182,9 +175,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 $ContrailFloatingIp = [FloatingIp]::new($ServerFloatingIpName, $FloatingIpPool.GetFQName(), $ServerFloatingIpAddress)
                 $FloatingIpRepo.AddOrReplace($ContrailFloatingIp) | Out-Null
 
-                $PortFqNames = Get-ContrailVirtualNetworkPorts `
-                    -API $MultiNode.NM `
-                    -NetworkUuid $ContrailServerNetwork
+                $PortFqNames = $VirtualNetworkRepo.GetPorts($ServerVirtualNetwork)
 
                 $ContrailFloatingIp.PortFqNames = $PortFqNames
 
@@ -240,6 +231,12 @@ Describe "Floating IP" -Tag "Smoke" {
                 Justification = "It's actually used."
             )]
             $FloatingIpRepo = [FloatingIpRepo]::new($MultiNode.NM)
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "VirtualNetworkRepo",
+                Justification = "It's actually used."
+            )]
+            $VirtualNetworkRepo = [VirtualNetworkRepo]::new($MultiNode.NM)
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
