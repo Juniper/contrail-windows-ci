@@ -23,6 +23,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\Project.ps1
