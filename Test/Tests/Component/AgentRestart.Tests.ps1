@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -66,7 +67,7 @@ function Get-NumberOfStoredPorts {
 }
 
 Test-WithRetries 3 {
-    Describe "Agent restart tests" {
+    Describe "Agent restart tests" -Tag "Smoke" {
         It "Ports are correctly restored after Agent restart" {
             Write-Log "Testing ping before Agent restart..."
             Test-Ping `
@@ -140,9 +141,11 @@ Test-WithRetries 3 {
             [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
             foreach ($Session in $Sessions) {
-                Initialize-ComputeNode `
-                    -Session $Session `
-                    -Configs $MultiNode.Configs
+                if ($PrepareEnv) {
+                    Initialize-ComputeNode `
+                        -Session $Session `
+                        -Configs $MultiNode.Configs
+                }
 
                 Initialize-DockerNetworks `
                     -Session $Session `
@@ -158,11 +161,16 @@ Test-WithRetries 3 {
 
                 foreach ($Session in $Sessions) {
                     Remove-DockerNetwork -Session $Session -Name $Network.Name
-                    Clear-ComputeNode `
-                        -Session $Session `
-                        -SystemConfig $SystemConfig
                 }
-                Clear-Logs -LogSources $LogSources
+
+                if ($PrepareEnv) {
+                    foreach ($Session in $Sessions) {
+                        Clear-ComputeNode `
+                            -Session $Session `
+                            -SystemConfig $SystemConfig
+                    }
+                    Clear-Logs -LogSources $LogSources
+                }
 
                 Write-Log "Deleting virtual network"
                 if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {

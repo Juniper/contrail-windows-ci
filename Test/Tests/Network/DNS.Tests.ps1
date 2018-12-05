@@ -15,6 +15,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+. $PSScriptRoot\..\..\Utils\Initialize-Testbed.ps1
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
@@ -123,17 +124,18 @@ function Start-DNSServerOnTestBed {
 function Set-DNSServerAddressOnTestBed {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $ClientSession,
-        [Parameter(Mandatory=$true)] [PSSessionT] $ServerSession
+        [Parameter(Mandatory=$true)] [PSSessionT] $ServerSession,
+        [Parameter(Mandatory=$true)] [string] $InterfaceAlias
     )
     $DefaultDNSServerAddress = Invoke-Command -Session $ServerSession -ScriptBlock {
-        Get-NetIPAddress -InterfaceAlias "Ethernet0" | Where-Object { $_.AddressFamily -eq 2 } | Select-Object -ExpandProperty IPAddress
+        Get-NetIPAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object { $_.AddressFamily -eq 2 } | Select-Object -ExpandProperty IPAddress
     }
     Write-Log "Setting default DNS Server on test bed for: $DefaultDNSServerAddress..."
     $OldDNSs = Invoke-Command -Session $ClientSession -ScriptBlock {
-        Get-DnsClientServerAddress -InterfaceAlias "Ethernet0" | Where-Object {$_.AddressFamily -eq 2} | Select-Object -ExpandProperty ServerAddresses
+        Get-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object {$_.AddressFamily -eq 2} | Select-Object -ExpandProperty ServerAddresses
     }
     Invoke-Command -Session $ClientSession -ScriptBlock {
-        Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" -ServerAddresses $Using:DefaultDNSServerAddress
+        Set-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias -ServerAddresses $Using:DefaultDNSServerAddress
     }
 
     return $OldDNSs
@@ -206,8 +208,10 @@ Test-WithRetries 1 {
             )]
             [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
+            Install-DNSTestDependencies -Sessions $MultiNode.Sessions
             Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
 
+            $MgmtAdapterName = $MultiNode.Configs.System.MgmtAdapterName
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "OldDNSs",
@@ -215,7 +219,8 @@ Test-WithRetries 1 {
             )]
             $OldDNSs = Set-DNSServerAddressOnTestBed `
                            -ClientSession $MultiNode.Sessions[0] `
-                           -ServerSession $MultiNode.Sessions[1]
+                           -ServerSession $MultiNode.Sessions[1] `
+                           -InterfaceAlias $MgmtAdapterName
 
             Write-Log "Creating Virtual DNS Server in Contrail..."
             $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
@@ -251,8 +256,6 @@ Test-WithRetries 1 {
                 [Parameter(Mandatory=$true)] [IPAMDNSSettings] $DNSSettings
             )
 
-
-
             $IPAM = [IPAM]::New()
             $IPAM.DNSSettings = $DNSSettings
             $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
@@ -264,7 +267,6 @@ Test-WithRetries 1 {
                     -Networks @($Network) `
                     -Configs $MultiNode.Configs
             }
-
 
             Start-Container -Session $MultiNode.Sessions[0] `
                 -ContainerID $ContainersIDs[0] `
@@ -313,7 +315,7 @@ Test-WithRetries 1 {
                 if (Get-Variable "OldDNSs" -ErrorAction SilentlyContinue) {
                     Write-Log "Restoring old DNS servers on test bed..."
                     Invoke-Command -Session $MultiNode.Sessions[0] -ScriptBlock {
-                        Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" -ServerAddresses $Using:OldDNSs
+                        Set-DnsClientServerAddress -InterfaceAlias $Using:MgmtAdapterName -ServerAddresses $Using:OldDNSs
                     }
                 }
 

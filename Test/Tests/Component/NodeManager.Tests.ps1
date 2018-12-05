@@ -1,6 +1,7 @@
 Param (
     [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
     [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
 )
 
@@ -76,7 +77,7 @@ function Test-ControllerReceivesNodeStatus {
     return $true
 }
 
-Describe "Node manager" {
+Describe "Node manager" -Tag "Smoke" {
     It "starts" {
         Eventually {
             Test-NodeMgrLogs -Session $Session | Should Be True
@@ -111,14 +112,7 @@ Describe "Node manager" {
         )]
         $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
 
-        foreach ($Session in $MultiNode.Sessions) {
-            Install-Components -Session $Session
-        }
-
         $Session = $MultiNode.Sessions[0]
-
-        $Session = $MultiNode.Sessions[0]
-
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "LogSources",
@@ -126,22 +120,25 @@ Describe "Node manager" {
         )]
         [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
 
-        Clear-NodeMgrLogs -Session $Session
+        if ($PrepareEnv) {
+            Install-Components -Session $Session
+            Clear-NodeMgrLogs -Session $Session
 
-        Initialize-ComputeServices `
-            -Session $Session `
-            -SystemConfig $MultiNode.Configs.System `
-            -OpenStackConfig $MultiNode.Configs.OpenStack `
-            -ControllerConfig $MultiNode.Configs.Controller
+            Initialize-ComputeServices `
+                -Session $Session `
+                -SystemConfig $MultiNode.Configs.System `
+                -OpenStackConfig $MultiNode.Configs.OpenStack `
+                -ControllerConfig $MultiNode.Configs.Controller
+        }
     }
 
     AfterAll {
         if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
 
-            foreach ($Session in $MultiNode.Sessions) {
-                Uninstall-Components -Session $Session
+            if ($PrepareEnv) {
+                Clear-ComputeNode -Session $Session -SystemConfig $MultiNode.Configs.System
+                Clear-Logs -LogSources $LogSources
             }
-            Clear-Logs -LogSources $LogSources
 
             Remove-MultiNodeSetup -MultiNode $MultiNode
             Remove-Variable "MultiNode"
