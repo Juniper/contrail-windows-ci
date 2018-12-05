@@ -148,10 +148,8 @@ Describe "Floating IP" -Tag "Smoke" {
                 }
 
                 Write-Log "Deleting network policy"
-                if (Get-Variable ContrailPolicy -ErrorAction SilentlyContinue) {
-                    $NetworkPolicy = [NetworkPolicy]::new($PolicyName, $MultiNode.NM.DefaultTenantName)
-                    $NetworkPolicyRepo.Remove($NetworkPolicy) | Out-Null
-                }
+                $NetworkPolicy = [NetworkPolicy]::new($PolicyName, $MultiNode.NM.DefaultTenantName)
+                $NetworkPolicyRepo.Remove($NetworkPolicy) | Out-Null
             }
 
             BeforeEach {

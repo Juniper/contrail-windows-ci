@@ -26,8 +26,9 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\DNSServer.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\DNSRecord.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\Ipam.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\VirtualNetwork.ps1
 
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
@@ -45,17 +46,15 @@ $TenantDNSServerAddress = "10.0.5.80"
 
 $VirtualDNSServer = [DNSServer]::New("CreatedForTest")
 
-$VirtualDNSrecords = @([DNSRecord]::New("vdnsrecord-nonetest", "1.1.1.1", "A", $VirtualDNSServer.GetFQName()),
-                       [DNSRecord]::New("vdnsrecord-defaulttest", "1.1.1.2", "A", $VirtualDNSServer.GetFQName()),
-                       [DNSRecord]::New("vdnsrecord-virtualtest", "1.1.1.3", "A", $VirtualDNSServer.GetFQName()),
-                       [DNSRecord]::New("vdnsrecord-tenanttest", "1.1.1.4", "A", $VirtualDNSServer.GetFQName())
-)
+$VirtualDNSrecords = @([DNSRecord]::New('vnone', $VirtualDNSServer.GetFQName(), "vdnsrecord-nonetest", "1.1.1.1", "A"),
+                       [DNSRecord]::New('vdefa', $VirtualDNSServer.GetFQName(), "vdnsrecord-defaulttest", "1.1.1.2", "A"),
+                       [DNSRecord]::New('vvirt', $VirtualDNSServer.GetFQName(), "vdnsrecord-virtualtest", "1.1.1.3", "A"),
+                       [DNSRecord]::New('vtena', $VirtualDNSServer.GetFQName(), "vdnsrecord-tenanttest", "1.1.1.4", "A"))
 
-$DefaultDNSrecords = @([DNSRecord]::New("defaultrecord-nonetest.com", "3.3.3.1", "A", ""),
-                       [DNSRecord]::New("defaultrecord-defaulttest.com", "3.3.3.2", "A", ""),
-                       [DNSRecord]::New("defaultrecord-virtualtest.com", "3.3.3.3", "A", ""),
-                       [DNSRecord]::New("defaultrecord-tenanttest.com", "3.3.3.4", "A", "")
-)
+$DefaultDNSrecords = @([DNSRecord]::New('vnone', @(), "defaultrecord-nonetest.com", "3.3.3.1", "A"),
+                       [DNSRecord]::New('vdefa', @(), "defaultrecord-defaulttest.com", "3.3.3.2", "A"),
+                       [DNSRecord]::New('vvirt', @(), "defaultrecord-virtualtest.com", "3.3.3.3", "A"),
+                       [DNSRecord]::New('vtena', @(), "defaultrecord-tenanttest.com", "3.3.3.4", "A"))
 
 # This function is used to generate command
 # that will be passed to docker exec.
@@ -109,7 +108,7 @@ function Start-DNSServerOnTestBed {
         New-Item -ItemType Directory -Force $Using:DefaultDNSServerDir | Out-Null
         New-Item "$($Using:DefaultDNSServerDir + '\zones')" -Type File -Force
         foreach($Record in $Using:DefaultDNSrecords) {
-            Add-Content -Path "$($Using:DefaultDNSServerDir + '\zones')" -Value "$($Record.Name)    $($Record.Type)    $($Record.Data)"
+            Add-Content -Path "$($Using:DefaultDNSServerDir + '\zones')" -Value "$($Record.HostName)    $($Record.Type)    $($Record.Data)"
         }
     }
 
@@ -205,6 +204,14 @@ Test-WithRetries 1 {
                 Justification = "It's actually used."
             )]
             $VirtualNetworkRepo = [VirtualNetworkRepo]::new($MultiNode.NM)
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                "PSUseDeclaredVarsMoreThanAssignments",
+                "IPAMRepo",
+                Justification = "It's actually used."
+            )]
+            $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
+            $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
+            $DNSRecordRepo = [DNSRecordRepo]::New($MultiNode.NM)
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
@@ -224,10 +231,9 @@ Test-WithRetries 1 {
                            -ServerSession $MultiNode.Sessions[1]
 
             Write-Log "Creating Virtual DNS Server in Contrail..."
-            $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
-            $DNSServerRepo.AddDNSServer($VirtualDNSServer)
+            $DNSServerRepo.AddOrReplace($VirtualDNSServer)
             foreach($DNSRecord in $VirtualDNSrecords) {
-                $DNSServerRepo.AddDNSRecord($DNSRecord)
+                $DNSRecordRepo.Add($DNSRecord)
             }
 
             if ($PrepareEnv) {
@@ -262,8 +268,7 @@ Test-WithRetries 1 {
             )
             $IPAM = [IPAM]::New()
             $IPAM.DNSSettings = $DNSSettings
-            $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
-            $IPAMRepo.SetIpamDNSMode($IPAM)
+            $IPAMRepo.SetDNS($IPAM)
 
             foreach($Session in $MultiNode.Sessions) {
                 Initialize-DockerNetworks `
@@ -309,11 +314,8 @@ Test-WithRetries 1 {
                     Clear-Logs -LogSources $FileLogSources
                 }
 
-                if($VirtualDNSServer.Uuid) {
-                    Write-Log "Removing Virtual DNS Server from Contrail..."
-                    $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
-                    $DNSServerRepo.RemoveDNSServerWithDependencies($VirtualDNSServer)
-                }
+                Write-Log "Removing Virtual DNS Server from Contrail..."
+                $DNSServerRepo.RemoveWithDependencies($VirtualDNSServer)
 
                 if (Get-Variable "OldDNSs" -ErrorAction SilentlyContinue) {
                     Write-Log "Restoring old DNS servers on test bed..."

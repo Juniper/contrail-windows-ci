@@ -1,12 +1,14 @@
-class DNSServer {
-    [string] $Name;
-    [string] $DomainName = "default-domain";
-    [boolean] $DynamicRecordsFromClient = $true;
-    [int] $DefaultTTLInSeconds = 86400;
-    [boolean] $ExternalVisible = $false;
-    [boolean] $ReverseResolution = $false;
-    [string] $Uuid;
-    [string] $NextDNSServer = $null;
+# Those are just informative to show dependencies
+#include "DNSRecordModel.ps1"
+
+class DNSServer : BaseRepoModel {
+    [string] $Name
+    [string] $DomainName = "default-domain"
+    [boolean] $DynamicRecordsFromClient = $true
+    [int] $DefaultTTLInSeconds = 86400
+    [boolean] $ExternalVisible = $false
+    [boolean] $ReverseResolution = $false
+    [string] $NextDNSServer = $null
 
     [ValidateSet("fixed","random","round-robin")]
     [string] $RecordOrder = "random";

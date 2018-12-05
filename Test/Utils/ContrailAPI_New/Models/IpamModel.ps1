@@ -1,7 +1,7 @@
-class IPAM {
-    [string] $Name = "default-network-ipam";
-    [string] $DomainName = "default-domain";
-    [string] $ProjectName = "default-project";
+class IPAM : BaseRepoModel {
+    [string] $Name = "default-network-ipam"
+    [string] $DomainName = "default-domain"
+    [string] $ProjectName = "default-project"
     [IPAMDNSSettings] $DNSSettings = [NoneDNSSettings]::New();
 
     [String[]] GetFQName() {

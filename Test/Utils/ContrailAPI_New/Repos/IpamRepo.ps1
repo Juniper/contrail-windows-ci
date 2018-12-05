@@ -1,13 +1,9 @@
-class IPAMRepo {
-    [String] $IPAMResourceName = "network-ipam"
+class IPAMRepo : BaseRepo {
+    [String] $ResourceName = 'network-ipam'
 
-    [ContrailNetworkManager] $API
+    IPAMRepo([ContrailNetworkManager] $API) : base($API) {}
 
-    IPAMRepo ([ContrailNetworkManager] $API) {
-        $this.API = $API
-    }
-
-    SetIpamDNSMode ([IPAM] $IPAM) {
+    [Void] SetDNS ([IPAM] $IPAM) {
         $Request = @{
             "network-ipam" = @{
                 "network_ipam_mgmt" = @{"ipam_dns_method" = $IPAM.DNSSettings.DNSMode }
@@ -22,12 +18,12 @@ class IPAMRepo {
             $this.AddVirtualDNSInformation($IPAM.DNSSettings, $Request)
         }
 
-        $IpamUuid = $this.API.FQNameToUuid($this.IPAMResourceName, $IPAM.GetFQName())
+        $Uuid = $this.API.FQNameToUuid($this.ResourceName, $IPAM.GetFQName())
 
-        $this.API.Put($this.IPAMResourceName, $IpamUuid, $Request)
+        $this.API.Put($this.ResourceName, $Uuid, $Request)
     }
 
-    hidden AddTenantDNSInformation ([TenantDNSSettings] $TenantDNSSettings, $Request) {
+    hidden [void] AddTenantDNSInformation ([TenantDNSSettings] $TenantDNSSettings, $Request) {
         $DNSServer = @{
             "ipam_dns_server" = @{
                 "tenant_dns_server_address" = @{
@@ -39,7 +35,7 @@ class IPAMRepo {
         $Request."network-ipam"."network_ipam_mgmt" += $DNSServer
     }
 
-    hidden AddVirtualDNSInformation ([VirtualDNSSettings] $VirtualDNSSettings, $Request) {
+    hidden [void] AddVirtualDNSInformation ([VirtualDNSSettings] $VirtualDNSSettings, $Request) {
 
         $VirtualServerUuid = $this.API.FQNameToUuid("virtual-DNS", $VirtualDNSSettings.FQServerName)
         $VirtualServerUrl = $this.API.GetResourceUrl("virtual-DNS", $VirtualServerUuid)
