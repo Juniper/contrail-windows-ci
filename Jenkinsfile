@@ -310,6 +310,7 @@ pipeline {
                         dir('TestReports') {
                             tryUnstash('cnmPluginJUnitLogs')
                             tryUnstash('detailedLogs')
+                            gzipRecursive("*.txt")
                         }
                         tryUnstash('unitTestsLogs')
 

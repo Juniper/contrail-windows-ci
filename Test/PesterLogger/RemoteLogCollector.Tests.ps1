@@ -39,6 +39,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     It "appends collected logs to correct output file" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         "remote log text" | Add-Content $DummyLog1
+        "another line" | Add-Content $DummyLog1
 
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
@@ -46,9 +47,27 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         Merge-Logs -LogSources $Source1
 
         $Messages = Get-Content "TestDrive:\RemoteLogCollector.appends collected logs to correct output file.txt" |
-            ConvertTo-LogItem | Foreach-Object Message
+            ConvertTo-LogItem | ForEach-Object { $_.Message }
         "first message" | Should -BeIn $Messages
         "remote log text" | Should -BeIn $Messages
+        "another line" | Should -BeIn $Messages
+    }
+
+    It "doesn't print any empty newlines" {
+        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
+        "remote log text" | Add-Content $DummyLog1
+
+        Initialize-PesterLogger -OutDir "TestDrive:\"
+        Write-Log "first message"
+
+        Merge-Logs -LogSources $Source1
+
+        $Content = Get-Content "TestDrive:\RemoteLogCollector.doesn't print any empty newlines.txt"
+        # We expect three lines:
+        # 1. "first message"
+        # 2. name of remote log file
+        # 3. "remote log text"
+        $Content.Length | Should -Be 3
     }
 
     It "cleans logs in source directory" {
@@ -70,19 +89,6 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
         Merge-Logs -DontCleanUp -LogSources $Source1
 
         Get-Content $DummyLog1 | Should -Not -Be $null
-    }
-
-    It "tags the messages with file basename" {
-        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
-        "remote log text" | Add-Content $DummyLog1
-
-        Initialize-PesterLogger -OutDir "TestDrive:\"
-        Write-Log "first message"
-
-        Merge-Logs -LogSources $Source1
-
-        Get-Content "TestDrive:\RemoteLogCollector.tags the messages with file basename.txt" |
-            ConvertTo-LogItem | ForEach-Object Tag | Should -Contain $DummyLog1Basename
     }
 
     It "adds a prefix describing source directory" {

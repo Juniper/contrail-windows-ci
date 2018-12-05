@@ -142,7 +142,14 @@ class EventLogLogSource : LogSource {
                 $Content = Get-EventLog `
                     -LogName $LogName `
                     -Source $LogSource `
-                    -Index ($StartEventIdx..$EndEventIdx) | Format-Table -Wrap | Out-String
+                    -Index ($StartEventIdx..$EndEventIdx) | `
+                        # Steps below ensure that the table outputted by `Get-EventLog` doesn't
+                        # trim the `Message` field. I don't think there is a better way to do it.
+                        Out-String -Width 4096 | ` # Casts each Entry object to very wide string.
+                                                   # It right-pads the strings.
+                                                   # Then it merges all those strings into one...
+                        ForEach-Object { $_.Split([Environment]::Newline) } | ` # ...so split it...
+                        ForEach-Object { $_.Trim() } # ... and trim all the right-padding.
             } catch {
                 return @{
                     Name = $Name
@@ -211,17 +218,18 @@ class ContainerLogSource : LogSource {
             docker logs $Using:this.Container
         }
         $Name = "$( $this.Container ) container logs"
+        $Output = $Command.Output -join [Environment]::Newline
 
         $Log = if ($Command.ExitCode -eq 0) {
             [ValidCollectedLog] @{
                 Name = $Name
                 Tag = $this.Container
-                Content = $Command.Output
+                Content = $Output
             }
         } else {
             [InvalidCollectedLog] @{
                 Name = $Name
-                Err = $Command.Output
+                Err = $Output
             }
         }
         return $Log
@@ -296,26 +304,23 @@ function Merge-Logs {
 
     foreach ($LogSource in $LogSources) {
         $SourceHost = if ($LogSource.Session) {
-            $LogSource.Session.ComputerName
+            "Testbed machine $($LogSource.Session.ComputerName)"
         } else {
             "localhost"
         }
-        $ComputerNamePrefix = "Logs from $($SourceHost): "
-        Write-Log ("=" * 100)
-        Write-Log $ComputerNamePrefix
 
         foreach ($Log in $LogSource.GetContent()) {
             if ($Log -is [ValidCollectedLog]) {
-                Write-Log ("-" * 100)
-                Write-Log "Contents of $( $Log.Name ):"
+                $Tag = "$SourceHost -> $($Log.Tag)"
+                Write-Log -Tag $Tag "<$($Log.Name)>"
                 if ($Log.Content) {
-                    Write-Log -NoTimestamp -Tag $Log.Tag $Log.Content
+                    Write-Log -NoTimestamp -NoTag $Log.Content
                 } else {
-                    Write-Log "<EMPTY>"
+                    Write-Log -NoTimestamp -NoTag "<EMPTY>"
                 }
             } else {
-                Write-Log "Error retrieving $( $Log.Name ):"
-                Write-Log $Log.Err
+                $Tag = "$SourceHost -> ERROR"
+                Write-Log -Tag $Tag "Error retrieving $($Log.Name): $($Log.Err)"
             }
         }
         
@@ -323,8 +328,6 @@ function Merge-Logs {
             $LogSource.ClearContent()
         }
     }
-
-    Write-Log ("=" * 100)
 }
 
 function Clear-Logs {

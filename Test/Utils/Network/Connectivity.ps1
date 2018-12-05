@@ -17,16 +17,32 @@ function Test-Ping {
         docker exec $Using:SrcContainerName powershell `
             "ping -l $Using:BufferSize $Using:DstIP; `$LASTEXITCODE;"
     }
-    $Output = $Res[0..($Res.length - 2)]
-    Write-Log "Ping output: $Output"
+    $Output = $Res[0..($Res.length - 2)] -join [Environment]::Newline
+    $ExitCode = $Res[-1]
 
-    if ($Res[-1] -eq "0") {
+    Write-Log "Ping output:"
+    Write-Log -NoTimestamp -NoTag "$Output"
+
+    if ($ExitCode -eq "0") {
         # Ping's exit code suggests everything worked, but
         # "Destination host unreachable" also returns exit code 0,
         # therefore we parse output to make sure it actually passed.
         # We check if the last ping (out of 4) returned the time
         # it took, because "host unreachable" doesn't return the time.
-        if ($Output[5] | Select-String "[0-9] *ms") {
+
+        # Ping sends 4 packets. Typical output is:
+        # ```
+        # Pinging 10.2.2.10 with 32 bytes of data:
+        # Reply from 10.2.2.10: bytes=32 time=4ms TTL=127
+        # Reply from 10.2.2.10: bytes=32 time=1ms TTL=127
+        # Reply from 10.2.2.10: bytes=32 time=1ms TTL=127
+        # Reply from 10.2.2.10: bytes=32 time=1ms TTL=127
+        # ```
+        # We only check the last result (fifth line):
+        $LastPingReplyLine = $Res[5]
+
+        # We use ` *` in the regex, because in some locales, ping command puts some spaces there
+        if ($LastPingReplyLine | Select-String "[0-9] *ms") {
             return 0
         }
         else {
@@ -51,9 +67,13 @@ function Test-TCP {
         docker exec $Using:SrcContainerName powershell `
             "Invoke-WebRequest -Uri http://${Using:DstIP}:8080/ -UseBasicParsing -ErrorAction Continue; `$LASTEXITCODE"
     }
-    $Output = $Res[0..($Res.length - 2)]
-    Write-Log "Web request output: $Output"
-    return $Res[-1]
+    $Output = $Res[0..($Res.length - 2)] -join [Environment]::Newline
+    $ExitCode = $Res[-1]
+
+    Write-Log "Web request output:"
+    Write-Log -NoTimestamp -NoTag "$Output"
+
+    return $ExitCode
 }
 
 function Test-UDP {
@@ -81,6 +101,9 @@ function Test-UDP {
         -ContainerName $ClientContainerName `
         -ListenerPort $UDPClientPort
 
+    Write-Log "Sending message:"
+    Write-Log -NoTimestamp -NoTag "$Message"
+
     Write-Log "Sending UDP packet from container $ClientContainerName..."
     Send-UDPFromContainer `
         -Session $ClientContainerSession `
@@ -95,8 +118,8 @@ function Test-UDP {
     $ReceivedMessage = Stop-UDPListenerInContainerAndFetchResult -Session $ClientContainerSession
     Stop-EchoServerInContainer -Session $ListenerContainerSession
 
-    Write-Log "Sent message: $Message"
-    Write-Log "Received message: $ReceivedMessage"
+    Write-Log "Received message:"
+    Write-Log -NoTimestamp -NoTag "$ReceivedMessage"
     if ($ReceivedMessage -eq $Message) {
         return $true
     } else {

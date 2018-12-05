@@ -23,10 +23,10 @@ function Initialize-PesterLogger {
 
     $WriteLogFunc = {
         Param(
-            [Parameter(Mandatory = $true)] [object] $Message,
-            [parameter(ValueFromRemainingArguments=$true)] $WriterArgs,
+            [Parameter(Mandatory=$false)] [Switch] $NoTimestamps,
+            [Parameter(Mandatory=$false)] [Switch] $NoTag,
             [Parameter(Mandatory=$false)] [string] $Tag = "test-runner",
-            [Switch] $NoTimestamps
+            [Parameter(Position=0,Mandatory=$true)][AllowNull()] [object] $Message
         )
 
         $Scope = & $DeducerFunc
@@ -35,7 +35,7 @@ function Initialize-PesterLogger {
             throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':', '/', etc."
         }
         $Outpath = Join-Path $Script:ConstOutdir $Filename
-        & $WriterFunc -Path $Outpath -Value $Message -Tag $Tag -UseTimestamps (-not $NoTimestamps)
+        & $WriterFunc -Path $Outpath -Value $Message -Tag $Tag -NoTimestamps $NoTimestamps -NoTag $NoTag
     }.GetNewClosure()
 
     Register-NewFunc -Name "Write-LogImpl" -Func $WriteLogFunc
@@ -44,27 +44,39 @@ function Initialize-PesterLogger {
 function Write-LogToFile {
     Param(
         [Parameter(Mandatory=$true)] [string] $Path,
-        [Parameter(Mandatory=$true)] [object] $Value,
-        [Parameter(Mandatory=$true)] [bool] $UseTimestamps,
-        [Parameter(Mandatory=$false)] [string] $Tag
+        [Parameter(Mandatory=$true)][AllowNull()] [object] $Value,
+        [Parameter(Mandatory=$false)] [string] $Tag,
+        [Parameter(Mandatory=$true)] [bool] $NoTimestamps,
+        [Parameter(Mandatory=$true)] [bool] $NoTag
     )
+
+    if (-not $Value) {
+        $Value = "<EMPTY>"
+    }
 
     $TimestampFormatString = 'yyyy-MM-dd HH:mm:ss.ffffff'
 
-    $Prefix = if ($UseTimestamps) {
+    $Prefix = if (-not ($NoTimestamps)) {
         Get-Date -Format $TimestampFormatString
     } else {
         " " * $TimestampFormatString.Length
     }
-    $Prefix += " | " + $Tag + " | "
-
-    $PrefixedValue = $Value | ForEach-Object {
-        if ($_ -is [String]) {
-            $_.Split([Environment]::NewLine)
+    $Prefix += if (-not ($NoTag)) {
+        " | $Tag | "
+    } else {
+        "        | "
+    }
+    
+    $SplitValue = $Value | ForEach-Object {
+        if ($_ -is [string]) {
+            $_.Split([Environment]::Newline, [StringSplitOptions]::RemoveEmptyEntries)
         } else {
-            $_
+            # Trim, because Out-String sometimes adds whitespace for some reason
+            ($_ | Out-String).Trim()
         }
-    } | ForEach-Object {
+    }
+
+    $PrefixedValue = $SplitValue | ForEach-Object {
         $Prefix + $_
     }
 
@@ -115,11 +127,34 @@ function ConvertTo-LogItem {
     # separated components, assuming "timestamp | tag | message" format.
 
     Process {
-        $Timestamp, $Tag, $Message = $Line.Split("|", 3)
+        $Tag = ""
+        $Timestamp = ""
+        $Message = ""
+
+        $Tuple = $Line.Split("|")
+        if ($Tuple.Length -eq 2) {
+            # The was one separator, e.g.
+            # ```
+            #                            | remote log text
+            # ```
+            $Message = $Tuple[1]
+        } elseif ($Tuple.Length -eq 3) {
+            # There were two separators, e.g.
+            # ```
+            # 2018-11-27 11:53:44.544036 | test-runner | foo
+            # ```
+            $Timestamp, $Tag, $Message = $Tuple
+        }
+        
+        if ($Message.Length -gt 0) {
+            # Skip first empty space in message
+            $Message = $Message.Substring(1)
+        }
+
         [LogItem] @{
             Timestamp = $Timestamp.Trim()
             Tag = $Tag.Trim()
-            Message = $Message.Substring(1)
+            Message = $Message
         }
     }
 }
