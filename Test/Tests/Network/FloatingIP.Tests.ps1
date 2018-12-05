@@ -113,8 +113,8 @@ Describe "Floating IP" -Tag "Smoke" {
 
                 $ClientVirtualNetwork.NetworkPolicys = @($NetworkPolicy)
                 $ServerVirtualNetwork.NetworkPolicys = @($NetworkPolicy)
-                $VirtualNetworkRepo.SetPolicy($ClientVirtualNetwork)
-                $VirtualNetworkRepo.SetPolicy($ServerVirtualNetwork)
+                $VirtualNetworkRepo.Set($ClientVirtualNetwork)
+                $VirtualNetworkRepo.Set($ServerVirtualNetwork)
 
                 foreach ($Session in $MultiNode.Sessions) {
                     Initialize-DockerNetworks `
@@ -177,7 +177,7 @@ Describe "Floating IP" -Tag "Smoke" {
 
                 $ContrailFloatingIp.PortFqNames = $PortFqNames
 
-                $FloatingIpRepo.SetPorts($ContrailFloatingIp)
+                $FloatingIpRepo.Set($ContrailFloatingIp)
             }
 
             AfterEach {
@@ -216,19 +216,19 @@ Describe "Floating IP" -Tag "Smoke" {
                 "NetworkPolicyRepo",
                 Justification = "It's actually used."
             )]
-            $NetworkPolicyRepo = [NetworkPolicyRepo]::new($MultiNode.NM)
+            $NetworkPolicyRepo = [ContrailRepo]::new($MultiNode.NM)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "FloatingIpPoolRepo",
                 Justification = "It's actually used."
             )]
-            $FloatingIpPoolRepo = [FloatingIpPoolRepo]::new($MultiNode.NM)
+            $FloatingIpPoolRepo = [ContrailRepo]::new($MultiNode.NM)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "FloatingIpRepo",
                 Justification = "It's actually used."
             )]
-            $FloatingIpRepo = [FloatingIpRepo]::new($MultiNode.NM)
+            $FloatingIpRepo = [ContrailRepo]::new($MultiNode.NM)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "VirtualNetworkRepo",

@@ -1,7 +1,7 @@
 # Those are just informative to show dependencies
 #include "PolicyRuleModel.ps1"
 
-class NetworkPolicy : BaseRepoModel {
+class NetworkPolicy : BaseResourceModel {
     [string] $Name
     [string] $ProjectName
     [string] $DomainName = 'default-domain'
@@ -28,5 +28,28 @@ class NetworkPolicy : BaseRepoModel {
         $rule.Action = [SimplePassRuleAction]::new()
         $policy.PolicyRules += $rule
         return $policy
+    }
+
+    [String] $ResourceName = 'network-policy'
+    [String] $ParentType = 'project'
+
+    [PSobject] GetRequest() {
+        $NetworkPolicyEntries = @{
+            policy_rule = @()
+        }
+
+        foreach ($PolicyRule in $this.PolicyRules) {
+            $NetworkPolicyEntries.policy_rule += $PolicyRule.GetRequest()
+        }
+
+        $Request = @{
+            "network-policy" = @{
+                name                   = $this.Name
+                display_name           = $this.Name
+                network_policy_entries = $NetworkPolicyEntries
+            }
+        }
+
+        return $Request
     }
 }

@@ -1,7 +1,6 @@
 # Dotsource needed files above this line
 . $PSScriptRoot\..\ContrailNetworkManager.ps1
-. $PSScriptRoot\Models\BaseRepoModel.ps1
-. $PSScriptRoot\Repos\BaseRepo.ps1
+. $PSScriptRoot\Models\BaseResourceModel.ps1
+. $PSScriptRoot\Repos\ContrailRepo.ps1
 . $PSScriptRoot\Models\DNSRecordModel.ps1
 . $PSScriptRoot\Models\DNSServerModel.ps1
-. $PSScriptRoot\Repos\DNSServerRepo.ps1

@@ -109,7 +109,7 @@ Test-WithRetries 3 {
                 BeforeEach {
                     # TODO Restore setting that was before test
                     $GlobalVrouterConfig = [GlobalVrouterConfig]::new(@($TunnelingMethod))
-                    $GlobalVrouterConfigRepo.SetEncapPriorities($GlobalVrouterConfig)
+                    $GlobalVrouterConfigRepo.Set($GlobalVrouterConfig)
 
                     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                         "PSUseDeclaredVarsMoreThanAssignments",
@@ -223,13 +223,13 @@ Test-WithRetries 3 {
                 "GlobalVrouterConfigRepo",
                 Justification = "It's actually used."
             )]
-            $GlobalVrouterConfigRepo = [GlobalVrouterConfigRepo]::new($MultiNode.NM)
+            $GlobalVrouterConfigRepo = [ContrailRepo]::new($MultiNode.NM)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "VirtualNetworkRepo",
                 Justification = "It's actually used."
             )]
-            $VirtualNetworkRepo = [VirtualNetworkRepo]::new($MultiNode.NM)
+            $VirtualNetworkRepo = [ContrailRepo]::new($MultiNode.NM)
 
             Write-Log "Creating virtual network: $($Network.Name)"
             $VirtualNetworkSubnet = [Subnet]::new(

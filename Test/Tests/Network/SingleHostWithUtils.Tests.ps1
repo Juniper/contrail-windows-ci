@@ -220,14 +220,14 @@ Describe "Single compute node protocol tests with utils" {
             Justification = "It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
         $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
-        $ProjectRepo = [ProjectRepo]::new($ContrailNM)
-        $SecurityGroupRepo = [SecurityGroupRepo]::new($ContrailNM)
+        $ProjectRepo = [ContrailRepo]::new($ContrailNM)
+        $SecurityGroupRepo = [ContrailRepo]::new($ContrailNM)
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "VirtualNetworkRepo",
             Justification = "It's actually used."
         )]
-        $VirtualNetworkRepo = [VirtualNetworkRepo]::new($ContrailNM)
+        $VirtualNetworkRepo = [ContrailRepo]::new($ContrailNM)
 
         $Project = [Project]::new($ContrailNM.DefaultTenantName)
         $ProjectRepo.AddOrReplace($Project) | Out-Null

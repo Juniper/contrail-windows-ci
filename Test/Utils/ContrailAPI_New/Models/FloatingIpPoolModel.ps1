@@ -1,4 +1,4 @@
-class FloatingIpPool : BaseRepoModel {
+class FloatingIpPool : BaseResourceModel {
     [string] $Name
     [string] $NetworkName
     [string] $ProjectName
@@ -12,5 +12,14 @@ class FloatingIpPool : BaseRepoModel {
 
     [String[]] GetFQName() {
         return @($this.DomainName, $this.ProjectName, $this.NetworkName, $this.Name)
+    }
+
+    [String] $ResourceName = 'floating-ip-pool'
+    [String] $ParentType = 'virtual-network'
+
+    [PSobject] GetRequest() {
+        return @{
+            'floating-ip-pool' = @{}
+        }
     }
 }

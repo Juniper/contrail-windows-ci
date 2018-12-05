@@ -42,9 +42,9 @@ function New-MultiNodeSetup {
     Set-ConfAndLogDir -Sessions $Sessions
 
     $ContrailNM = [ContrailNetworkManager]::new($Configs)
-    $ProjectRepo = [ProjectRepo]::new($ContrailNM)
-    $VirtualRouterRepo = [VirtualRouterRepo]::new($ContrailNM)
-    $SecurityGroupRepo = [SecurityGroupRepo]::new($ContrailNM)
+    $ProjectRepo = [ContrailRepo]::new($ContrailNM)
+    $VirtualRouterRepo = [ContrailRepo]::new($ContrailNM)
+    $SecurityGroupRepo = [ContrailRepo]::new($ContrailNM)
 
     $Project = [Project]::new($ContrailNM.DefaultTenantName)
     $ProjectRepo.AddOrReplace($Project) | Out-Null
@@ -69,8 +69,8 @@ function Remove-MultiNodeSetup {
         [Parameter(Mandatory = $true)] [MultiNode] $MultiNode
     )
 
-    $VirtualRouterRepo = [VirtualRouterRepo]::new($MultiNode.NM)
-    $ProjectRepo = [ProjectRepo]::new($MultiNode.NM)
+    $VirtualRouterRepo = [ContrailRepo]::new($MultiNode.NM)
+    $ProjectRepo = [ContrailRepo]::new($MultiNode.NM)
 
     foreach ($VRouter in $MultiNode.VRouters) {
         Write-Log "Removing virtual router: $($VRouter.Name)"

@@ -203,15 +203,15 @@ Test-WithRetries 1 {
                 "VirtualNetworkRepo",
                 Justification = "It's actually used."
             )]
-            $VirtualNetworkRepo = [VirtualNetworkRepo]::new($MultiNode.NM)
+            $VirtualNetworkRepo = [ContrailRepo]::new($MultiNode.NM)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "IPAMRepo",
                 Justification = "It's actually used."
             )]
-            $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
-            $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
-            $DNSRecordRepo = [DNSRecordRepo]::New($MultiNode.NM)
+            $IPAMRepo = [ContrailRepo]::New($MultiNode.NM)
+            $DNSServerRepo = [ContrailRepo]::New($MultiNode.NM)
+            $DNSRecordRepo = [ContrailRepo]::New($MultiNode.NM)
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
@@ -268,7 +268,7 @@ Test-WithRetries 1 {
             )
             $IPAM = [IPAM]::New()
             $IPAM.DNSSettings = $DNSSettings
-            $IPAMRepo.SetDNS($IPAM)
+            $IPAMRepo.Set($IPAM)
 
             foreach($Session in $MultiNode.Sessions) {
                 Initialize-DockerNetworks `

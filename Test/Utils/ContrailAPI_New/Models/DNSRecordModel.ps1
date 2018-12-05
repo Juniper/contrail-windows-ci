@@ -1,8 +1,8 @@
-class DNSRecord : BaseRepoModel {
+class DNSRecord : BaseResourceModel {
     [string] $Name
     [string[]] $ServerFQName
 
-    [ValidateSet("A","AAAA","CNAME","PTR","NS","MX")]
+    [ValidateSet("A", "AAAA", "CNAME", "PTR", "NS", "MX")]
     [string] $Type
     [string] $HostName
     [string] $Data
@@ -19,5 +19,26 @@ class DNSRecord : BaseRepoModel {
 
     [String[]] GetFQName() {
         return $this.ServerFQName + @($this.Name)
+    }
+
+    [String] $ResourceName = 'virtual-DNS-record'
+    [String] $ParentType = 'virtual-DNS'
+
+    [PSobject] GetRequest() {
+        $VirtualDNSRecord = @{
+            record_name         = $this.HostName
+            record_type         = $this.Type
+            record_class        = $this.Class
+            record_data         = $this.Data
+            record_ttl_seconds  = $this.TTLInSeconds
+        }
+
+        $Request = @{
+            'virtual-DNS-record' = @{
+                virtual_DNS_record_data = $VirtualDNSRecord
+            }
+        }
+
+        return $Request
     }
 }

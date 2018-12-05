@@ -1,7 +1,7 @@
 # Those are just informative to show dependencies
 #include "PolicyRuleModel.ps1"
 
-class SecurityGroup : BaseRepoModel {
+class SecurityGroup : BaseResourceModel {
     [string] $Name
     [string] $ProjectName
     [string] $DomainName = 'default-domain'
@@ -30,5 +30,26 @@ class SecurityGroup : BaseRepoModel {
         $rule2.DestinationPorts = [PortRange]::new_Full()
         $group.PolicyRules += @($rule1, $rule2)
         return $group
+    }
+
+    [String] $ResourceName = 'security-group'
+    [String] $ParentType = 'project'
+
+    [PSobject] GetRequest() {
+        $SecurityGroupEntries = @{
+            policy_rule = @()
+        }
+
+        foreach ($PolicyRule in $this.PolicyRules) {
+            $SecurityGroupEntries.policy_rule += $PolicyRule.GetRequest()
+        }
+
+        $Request = @{
+            "security-group" = @{
+                security_group_entries = $SecurityGroupEntries
+            }
+        }
+
+        return $Request
     }
 }

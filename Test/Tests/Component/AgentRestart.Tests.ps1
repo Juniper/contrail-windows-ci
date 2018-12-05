@@ -125,7 +125,7 @@ Test-WithRetries 3 {
                 "VirtualNetworkRepo",
                 Justification = "It's actually used."
             )]
-            $VirtualNetworkRepo = [VirtualNetworkRepo]::new($MultiNode.NM)
+            $VirtualNetworkRepo = [ContrailRepo]::new($MultiNode.NM)
 
             Write-Log "Creating virtual network: $($Network.Name)"
             $VirtualNetworkSubnet = [Subnet]::new(
