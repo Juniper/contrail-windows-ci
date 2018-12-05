@@ -38,8 +38,8 @@ pipeline {
 
             environment {
                 TESTBED = credentials('win-testbed')
-                COMPUTE_NODE_TEMPLATE = "Template-testbed-201810230336"
-                DEPLOYER_TEMPLATE = "Template-testbed-201810230336"
+                COMPUTE_NODE_TEMPLATE = "Template-testbed-201812050309"
+                DEPLOYER_TEMPLATE = "Template-testbed-201812050309"
                 CONTROLLER_TEMPLATE = "Template-CentOS-7.5"
                 TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                 TESTENV_FOLDER = "WINCI/testenvs"
