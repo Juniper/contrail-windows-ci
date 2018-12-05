@@ -178,6 +178,7 @@ function New-AgentConfigFile {
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
     $AdaptersInfo = Get-AdaptersInfo -Session $Session -SystemConfig $SystemConfig
+    $AgentConfigPath = Get-DefaultAgentConfigPath
 
     Invoke-CommandWithFunctions `
         -Functions @("Get-VHostConfiguration", "Get-AgentConfig") `
@@ -190,7 +191,7 @@ function New-AgentConfigFile {
                 -VHostIfIndex $Using:AdaptersInfo.VHostIfIndex `
                 -PhysIfName $Using:AdaptersInfo.PhysIfName
 
-            Set-Content -Path $Using:SystemConfig.AgentConfigFilePath -Value $ConfigFileContent
+            Set-Content -Path $Using:AgentConfigPath -Value $ConfigFileContent
     }
 }
 

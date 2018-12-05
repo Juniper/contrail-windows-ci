@@ -128,28 +128,23 @@ function New-ServiceConfiguration {
         [Parameter(Mandatory=$true)] [string] $ServiceName,
         [Parameter(Mandatory=$true)] [string] $ExecutablePath,
         [Parameter(Mandatory=$true)] [string] $LogFileName,
-        [Parameter(Mandatory=$true)] [string[]] [AllowEmptyCollection()] $CommandLineParams
+        [Parameter(Mandatory=$false)] [string[]] $CommandLineParams = @()
     )
     return [Service]::new($ServiceName, $ExecutablePath, $LogFileName, $CommandLineParams)
 }
 
 function Get-AgentServiceConfiguration {
-    $ConfigPath = Get-DefaultAgentConfigPath
-    $ConfigFileParam = "--config_file=$ConfigPath"
-
     New-ServiceConfiguration `
         -ServiceName "contrail-vrouter-agent" `
         -ExecutablePath "C:\Program Files\Juniper Networks\agent\contrail-vrouter-agent.exe" `
-        -LogFileName (Get-AgentLogPath) `
-        -CommandLineParams @($ConfigFileParam)
+        -LogFileName (Get-AgentLogPath)
 }
 
 function Get-CNMPluginServiceConfiguration {
     New-ServiceConfiguration `
         -ServiceName "contrail-cnm-plugin" `
         -ExecutablePath "C:\Program Files\Juniper Networks\cnm-plugin\contrail-cnm-plugin.exe" `
-        -LogFileName (Get-CNMPluginServiceLogPath) `
-        -CommandLineParams @()
+        -LogFileName (Get-CNMPluginServiceLogPath)
 }
 function Get-NodeMgrLogPath {
     return Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"

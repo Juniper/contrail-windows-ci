@@ -25,7 +25,6 @@ class SystemConfig {
     [string] $AdapterName;
     [string] $VHostName;
     [string] $ForwardingExtensionName;
-    [string] $AgentConfigFilePath;
 
     [string] VMSwitchName() {
         return "Layered " + $this.AdapterName
