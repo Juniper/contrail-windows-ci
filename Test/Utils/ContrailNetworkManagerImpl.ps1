@@ -66,9 +66,10 @@ class ContrailNetworkManager {
         if($this.AuthToken) {
             $Headers = @{"X-Auth-Token" = $this.AuthToken}
         }
-
+        
+        $HeadersString = $Headers.GetEnumerator()  | ForEach-Object { "$($_.Name): $($_.Value)" }
         Write-Log "[Contrail][$Method]=>[$RequestUrl]"
-        Write-Log -NoTimestamp -NoTag "Headers:`n$Headers;`nBody:`n$Body"
+        Write-Log -NoTimestamp -NoTag "Headers:`n$HeadersString;`nBody:`n$Body"
 
         $Response = Invoke-RestMethod -Uri $RequestUrl -Headers $Headers `
             -Method $Method -ContentType "application/json" `
