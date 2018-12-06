@@ -6,6 +6,7 @@
 . $PSScriptRoot\..\ContrailAPI\SecurityGroup.ps1
 . $PSScriptRoot\..\ContrailAPI\VirtualRouter.ps1
 . $PSScriptRoot\..\Initialize-Testbed.ps1
+. $PSScriptRoot\..\ContrailAPI_New\ContrailAPI.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1

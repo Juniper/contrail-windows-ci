@@ -1,5 +1,5 @@
 # Those are just informative to show dependencies
-#include "PolicyRuleModel.ps1"
+#include "PolicyRule.ps1"
 
 class SecurityGroup : BaseResourceModel {
     [String] $Name
