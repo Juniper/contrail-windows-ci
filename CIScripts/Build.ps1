@@ -78,6 +78,12 @@ try {
         Copy-DebugDlls -OutputPath $DllsOutputDir
     }
 
+    if ($SconsBuildMode -eq "debug") {
+        $ContainerMode = "debug"
+    } else {
+        $ContainerMode = "release"
+    }
+
     if (Test-Path Env:DOCKER_REGISTRY) {
         $ContainersAttributes = @(
             [ContainerAttributes]::New("vrouter", @(
@@ -91,7 +97,7 @@ try {
         )
         Invoke-ContainersBuild -WorkDir $ContainersWorkDir `
             -ContainersAttributes $ContainersAttributes `
-            -ContainerTag "$Env:ZUUL_BRANCH-$Env:DOCKER_BUILD_NUMBER" `
+            -ContainerTag "$Env:ZUUL_BRANCH-$ContainerMode-$Env:DOCKER_BUILD_NUMBER" `
             -Registry $Env:DOCKER_REGISTRY
     }
 
