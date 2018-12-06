@@ -22,32 +22,49 @@ class ControllerConfig {
 }
 
 class SystemConfig {
-    [string] $AdapterName;
-    [string] $VHostName;
-    [string] $MgmtAdapterName;
-    [string] $ForwardingExtensionName;
+    [string] $AdapterName
+    [string] $VHostName
+    [string] $MgmtAdapterName
+    [string] $ForwardingExtensionName
 
     [string] VMSwitchName() {
         return "Layered " + $this.AdapterName
     }
 }
 
+class TestbedConfig {
+    [string] $Name
+    [string] $VMName
+    [string] $Address
+    [string] $Username
+    [string] $Password
+}
+
 class TestenvConfigs {
-    [SystemConfig] $System;
-    [OpenStackConfig] $OpenStack;
-    [ControllerConfig] $Controller;
+    [SystemConfig] $System
+    [OpenStackConfig] $OpenStack
+    [ControllerConfig] $Controller
+    [TestbedConfig[]] $Testbeds
+
+    TestenvConfigs([String] $TestenvConfFile) {
+        $this.System = Read-SystemConfig -Path $TestenvConfFile
+        $this.OpenStack = Read-OpenStackConfig -Path $TestenvConfFile
+        $this.Controller = Read-ControllerConfig -Path $TestenvConfFile
+        $this.Testbeds = Read-TestbedsConfig -Path $TestenvConfFile
+    }
 
     TestenvConfigs([SystemConfig] $System,
-                   [OpenStackConfig] $OpenStack,
-                   [ControllerConfig] $Controller) {
-        $this.System = $System;
-        $this.OpenStack = $OpenStack;
-        $this.Controller = $Controller;
+        [OpenStackConfig] $OpenStack,
+        [ControllerConfig] $Controller) {
+
+        $this.System = $System
+        $this.OpenStack = $OpenStack
+        $this.Controller = $Controller
     }
 }
 
 function Read-TestenvFile {
-    Param ([Parameter(Mandatory=$true)] [string] $Path)
+    Param ([Parameter(Mandatory = $true)] [string] $Path)
     if (-not (Test-Path $Path)) {
         throw [System.Management.Automation.ItemNotFoundException] "Testenv config file not found at specified location."
     }
@@ -57,30 +74,30 @@ function Read-TestenvFile {
 }
 
 function Read-OpenStackConfig {
-    Param ([Parameter(Mandatory=$true)] [string] $Path)
+    Param ([Parameter(Mandatory = $true)] [string] $Path)
     $Parsed = Read-TestenvFile -Path $Path
-    if($Parsed.keys -notcontains 'OpenStack') {
+    if ($Parsed.keys -notcontains 'OpenStack') {
         return $null
     }
     return [OpenStackConfig] $Parsed.OpenStack
 }
 
 function Read-ControllerConfig {
-    Param ([Parameter(Mandatory=$true)] [string] $Path)
+    Param ([Parameter(Mandatory = $true)] [string] $Path)
     $Parsed = Read-TestenvFile -Path $Path
     return [ControllerConfig] $Parsed.Controller
 }
 
 function Read-SystemConfig {
-    Param ([Parameter(Mandatory=$true)] [string] $Path)
+    Param ([Parameter(Mandatory = $true)] [string] $Path)
     $Parsed = Read-TestenvFile -Path $Path
     return [SystemConfig] $Parsed.System
 }
 
 function Read-TestbedsConfig {
-    Param ([Parameter(Mandatory=$true)] [string] $Path)
+    Param ([Parameter(Mandatory = $true)] [string] $Path)
     $Parsed = Read-TestenvFile -Path $Path
-    $Testbeds = $Parsed.Testbeds
+    [TestbedConfig[]] $Testbeds = $Parsed.Testbeds
     # The comma forces return value to always be array
-    return ,$Testbeds
+    return , $Testbeds
 }
