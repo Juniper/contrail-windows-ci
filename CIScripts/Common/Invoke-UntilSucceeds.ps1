@@ -44,7 +44,8 @@ function Invoke-UntilSucceeds {
         [Parameter(Mandatory=$false)] [String] $Name = "Invoke-UntilSucceds",
         [Switch] $AssumeTrue
     )
-
+    Write-Log "Function begins with job: $name" "[DEBUG Invoke-UntilSucceeds]"
+    Write-Log "Duration: $Duration; NumRetries $NumRetries" "[DEBUG Invoke-UntilSucceeds]"
     if ((-not $Duration) -and (-not $NumRetries)) {
         throw "Either non-zero -Duration or -NumRetries has to be specified"
     }
@@ -63,21 +64,24 @@ function Invoke-UntilSucceeds {
         throw "Interval must not be equal to zero"
     }
     $StartTime = Get-Date
-
+    Write-Log "Checks passed. Start time: --$StartTime--" "[DEBUG Invoke-UntilSucceeds]"
     $NumRetry = 0
 
     while ($true) {
         $NumRetry += 1
-
+        Write-Log "Trying to run number $NumRetry" "[DEBUG Invoke-UntilSucceeds]"
         $LastCheck = if ($Duration) {
-            ((Get-Date) - $StartTime).TotalSeconds -ge $Duration
+            $TimeElapsed = ((Get-Date) - $StartTime).TotalSeconds
+            Write-Log "TimeElapsed: $TimeElapsed" "[DEBUG Invoke-UntilSucceeds]"
+            $TimeElapsed -ge $Duration
         } else {
             $NumRetry -eq $NumRetries
         }
 
         try {
+            Write-Log "Running task. LastCheck: $LastCheck" "[DEBUG Invoke-UntilSucceeds]"
             $ReturnVal = Invoke-Command $ScriptBlock
-
+            Write-Log "Task returned with ReturnVal: $ReturnVal" "[DEBUG Invoke-UntilSucceeds]"
             if ($AssumeTrue -or $ReturnVal) {
                 return $ReturnVal
             } else {
@@ -94,6 +98,7 @@ function Invoke-UntilSucceeds {
             if ($LastCheck) {
                 throw [CITimeoutException]::new("$Name failed.", $_.Exception)
             } else {
+                Write-Log "Going to sleep for: $Interval seconds" "[DEBUG Invoke-UntilSucceeds]"
                 Start-Sleep -Seconds $Interval
             }
         }
