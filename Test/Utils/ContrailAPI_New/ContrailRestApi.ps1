@@ -87,7 +87,7 @@ class ContrailRestApi {
         [String] $Uuid, [Hashtable] $Request) {
 
         $RequestUrl = $this.GetResourceUrl($Resource, $Uuid)
-        return $this.Send()
+        return $this.SendRequest($Method, $RequestUrl, $Request)
     }
 
     [PSObject] Get([String] $Resource, [String] $Uuid, [Hashtable] $Request) {
