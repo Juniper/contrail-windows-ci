@@ -9,7 +9,7 @@ class ContrailRepo {
         $Request = $Object.GetRequest()
         $Request.$($Object.ResourceName) += @{
             parent_type = $Object.ParentType
-            fq_name     = $Object.GetFQName()
+            fq_name     = $Object.GetFqName()
         }
 
         return $this.API.Post($Object.ResourceName, $null, $Request)
@@ -29,7 +29,7 @@ class ContrailRepo {
     }
 
     [PSobject] Set([BaseResourceModel] $Object) {
-        $Uuid = $this.API.FQNameToUuid($Object.ResourceName, $Object.GetFQName())
+        $Uuid = $this.API.FqNameToUuid($Object.ResourceName, $Object.GetFqName())
         $Request = $Object.GetRequest()
 
         return $this.API.Put($Object.ResourceName, $Uuid, $Request)
@@ -44,20 +44,19 @@ class ContrailRepo {
     }
 
     Hidden [Void] RemoveObject([BaseResourceModel] $Object, [bool] $WithDependencies) {
-        $Uuid = $this.API.FQNameToUuid($Object.ResourceName, $Object.GetFQName())
+        $Uuid = $this.API.FqNameToUuid($Object.ResourceName, $Object.GetFqName())
 
         if ($WithDependencies) {
-            $this.RemoveDependencies($Object)
+            $this.RemoveDependencies($Object, $Uuid)
         }
 
         $this.API.Delete($Object.ResourceName, $Uuid, $null) | Out-Null
     }
 
-    hidden [void] RemoveDependencies([BaseResourceModel] $Object) {
+    hidden [void] RemoveDependencies([BaseResourceModel] $Object, [String] $Uuid) {
         if (-not $Object.Dependencies) {
             return
         }
-        $Uuid = $this.API.FQNameToUuid($Object.ResourceName, $Object.GetFQName())
         $Response = $this.API.Get($Object.ResourceName, $Uuid, $null)
         $Props = $Response.$($Object.ResourceName).PSobject.Properties.Name
 

@@ -4,7 +4,7 @@ class BaseResourceModel {
     [Dependency[]] $Dependencies = @()
 
     # Override in derivered
-    hidden [PSobject] GetRequest() {
+    hidden [Hashtable] GetRequest() {
         throw "Operations Add/Set not permited on object: $($this.GetType().Name)"
     }
 }
