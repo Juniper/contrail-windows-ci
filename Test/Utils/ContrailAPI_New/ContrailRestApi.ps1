@@ -5,7 +5,7 @@ class ContrailRestApi {
     [String] $ContrailUrl;
     [String] $DefaultTenantName;
 
-    ContrailRestApi([OpenStackConfig] $OpenStackConfig, [ControllerConfig] $ControllerConfig) {
+    ContrailRestApi([ControllerConfig] $ControllerConfig, [OpenStackConfig] $OpenStackConfig) {
 
         $this.ContrailUrl = $ControllerConfig.RestApiUrl()
         $this.DefaultTenantName = $ControllerConfig.DefaultProject
