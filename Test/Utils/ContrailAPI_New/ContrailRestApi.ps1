@@ -25,8 +25,8 @@ class ContrailRestApi {
         }
     }
 
-    # The token get by this method can expire.
-    # In that case all request done using it will fail.
+    # The token returned by this method can expire.
+    # In that case all requests done using it will fail.
     hidden [String] GetAccessTokenFromKeystone([OpenStackConfig] $OpenStackConfig) {
         $Request = @{
             auth = @{
@@ -76,8 +76,7 @@ class ContrailRestApi {
         Write-Log -NoTimestamp -NoTag "Headers:`n$HeadersString;`nBody:`n$Body"
 
         $Response = Invoke-RestMethod -Uri $RequestUrl -Headers $Headers `
-            -Method $Method -ContentType 'application/json' `
-            -Body $Body
+            -Method $Method -ContentType 'application/json' -Body $Body
         Write-Log '[Contrail]<= '
         Write-Log -NoTimestamp -NoTag "$Response"
         return $Response
