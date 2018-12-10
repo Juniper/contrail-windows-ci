@@ -1,6 +1,15 @@
 . $PSScriptRoot\Aliases.ps1
 . $PSScriptRoot\Exceptions.ps1
 
+# Just for debugging an issue when creating containers
+# with 'Invoke-UntilSucceeds' function blocks tests which leads
+# to aborting CI.
+# Should be deleted when all Write-Log is deleted from
+# 'Invoke-UntilSucceeds' function.
+if (-not (Get-Command 'Write-Log' -ErrorAction SilentlyContinue)) {
+    function Write-Log {}
+}
+
 class HardError : System.Exception {
     HardError([string] $msg) : base($msg) {}
     HardError([string] $msg, [System.Exception] $inner) : base($msg, $inner) {}
