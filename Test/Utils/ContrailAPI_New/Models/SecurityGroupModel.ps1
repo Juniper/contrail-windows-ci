@@ -16,8 +16,12 @@ class SecurityGroup : BaseResourceModel {
         return @($this.DomainName, $this.ProjectName, $this.Name)
     }
 
+    # This method creates a default security group for a project
+    # with policy rules that pass all incoming and outgoing traffic.
     static [SecurityGroup] new_Default([String] $ProjectName) {
         $group = [SecurityGroup]::new('default', $ProjectName)
+        # These two, created below, policy rules
+        # allow network traffic to and from security group.
         $rule1 = [PolicyRule]::new()
         $rule1.SourceAddress = [SecurityGroupAddress]::new()
         $rule1.SourcePorts = [PortRange]::new_Full()
