@@ -18,7 +18,7 @@ function Get-TestbedCredential {
 
 function New-RemoteSessions {
     Param (
-        [Parameter(Mandatory = $true)] $VMs,
+        [Parameter(Mandatory = $true)] [TestbedConfig[]] $VMs,
         $RetryCount = 10,
         $Timeout = 300000
     )
