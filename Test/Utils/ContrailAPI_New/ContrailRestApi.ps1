@@ -111,7 +111,7 @@ class ContrailRestApi {
             fq_name = $FqName
         }
         $RequestUrl = $this.ContrailUrl + '/fqname-to-id'
-        $Response = $this.Send('Post', $RequestUrl, $Request)
+        $Response = $this.SendRequest('Post', $RequestUrl, $Request)
         return $Response.'uuid'
     }
 }
