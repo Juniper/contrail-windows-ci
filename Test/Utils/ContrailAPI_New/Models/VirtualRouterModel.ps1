@@ -2,6 +2,9 @@ class VirtualRouter : BaseResourceModel {
     [String] $Name
     [String] $Ip
     [String] $ParentName = 'default-global-system-config'
+    
+    [String] $ResourceName = 'virtual-router'
+    [String] $ParentType = 'global-system-config'
 
     VirtualRouter([String] $Name, [String] $Ip) {
         $this.Name = $Name
@@ -11,9 +14,6 @@ class VirtualRouter : BaseResourceModel {
     [String[]] GetFqName() {
         return @($this.ParentName, $this.Name)
     }
-
-    [String] $ResourceName = 'virtual-router'
-    [String] $ParentType = 'global-system-config'
 
     [Hashtable] GetRequest() {
         return @{
