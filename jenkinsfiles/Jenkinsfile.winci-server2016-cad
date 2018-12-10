@@ -33,6 +33,19 @@ pipeline {
             }
         }
 
+        stage('Download Contrail Ansible Deployer') {
+            agent { label 'builder' }
+            steps {
+                deleteDir()
+
+                unstash "CIScripts"
+                retry(3) {
+                    powershell script: './CIScripts/Checkout.ps1'
+                    stash name: "contrail-ansible-deployer", includes: "contrail-ansible-deployer/**"
+                }
+            }
+        }
+
         stage('Testenv provisioning') {
             agent { label 'ansible' }
 
