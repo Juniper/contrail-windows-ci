@@ -39,7 +39,7 @@ function New-MultiNodeSetup {
 
     $Sessions = New-RemoteSessions -VMs $VMs
     Set-ConfAndLogDir -Sessions $Sessions
-    Initialize-Testbeds -Sessions $Sessions
+    Deploy-MicrosoftDockerImages -Sessions $Sessions
 
     $ContrailNM = [ContrailNetworkManager]::new($Configs)
     Add-OrReplaceContrailProject `

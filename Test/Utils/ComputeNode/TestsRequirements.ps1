@@ -7,20 +7,24 @@ function Get-DockerfilesPath {
 function Get-DNSDockerName {
     return 'python-dns'
 }
-function Initialize-Testbeds {
+function Deploy-MicrosoftDockerImages {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
     )
-    foreach($Session in $Sessions) {
-        Write-Log 'Downloading Docker images'
-        $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero {
+    Write-Log 'Downloading Docker images'
+    $StartedJobs = @()
+    ForEach ($Session in $Sessions) {
+        $JobName = "$($session.ComputerName)-pulldockerms"
+        Invoke-Command -Session $Session -JobName $JobName -AsJob {
             docker pull microsoft/windowsservercore
-        }
-        Write-Log $Result.Output
-        $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero {
             docker pull microsoft/nanoserver
-        }
-        Write-Log $Result.Output
+        } | Out-Null
+        $StartedJobs += $JobName
+    }
+    ForEach ($StartedJob in $StartedJobs) {
+        Wait-Job -Name $StartedJob | Out-Null
+        $Result = Receive-Job -Name $StartedJob
+        Write-Log "Job '$StartedJob' result: $Result"
     }
 }
 
@@ -29,7 +33,7 @@ function Install-DNSTestDependencies {
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
     )
     $DNSDockerfilePath = Join-Path (Get-DockerfilesPath) (Get-DNSDockerName)
-    foreach($Session in $Sessions) {
+    foreach ($Session in $Sessions) {
         Write-Log 'Configuring dependencies for DNS tests'
         $Result = Invoke-NativeCommand -Session $Session -AllowNonZero -CaptureOutput {
             New-Item -ItemType directory -Path $Using:DNSDockerfilePath -Force
@@ -40,7 +44,8 @@ function Install-DNSTestDependencies {
         Write-Log $Result.Output
         if ($Result.ExitCode -ne 0) {
             Write-Warning 'Installing DNS test dependecies failed'
-        } else {
+        }
+        else {
             Write-Log 'DNS test dependencies installed successfully'
         }
     }
