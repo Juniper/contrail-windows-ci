@@ -1,13 +1,15 @@
 . $PSScriptRoot\..\Common\Credentials.ps1
+. $PSScriptRoot\Testenv.ps1
 
 function Get-TestbedCredential {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText",
-        "", Justification="This are just credentials to a testbed VM.")]
-    Param ([Parameter(Mandatory = $true)] [Hashtable] $VM)
+        "", Justification = "This are just credentials to a testbed VM.")]
+    Param ([Parameter(Mandatory = $true)] [TestbedConfig] $VM)
 
-    if (-not $VM['Username'] -and -not $VM['Password']) {
+    if (-not $VM.Username -and -not $VM.Password) {
         return Get-Credential # assume interactive mode
-    } else {
+    }
+    else {
         $VMUsername = Get-UsernameInWorkgroup -Username $VM.Username
         $VMPassword = $VM.Password | ConvertTo-SecureString -AsPlainText -Force
         return New-Object PSCredentialT($VMUsername, $VMPassword)
@@ -16,7 +18,7 @@ function Get-TestbedCredential {
 
 function New-RemoteSessions {
     Param (
-        [Parameter(Mandatory = $true)] [Hashtable[]] $VMs,
+        [Parameter(Mandatory = $true)] [TestbedConfig[]] $VMs,
         $RetryCount = 10,
         $Timeout = 300000
     )
@@ -24,12 +26,14 @@ function New-RemoteSessions {
     $Sessions = [System.Collections.ArrayList] @()
     foreach ($VM in $VMs) {
         $Creds = Get-TestbedCredential -VM $VM
-        $Sess = if ($VM['Address']) {
+        $Sess = if ($VM.Address) {
             $pso = New-PSSessionOption -MaxConnectionRetryCount $RetryCount -OperationTimeout $Timeout
             New-PSSession -ComputerName $VM.Address -Credential $Creds -SessionOption $pso
-        } elseif ($VM['VMName']) {
+        }
+        elseif ($VM.VMName) {
             New-PSSession -VMName $VM.VMName -Credential $Creds
-        } else {
+        }
+        else {
             throw "You need to specify 'address' or 'vmName' for a testbed."
         }
 
@@ -39,12 +43,12 @@ function New-RemoteSessions {
 
             # Refresh PATH
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-                "", Justification="We refresh PATH on remote machine, we don't use it here.")]
+                "", Justification = "We refresh PATH on remote machine, we don't use it here.")]
             $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
         }
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="Issue #804 from PSScriptAnalyzer GitHub")]
+            "", Justification = "Issue #804 from PSScriptAnalyzer GitHub")]
         $Sessions += $Sess
     }
     return $Sessions
