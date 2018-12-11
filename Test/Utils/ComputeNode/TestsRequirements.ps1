@@ -7,7 +7,7 @@ function Get-DockerfilesPath {
 function Get-DNSDockerName {
     return 'python-dns'
 }
-function Deploy-MicrosoftDockerImages {
+function Sync-MicrosoftDockerImagesOnTestbeds {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
     )
