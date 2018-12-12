@@ -15,7 +15,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
-. $PSScriptRoot\..\..\Utils\Initialize-Testbed.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\TestsRequirements.ps1
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1

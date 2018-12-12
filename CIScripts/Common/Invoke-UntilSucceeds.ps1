@@ -1,10 +1,13 @@
 . $PSScriptRoot\Aliases.ps1
 . $PSScriptRoot\Exceptions.ps1
+. $PSScriptRoot\..\..\Test\PesterLogger\PesterLogger.ps1
 
 class HardError : System.Exception {
     HardError([string] $msg) : base($msg) {}
     HardError([string] $msg, [System.Exception] $inner) : base($msg, $inner) {}
 }
+
+$DebugTag = "[DEBUG Invoke-UntilSucceeds]"
 
 function Invoke-UntilSucceeds {
     <#
@@ -44,7 +47,8 @@ function Invoke-UntilSucceeds {
         [Parameter(Mandatory=$false)] [String] $Name = "Invoke-UntilSucceds",
         [Switch] $AssumeTrue
     )
-
+    Write-Log "$DebugTag Function begins with job: $name"
+    Write-Log "$DebugTag Duration: $Duration; NumRetries $NumRetries"
     if ((-not $Duration) -and (-not $NumRetries)) {
         throw "Either non-zero -Duration or -NumRetries has to be specified"
     }
@@ -63,21 +67,24 @@ function Invoke-UntilSucceeds {
         throw "Interval must not be equal to zero"
     }
     $StartTime = Get-Date
-
+    Write-Log "$DebugTag Checks passed. Start time: --$StartTime--"
     $NumRetry = 0
 
     while ($true) {
         $NumRetry += 1
-
+        Write-Log "$DebugTag Trying to run number $NumRetry"
         $LastCheck = if ($Duration) {
-            ((Get-Date) - $StartTime).TotalSeconds -ge $Duration
+            $TimeElapsed = ((Get-Date) - $StartTime).TotalSeconds
+            Write-Log "$DebugTag TimeElapsed: $TimeElapsed"
+            $TimeElapsed -ge $Duration
         } else {
             $NumRetry -eq $NumRetries
         }
 
         try {
+            Write-Log "$DebugTag Running task. LastCheck: $LastCheck"
             $ReturnVal = Invoke-Command $ScriptBlock
-
+            Write-Log "$DebugTag Task returned with ReturnVal: $ReturnVal"
             if ($AssumeTrue -or $ReturnVal) {
                 return $ReturnVal
             } else {
@@ -94,6 +101,7 @@ function Invoke-UntilSucceeds {
             if ($LastCheck) {
                 throw [CITimeoutException]::new("$Name failed.", $_.Exception)
             } else {
+                Write-Log "$DebugTag Going to sleep for: $Interval seconds"
                 Start-Sleep -Seconds $Interval
             }
         }

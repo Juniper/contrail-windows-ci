@@ -2,7 +2,8 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
-. $PSScriptRoot\..\Initialize-Testbed.ps1
+
+. $PSScriptRoot\..\ComputeNode\TestsRequirements.ps1
 . $PSScriptRoot\..\ContrailAPI_New\Project.ps1
 . $PSScriptRoot\..\ContrailAPI_New\VirtualRouter.ps1
 . $PSScriptRoot\..\ContrailAPI_New\SecurityGroup.ps1
@@ -40,7 +41,7 @@ function New-MultiNodeSetup {
     $Sessions = New-RemoteSessions -VMs $VMs
 
     Set-ConfAndLogDir -Sessions $Sessions
-    Initialize-Testbeds -Sessions $Sessions
+    Sync-MicrosoftDockerImagesOnTestbeds -Sessions $Sessions
 
     # For old API
     $ContrailNM = [ContrailNetworkManager]::new($Configs)
