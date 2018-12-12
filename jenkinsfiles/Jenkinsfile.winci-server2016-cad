@@ -18,7 +18,7 @@ pipeline {
             steps {
                 deleteDir()
 
-                retry(3) {
+                retry(3) { // in case of external network flakiness
                     checkout scm
                 }
 
@@ -39,10 +39,12 @@ pipeline {
                 deleteDir()
 
                 unstash "CIScripts"
-                retry(3) {
+
+                retry(3) { // in case of external network flakiness
                     powershell script: './CIScripts/Checkout.ps1'
-                    stash name: "contrail-ansible-deployer", includes: "contrail-ansible-deployer/**"
                 }
+
+                stash name: "contrail-ansible-deployer", includes: "contrail-ansible-deployer/**"
             }
         }
 
@@ -69,15 +71,28 @@ pipeline {
             agent none
             steps {
                 echo "Deploy with Contrail Ansible Deployer"
-                // TODO
+
+                unstash "contrail-ansible-deployer"
+
+                dir("contrail-ansible-deployer/config/instances.yaml") {
+                    powershell script: 'New-Item -Type File "instances.yaml"' // TODO: use actual instances.yaml file
+                    stash name: 'instancesYaml', includes: '.\\instances.yaml'
+                }
             }
         }
 
         stage('Run diagnostic check') {
-            agent none
+            agent { label "tester" }
             steps {
                 echo "Run diagnostic check"
-                // TODO
+
+                retry(3) { // in case of external network flakiness
+                    powershell script: "git clone https://github.com/Juniper/contrail-windows-tools"
+                }
+                dir("contrail-windows-tools") {
+                    unstash "instancesYaml"
+                    powershell script: '.\\Invoke-ScriptInRemoteSessions -ScriptFileName ".\\Invoke-DiagnosticCheck.ps1" -InstancesYaml ".\\instances.yaml"'
+                }
             }
         }
     }
