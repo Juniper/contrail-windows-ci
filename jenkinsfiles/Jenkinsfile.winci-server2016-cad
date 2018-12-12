@@ -74,7 +74,7 @@ pipeline {
 
                 unstash "contrail-ansible-deployer"
 
-                dir("contrail-ansible-deployer/config/instances.yaml") {
+                dir("contrail-ansible-deployer/config") {
                     powershell script: 'New-Item -Type File "instances.yaml"' // TODO: use actual instances.yaml file
                     stash name: 'instancesYaml', includes: '.\\instances.yaml'
                 }
