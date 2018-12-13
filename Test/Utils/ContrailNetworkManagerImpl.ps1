@@ -4,22 +4,22 @@ class ContrailNetworkManager {
     [String] $AuthToken;
     [String] $ContrailUrl;
 
-    ContrailNetworkManager([TestenvConfigs] $TestenvConfig) {
+    ContrailNetworkManager([ControllerConfig] $ControllerConfig, [OpenStackConfig] $OpenStackConfig) {
 
-        $this.ContrailUrl = $TestenvConfig.Controller.RestApiUrl()
+        $this.ContrailUrl = $ControllerConfig.RestApiUrl()
 
-        if($TestenvConfig.Controller.AuthMethod -eq "keystone") {
-            if(!$TestenvConfig.OpenStack) {
+        if($ControllerConfig.AuthMethod -eq "keystone") {
+            if(!$OpenStackConfig) {
                 throw "AuthMethod is keystone, but no OpenStack config provided."
             }
 
-            $this.AuthToken = $this.GetAccessTokenFromKeystone($TestenvConfig.OpenStack)
+            $this.AuthToken = $this.GetAccessTokenFromKeystone($OpenStackConfig)
         }
-        elseif ($TestenvConfig.Controller.AuthMethod -eq "noauth") {
+        elseif ($ControllerConfig.AuthMethod -eq "noauth") {
             $this.AuthToken = $null
         }
         else {
-            throw "Unknown authentification method: $($TestenvConfig.Controller.AuthMethod). Supported: keystone, noauth."
+            throw "Unknown authentification method: $($ControllerConfig.AuthMethod). Supported: keystone, noauth."
         }
     }
 

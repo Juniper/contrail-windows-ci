@@ -1,27 +1,24 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
-
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
-
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
-
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
+$Testenv = [TestenvConfigs]::New($TestenvConfFile)
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
 
@@ -88,7 +85,7 @@ Describe "Node manager" -Tag "Smoke" {
         Eventually {
             Test-NodeMgrConnectionWithController `
                 -Session $Session `
-                -ControllerIP $MultiNode.Configs.Controller.Address | Should Be True
+                -ControllerIP $Testenv.Controller.Address | Should Be True
         } -Duration 60
     }
 
@@ -108,15 +105,18 @@ Describe "Node manager" -Tag "Smoke" {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "MultiNode",
-            Justification="It's actually used."
+            Justification = "It's actually used."
         )]
-        $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+        $MultiNode = New-MultiNodeSetup `
+            -Testbeds $Testenv.Testbeds `
+            -ControllerConfig $Testenv.Controller `
+            -OpenStackConfig $Testenv.OpenStack
 
         $Session = $MultiNode.Sessions[0]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "LogSources",
-            Justification="It's actually used."
+            Justification = "It's actually used."
         )]
         [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
 
@@ -126,9 +126,9 @@ Describe "Node manager" -Tag "Smoke" {
 
             Initialize-ComputeServices `
                 -Session $Session `
-                -SystemConfig $MultiNode.Configs.System `
-                -OpenStackConfig $MultiNode.Configs.OpenStack `
-                -ControllerConfig $MultiNode.Configs.Controller
+                -SystemConfig $Testenv.System `
+                -OpenStackConfig $Testenv.OpenStack `
+                -ControllerConfig $Testenv.Controller
         }
     }
 
@@ -136,7 +136,7 @@ Describe "Node manager" -Tag "Smoke" {
         if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
 
             if ($PrepareEnv) {
-                Clear-ComputeNode -Session $Session -SystemConfig $MultiNode.Configs.System
+                Clear-ComputeNode -Session $Session -SystemConfig $Testenv.System
                 Clear-Logs -LogSources $LogSources
             }
 

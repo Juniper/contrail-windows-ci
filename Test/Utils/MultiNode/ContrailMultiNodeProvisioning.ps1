@@ -26,22 +26,17 @@ function Set-ConfAndLogDir {
 
 function New-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory = $true)] [String] $TestenvConfFile
+        [Parameter(Mandatory = $true)] [TestbedConfig[]] $Testbeds,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
+        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig
     )
 
-    $VMs = Read-TestbedsConfig -Path $TestenvConfFile
-    $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-    $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
-    $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
-    $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
-
-    $Sessions = New-RemoteSessions -VMs $VMs
-
+    $Sessions = New-RemoteSessions -VMs $Testbeds
     Set-ConfAndLogDir -Sessions $Sessions
     Sync-MicrosoftDockerImagesOnTestbeds -Sessions $Sessions
 
     # For old API
-    $ContrailNM = [ContrailNetworkManager]::new($Configs)
+    $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig, $OpenStackConfig)
     # For new API
     $ContrailRestApi = [ContrailRestApi]::new($ControllerConfig, $OpenStackConfig)
 
@@ -54,15 +49,15 @@ function New-MultiNodeSetup {
     $ContrailRepo.AddOrReplace($SecurityGroup) | Out-Null
 
     $VRouters = @()
-    foreach ($VM in $VMs) {
-        Write-Log "Creating virtual router. Name: $($VM.Name); Address: $($VM.Address)"
-        $VirtualRouter = [VirtualRouter]::new($VM.Name, $VM.Address)
+    foreach ($Testbed in $Testbeds) {
+        Write-Log "Creating virtual router. Name: $($Testbed.Name); Address: $($Testbed.Address)"
+        $VirtualRouter = [VirtualRouter]::new($Testbed.Name, $Testbed.Address)
         $Response = $ContrailRepo.AddOrReplace($VirtualRouter)
         Write-Log "Reported UUID of new virtual router: $($Response.'virtual-router'.'uuid')"
         $VRouters += $VirtualRouter
     }
 
-    return [MultiNode]::New($ContrailNM, $ContrailRestApi, $Configs, $Sessions, $VRouters, $Project)
+    return [MultiNode]::New($ContrailNM, $ContrailRestApi, $Sessions, $VRouters, $Project)
 }
 
 function Remove-MultiNodeSetup {

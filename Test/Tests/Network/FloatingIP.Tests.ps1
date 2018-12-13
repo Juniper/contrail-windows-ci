@@ -6,10 +6,8 @@ Param (
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
-
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
@@ -18,11 +16,12 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
-
 . $PSScriptRoot\..\..\Utils\ContrailAPI\NetworkPolicy.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIPPool.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIP.ps1
+
+$Testenv = [TestenvConfigs]::New($TestenvConfFile)
 
 $PolicyName = "passallpolicy"
 
@@ -74,7 +73,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 $ContrailPolicy = New-ContrailPassAllPolicy `
                     -API $MultiNode.NM `
                     -Name $PolicyName `
-                    -TenantName $MultiNode.Configs.Controller.DefaultProject
+                    -TenantName $Testenv.Controller.DefaultProject
 
                 Write-Log "Creating virtual network: $ClientNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -84,7 +83,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 )]
                 $ContrailClientNetwork = Add-OrReplaceNetwork `
                     -API $MultiNode.NM `
-                    -TenantName $MultiNode.Configs.Controller.DefaultProject `
+                    -TenantName $Testenv.Controller.DefaultProject `
                     -Name $ClientNetwork.Name `
                     -SubnetConfig $ClientNetwork.Subnet
 
@@ -96,7 +95,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 )]
                 $ContrailServerNetwork = Add-OrReplaceNetwork `
                     -API $MultiNode.NM `
-                    -TenantName $MultiNode.Configs.Controller.DefaultProject `
+                    -TenantName $Testenv.Controller.DefaultProject `
                     -Name $ServerNetwork.Name `
                     -SubnetConfig $ServerNetwork.Subnet
 
@@ -108,7 +107,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 )]
                 $ContrailFloatingIpPool = New-ContrailFloatingIpPool `
                     -API $MultiNode.NM `
-                    -TenantName $MultiNode.Configs.Controller.DefaultProject `
+                    -TenantName $Testenv.Controller.DefaultProject `
                     -NetworkName $ServerNetwork.Name `
                     -Name $ServerFloatingIpPoolName
 
@@ -126,7 +125,7 @@ Describe "Floating IP" -Tag "Smoke" {
                     Initialize-DockerNetworks `
                         -Session $Session `
                         -Networks $Networks `
-                        -TenantName $MultiNode.Configs.Controller.DefaultProject
+                        -TenantName $Testenv.Controller.DefaultProject
                 }
             }
 
@@ -231,7 +230,10 @@ Describe "Floating IP" -Tag "Smoke" {
                 "MultiNode",
                 Justification="It's actually used."
             )]
-            $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+            $MultiNode = New-MultiNodeSetup `
+                -Testbeds $Testenv.Testbeds `
+                -ControllerConfig $Testenv.Controller `
+                -OpenStackConfig $Testenv.OpenStack
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
@@ -242,7 +244,7 @@ Describe "Floating IP" -Tag "Smoke" {
 
             if ($PrepareEnv) {
                 foreach ($Session in $MultiNode.Sessions) {
-                    Initialize-ComputeNode -Session $Session -Configs $MultiNode.Configs
+                    Initialize-ComputeNode -Session $Session -Configs $Testenv
                 }
             }
         }
@@ -253,7 +255,7 @@ Describe "Floating IP" -Tag "Smoke" {
                     foreach ($Session in $MultiNode.Sessions) {
                         Clear-ComputeNode `
                             -Session $Session `
-                            -SystemConfig $MultiNode.Configs.System
+                            -SystemConfig $Testenv.System
                     }
                     Clear-Logs -LogSources $LogSources
                 }

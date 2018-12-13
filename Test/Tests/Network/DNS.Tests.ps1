@@ -7,29 +7,25 @@ Param (
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
-
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
-
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\TestsRequirements.ps1
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
-
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
-
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
-
 . $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+
+$Testenv = [TestenvConfigs]::New($TestenvConfFile)
 
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
 
@@ -199,7 +195,10 @@ Test-WithRetries 1 {
     Describe "DNS tests" -Tag "Smoke" {
         BeforeAll {
             Initialize-PesterLogger -OutDir $LogDir
-            $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+            $MultiNode = New-MultiNodeSetup `
+                -Testbeds $Testenv.Testbeds `
+                -ControllerConfig $Testenv.Controller `
+                -OpenStackConfig $Testenv.OpenStack
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
@@ -211,7 +210,7 @@ Test-WithRetries 1 {
             Install-DNSTestDependencies -Sessions $MultiNode.Sessions
             Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
 
-            $MgmtAdapterName = $MultiNode.Configs.System.MgmtAdapterName
+            $MgmtAdapterName = $Testenv.System.MgmtAdapterName
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "OldDNSs",
@@ -234,7 +233,7 @@ Test-WithRetries 1 {
                 foreach($Session in $MultiNode.Sessions) {
                     Initialize-ComputeNode `
                         -Session $Session `
-                        -Configs $MultiNode.Configs `
+                        -Configs $Testenv
                 }
             }
 
@@ -246,7 +245,7 @@ Test-WithRetries 1 {
             )]
             $ContrailNetwork = Add-OrReplaceNetwork `
                 -API $MultiNode.NM `
-                -TenantName $MultiNode.Configs.Controller.DefaultProject `
+                -TenantName $Testenv.Controller.DefaultProject `
                 -Name $Network.Name `
                 -SubnetConfig $Network.Subnet
         }
@@ -265,7 +264,7 @@ Test-WithRetries 1 {
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -TenantName $MultiNode.Configs.Controller.DefaultProject
+                    -TenantName $Testenv.Controller.DefaultProject
             }
 
             Start-Container -Session $MultiNode.Sessions[0] `
@@ -301,7 +300,7 @@ Test-WithRetries 1 {
                     foreach($Session in $MultiNode.Sessions) {
                         Clear-ComputeNode `
                             -Session $Session `
-                            -SystemConfig $MultiNode.Configs.System
+                            -SystemConfig $Testenv.System
                     }
                     Clear-Logs -LogSources $LogSources
                 }
