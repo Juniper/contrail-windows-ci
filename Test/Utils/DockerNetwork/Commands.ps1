@@ -4,12 +4,12 @@
 function Initialize-DockerNetworks {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [TestenvConfigs] $Configs,
+        [Parameter(Mandatory=$true)] [String] $TenantName,
         [Parameter(Mandatory=$true)] [Network[]] $Networks
     )
     foreach ($Network in $Networks) {
         $ID = New-DockerNetwork -Session $Session `
-            -TenantName $Configs.Controller.DefaultProject `
+            -TenantName $TenantName `
             -Name $Network.Name `
             -Subnet "$( $Network.Subnet.IpPrefix )/$( $Network.Subnet.IpPrefixLen )"
 

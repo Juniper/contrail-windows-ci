@@ -50,10 +50,10 @@ function New-MultiNodeSetup {
 
     $ContrailRepo = [ContrailRepo]::new($ContrailRestApi)
 
-    $Project = [Project]::new($ContrailNM.DefaultTenantName)
+    $Project = [Project]::new($ControllerConfig.DefaultProject)
     $ContrailRepo.AddOrReplace($Project) | Out-Null
 
-    $SecurityGroup = [SecurityGroup]::new_Default($ContrailNM.DefaultTenantName)
+    $SecurityGroup = [SecurityGroup]::new_Default($ControllerConfig.DefaultProject)
     $ContrailRepo.AddOrReplace($SecurityGroup) | Out-Null
 
     $VRouters = @()

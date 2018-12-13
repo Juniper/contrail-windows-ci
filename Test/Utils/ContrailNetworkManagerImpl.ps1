@@ -3,12 +3,10 @@ class ContrailNetworkManager {
 
     [String] $AuthToken;
     [String] $ContrailUrl;
-    [String] $DefaultTenantName;
 
     ContrailNetworkManager([TestenvConfigs] $TestenvConfig) {
 
         $this.ContrailUrl = $TestenvConfig.Controller.RestApiUrl()
-        $this.DefaultTenantName = $TestenvConfig.Controller.DefaultProject
 
         if($TestenvConfig.Controller.AuthMethod -eq "keystone") {
             if(!$TestenvConfig.OpenStack) {
@@ -66,7 +64,7 @@ class ContrailNetworkManager {
         if($this.AuthToken) {
             $Headers = @{"X-Auth-Token" = $this.AuthToken}
         }
-        
+
         $HeadersString = $Headers.GetEnumerator()  | ForEach-Object { "$($_.Name): $($_.Value)" }
         Write-Log "[Contrail][$Method]=>[$RequestUrl]"
         Write-Log -NoTimestamp -NoTag "Headers:`n$HeadersString;`nBody:`n$Body"

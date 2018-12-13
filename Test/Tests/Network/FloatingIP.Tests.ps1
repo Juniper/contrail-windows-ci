@@ -74,7 +74,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 $ContrailPolicy = New-ContrailPassAllPolicy `
                     -API $MultiNode.NM `
                     -Name $PolicyName `
-                    -TenantName $MultiNode.NM.DefaultTenantName
+                    -TenantName $MultiNode.Configs.Controller.DefaultProject
 
                 Write-Log "Creating virtual network: $ClientNetwork.Name"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -84,7 +84,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 )]
                 $ContrailClientNetwork = Add-OrReplaceNetwork `
                     -API $MultiNode.NM `
-                    -TenantName $MultiNode.NM.DefaultTenantName `
+                    -TenantName $MultiNode.Configs.Controller.DefaultProject `
                     -Name $ClientNetwork.Name `
                     -SubnetConfig $ClientNetwork.Subnet
 
@@ -96,7 +96,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 )]
                 $ContrailServerNetwork = Add-OrReplaceNetwork `
                     -API $MultiNode.NM `
-                    -TenantName $MultiNode.NM.DefaultTenantName `
+                    -TenantName $MultiNode.Configs.Controller.DefaultProject `
                     -Name $ServerNetwork.Name `
                     -SubnetConfig $ServerNetwork.Subnet
 
@@ -108,7 +108,7 @@ Describe "Floating IP" -Tag "Smoke" {
                 )]
                 $ContrailFloatingIpPool = New-ContrailFloatingIpPool `
                     -API $MultiNode.NM `
-                    -TenantName $MultiNode.NM.DefaultTenantName `
+                    -TenantName $MultiNode.Configs.Controller.DefaultProject `
                     -NetworkName $ServerNetwork.Name `
                     -Name $ServerFloatingIpPoolName
 
@@ -126,7 +126,7 @@ Describe "Floating IP" -Tag "Smoke" {
                     Initialize-DockerNetworks `
                         -Session $Session `
                         -Networks $Networks `
-                        -Configs $MultiNode.Configs
+                        -TenantName $MultiNode.Configs.Controller.DefaultProject
                 }
             }
 
