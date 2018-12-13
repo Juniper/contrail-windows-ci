@@ -120,7 +120,7 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
         )]
         $ContrailNetwork = Add-OrReplaceNetwork `
             -API $ContrailNM `
-            -TenantName $MultiNode.Configs.Controller.DefaultProject `
+            -TenantName $ControllerConfig.DefaultProject `
             -Name $NetworkName `
             -SubnetConfig $Subnet
 
@@ -133,7 +133,7 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
             -SystemConfig $SystemConfig `
 
         New-DockerNetwork -Session $Session `
-            -TenantName $MultiNode.Configs.Controller.DefaultProject `
+            -TenantName $ControllerConfig.DefaultProject `
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
@@ -216,10 +216,10 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
         $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
         Add-OrReplaceContrailProject `
             -API $ContrailNM `
-            -Name $MultiNode.Configs.Controller.DefaultProject
+            -Name $ControllerConfig.DefaultProject
         Add-OrReplaceContrailSecurityGroup `
             -API $ContrailNM `
-            -TenantName $MultiNode.Configs.Controller.DefaultProject `
+            -TenantName $ControllerConfig.DefaultProject `
             -Name 'default' | Out-Null
 
         Test-IfUtilsCanLoadDLLs -Session $Session
