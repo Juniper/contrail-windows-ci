@@ -105,7 +105,7 @@ class ContrailRestApi {
         $this.Send('Delete', $Resource, $Uuid, $Request)
     }
 
-    [String] FqNameToUuid ([String] $Resource, [string[]] $FqName) {
+    [String] FqNameToUuid ([String] $Resource, [String[]] $FqName) {
         $Request = @{
             type    = $Resource
             fq_name = $FqName

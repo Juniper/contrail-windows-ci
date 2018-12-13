@@ -2,10 +2,11 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
-. $PSScriptRoot\..\ContrailAPI\Project.ps1
-. $PSScriptRoot\..\ContrailAPI\SecurityGroup.ps1
-. $PSScriptRoot\..\ContrailAPI\VirtualRouter.ps1
+
 . $PSScriptRoot\..\ComputeNode\TestsRequirements.ps1
+. $PSScriptRoot\..\ContrailAPI_New\Project.ps1
+. $PSScriptRoot\..\ContrailAPI_New\VirtualRouter.ps1
+. $PSScriptRoot\..\ContrailAPI_New\SecurityGroup.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
@@ -18,7 +19,7 @@ function Set-ConfAndLogDir {
     $ConfigDirPath = Get-DefaultConfigDir
     $LogDirPath = Get-ComputeLogsDir
 
-    foreach($Session in $Sessions) {
+    foreach ($Session in $Sessions) {
         Invoke-Command -Session $Session -ScriptBlock {
             New-Item -ItemType Directory -Path $using:ConfigDirPath -Force | Out-Null
             New-Item -ItemType Directory -Path $using:LogDirPath -Force | Out-Null
@@ -28,7 +29,7 @@ function Set-ConfAndLogDir {
 
 function New-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory=$true)] [string] $TestenvConfFile
+        [Parameter(Mandatory = $true)] [String] $TestenvConfFile
     )
 
     $VMs = Read-TestbedsConfig -Path $TestenvConfFile
@@ -38,56 +39,54 @@ function New-MultiNodeSetup {
     $Configs = [TestenvConfigs]::New($SystemConfig, $OpenStackConfig, $ControllerConfig)
 
     $Sessions = New-RemoteSessions -VMs $VMs
+
     Set-ConfAndLogDir -Sessions $Sessions
     Sync-MicrosoftDockerImagesOnTestbeds -Sessions $Sessions
 
+    # For old API
     $ContrailNM = [ContrailNetworkManager]::new($Configs)
-    Add-OrReplaceContrailProject `
-        -API $ContrailNM `
-        -Name $ControllerConfig.DefaultProject
-    Add-OrReplaceContrailSecurityGroup `
-        -API $ContrailNM `
-        -TenantName $ContrailNM.DefaultTenantName `
-        -Name 'default' | Out-Null
+    # For new API
+    $ContrailRestApi = [ContrailRestApi]::new($ControllerConfig, $OpenStackConfig)
 
-    $Testbed1Address = $VMs[0].Address
-    $Testbed1Name = $VMs[0].Name
-    Write-Log "Creating virtual router. Name: $Testbed1Name; Address: $Testbed1Address"
-    $VRouter1Uuid = Add-OrReplaceVirtualRouter `
-        -API $ContrailNM `
-        -RouterName $Testbed1Name `
-        -RouterIp $Testbed1Address
-    Write-Log "Reported UUID of new virtual router: $VRouter1Uuid"
+    $ContrailRepo = [ContrailRepo]::new($ContrailRestApi)
 
-    $Testbed2Address = $VMs[1].Address
-    $Testbed2Name = $VMs[1].Name
-    Write-Log "Creating virtual router. Name: $Testbed2Name; Address: $Testbed2Address"
-    $VRouter2Uuid = Add-OrReplaceVirtualRouter `
-        -API $ContrailNM `
-        -RouterName $Testbed2Name `
-        -RouterIp $Testbed2Address
-    Write-Log "Reported UUID of new virtual router: $VRouter2Uuid"
+    $Project = [Project]::new($ContrailNM.DefaultTenantName)
+    $ContrailRepo.AddOrReplace($Project) | Out-Null
 
-    $VRoutersUuids = @($VRouter1Uuid, $VRouter2Uuid)
-    return [MultiNode]::New($ContrailNM, $Configs, $Sessions, $VRoutersUuids)
+    $SecurityGroup = [SecurityGroup]::new_Default($ContrailNM.DefaultTenantName)
+    $ContrailRepo.AddOrReplace($SecurityGroup) | Out-Null
+
+    $VRouters = @()
+    foreach ($VM in $VMs) {
+        Write-Log "Creating virtual router. Name: $($VM.Name); Address: $($VM.Address)"
+        $VirtualRouter = [VirtualRouter]::new($VM.Name, $VM.Address)
+        $Response = $ContrailRepo.AddOrReplace($VirtualRouter)
+        Write-Log "Reported UUID of new virtual router: $($Response.'virtual-router'.'uuid')"
+        $VRouters += $VirtualRouter
+    }
+
+    return [MultiNode]::New($ContrailNM, $ContrailRestApi, $Configs, $Sessions, $VRouters, $Project)
 }
 
 function Remove-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory=$true)] [MultiNode] $MultiNode
+        [Parameter(Mandatory = $true)] [MultiNode] $MultiNode
     )
+    $ContrailRepo = [ContrailRepo]::new($MultiNode.ContrailRestApi)
 
-    foreach ($VRouterUuid in $MultiNode.VRoutersUuids) {
-        Write-Log "Removing virtual router: $VRouterUuid"
-        Remove-ContrailVirtualRouter `
-            -API $MultiNode.NM `
-            -Uuid $VRouterUuid
+    foreach ($VRouter in $MultiNode.VRouters) {
+        Write-Log "Removing virtual router: $($VRouter.Name)"
+        $ContrailRepo.Remove($VRouter)
     }
-    $MultiNode.VRoutersUuids = $null
+    $MultiNode.VRouters = $null
 
-    Write-Log "Removing PS sessions.."
+    Write-Log "Removing project: $($MultiNode.Project.Name) with dependencies"
+    $ContrailRepo.RemoveWithDependencies($MultiNode.Project)
+    $MultiNode.Project = $null
+
+    Write-Log 'Removing PS sessions'
     Remove-PSSession $MultiNode.Sessions
-
     $MultiNode.Sessions = $null
+
     $MultiNode.NM = $null
 }
