@@ -92,3 +92,4 @@
   connection: local
   roles:
     - testenv-save-conf
+    - testenv-create-instances-yml

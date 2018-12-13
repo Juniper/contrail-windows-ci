@@ -18,7 +18,7 @@ pipeline {
             steps {
                 deleteDir()
 
-                retry(3) { // in case of external network flakiness
+                retry(3) {
                     checkout scm
                 }
 
@@ -40,11 +40,27 @@ pipeline {
 
                 unstash "CIScripts"
 
-                retry(3) { // in case of external network flakiness
+                retry(3) {
                     powershell script: './CIScripts/Checkout.ps1'
                 }
 
-                stash name: "contrail-ansible-deployer", includes: "contrail-ansible-deployer/**"
+                stash name: "Deployer", includes: "contrail-ansible-deployer/**"
+            }
+        }
+
+        // TODO: This stage should be finally removed once we no longer
+        //       use debug builds for c-a-d tests.
+        stage('Fetch debug dlls from builder') {
+            agent { label 'builder' }
+            steps {
+                echo "Fetch debug dlls from builder"
+                powershell script: '''
+                    New-Item -ItemType Directory -Path ./dlls
+                    foreach ($Lib in @("ucrtbased.dll", "vcruntime140d.dll", "msvcp140d.dll")) {
+                        Copy-Item "C:/Windows/System32/$Lib" ./dlls
+                    }
+                '''
+                stash name: "Dlls", includes: "dlls/**"
             }
         }
 
@@ -53,8 +69,7 @@ pipeline {
 
             environment {
                 TESTBED = credentials('win-testbed')
-                COMPUTE_NODE_TEMPLATE = "Template-testbed-201812050309"
-                DEPLOYER_TEMPLATE = "Template-testbed-201812050309"
+                TESTBED_TEMPLATE = "Template-testbed-201812050309"
                 CONTROLLER_TEMPLATE = "Template-CentOS-7.5"
                 TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                 TESTENV_FOLDER = "WINCI/testenvs"
@@ -62,21 +77,74 @@ pipeline {
             }
 
             steps {
-                echo "Testenv provisioning"
-                // TODO
+                script {
+                    def testNetwork = getLockedNetworkName()
+                    def testEnvName = getTestEnvName(testNetwork)
+                    def destroyConfig = [
+                        testenv_name: testEnvName,
+                        testenv_folder: env.TESTENV_FOLDER
+                    ]
+                    def deployConfig = [
+                        testenv_name: testEnvName,
+                        testenv_folder: env.TESTENV_FOLDER,
+                        testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
+                        testenv_data_network: testNetwork,
+                        testenv_testbed_template: env.TESTBED_TEMPLATE,
+                        testenv_controller_template: env.CONTROLLER_TEMPLATE,
+                        vcenter_datastore_cluster: env.VCENTER_DATASTORE_CLUSTER,
+                    ]
+
+                    deleteDir()
+                    unstash "Ansible"
+                    unstash "Deployer"
+
+                    dir('ansible') {
+                        // Cleanup testenv before making a new one
+                        ansiblePlaybook inventory: 'inventory.testenv',
+                                        playbook: 'vmware-destroy-testenv.yml',
+                                        extraVars: destroyConfig
+
+                        def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
+                        def instancesPath = "${env.WORKSPACE}/contrail-ansible-deployer/config/instances.yaml"
+                        def provisioningExtraVars = deployConfig + [
+                            testenv_conf_file: testEnvConfPath,
+                            instances_file: instancesPath,
+                        ]
+                        ansiblePlaybook inventory: 'inventory.testenv',
+                                        playbook: 'vmware-deploy-testenv.yml',
+                                        extraVars: provisioningExtraVars
+                    }
+
+                    stash name: "TestenvConf", includes: "testenv-conf.yaml"
+
+                    dir('contrail-ansible-deployer/config') {
+                        stash name: "InstancesYaml", includes: "instances.yaml"
+                    }
+                }
             }
         }
 
+        // TODO: Currently controller is deployed exactly as it is done in
+        //       Windows CI (in 'Testenv provisioning' stage) and computes
+        //       have their separate stage (below).
+        //       Those two steps should be eventually merged and use single
+        //       run of contrail-ansible-deployer.
         stage('Deploy with Contrail Ansible Deployer') {
-            agent none
+            agent { label 'ansible' }
             steps {
-                echo "Deploy with Contrail Ansible Deployer"
-
-                unstash "contrail-ansible-deployer"
+                unstash "Deployer"
+                unstash "Dlls"
 
                 dir("contrail-ansible-deployer/config") {
-                    powershell script: 'New-Item -Type File "instances.yaml"' // TODO: use actual instances.yaml file
-                    stash name: 'instancesYaml', includes: '.\\instances.yaml'
+                    unstash "InstancesYaml"
+                }
+
+                dir("contrail-ansible-deployer") {
+                    ansiblePlaybook inventory: 'inventory/',
+                                    playbook: 'playbooks/configure_instances.yml'
+
+                    ansiblePlaybook inventory: 'inventory/',
+                                    playbook: 'playbooks/install_contrail.yml'
                 }
             }
         }
@@ -86,11 +154,11 @@ pipeline {
             steps {
                 echo "Run diagnostic check"
 
-                retry(3) { // in case of external network flakiness
+                retry(3) {
                     powershell script: "git clone https://github.com/Juniper/contrail-windows-tools"
                 }
                 dir("contrail-windows-tools") {
-                    unstash "instancesYaml"
+                    unstash "InstancesYaml"
                     powershell script: '.\\Invoke-ScriptInRemoteSessions -ScriptFileName ".\\Invoke-DiagnosticCheck.ps1" -InstancesYaml ".\\instances.yaml"'
                 }
             }
