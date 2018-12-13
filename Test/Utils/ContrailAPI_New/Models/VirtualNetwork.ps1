@@ -36,10 +36,12 @@ class VirtualNetwork : BaseResourceModel {
             addr_from_start  = $true
             enable_dhcp      = $this.Subnet.DHCP
             default_gateway  = $this.Subnet.DefaultGateway
-            allocation_pools = @(@{
+            allocation_pools = @(
+                @{
                     start = $this.Subnet.AllocationPoolsStart
                     end   = $this.Subnet.AllocationPoolsEnd
-                })
+                }
+            )
         }
 
         $NetworkImap = @{
@@ -63,21 +65,20 @@ class VirtualNetwork : BaseResourceModel {
 
     hidden [Hashtable[]] GetPolicysReferences() {
         $References = @()
-        if ($this.NetworkPolicys) {
-            foreach ($NetworkPolicy in $this.NetworkPolicysFqNames) {
-                $Ref = @{
-                    "to"   = $NetworkPolicy
-                    "attr" = @{
-                        "timer"    = $null
-                        "sequence" = @{
-                            "major" = 0
-                            "minor" = 0
-                        }
+        foreach ($NetworkPolicy in $this.NetworkPolicysFqNames) {
+            $Ref = @{
+                "to"   = $NetworkPolicy
+                "attr" = @{
+                    "timer"    = $null
+                    "sequence" = @{
+                        "major" = 0
+                        "minor" = 0
                     }
                 }
-                $References += $Ref
             }
+            $References += $Ref
         }
+
         return $References
     }
 }
