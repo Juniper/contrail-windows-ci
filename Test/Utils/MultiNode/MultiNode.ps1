@@ -1,6 +1,5 @@
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
-. $PSScriptRoot\..\ContrailAPI_New\VirtualRouter.ps1
-. $PSScriptRoot\..\ContrailAPI_New\Project.ps1
+. $PSScriptRoot\..\ContrailAPI_New\ContrailAPI.ps1
 
 class MultiNode {
     [ContrailNetworkManager] $NM

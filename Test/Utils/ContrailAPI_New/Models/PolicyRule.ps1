@@ -1,6 +1,6 @@
 # Those are just informative to show dependencies
-#include "AddressModel.ps1"
-#include "PortRangeModel.ps1"
+#include "Address.ps1"
+#include "PortRange.ps1"
 
 class PolicyRule {
     [String] $Direction = '>'

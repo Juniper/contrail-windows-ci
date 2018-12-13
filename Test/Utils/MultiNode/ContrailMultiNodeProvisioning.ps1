@@ -2,11 +2,8 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
-
 . $PSScriptRoot\..\ComputeNode\TestsRequirements.ps1
-. $PSScriptRoot\..\ContrailAPI_New\Project.ps1
-. $PSScriptRoot\..\ContrailAPI_New\VirtualRouter.ps1
-. $PSScriptRoot\..\ContrailAPI_New\SecurityGroup.ps1
+. $PSScriptRoot\..\ContrailAPI_New\ContrailAPI.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1

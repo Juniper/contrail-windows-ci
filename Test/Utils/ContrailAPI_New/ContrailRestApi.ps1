@@ -63,22 +63,21 @@ class ContrailRestApi {
         # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
         $Body = (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request |
                 ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
-        $Headers = $null
-        $HeadersString = $null
+        $Headers = @{}
         if ($this.AuthToken) {
-            $Headers = @{'X-Auth-Token' = $this.AuthToken}
+            $Headers.Add('X-Auth-Token', $this.AuthToken)
         }
 
-        if ($Headers) {
-            $HeadersString = $Headers.GetEnumerator()  | ForEach-Object { "$($_.Name): $($_.Value)" }
-        }
+        $HeadersString = $Headers.GetEnumerator()  | ForEach-Object { "$($_.Name): $($_.Value)" }
         Write-Log "[Contrail][$Method]=>[$RequestUrl]"
         Write-Log -NoTimestamp -NoTag "Headers:`n$HeadersString;`nBody:`n$Body"
 
         $Response = Invoke-RestMethod -Uri $RequestUrl -Headers $Headers `
             -Method $Method -ContentType 'application/json' -Body $Body
+
         Write-Log '[Contrail]<= '
         Write-Log -NoTimestamp -NoTag "$Response"
+
         return $Response
     }
 

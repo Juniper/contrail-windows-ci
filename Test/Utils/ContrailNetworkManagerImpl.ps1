@@ -62,11 +62,11 @@ class ContrailNetworkManager {
         # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
         $Body = (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request |
                     ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
-        $Headers = $null
+        $Headers = @{}
         if($this.AuthToken) {
             $Headers = @{"X-Auth-Token" = $this.AuthToken}
         }
-        
+
         $HeadersString = $Headers.GetEnumerator()  | ForEach-Object { "$($_.Name): $($_.Value)" }
         Write-Log "[Contrail][$Method]=>[$RequestUrl]"
         Write-Log -NoTimestamp -NoTag "Headers:`n$HeadersString;`nBody:`n$Body"
