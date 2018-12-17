@@ -120,7 +120,7 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
         )]
         $ContrailNetwork = Add-OrReplaceNetwork `
             -API $ContrailNM `
-            -TenantName $ContrailNM.DefaultTenantName `
+            -TenantName $ControllerConfig.DefaultProject `
             -Name $NetworkName `
             -SubnetConfig $Subnet
 
@@ -216,10 +216,10 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
         $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
         Add-OrReplaceContrailProject `
             -API $ContrailNM `
-            -Name $ContrailNM.DefaultTenantName
+            -Name $ControllerConfig.DefaultProject
         Add-OrReplaceContrailSecurityGroup `
             -API $ContrailNM `
-            -TenantName $ContrailNM.DefaultTenantName `
+            -TenantName $ControllerConfig.DefaultProject `
             -Name 'default' | Out-Null
 
         Test-IfUtilsCanLoadDLLs -Session $Session

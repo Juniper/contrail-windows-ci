@@ -246,7 +246,7 @@ Test-WithRetries 1 {
             )]
             $ContrailNetwork = Add-OrReplaceNetwork `
                 -API $MultiNode.NM `
-                -TenantName $MultiNode.NM.DefaultTenantName `
+                -TenantName $MultiNode.Configs.Controller.DefaultProject `
                 -Name $Network.Name `
                 -SubnetConfig $Network.Subnet
         }
@@ -265,7 +265,7 @@ Test-WithRetries 1 {
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -Configs $MultiNode.Configs
+                    -TenantName $MultiNode.Configs.Controller.DefaultProject
             }
 
             Start-Container -Session $MultiNode.Sessions[0] `

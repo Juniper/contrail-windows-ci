@@ -3,12 +3,10 @@ class ContrailRestApi {
 
     [String] $AuthToken;
     [String] $ContrailUrl;
-    [String] $DefaultTenantName;
 
     ContrailRestApi([ControllerConfig] $ControllerConfig, [OpenStackConfig] $OpenStackConfig) {
 
         $this.ContrailUrl = $ControllerConfig.RestApiUrl()
-        $this.DefaultTenantName = $ControllerConfig.DefaultProject
 
         if ($ControllerConfig.AuthMethod -eq 'keystone') {
             if (!$OpenStackConfig) {

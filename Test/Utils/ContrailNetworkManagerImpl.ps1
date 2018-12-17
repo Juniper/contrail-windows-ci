@@ -3,12 +3,10 @@ class ContrailNetworkManager {
 
     [String] $AuthToken;
     [String] $ContrailUrl;
-    [String] $DefaultTenantName;
 
     ContrailNetworkManager([TestenvConfigs] $TestenvConfig) {
 
         $this.ContrailUrl = $TestenvConfig.Controller.RestApiUrl()
-        $this.DefaultTenantName = $TestenvConfig.Controller.DefaultProject
 
         if($TestenvConfig.Controller.AuthMethod -eq "keystone") {
             if(!$TestenvConfig.OpenStack) {
