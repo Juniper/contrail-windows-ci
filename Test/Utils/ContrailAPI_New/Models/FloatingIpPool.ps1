@@ -1,20 +1,17 @@
 class FloatingIpPool : BaseResourceModel {
     [String] $Name
-    [String] $NetworkName
-    [String] $ProjectName
-    [String] $DomainName = 'default-domain'
+    [String[]] $NetworkFqName
 
     [String] $ResourceName = 'floating-ip-pool'
     [String] $ParentType = 'virtual-network'
 
-    FloatingIpPool([String] $Name, [String] $NetworkName, [String] $ProjectName) {
+    FloatingIpPool([String] $Name, [String[]] $NetworkFqName) {
         $this.Name = $Name
-        $this.NetworkName = $NetworkName
-        $this.ProjectName = $ProjectName
+        $this.NetworkFqName = $NetworkFqName
     }
 
     [String[]] GetFqName() {
-        return @($this.DomainName, $this.ProjectName, $this.NetworkName, $this.Name)
+        return ($this.NetworkFqName + @($this.Name))
     }
 
     [Hashtable] GetRequest() {
