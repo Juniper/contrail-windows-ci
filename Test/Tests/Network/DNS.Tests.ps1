@@ -25,8 +25,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
-$Testenv = [TestenvConfigs]::New($TestenvConfFile)
-
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
 
 $Subnet = [SubnetConfiguration]::new(
@@ -194,6 +192,7 @@ function ResolveWithError {
 Test-WithRetries 1 {
     Describe "DNS tests" -Tag "Smoke" {
         BeforeAll {
+            $Testenv = [TestenvConfigs]::New($TestenvConfFile)
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup `
                 -Testbeds $Testenv.Testbeds `

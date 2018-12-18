@@ -18,7 +18,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
-$Testenv = [TestenvConfigs]::New($TestenvConfFile)
+
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
 
@@ -100,6 +100,7 @@ Describe "Node manager" -Tag "Smoke" {
     }
 
     BeforeAll {
+        $Testenv = [TestenvConfigs]::New($TestenvConfFile)
         Initialize-PesterLogger -OutDir $LogDir
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(

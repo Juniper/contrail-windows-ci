@@ -21,8 +21,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIPPool.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIP.ps1
 
-$Testenv = [TestenvConfigs]::New($TestenvConfFile)
-
 $PolicyName = "passallpolicy"
 
 $ClientNetworkSubnet = [SubnetConfiguration]::new(
@@ -64,6 +62,7 @@ Describe "Floating IP" -Tag "Smoke" {
             }
 
             BeforeAll {
+                $Testenv = [TestenvConfigs]::New($TestenvConfFile)
                 Write-Log "Creating network policy: $PolicyName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",

@@ -23,8 +23,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\SecurityGroup.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
-$Testenv = [TestenvConfigs]::New($TestenvConfFile)
-
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 
@@ -182,6 +180,7 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
     }
 
     BeforeAll {
+        $Testenv = [TestenvConfigs]::New($TestenvConfFile)
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         $Session = $Sessions[0]
 

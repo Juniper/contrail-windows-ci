@@ -22,8 +22,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
-$Testenv = [TestenvConfigs]::New($TestenvConfFile)
-
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 $Container3ID = "mountain-mama"
@@ -109,6 +107,7 @@ Test-WithRetries 3 {
         }
 
         BeforeAll {
+            $Testenv = [TestenvConfigs]::New($TestenvConfFile)
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup `
                 -Testbeds $Testenv.Testbeds `

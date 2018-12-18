@@ -24,8 +24,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\GlobalVrouterConfig.ps1
 
-$Testenv = [TestenvConfigs]::New($TestenvConfFile)
-
 $TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -214,6 +212,7 @@ Test-WithRetries 3 {
         }
 
         BeforeAll {
+            $Testenv = [TestenvConfigs]::New($TestenvConfFile)
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup `
                 -Testbeds $Testenv.Testbeds `
