@@ -62,7 +62,6 @@ Describe "Floating IP" -Tag "Smoke" {
             }
 
             BeforeAll {
-                $Testenv = [TestenvConfigs]::New($TestenvConfFile)
                 Write-Log "Creating network policy: $PolicyName"
                 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                     "PSUseDeclaredVarsMoreThanAssignments",
@@ -222,6 +221,7 @@ Describe "Floating IP" -Tag "Smoke" {
         }
 
         BeforeAll {
+            $Testenv = [TestenvConfigs]::New($TestenvConfFile)
             Initialize-PesterLogger -OutDir $LogDir
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
