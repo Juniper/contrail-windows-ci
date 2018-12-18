@@ -8,7 +8,7 @@ function Test-Ping {
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [String] $SrcContainerName,
         [Parameter(Mandatory=$true)] [String] $DstIP,
-        [Parameter(Mandatory=$true)] [String] $DstContainerName,
+        [Parameter(Mandatory=$false)] [String] $DstContainerName = $DstIP,
         [Parameter(Mandatory=$false)] [Int] $BufferSize = 32
     )
 
