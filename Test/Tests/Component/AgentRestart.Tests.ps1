@@ -1,8 +1,8 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
@@ -15,6 +15,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
@@ -23,8 +24,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
-
-
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
 $Container1ID = "jolly-lumberjack"
@@ -42,7 +41,7 @@ $Network = [Network]::New("testnet14", $Subnet)
 
 function Restart-Agent {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
 
     $ServiceName = Get-AgentServiceName
@@ -53,7 +52,7 @@ function Restart-Agent {
 
 function Get-NumberOfStoredPorts {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
 
     $NumberOfStoredPorts = Invoke-Command -Session $Session -ScriptBlock {
@@ -112,12 +111,16 @@ Test-WithRetries 3 {
         }
 
         BeforeAll {
+            $Testenv = [TestenvConfigs]::New($TestenvConfFile)
             Initialize-PesterLogger -OutDir $LogDir
-            $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+            $MultiNode = New-MultiNodeSetup `
+                -Testbeds $Testenv.Testbeds `
+                -ControllerConfig $Testenv.Controller `
+                -OpenStackConfig $Testenv.OpenStack
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Sessions",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Sessions = $MultiNode.Sessions
 
@@ -125,18 +128,18 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "ContrailNetwork",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $ContrailNetwork = Add-OrReplaceNetwork `
                 -API $MultiNode.NM `
-                -TenantName $MultiNode.Configs.Controller.DefaultProject `
+                -TenantName $Testenv.Controller.DefaultProject `
                 -Name $Network.Name `
                 -SubnetConfig $Subnet
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "LogSources",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
 
@@ -144,20 +147,20 @@ Test-WithRetries 3 {
                 if ($PrepareEnv) {
                     Initialize-ComputeNode `
                         -Session $Session `
-                        -Configs $MultiNode.Configs
+                        -Configs $Testenv
                 }
 
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -TenantName $MultiNode.Configs.Controller.DefaultProject
+                    -TenantName $Testenv.Controller.DefaultProject
             }
         }
 
         AfterAll {
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
                 $Sessions = $MultiNode.Sessions
-                $SystemConfig = $MultiNode.Configs.System
+                $SystemConfig = $Testenv.System
 
                 foreach ($Session in $Sessions) {
                     Remove-DockerNetwork -Session $Session -Name $Network.Name
@@ -203,7 +206,7 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Container1NetInfo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
                 -Session $MultiNode.Sessions[0] -ContainerID $Container1ID
@@ -212,7 +215,7 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Container2NetInfo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
                 -Session $MultiNode.Sessions[1] -ContainerID $Container2ID
@@ -232,7 +235,8 @@ Test-WithRetries 3 {
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
                 Start-AgentService -Session $Sessions[0]
-            } finally {
+            }
+            finally {
                 Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }

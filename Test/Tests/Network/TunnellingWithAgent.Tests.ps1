@@ -7,7 +7,6 @@ Param (
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
-
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
@@ -15,6 +14,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
@@ -23,9 +23,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
-
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
-
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\GlobalVrouterConfig.ps1
 
@@ -217,8 +215,12 @@ Test-WithRetries 3 {
         }
 
         BeforeAll {
+            $Testenv = [TestenvConfigs]::New($TestenvConfFile)
             Initialize-PesterLogger -OutDir $LogDir
-            $MultiNode = New-MultiNodeSetup -TestenvConfFile $TestenvConfFile
+            $MultiNode = New-MultiNodeSetup `
+                -Testbeds $Testenv.Testbeds `
+                -ControllerConfig $Testenv.Controller `
+                -OpenStackConfig $Testenv.OpenStack
 
             Write-Log "Creating virtual network: $($Network.Name)"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -228,7 +230,7 @@ Test-WithRetries 3 {
             )]
             $ContrailNetwork = Add-OrReplaceNetwork `
                 -API $MultiNode.NM `
-                -TenantName $MultiNode.Configs.Controller.DefaultProject `
+                -TenantName $Testenv.Controller.DefaultProject `
                 -Name $Network.Name `
                 -SubnetConfig $Subnet
 
@@ -243,13 +245,13 @@ Test-WithRetries 3 {
                 if ($PrepareEnv) {
                     Initialize-ComputeNode `
                         -Session $Session `
-                        -Configs $MultiNode.Configs
+                        -Configs $Testenv
                 }
 
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -TenantName $MultiNode.Configs.Controller.DefaultProject
+                    -TenantName $Testenv.Controller.DefaultProject
             }
         }
 
@@ -264,7 +266,7 @@ Test-WithRetries 3 {
                     foreach ($Session in $MultiNode.Sessions) {
                         Clear-ComputeNode `
                             -Session $Session `
-                            -SystemConfig $MultiNode.Configs.System
+                            -SystemConfig $Testenv.System
                     }
                     Clear-Logs -LogSources $LogSources
                 }

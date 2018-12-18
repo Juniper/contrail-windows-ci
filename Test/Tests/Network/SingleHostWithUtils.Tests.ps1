@@ -11,6 +11,10 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
@@ -19,10 +23,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
-
-. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
-. $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
-
 . $PSScriptRoot\..\..\Utils\ContrailAPI\Project.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\SecurityGroup.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
@@ -120,7 +120,7 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
         )]
         $ContrailNetwork = Add-OrReplaceNetwork `
             -API $ContrailNM `
-            -TenantName $ControllerConfig.DefaultProject `
+            -TenantName $Testenv.Controller.DefaultProject `
             -Name $NetworkName `
             -SubnetConfig $Subnet
 
@@ -133,7 +133,7 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
             -SystemConfig $SystemConfig `
 
         New-DockerNetwork -Session $Session `
-            -TenantName $ControllerConfig.DefaultProject `
+            -TenantName $Testenv.Controller.DefaultProject `
             -Name $NetworkName `
             -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
@@ -184,6 +184,7 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
     }
 
     BeforeAll {
+        $Testenv = [TestenvConfigs]::New($TestenvConfFile)
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         $Session = $Sessions[0]
 
@@ -213,13 +214,13 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
             "ContrailNM",
             Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
         )]
-        $ContrailNM = [ContrailNetworkManager]::new([TestenvConfigs]::new($null, $OpenStackConfig, $ControllerConfig))
+        $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig, $OpenStackConfig)
         Add-OrReplaceContrailProject `
             -API $ContrailNM `
-            -Name $ControllerConfig.DefaultProject
+            -Name $Testenv.Controller.DefaultProject
         Add-OrReplaceContrailSecurityGroup `
             -API $ContrailNM `
-            -TenantName $ControllerConfig.DefaultProject `
+            -TenantName $Testenv.Controller.DefaultProject `
             -Name 'default' | Out-Null
 
         Test-IfUtilsCanLoadDLLs -Session $Session
