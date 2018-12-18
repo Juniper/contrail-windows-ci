@@ -8,10 +8,13 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
+
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
+
 . $PSScriptRoot\..\..\Utils\ComputeNode\TestsRequirements.ps1
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
