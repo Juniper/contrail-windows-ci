@@ -318,6 +318,22 @@ pipeline {
                         shellCommand("${env.WORKSPACE}/CIScripts/LogserverUtils/split-log-into-stages.sh", [logFilename])
                     }
 
+                    unstash "Flakes"
+                    if (containsFlakiness("to_publish/$logFilename")) {
+                        echo "Flakiness detected"
+                        if (isGithub()) {
+                            sendGithubComment("recheck no bug")
+                        } else {
+                            build job: "post-recheck-comment",
+                                wait: false,
+                                parameters: [
+                                    string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
+                                    string(name: 'ZUUL_CHANGE', value: env.ZUUL_CHANGE),
+                                    string(name: 'ZUUL_PATCHSET', value: env.ZUUL_PATCHSET),
+                                ]
+                        }
+                    }
+
                     def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
                     def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
                         env.BUILD_NUMBER, env.ZUUL_UUID)
@@ -360,25 +376,7 @@ pipeline {
         failure {
             node('master') {
                 script {
-                    deleteDir()
-                    def logFilename = 'log.full.txt.gz'
-
-                    unstash "TestsLogs"
-                    unstash "Flakes"
-                    if (containsFlakiness("to_publish/$logFilename")) {
-                        echo "Flakiness detected"
-                        if (isGithub()) {
-                            sendGithubComment("recheck no bug")
-                        } else {
-                            build job: "post-recheck-comment",
-                                wait: false,
-                                parameters: [
-                                    string(name: 'BRANCH_NAME', value: env.BRANCH_NAME),
-                                    string(name: 'ZUUL_CHANGE', value: env.ZUUL_CHANGE),
-                                    string(name: 'ZUUL_PATCHSET', value: env.ZUUL_PATCHSET),
-                                ]
-                        }
-                    }
+                    echo "DUPA DUPA DUPA FAILED"
                 }
             }
         }
