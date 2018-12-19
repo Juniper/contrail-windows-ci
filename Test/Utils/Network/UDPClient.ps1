@@ -30,7 +30,7 @@ function Send-UDPFromContainer {
         [Parameter(Mandatory=$true)] [String] $ContainerName,
         [Parameter(Mandatory=$true)] [String] $Message,
         [Parameter(Mandatory=$true)] [String] $ListenerIP,
-        [Parameter(Mandatory=$true)] [Int16] $EchoServerPort,
+        [Parameter(Mandatory=$true)] [Int16] $ListenerPort,
         [Parameter(Mandatory=$true)] [Int16] $NumberOfAttempts,
         [Parameter(Mandatory=$true)] [Int16] $WaitSeconds
     )
@@ -42,7 +42,7 @@ function Send-UDPFromContainer {
     '1..{3} | ForEach-Object {{' + `
     '    $UDPSenderSocket.Send($Payload, $Payload.Length, $EchoServerAddress);' + `
     '    Start-Sleep -Seconds {4};' + `
-    '}}') -f $ListenerIP, $EchoServerPort, $Message, $NumberOfAttempts, $WaitSeconds
+    '}}') -f $ListenerIP, $ListenerPort, $Message, $NumberOfAttempts, $WaitSeconds
 
     $Output = Invoke-Command -Session $Session -ScriptBlock {
         docker exec $Using:ContainerName powershell "$Using:UDPSendCommand"

@@ -120,7 +120,7 @@ function Test-UDP {
         -ContainerName $ClientContainerName `
         -ListenerIP $ListenerContainerIP `
         -Message $Message `
-        -EchoServerPort $UDPServerPort `
+        -ListenerPort $UDPServerPort `
         -NumberOfAttempts 10 `
         -WaitSeconds 1
 
