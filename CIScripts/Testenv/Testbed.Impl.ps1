@@ -36,6 +36,8 @@ class Testbed {
         }
     }
 
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText",
+        "", Justification = "This are just credentials to a testbed VM.")]
     hidden [PSCredentialT] GetCredentials() {
         if (-not ($this.Username -or $this.Password)) {
             return Get-Credential # assume interactive mode
