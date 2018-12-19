@@ -12,7 +12,7 @@ $DebugTag = "[DEBUG Invoke-UntilSucceeds]"
 function Invoke-UntilSucceeds {
     <#
     .SYNOPSIS
-    Repeatedly calls a script block until its return value evaluates to true. Subsequent calls
+    Repeatedly calls a script block as a job until its return value evaluates to true. Subsequent calls
     happen after Interval seconds. Will catch any exceptions that occur in the meantime.
     If the exception being thrown is a HardError, no further retry attempps will be made.
     User has to specify a timeout after which the function fails by setting the Duration (or NumRetires) parameter.
@@ -38,13 +38,13 @@ function Invoke-UntilSucceeds {
     (it will still treat exceptions as failure though).
     #>
     Param (
-        [Parameter(Mandatory=$true,
-                   ValueFromPipeline=$true)] [ScriptBlock] $ScriptBlock,
-        [Parameter(Mandatory=$false)] [int] $Interval = 1,
-        [Parameter(Mandatory=$false)] [int] $Duration,
-        [Parameter(Mandatory=$false)] [int] $NumRetries,
-        [Parameter(Mandatory=$false)] [ScriptBlock] $Precondition,
-        [Parameter(Mandatory=$false)] [String] $Name = "Invoke-UntilSucceds",
+        [Parameter(Mandatory = $true,
+            ValueFromPipeline = $true)] [ScriptBlock] $ScriptBlock,
+        [Parameter(Mandatory = $false)] [int] $Interval = 1,
+        [Parameter(Mandatory = $false)] [int] $Duration,
+        [Parameter(Mandatory = $false)] [int] $NumRetries,
+        [Parameter(Mandatory = $false)] [ScriptBlock] $Precondition,
+        [Parameter(Mandatory = $false)] [String] $Name = "Invoke-UntilSucceds",
         [Switch] $AssumeTrue
     )
     Write-Log "$DebugTag Function begins with job: $name"
@@ -77,30 +77,50 @@ function Invoke-UntilSucceeds {
             $TimeElapsed = ((Get-Date) - $StartTime).TotalSeconds
             Write-Log "$DebugTag TimeElapsed: $TimeElapsed"
             $TimeElapsed -ge $Duration
-        } else {
+        }
+        else {
             $NumRetry -eq $NumRetries
         }
 
         try {
             Write-Log "$DebugTag Running task. LastCheck: $LastCheck"
-            $ReturnVal = Invoke-Command $ScriptBlock
+            $ReturnVal = if ($Duration) {
+                ($Job = Start-Job -ScriptBlock $ScriptBlock) | `
+                    Wait-Job -Timeout $Duration | Out-Null
+                $JobCompleted = $Job.State -in @('Completed', 'Stopped', 'Failed')
+                if ($JobCompleted) {
+                    Receive-Job $Job
+                }
+                else {
+                    $TimeElapsed = ((Get-Date) - $StartTime).TotalSeconds
+                    throw "Job didn't finish in $Duration seconds. After $($TimeElapsed) we stopped trying."
+                }
+            }
+            else {
+                Invoke-Command $ScriptBlock
+            }
+
             Write-Log "$DebugTag Task returned with ReturnVal: $ReturnVal"
             if ($AssumeTrue -or $ReturnVal) {
                 return $ReturnVal
-            } else {
+            }
+            else {
                 throw [CITimeoutException]::new(
                     "${Name}: Did not evaluate to True. Last return value encountered was: $ReturnVal."
                 )
             }
-        } catch [HardError] {
+        }
+        catch [HardError] {
             throw [CITimeoutException]::new(
                 "${Name}: Stopped retrying because HardError was thrown",
                 $_.Exception.InnerException
             )
-        } catch {
+        }
+        catch {
             if ($LastCheck) {
                 throw [CITimeoutException]::new("$Name failed.", $_.Exception)
-            } else {
+            }
+            else {
                 Write-Log "$DebugTag Going to sleep for: $Interval seconds"
                 Start-Sleep -Seconds $Interval
             }
