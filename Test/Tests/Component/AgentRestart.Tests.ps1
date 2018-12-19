@@ -17,7 +17,7 @@ Test-WithRetries 3 {
 
         It "ET goes home" {
             Write-Log "It started..."
-            $true | Should -BeTrue
+            $false | Should -BeTrue
         }
     }
 }
