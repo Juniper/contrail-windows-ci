@@ -43,7 +43,7 @@ class Testbed {
         else {
             $VMUsername = Get-UsernameInWorkgroup -Username $this.Username
             $VMPassword = $this.Password | ConvertTo-SecureString -AsPlainText -Force
-            return New-Object PSCredentialT($VMUsername, $VMPassword)
+            return [PSCredentialT]::new($VMUsername, $VMPassword)
         }
     }
 
