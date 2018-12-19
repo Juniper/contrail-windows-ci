@@ -10,9 +10,9 @@ function Start-UDPEchoServerInContainer {
     $UDPEchoServerCommand = ( `
     '$SendPort = {0};' + `
     '$RcvPort = {1};' + `
-    '$IPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, $RcvPort);' + `
-    '$RemoteIPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, 0);' + `
-    '$UDPSocket = New-Object System.Net.Sockets.UdpClient;' + `
+    '$IPEndpoint = [System.Net.IPEndPoint]::new([IPAddress]::Any, $RcvPort);' + `
+    '$RemoteIPEndpoint = [System.Net.IPEndPoint]::new([IPAddress]::Any, 0);' + `
+    '$UDPSocket = [System.Net.Sockets.UdpClient]::new();' + `
     '$UDPSocket.Client.SetSocketOption([System.Net.Sockets.SocketOptionLevel]::Socket, [System.Net.Sockets.SocketOptionName]::ReuseAddress, $true);' + `
     '$UDPSocket.Client.Bind($IPEndpoint);' + `
     'while($true) {{' + `
@@ -59,8 +59,8 @@ function Start-UDPListenerInContainer {
         [Parameter(Mandatory=$true)] [Int16] $ListenerPort
     )
     $UDPListenerCommand = ( `
-    '$RemoteIPEndpoint = New-Object System.Net.IPEndPoint([IPAddress]::Any, 0);' + `
-    '$UDPRcvSocket = New-Object System.Net.Sockets.UdpClient {0};' + `
+    '$RemoteIPEndpoint = [System.Net.IPEndPoint]::new([IPAddress]::Any, 0);' + `
+    '$UDPRcvSocket = [System.Net.Sockets.UdpClient]::new({0});' + `
     '$Payload = $UDPRcvSocket.Receive([ref]$RemoteIPEndpoint);' + `
     '[Text.Encoding]::UTF8.GetString($Payload)') -f $ListenerPort
 
