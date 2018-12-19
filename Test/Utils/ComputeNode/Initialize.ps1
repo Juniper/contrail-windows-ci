@@ -10,7 +10,7 @@
 function Initialize-ComputeNode {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [TestenvConfigs] $Configs
+        [Parameter(Mandatory=$true)] [Testenv] $Configs
     )
 
     Write-Log "Installing components on testbed..."

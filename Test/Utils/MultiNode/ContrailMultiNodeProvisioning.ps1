@@ -26,9 +26,9 @@ function Set-ConfAndLogDir {
 
 function New-MultiNodeSetup {
     Param (
-        [Parameter(Mandatory = $true)] [TestbedConfig[]] $Testbeds,
+        [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
-        [Parameter(Mandatory = $true)] [OpenStackConfig] $OpenStackConfig
+        [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig
     )
 
     $Sessions = New-RemoteSessions -VMs $Testbeds
