@@ -184,7 +184,7 @@ Describe "Single compute node protocol tests with utils" -Tag "Utils" {
     }
 
     BeforeAll {
-        $Testenv = [TestenvConfigs]::New($TestenvConfFile)
+        $Testenv = [Testenv]::New($TestenvConfFile)
         $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
         $Session = $Sessions[0]
 

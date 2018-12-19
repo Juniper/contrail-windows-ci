@@ -215,7 +215,7 @@ Test-WithRetries 3 {
         }
 
         BeforeAll {
-            $Testenv = [TestenvConfigs]::New($TestenvConfFile)
+            $Testenv = [Testenv]::New($TestenvConfFile)
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup `
                 -Testbeds $Testenv.Testbeds `

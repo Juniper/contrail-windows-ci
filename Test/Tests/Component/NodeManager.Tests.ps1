@@ -101,7 +101,7 @@ Describe "Node manager" -Tag "Smoke" {
     }
 
     BeforeAll {
-        $Testenv = [TestenvConfigs]::New($TestenvConfFile)
+        $Testenv = [Testenv]::New($TestenvConfFile)
         Initialize-PesterLogger -OutDir $LogDir
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(

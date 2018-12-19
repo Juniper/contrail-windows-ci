@@ -32,28 +32,20 @@ class SystemConfig {
     }
 }
 
-class TestbedConfig {
-    [string] $Name
-    [string] $VMName
-    [string] $Address
-    [string] $Username
-    [string] $Password
-}
-
-class TestenvConfigs {
+class Testenv {
     [SystemConfig] $System
     [OpenStackConfig] $OpenStack
     [ControllerConfig] $Controller
-    [TestbedConfig[]] $Testbeds
+    [Testbed[]] $Testbeds
 
-    TestenvConfigs([String] $TestenvConfFile) {
+    Testenv([String] $TestenvConfFile) {
         $this.System = Read-SystemConfig -Path $TestenvConfFile
         $this.OpenStack = Read-OpenStackConfig -Path $TestenvConfFile
         $this.Controller = Read-ControllerConfig -Path $TestenvConfFile
         $this.Testbeds = Read-TestbedsConfig -Path $TestenvConfFile
     }
 
-    TestenvConfigs([SystemConfig] $System,
+    Testenv([SystemConfig] $System,
         [OpenStackConfig] $OpenStack,
         [ControllerConfig] $Controller) {
 
@@ -97,7 +89,7 @@ function Read-SystemConfig {
 function Read-TestbedsConfig {
     Param ([Parameter(Mandatory = $true)] [string] $Path)
     $Parsed = Read-TestenvFile -Path $Path
-    [TestbedConfig[]] $Testbeds = $Parsed.Testbeds
+    [Testbed[]] $Testbeds = $Parsed.Testbeds
     # The comma forces return value to always be array
     return , $Testbeds
 }

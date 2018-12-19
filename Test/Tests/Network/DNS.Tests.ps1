@@ -195,7 +195,7 @@ function ResolveWithError {
 Test-WithRetries 1 {
     Describe "DNS tests" -Tag "Smoke" {
         BeforeAll {
-            $Testenv = [TestenvConfigs]::New($TestenvConfFile)
+            $Testenv = [Testenv]::New($TestenvConfFile)
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup `
                 -Testbeds $Testenv.Testbeds `
