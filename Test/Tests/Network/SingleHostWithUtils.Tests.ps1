@@ -12,6 +12,7 @@ Param (
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
+. $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
