@@ -247,7 +247,7 @@ function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [String] $AdapterName)
 
-    Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
+    Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 120 {
         Invoke-CommandWithFunctions -Functions "Select-ValidNetIPInterface" -Session $Session {
             Get-NetAdapter -Name $Using:AdapterName `
             | Get-NetIPAddress -ErrorAction SilentlyContinue `
