@@ -21,7 +21,7 @@ Describe "PesterHelpers" -Tags CI, Unit {
         It "throws if inner assert is false at any time" {
             $Script:Counter = 0
             { Consistently { $Script:Counter += 1; $Script:Counter | Should Not Be 2 } `
-                -Interval 1 -Duration 3 } | Should Throw
+                    -Interval 1 -Duration 3 } | Should Throw
         }
 
         It "does not allow interval equal to zero" {
@@ -38,7 +38,8 @@ Describe "PesterHelpers" -Tags CI, Unit {
                 if ($Script:TimeCalled -eq 0) {
                     $Script:TimeCalled += 1
                     return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)
-                } else {
+                }
+                else {
                     # simulate a lot of time has passed since the first call.
                     return $Script:MockStartDate.AddSeconds($Script:SecondsCounter + 100)
                 }
@@ -58,7 +59,8 @@ Describe "PesterHelpers" -Tags CI, Unit {
 
             try {
                 Consistently { "Foo" | Should Be "Bar" } -Duration 3
-            } catch {
+            }
+            catch {
                 $_.Exception.Message | Should Match "Foo"
                 $_.Exception.Message | Should Match "Bar"
                 $_.Exception.Message | Should Be $OriginalMessage
@@ -68,12 +70,12 @@ Describe "PesterHelpers" -Tags CI, Unit {
 
     Context "Eventually" {
         It "works on trivial cases" {
-            { Eventually { $true | Should Be $true } -Duration 3 } | Should Not Throw
-            { Eventually { $true | Should Not Be $false } -Duration 3 } | Should Not Throw
-            { Eventually { $true | Should Not Be $true } -Duration 3 } | Should Throw
+            { Eventually { $true | Should Be $true } -Duration 30 } | Should Not Throw
+            { Eventually { $true | Should Not Be $false } -Duration 30 } | Should Not Throw
+            { Eventually { $true | Should Not Be $true } -Duration 30 } | Should Throw
         }
-        
-        It "calls assert multiple times until it is true" {
+
+        It "calls assert multiple times until it is true" -Pending {
             $Script:Counter = 0
             Eventually { $Script:Counter += 1; $Script:Counter | Should Be 3 } `
                 -Interval 1 -Duration 5
@@ -83,7 +85,7 @@ Describe "PesterHelpers" -Tags CI, Unit {
         It "throws if inner assert is never true" {
             $Script:Counter = 0
             { Eventually { $Script:Counter += 1; $Script:Counter | Should Be 6 } `
-                -Interval 1 -Duration 4 } | Should Throw
+                    -Interval 1 -Duration 4 } | Should Throw
         }
 
         It "does not allow interval equal to zero" {
@@ -94,7 +96,7 @@ Describe "PesterHelpers" -Tags CI, Unit {
             { Eventually {} -Interval 3 -Duration 2 } | Should Throw
         }
 
-        It "rethrows the last exception that occurred" {
+        It "rethrows the last exception that occurred" -Pending {
             $Script:Messages = @("E1", "E2", "E3", "E4", "E5")
             $Script:Counter = 0
             try {
@@ -103,7 +105,8 @@ Describe "PesterHelpers" -Tags CI, Unit {
                     $Script:Counter += 1;
                     throw $Exception
                 } -Duration 3
-            } catch {
+            }
+            catch {
                 $_.Exception.InnerException.Message | `
                     Should Be "E4"
             }
@@ -118,15 +121,16 @@ Describe "PesterHelpers" -Tags CI, Unit {
             }
 
             try {
-                Eventually { "Foo" | Should Be "Bar" } -Duration 3
-            } catch {
+                Eventually { "Foo" | Should Be "Bar" } -Duration 30
+            }
+            catch {
                 $_.Exception.InnerException.Message | Should Match "Foo"
                 $_.Exception.InnerException.Message | Should Match "Bar"
                 $_.Exception.InnerException.Message | Should Be $OriginalMessage
             }
         }
 
-        It "allows a long condition always to run twice" {
+        It "allows a long condition always to run twice" -Pending {
             $Script:Counter = 0
 
             Eventually {
