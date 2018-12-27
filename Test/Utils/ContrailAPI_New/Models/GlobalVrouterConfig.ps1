@@ -1,6 +1,6 @@
 class GlobalVrouterConfig : BaseResourceModel {
     [String] $Name = 'default-global-vrouter-config'
-    [String] $SystemConfigName = 'default-global-system-config'
+    [FqName] $ParentFqName = [FqName]::New('default-global-system-config')
     [String[]] $EncapsulationPriorities = @()
 
     [String] $ResourceName = 'global-vrouter-config'
@@ -8,10 +8,6 @@ class GlobalVrouterConfig : BaseResourceModel {
 
     GlobalVrouterConfig([String[]] $EncapsulationPriorities) {
         $this.EncapsulationPriorities = $EncapsulationPriorities
-    }
-
-    [String[]] GetFqName() {
-        return @($this.SystemConfigName, $this.Name)
     }
 
     [Hashtable] GetRequest() {

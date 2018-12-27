@@ -2,9 +2,6 @@
 #include "PolicyRule.ps1"
 
 class NetworkPolicy : BaseResourceModel {
-    [String] $Name
-    [String] $ProjectName
-    [String] $DomainName = 'default-domain'
     [PolicyRule[]] $PolicyRules = @()
 
     [String] $ResourceName = 'network-policy'
@@ -12,11 +9,7 @@ class NetworkPolicy : BaseResourceModel {
 
     NetworkPolicy([String] $Name, [String] $ProjectName) {
         $this.Name = $Name
-        $this.ProjectName = $ProjectName
-    }
-
-    [String[]] GetFqName() {
-        return @($this.DomainName, $this.ProjectName, $this.Name)
+        $this.ParentFqName = [FqName]::New(@('default-domain', $ProjectName))
     }
 
     static [NetworkPolicy] new_PassAll([String] $Name, [String] $ProjectName) {

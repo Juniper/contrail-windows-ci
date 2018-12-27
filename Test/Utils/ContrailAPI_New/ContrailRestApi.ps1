@@ -102,10 +102,10 @@ class ContrailRestApi {
         $this.Send('Delete', $Resource, $Uuid, $Request)
     }
 
-    [String] FqNameToUuid ([String] $Resource, [String[]] $FqName) {
+    [String] FqNameToUuid ([String] $Resource, [FqName] $FqName) {
         $Request = @{
             type    = $Resource
-            fq_name = $FqName
+            fq_name = $FqName.ToStringArray()
         }
         $RequestUrl = $this.ContrailUrl + '/fqname-to-id'
         $Response = $this.SendRequest('Post', $RequestUrl, $Request)

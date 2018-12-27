@@ -1,15 +1,10 @@
 class IPAM : BaseResourceModel {
     [String] $Name = "default-network-ipam"
-    [String] $DomainName = "default-domain"
-    [String] $ProjectName = "default-project"
+    [FqName] $ParentFqName = [FqName]::new(@('default-domain', 'default-project'))
     [IPAMDNSSettings] $DNSSettings = [NoneDNSSettings]::New()
 
     [String] $ResourceName = 'network-ipam'
     [String] $ParentType = 'project'
-
-    [String[]] GetFQName() {
-        return @($this.DomainName, $this.ProjectName, $this.Name)
-    }
 
     [Hashtable] GetRequest() {
         $Request = @{
@@ -44,13 +39,13 @@ class IPAM : BaseResourceModel {
     hidden [Void] AddVirtualDNSInformation ($Request) {
         $DNSServer = @{
             "ipam_dns_server" = @{
-                "virtual_dns_server_name" = [String]::Join(":", $this.DNSSettings.FQServerName)
+                "virtual_dns_server_name" = [String]::Join(":", $this.DNSSettings.FqServerName.ToStringArray())
             }
         }
         $Request."network-ipam"."network_ipam_mgmt" += $DNSServer
 
         $VirtualServerRef = @{
-            "to" = $this.DNSSettings.FQServerName
+            "to" = $this.DNSSettings.FqServerName.ToStringArray()
         }
 
         $Request."network-ipam"."virtual_DNS_refs" = @($VirtualServerRef)
@@ -85,12 +80,12 @@ class TenantDNSSettings : IPAMDNSSettings {
 }
 
 class VirtualDNSSettings : IPAMDNSSettings {
-    [String[]] $FQServerName
-    VirtualDNSSettings([String[]] $FQServerName) {
-        if (-not $FQServerName) {
+    [FqName] $FqServerName
+    VirtualDNSSettings([FqName] $FqServerName) {
+        if (-not $FqServerName) {
             Throw "You need to specify DNS server"
         }
-        $this.FQServerName = $FQServerName
+        $this.FqServerName = $FqServerName
         $this.DNSMode = "virtual-dns-server"
     }
 }

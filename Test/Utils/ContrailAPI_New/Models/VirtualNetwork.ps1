@@ -3,27 +3,20 @@
 #include "NetworkPolicy.ps1"
 
 class VirtualNetwork : BaseResourceModel {
-    [String] $Name
-    [String] $ProjectName
-    [String] $DomainName = 'default-domain'
     [Subnet] $Subnet
-    [String[]] $IpamFqName = @("default-domain", "default-project", "default-network-ipam")
-    [String[][]] $NetworkPolicysFqNames = @()
+    [FqName] $IpamFqName = [FqName]::new(@("default-domain", "default-project", "default-network-ipam"))
+    [FqName[]] $NetworkPolicysFqNames = @()
 
     [String] $ResourceName = 'virtual-network'
     [String] $ParentType = 'project'
 
     VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
         $this.Name = $Name
-        $this.ProjectName = $ProjectName
+        $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
         $this.Subnet = $Subnet
 
         $this.Dependencies += [Dependency]::new('instance-ip', 'instance_ip_back_refs')
         $this.Dependencies += [Dependency]::new('virtual-machine-interface', 'virtual_machine_interface_back_refs')
-    }
-
-    [String[]] GetFqName() {
-        return @($this.DomainName, $this.ProjectName, $this.Name)
     }
 
     [Hashtable] GetRequest() {
@@ -48,7 +41,7 @@ class VirtualNetwork : BaseResourceModel {
             attr = @{
                 ipam_subnets = @($IpamSubnet)
             }
-            to   = $this.IpamFqName
+            to   = $this.IpamFqName.ToStringArray()
         }
 
         $Request = @{
@@ -67,7 +60,7 @@ class VirtualNetwork : BaseResourceModel {
         $References = @()
         foreach ($NetworkPolicy in $this.NetworkPolicysFqNames) {
             $Ref = @{
-                "to"   = $NetworkPolicy
+                "to"   = $NetworkPolicy.ToStringArray()
                 "attr" = @{
                     "timer"    = $null
                     "sequence" = @{

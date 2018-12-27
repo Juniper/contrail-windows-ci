@@ -1,20 +1,14 @@
 class FloatingIp : BaseResourceModel {
-    [String] $Name
-    [String[]] $PoolFqName
     [String] $Address
-    [String[][]] $PortFqNames
+    [FqName[]] $PortFqNames
 
     [String] $ResourceName = 'floating-ip'
     [String] $ParentType = 'floating-ip-pool'
 
-    FloatingIp([String] $Name, [String[]] $PoolFqName, [String] $Address) {
+    FloatingIp([String] $Name, [FqName] $PoolFqName, [String] $Address) {
         $this.Name = $Name
-        $this.PoolFqName = $PoolFqName
+        $this.ParentFqName = $PoolFqName
         $this.Address = $Address
-    }
-
-    [String[]] GetFqName() {
-        return ($this.PoolFqName + @($this.Name))
     }
 
     [Hashtable] GetRequest() {
@@ -36,7 +30,7 @@ class FloatingIp : BaseResourceModel {
         if ($this.PortFqNames) {
             foreach ($PortFqName in $this.PortFqNames) {
                 $Ref = @{
-                    "to" = $PortFqName
+                    "to" = $PortFqName.ToStringArray()
                 }
                 $References += $Ref
             }
