@@ -45,6 +45,7 @@ function Invoke-UntilSucceeds {
         [Parameter(Mandatory = $false)] [int] $NumRetries,
         [Parameter(Mandatory = $false)] [ScriptBlock] $Precondition,
         [Parameter(Mandatory = $false)] [String] $Name = "Invoke-UntilSucceds",
+        [Parameter(Mandatory = $false)] [PSobject[]] $Arguments = $null,
         [Switch] $AssumeTrue
     )
     Write-Log "$DebugTag Function begins with job: $name"
@@ -85,7 +86,7 @@ function Invoke-UntilSucceeds {
         try {
             Write-Log "$DebugTag Running task. LastCheck: $LastCheck"
             $ReturnVal = if ($Duration) {
-                ($Job = Start-Job -ScriptBlock $ScriptBlock) | `
+                ($Job = Start-Job -ScriptBlock $ScriptBlock -ArgumentList $Arguments) | `
                     Wait-Job -Timeout $Duration | Out-Null
                 $JobCompleted = $Job.State -in @('Completed', 'Stopped', 'Failed')
                 if ($JobCompleted) {
@@ -97,7 +98,7 @@ function Invoke-UntilSucceeds {
                 }
             }
             else {
-                Invoke-Command $ScriptBlock
+                Invoke-Command $ScriptBlock -ArgumentList $Arguments
             }
 
             Write-Log "$DebugTag Task returned with ReturnVal: $ReturnVal"
