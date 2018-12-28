@@ -61,7 +61,7 @@ class Testenv {
         $this.Controller = $Controller
     }
 
-    hidden static [Ordered] ReadTestenvFile([string] $Path) {
+    hidden static [System.Collections.Specialized.OrderedDictionary] ReadTestenvFile([string] $Path) {
         if (-not (Test-Path $Path)) {
             throw [System.Management.Automation.ItemNotFoundException] "Testenv config file not found at specified location."
         }

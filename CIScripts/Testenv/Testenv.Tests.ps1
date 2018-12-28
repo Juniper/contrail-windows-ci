@@ -56,7 +56,6 @@ openStack:
 controller:
   address: 1.2.3.1
   restApiPort: 8082
-  defaultProject: ci_tests
 
 system:
   AdapterName: Eth1

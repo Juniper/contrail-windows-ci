@@ -9,8 +9,6 @@ openStack:
 controller:
   address: <CONTROLLER_IP>
   restApiPort: 8082
-  # Used by non-multitenancy tests
-  defaultProject: ci_tests
   authMethod: keystone
 
 testbeds:

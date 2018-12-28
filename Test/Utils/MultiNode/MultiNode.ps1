@@ -9,7 +9,6 @@ class MultiNode {
 
     MultiNode([ContrailNetworkManager] $NM,
         [ContrailRestApi] $ContrailRestApi,
-        [PSSessionT[]] $Sessions,
         [VirtualRouter[]] $VRouters,
         [Project] $Project) {
 

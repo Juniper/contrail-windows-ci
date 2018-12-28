@@ -189,7 +189,6 @@ Test-WithRetries 3 {
         }
 
         BeforeAll {
-            $Testenv = [Testenv]::New($TestenvConfFile)
             $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
             $Session = $Sessions[0]
 
