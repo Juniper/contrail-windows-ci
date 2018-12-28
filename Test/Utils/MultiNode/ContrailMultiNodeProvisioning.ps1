@@ -2,27 +2,11 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
-. $PSScriptRoot\..\ComputeNode\TestsRequirements.ps1
 . $PSScriptRoot\..\ContrailAPI_New\ContrailAPI.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\MultiNode.ps1
-
-function Set-ConfAndLogDir {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
-    )
-    $ConfigDirPath = Get-DefaultConfigDir
-    $LogDirPath = Get-ComputeLogsDir
-
-    foreach ($Session in $Sessions) {
-        Invoke-Command -Session $Session -ScriptBlock {
-            New-Item -ItemType Directory -Path $using:ConfigDirPath -Force | Out-Null
-            New-Item -ItemType Directory -Path $using:LogDirPath -Force | Out-Null
-        } | Out-Null
-    }
-}
 
 function New-MultiNodeSetup {
     Param (
