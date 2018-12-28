@@ -73,7 +73,7 @@ function Save-CnmPluginUnitTestReport {
 
 Describe "CNM Plugin" -Tag "Smoke" {
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
         $Session = $Sessions[0]
 
         Initialize-PesterLogger -OutDir $LogDir

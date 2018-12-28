@@ -22,6 +22,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
+$ContrailProject = 'ci_tests_nodemanager'
+
 # TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
 #       Should be refactored.
 $LogPath = Get-NodeMgrLogPath
@@ -102,6 +104,7 @@ Describe "Node manager" -Tag "Smoke" {
 
     BeforeAll {
         $Testenv = [Testenv]::New($TestenvConfFile)
+        $Testenv.Initialize()
         Initialize-PesterLogger -OutDir $LogDir
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -112,7 +115,8 @@ Describe "Node manager" -Tag "Smoke" {
         $MultiNode = New-MultiNodeSetup `
             -Testbeds $Testenv.Testbeds `
             -ControllerConfig $Testenv.Controller `
-            -OpenStackConfig $Testenv.OpenStack
+            -OpenStackConfig $Testenv.OpenStack `
+            -ContrailProject $ContrailProject
 
         $Session = $MultiNode.Sessions[0]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(

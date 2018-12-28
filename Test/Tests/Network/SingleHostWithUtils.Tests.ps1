@@ -1,7 +1,7 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
@@ -28,6 +28,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\SecurityGroup.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
+$ContrailProject = 'ci_tests_utils'
+
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
 
@@ -36,15 +38,15 @@ Test-WithRetries 3 {
 
         function Initialize-ContainersConnection {
             Param (
-                [Parameter(Mandatory=$true)] $VMNetInfo,
-                [Parameter(Mandatory=$true)] $VHostInfo,
-                [Parameter(Mandatory=$true)] $Container1NetInfo,
-                [Parameter(Mandatory=$true)] $Container2NetInfo,
+                [Parameter(Mandatory = $true)] $VMNetInfo,
+                [Parameter(Mandatory = $true)] $VHostInfo,
+                [Parameter(Mandatory = $true)] $Container1NetInfo,
+                [Parameter(Mandatory = $true)] $Container2NetInfo,
                 [Parameter(Mandatory = $true)] [PSSessionT] $Session
             )
 
             Write-Log $("Setting a connection between " + $Container1NetInfo.MACAddress + `
-            " and " + $Container2NetInfo.MACAddress + "...")
+                    " and " + $Container2NetInfo.MACAddress + "...")
 
             Invoke-Command -Session $Session -ScriptBlock {
                 vif.exe --add $Using:VMNetInfo.IfName --mac $Using:VMNetInfo.MACAddress --vrf 0 --type physical
@@ -118,11 +120,11 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "ContrailNetwork",
-                Justification="It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
+                Justification = "It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
             )]
             $ContrailNetwork = Add-OrReplaceNetwork `
                 -API $ContrailNM `
-                -TenantName $Testenv.Controller.DefaultProject `
+                -TenantName $ContrailProject `
                 -Name $NetworkName `
                 -SubnetConfig $Subnet
 
@@ -135,7 +137,7 @@ Test-WithRetries 3 {
                 -SystemConfig $SystemConfig `
 
             New-DockerNetwork -Session $Session `
-                -TenantName $Testenv.Controller.DefaultProject `
+                -TenantName $ContrailProject `
                 -Name $NetworkName `
                 -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
@@ -180,23 +182,24 @@ Test-WithRetries 3 {
                         -Uuid $ContrailNetwork
                     Remove-Variable "ContrailNetwork"
                 }
-            } finally {
+            }
+            finally {
                 Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }
 
         BeforeAll {
             $Testenv = [Testenv]::New($TestenvConfFile)
-            $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+            $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
             $Session = $Sessions[0]
 
-            $OpenStackConfig = Read-OpenStackConfig -Path $TestenvConfFile
-            $ControllerConfig = Read-ControllerConfig -Path $TestenvConfFile
+            $OpenStackConfig = [Testenv]::ReadOpenStackConfig($TestenvConfFile)
+            $ControllerConfig = [Testenv]::ReadControllerConfig($TestenvConfFile)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments", "",
-                Justification="Analyzer doesn't understand relation of Pester blocks"
+                Justification = "Analyzer doesn't understand relation of Pester blocks"
             )]
-            $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+            $SystemConfig = [Testenv]::ReadSystemConfig($TestenvConfFile)
 
             Initialize-PesterLogger -OutDir $LogDir
 
@@ -207,22 +210,22 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "LogSources",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "ContrailNM",
-                Justification="It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
+                Justification = "It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
             )]
             $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig, $OpenStackConfig)
             Add-OrReplaceContrailProject `
                 -API $ContrailNM `
-                -Name $Testenv.Controller.DefaultProject
+                -Name $ContrailProject
             Add-OrReplaceContrailSecurityGroup `
                 -API $ContrailNM `
-                -TenantName $Testenv.Controller.DefaultProject `
+                -TenantName $ContrailProject `
                 -Name 'default' | Out-Null
 
             Test-IfUtilsCanLoadDLLs -Session $Session

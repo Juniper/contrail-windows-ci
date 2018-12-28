@@ -13,7 +13,6 @@ class OpenStackConfig {
 class ControllerConfig {
     [string] $Address
     [int] $RestApiPort
-    [string] $DefaultProject
     [string] $AuthMethod
 
     [string] RestApiUrl() {
@@ -38,11 +37,19 @@ class Testenv {
     [ControllerConfig] $Controller
     [Testbed[]] $Testbeds
 
+    [PSSessionT[]] $Sessions
+
+    [Void] Initialize() {
+        $this.Sessions = New-RemoteSessions -VMs $this.Testbeds
+        Set-ConfAndLogDir -Sessions $this.Sessions
+        Sync-MicrosoftDockerImagesOnTestbeds -Sessions $this.Sessions
+    }
+
     Testenv([String] $TestenvConfFile) {
-        $this.System = Read-SystemConfig -Path $TestenvConfFile
-        $this.OpenStack = Read-OpenStackConfig -Path $TestenvConfFile
-        $this.Controller = Read-ControllerConfig -Path $TestenvConfFile
-        $this.Testbeds = Read-TestbedsConfig -Path $TestenvConfFile
+        $this.System = [Testenv]::ReadSystemConfig($TestenvConfFile)
+        $this.OpenStack = [Testenv]::ReadOpenStackConfig($TestenvConfFile)
+        $this.Controller = [Testenv]::ReadControllerConfig($TestenvConfFile)
+        $this.Testbeds = [Testenv]::ReadTestbedsConfig($TestenvConfFile)
     }
 
     Testenv([SystemConfig] $System,
@@ -53,43 +60,36 @@ class Testenv {
         $this.OpenStack = $OpenStack
         $this.Controller = $Controller
     }
-}
 
-function Read-TestenvFile {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    if (-not (Test-Path $Path)) {
-        throw [System.Management.Automation.ItemNotFoundException] "Testenv config file not found at specified location."
+    hidden static [Ordered] ReadTestenvFile([string] $Path) {
+        if (-not (Test-Path $Path)) {
+            throw [System.Management.Automation.ItemNotFoundException] "Testenv config file not found at specified location."
+        }
+        $FileContents = Get-Content -Path $Path -Raw
+        $Parsed = ConvertFrom-Yaml $FileContents
+        return $Parsed
     }
-    $FileContents = Get-Content -Path $Path -Raw
-    $Parsed = ConvertFrom-Yaml $FileContents
-    return $Parsed
-}
 
-function Read-OpenStackConfig {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    $Parsed = Read-TestenvFile -Path $Path
-    if ($Parsed.keys -notcontains 'OpenStack') {
-        return $null
+    static [OpenStackConfig] ReadOpenStackConfig([string] $Path) {
+        $Parsed = [Testenv]::ReadTestenvFile($Path)
+        if ($Parsed.keys -notcontains 'OpenStack') {
+            return $null
+        }
+        return [OpenStackConfig] $Parsed.OpenStack
     }
-    return [OpenStackConfig] $Parsed.OpenStack
-}
 
-function Read-ControllerConfig {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    $Parsed = Read-TestenvFile -Path $Path
-    return [ControllerConfig] $Parsed.Controller
-}
+    static [ControllerConfig] ReadControllerConfig([string] $Path) {
+        $Parsed = [Testenv]::ReadTestenvFile($Path)
+        return [ControllerConfig] $Parsed.Controller
+    }
 
-function Read-SystemConfig {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    $Parsed = Read-TestenvFile -Path $Path
-    return [SystemConfig] $Parsed.System
-}
+    static [SystemConfig] ReadSystemConfig([string] $Path) {
+        $Parsed = [Testenv]::ReadTestenvFile($Path)
+        return [SystemConfig] $Parsed.System
+    }
 
-function Read-TestbedsConfig {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    $Parsed = Read-TestenvFile -Path $Path
-    [Testbed[]] $Testbeds = $Parsed.Testbeds
-    # The comma forces return value to always be array
-    return , $Testbeds
+    static [Testbed[]] ReadTestbedsConfig([string] $Path) {
+        $Parsed = [Testenv]::ReadTestenvFile($Path)
+        return [Testbed[]] $Parsed.Testbeds
+    }
 }

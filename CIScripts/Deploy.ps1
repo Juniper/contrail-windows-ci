@@ -13,7 +13,7 @@ Param(
 
 $Job = [Job]::new("Deploy")
 
-$Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+$Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
 Copy-ArtifactsToTestbeds -Sessions $Sessions -ArtifactsDir $ArtifactsDir
 
 $Job.Done()

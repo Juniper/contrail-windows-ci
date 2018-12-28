@@ -1,6 +1,6 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
@@ -25,10 +25,10 @@ Describe "vTest scenarios" -Tag "Utils" {
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
         $Session = $Sessions[0]
 
-        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+        $SystemConfig = [Testenv]::ReadSystemConfig($TestenvConfFile)
 
         Install-Extension -Session $Session
         Install-Utils -Session $Session

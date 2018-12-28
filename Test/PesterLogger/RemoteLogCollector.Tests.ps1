@@ -22,10 +22,10 @@ function Test-MultipleSourcesAndSessions {
         $Source2 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog2
         $Source3 = New-FileLogSource -Sessions $Sess2 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
-        
+
         # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
         Merge-Logs -DontCleanUp -LogSources @($Source1, $Source2, $Source3)
-        
+
         $DescribeBlockName = (Get-CurrentPesterScope)[0]
         $ContentRaw = Get-Content -Raw "TestDrive:\$DescribeBlockName.works with multiple log sources and sessions.txt"
         $ContentRaw | Should -BeLike "*$DummyLog1*$DummyLog2*$DummyLog1*"
@@ -229,7 +229,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 
 
     AfterEach {
-        Remove-Item "TestDrive:/*" 
+        Remove-Item "TestDrive:/*"
         if (Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue) {
             Remove-Item function:Write-LogImpl
         }
@@ -248,7 +248,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "Sess1", Justification="Pester blocks are handled incorrectly by analyzer.")]
         $Sess1 = $Sessions[0]
@@ -271,7 +271,7 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
     }
 
     AfterEach {
-        Remove-Item "TestDrive:/*" 
+        Remove-Item "TestDrive:/*"
         if (Get-Item function:Write-LogImpl -ErrorAction SilentlyContinue) {
             Remove-Item function:Write-LogImpl
         }

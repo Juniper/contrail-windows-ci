@@ -116,7 +116,7 @@ Describe "Remove-AllContainers" {
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Analyzer doesn't understand relation of Pester blocks"
@@ -127,7 +127,7 @@ Describe "Remove-AllContainers" {
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
-        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+        $SystemConfig = [Testenv]::ReadSystemConfig($TestenvConfFile)
 
         Initialize-PesterLogger -OutDir $LogDir
 

@@ -122,7 +122,7 @@ Describe "Invoke-NativeCommand - Unit tests" -Tags CI, Unit {
 
 Describe "Invoke-NativeCommand - System tests" -Tags CI, Systest {
     BeforeAll {
-        $Testbed = (Read-TestbedsConfig -Path $TestenvConfFile)[0]
+        $Testbed = ([Testenv]::ReadTestbedsConfig($TestenvConfFile))[0]
         $Sessions = New-RemoteSessions -VMs $Testbed
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "Session",
