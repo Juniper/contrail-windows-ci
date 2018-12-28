@@ -73,7 +73,6 @@ function Remove-MultiNodeSetup {
     $ContrailRepo.RemoveWithDependencies($MultiNode.Project)
     $MultiNode.Project = $null
 
-    Write-Log 'Removing PS sessions'
-
+    $MultiNode.ContrailRestApi = $null
     $MultiNode.NM = $null
 }
