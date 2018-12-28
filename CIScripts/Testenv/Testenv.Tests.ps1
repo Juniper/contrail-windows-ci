@@ -1,15 +1,16 @@
 . $PSScriptRoot\..\Common\Init.ps1
-. $PSScriptRoot\Testenv.ps1
+. $PSScriptRoot\Configs.ps1
+. $PSScriptRoot\Testbed.ps1
 
 Describe "Testenv" {
 
     It "should throw if filepath is invalid" {
-        { [Testenv]::ReadOpenStackConfig('./bad/path.yaml') } | Should -Throw
+        { [OpenStackConfig]::LoadFromFile('./bad/path.yaml') } | Should -Throw
     }
 
     Context "Example config" {
         It "can read OpenStack credentials config from a .yaml file" {
-            $OpenStack = [Testenv]::ReadOpenStackConfig($YamlPath)
+            $OpenStack = [OpenStackConfig]::LoadFromFile($YamlPath)
             $OpenStack.Address | Should Be "1.2.3.1"
             $OpenStack.Port | Should Be "5000"
             $OpenStack.Username | Should Be "AzureDiamond"
@@ -20,7 +21,7 @@ Describe "Testenv" {
         }
 
         It "can read controller config from a .yaml file" {
-            $Controller = [Testenv]::ReadControllerConfig($YamlPath)
+            $Controller = [ControllerConfig]::LoadFromFile($YamlPath)
             $Controller.Address | Should Be "1.2.3.1"
             $Controller.RestApiPort | Should Be "8082"
 
@@ -28,14 +29,14 @@ Describe "Testenv" {
         }
 
         It "can read testbed config from a .yaml file" {
-            $System = [Testenv]::ReadSystemConfig($YamlPath)
+            $System = [SystemConfig]::LoadFromFile($YamlPath)
             $System.AdapterName | Should Be "Eth1"
             $System.VMSwitchName() | Should Be "Layered Eth1"
             $System.ForwardingExtensionName | Should Be "MyExtension"
         }
 
         It "can read locations and credentials of testbeds from .yaml file" {
-            $Testbeds = [Testenv]::ReadTestbedsConfig($YamlPath)
+            $Testbeds = [Testbed]::LoadFromFile($YamlPath)
             $Testbeds[0].Address | Should Be "1.2.3.2"
             $Testbeds[1].Address | Should Be "1.2.3.3"
             $Testbeds[0].Username | Should Be "TBUsername"
@@ -91,7 +92,7 @@ testbeds:
         }
 
         It "can read a config file with a single testbed" {
-            $Testbeds = [Testenv]::ReadTestbedsConfig($YamlPath)
+            $Testbeds = [Testbed]::LoadFromFile($YamlPath)
 
             $Testbeds.Count | Should Be 1
             $Testbeds[0].Name | Should Be "Testbed1"

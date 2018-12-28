@@ -4,7 +4,6 @@ Param (
 )
 
 . $PSScriptRoot\..\..\CIScripts\Common\Init.ps1
-. $PSScriptRoot\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\TestConfigurationUtils.ps1
@@ -248,7 +247,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
 Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
+        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "Sess1", Justification="Pester blocks are handled incorrectly by analyzer.")]
         $Sess1 = $Sessions[0]

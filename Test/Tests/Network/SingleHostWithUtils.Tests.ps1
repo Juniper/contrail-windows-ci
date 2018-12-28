@@ -7,7 +7,7 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
@@ -189,16 +189,16 @@ Test-WithRetries 3 {
         }
 
         BeforeAll {
-            $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
+            $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
             $Session = $Sessions[0]
 
-            $OpenStackConfig = [Testenv]::ReadOpenStackConfig($TestenvConfFile)
-            $ControllerConfig = [Testenv]::ReadControllerConfig($TestenvConfFile)
+            $OpenStackConfig = [OpenStackConfig]::LoadFromFile($TestenvConfFile)
+            $ControllerConfig = [ControllerConfig]::LoadFromFile($TestenvConfFile)
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments", "",
                 Justification = "Analyzer doesn't understand relation of Pester blocks"
             )]
-            $SystemConfig = [Testenv]::ReadSystemConfig($TestenvConfFile)
+            $SystemConfig = [SystemConfig]::LoadFromFile($TestenvConfFile)
 
             Initialize-PesterLogger -OutDir $LogDir
 

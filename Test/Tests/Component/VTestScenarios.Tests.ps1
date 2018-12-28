@@ -5,7 +5,7 @@ Param (
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
@@ -25,10 +25,10 @@ Describe "vTest scenarios" -Tag "Utils" {
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
+        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         $Session = $Sessions[0]
 
-        $SystemConfig = [Testenv]::ReadSystemConfig($TestenvConfFile)
+        $SystemConfig = [SystemConfig]::LoadFromFile($TestenvConfFile)
 
         Install-Extension -Session $Session
         Install-Utils -Session $Session

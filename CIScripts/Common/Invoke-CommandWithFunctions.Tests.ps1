@@ -4,7 +4,6 @@ Param (
 )
 
 . $PSScriptRoot/Init.ps1
-. $PSScriptRoot/../Testenv/Testenv.ps1
 . $PSScriptRoot/../Testenv/Testbed.ps1
 
 . $PSScriptRoot/Invoke-CommandWithFunctions.ps1
@@ -114,7 +113,7 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
     }
 
     BeforeAll {
-        $Testbed = ([Testenv]::ReadTestbedsConfig($TestenvConfFile))[0]
+        $Testbed = ([Testbed]::LoadFromFile($TestenvConfFile))[0]
         $Sessions = New-RemoteSessions -VMs $Testbed
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "Session",

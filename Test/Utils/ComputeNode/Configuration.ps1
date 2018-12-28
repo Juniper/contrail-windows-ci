@@ -1,8 +1,7 @@
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
 
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1

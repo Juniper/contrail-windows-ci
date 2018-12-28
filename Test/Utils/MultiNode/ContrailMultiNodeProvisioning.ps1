@@ -1,11 +1,10 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\ContrailAPI_New\ContrailAPI.ps1
 
 # Import order is chosen explicitly because of class dependency
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\MultiNode.ps1
 
 function New-MultiNodeSetup {

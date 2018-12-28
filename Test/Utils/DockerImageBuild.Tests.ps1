@@ -4,12 +4,11 @@ Param (
 )
 
 . $PSScriptRoot\DockerImageBuild.ps1
-. $PSScriptRoot\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\CIScripts\Testenv\Testbed.ps1
 
 Describe "Initialize-DockerImage" -Tags CI, Systest {
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs ([Testenv]::ReadTestbedsConfig($TestenvConfFile))
+        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Analyzer doesn't understand relation of Pester blocks"
