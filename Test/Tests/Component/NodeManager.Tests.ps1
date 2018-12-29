@@ -118,7 +118,7 @@ Describe "Node manager" -Tag "Smoke" {
             -OpenStackConfig $Testenv.OpenStack `
             -ContrailProject $ContrailProject
 
-        $Session = $MultiNode.Sessions[0]
+        $Session = $Testenv.Sessions[0]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments",
             "LogSources",
