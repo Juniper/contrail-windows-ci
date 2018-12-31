@@ -1,6 +1,4 @@
 class DNSRecord : BaseResourceModel {
-    [String] $Name
-    [String[]] $ServerFqName
     [ValidateSet("A", "AAAA", "CNAME", "PTR", "NS", "MX")]
     [String] $Type
     [String] $HostName
@@ -11,16 +9,12 @@ class DNSRecord : BaseResourceModel {
     [String] $ResourceName = 'virtual-DNS-record'
     [String] $ParentType = 'virtual-DNS'
 
-    DNSRecord([String] $Name, [String[]] $ServerFqName, [String] $HostName, [String] $Data, [String] $Type) {
+    DNSRecord([String] $Name, [FqName] $ServerFqName, [String] $HostName, [String] $Data, [String] $Type) {
         $this.Name = $Name
-        $this.ServerFqName = $ServerFqName
+        $this.ParentFqName = $ServerFqName
         $this.HostName = $HostName
         $this.Data = $Data
         $this.Type = $Type
-    }
-
-    [String[]] GetFqName() {
-        return $this.ServerFqName + @($this.Name)
     }
 
     [Hashtable] GetRequest() {

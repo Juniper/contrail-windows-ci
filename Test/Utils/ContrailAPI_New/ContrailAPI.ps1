@@ -1,6 +1,6 @@
 # Common files
-. $PSScriptRoot\ContrailRestApi.ps1
 . $PSScriptRoot\Models\BaseResource.ps1
+. $PSScriptRoot\ContrailRestApi.ps1
 . $PSScriptRoot\Repos\ContrailRepo.ps1
 
 # Reusable, not resource models

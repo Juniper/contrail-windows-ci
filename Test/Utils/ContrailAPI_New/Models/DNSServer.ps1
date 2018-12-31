@@ -22,8 +22,8 @@ class DNSServer : BaseResourceModel {
         $this.Dependencies += [Dependency]::new('virtual-DNS-record', 'virtual_DNS_records')
     }
 
-    [String[]] GetFqName() {
-        return @($this.DomainName, $this.Name)
+    [FqName] GetFqName() {
+        return [FqName]::New(@($this.DomainName, $this.Name))
     }
 
     [Hashtable] GetRequest() {

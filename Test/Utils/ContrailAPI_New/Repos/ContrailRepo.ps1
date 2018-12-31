@@ -9,7 +9,7 @@ class ContrailRepo {
         $Request = $Object.GetRequest()
         $Request.$($Object.ResourceName) += @{
             parent_type = $Object.ParentType
-            fq_name     = $Object.GetFqName()
+            fq_name     = $Object.GetFqName().ToStringArray()
         }
 
         return $this.API.Post($Object.ResourceName, $null, $Request)

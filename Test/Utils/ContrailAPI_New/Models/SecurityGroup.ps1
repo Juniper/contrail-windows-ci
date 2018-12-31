@@ -2,18 +2,14 @@
 #include "PolicyRule.ps1"
 
 class SecurityGroup : BaseResourceModel {
-    [String] $Name
-    [String] $ProjectName
-    [String] $DomainName = 'default-domain'
     [PolicyRule[]] $PolicyRules = @()
+
+    [String] $ResourceName = 'security-group'
+    [String] $ParentType = 'project'
 
     SecurityGroup([String] $Name, [String] $ProjectName) {
         $this.Name = $Name
-        $this.ProjectName = $ProjectName
-    }
-
-    [String[]] GetFqName() {
-        return @($this.DomainName, $this.ProjectName, $this.Name)
+        $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
     }
 
     # This method creates a default security group for a project
@@ -35,9 +31,6 @@ class SecurityGroup : BaseResourceModel {
         $group.PolicyRules += @($rule1, $rule2)
         return $group
     }
-
-    [String] $ResourceName = 'security-group'
-    [String] $ParentType = 'project'
 
     [Hashtable] GetRequest() {
         $SecurityGroupEntries = @{
