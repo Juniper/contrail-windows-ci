@@ -252,7 +252,7 @@ function Wait-RemoteInterfaceIP {
 
         Invoke-UntilSucceeds -Name "Waiting for IP on interface $Using:AdapterName" -Duration 120 -Arguments $UntilSucceedsArgs {
             Param(
-                [Parameter(Mandatory = $true)] [String] $AdapterName
+                [Parameter(Mandatory = $true)] [String] $AdapterName,
                 [Parameter(Mandatory = $true)] [String] $SelectValidNetIPInterfaceContent
             )
             $SelectValidNetIPInterfaceSB = [ScriptBlock]::Create($SelectValidNetIPInterfaceContent)
