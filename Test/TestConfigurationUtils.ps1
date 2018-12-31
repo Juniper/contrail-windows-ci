@@ -247,12 +247,19 @@ function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [String] $AdapterName)
 
-    Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 120 -Arguments @($AdapterName){
-        Param([Parameter(Mandatory = $true)] [String] $AdapterName)
-        Invoke-CommandWithFunctions -Functions "Select-ValidNetIPInterface" -Session $Session {
-            Get-NetAdapter -Name $Using:AdapterName `
+    Invoke-CommandWithFunctions -Functions @("Select-ValidNetIPInterface", "Invoke-UntilSucceeds") -Session $Session {
+        $UntilSucceedsArgs = @($Using:AdapterName, $( Get-Content function:"Select-ValidNetIPInterface" ))
+
+        Invoke-UntilSucceeds -Name "Waiting for IP on interface $Using:AdapterName" -Duration 120 -Arguments $UntilSucceedsArgs {
+            Param(
+                [Parameter(Mandatory = $true)] [String] $AdapterName
+                [Parameter(Mandatory = $true)] [String] $SelectValidNetIPInterfaceContent
+            )
+            $SelectValidNetIPInterfaceSB = [ScriptBlock]::Create($SelectValidNetIPInterfaceContent)
+
+            Get-NetAdapter -Name $AdapterName `
             | Get-NetIPAddress -ErrorAction SilentlyContinue `
-            | Select-ValidNetIPInterface
+            | &$SelectValidNetIPInterfaceSB
         }
     } | Out-Null
 }
