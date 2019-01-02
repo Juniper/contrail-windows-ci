@@ -7,10 +7,25 @@
 . $PSScriptRoot\Service.ps1
 . $PSScriptRoot\..\DockerNetwork\DockerNetwork.ps1
 
+function Set-ConfAndLogDir {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
+    )
+    $ConfigDirPath = Get-DefaultConfigDir
+    $LogDirPath = Get-ComputeLogsDir
+
+    foreach ($Session in $Sessions) {
+        Invoke-Command -Session $Session -ScriptBlock {
+            New-Item -ItemType Directory -Path $using:ConfigDirPath -Force | Out-Null
+            New-Item -ItemType Directory -Path $using:LogDirPath -Force | Out-Null
+        } | Out-Null
+    }
+}
+
 function Initialize-ComputeNode {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [Testenv] $Configs
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testenv] $Configs
     )
 
     Write-Log "Installing components on testbed..."
@@ -25,8 +40,8 @@ function Initialize-ComputeNode {
 
 function Clear-ComputeNode {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
     Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig

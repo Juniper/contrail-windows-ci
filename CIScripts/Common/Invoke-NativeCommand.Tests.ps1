@@ -4,7 +4,6 @@ Param (
 )
 
 . $PSScriptRoot/Init.ps1
-. $PSScriptRoot/../Testenv/Testenv.ps1
 . $PSScriptRoot/../Testenv/Testbed.ps1
 
 . $PSScriptRoot/Invoke-NativeCommand.ps1
@@ -122,7 +121,7 @@ Describe "Invoke-NativeCommand - Unit tests" -Tags CI, Unit {
 
 Describe "Invoke-NativeCommand - System tests" -Tags CI, Systest {
     BeforeAll {
-        $Testbed = (Read-TestbedsConfig -Path $TestenvConfFile)[0]
+        $Testbed = ([Testbed]::LoadFromFile($TestenvConfFile))[0]
         $Sessions = New-RemoteSessions -VMs $Testbed
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "Session",

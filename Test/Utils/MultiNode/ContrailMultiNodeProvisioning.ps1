@@ -1,39 +1,19 @@
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
-. $PSScriptRoot\..\ComputeNode\TestsRequirements.ps1
 . $PSScriptRoot\..\ContrailAPI_New\ContrailAPI.ps1
 
 # Import order is chosen explicitly because of class dependency
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\MultiNode.ps1
-
-function Set-ConfAndLogDir {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
-    )
-    $ConfigDirPath = Get-DefaultConfigDir
-    $LogDirPath = Get-ComputeLogsDir
-
-    foreach ($Session in $Sessions) {
-        Invoke-Command -Session $Session -ScriptBlock {
-            New-Item -ItemType Directory -Path $using:ConfigDirPath -Force | Out-Null
-            New-Item -ItemType Directory -Path $using:LogDirPath -Force | Out-Null
-        } | Out-Null
-    }
-}
 
 function New-MultiNodeSetup {
     Param (
         [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
-        [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig
+        [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig,
+        [Parameter(Mandatory = $true)] [String] $ContrailProject
     )
-
-    $Sessions = New-RemoteSessions -VMs $Testbeds
-    Set-ConfAndLogDir -Sessions $Sessions
-    Sync-MicrosoftDockerImagesOnTestbeds -Sessions $Sessions
 
     # For old API
     $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig, $OpenStackConfig)
@@ -42,10 +22,10 @@ function New-MultiNodeSetup {
 
     $ContrailRepo = [ContrailRepo]::new($ContrailRestApi)
 
-    $Project = [Project]::new($ControllerConfig.DefaultProject)
+    $Project = [Project]::new($ContrailProject)
     $ContrailRepo.AddOrReplace($Project) | Out-Null
 
-    $SecurityGroup = [SecurityGroup]::new_Default($ControllerConfig.DefaultProject)
+    $SecurityGroup = [SecurityGroup]::new_Default($ContrailProject)
     $ContrailRepo.AddOrReplace($SecurityGroup) | Out-Null
 
     $VRouters = @()
@@ -57,7 +37,7 @@ function New-MultiNodeSetup {
         $VRouters += $VirtualRouter
     }
 
-    return [MultiNode]::New($ContrailNM, $ContrailRestApi, $Sessions, $VRouters, $Project)
+    return [MultiNode]::New($ContrailNM, $ContrailRestApi, $VRouters, $Project)
 }
 
 function Remove-MultiNodeSetup {
@@ -76,9 +56,6 @@ function Remove-MultiNodeSetup {
     $ContrailRepo.RemoveWithDependencies($MultiNode.Project)
     $MultiNode.Project = $null
 
-    Write-Log 'Removing PS sessions'
-    Remove-PSSession $MultiNode.Sessions
-    $MultiNode.Sessions = $null
-
+    $MultiNode.ContrailRestApi = $null
     $MultiNode.NM = $null
 }

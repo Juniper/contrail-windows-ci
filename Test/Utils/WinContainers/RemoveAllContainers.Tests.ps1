@@ -1,10 +1,10 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
     [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\Containers.ps1
@@ -116,7 +116,7 @@ Describe "Remove-AllContainers" {
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Analyzer doesn't understand relation of Pester blocks"
@@ -127,7 +127,7 @@ Describe "Remove-AllContainers" {
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
-        $SystemConfig = Read-SystemConfig -Path $TestenvConfFile
+        $SystemConfig = [SystemConfig]::LoadFromFile($TestenvConfFile)
 
         Initialize-PesterLogger -OutDir $LogDir
 

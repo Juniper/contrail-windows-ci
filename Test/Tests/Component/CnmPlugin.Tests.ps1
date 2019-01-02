@@ -8,7 +8,6 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
@@ -73,7 +72,7 @@ function Save-CnmPluginUnitTestReport {
 
 Describe "CNM Plugin" -Tag "Smoke" {
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         $Session = $Sessions[0]
 
         Initialize-PesterLogger -OutDir $LogDir

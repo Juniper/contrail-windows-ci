@@ -11,6 +11,11 @@ class Testbed {
         return $this.NewSession(10, 300000)
     }
 
+    static [Testbed[]] LoadFromFile([string] $Path) {
+        $Parsed = Read-TestenvFile($Path)
+        return [Testbed[]] $Parsed.Testbeds
+    }
+
     [PSSessionT] NewSession([Int] $RetryCount, [Int] $Timeout) {
         $Creds = $this.GetCredentials()
         $Session = if ($this.Address) {

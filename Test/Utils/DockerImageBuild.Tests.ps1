@@ -4,12 +4,11 @@ Param (
 )
 
 . $PSScriptRoot\DockerImageBuild.ps1
-. $PSScriptRoot\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\CIScripts\Testenv\Testbed.ps1
 
 Describe "Initialize-DockerImage" -Tags CI, Systest {
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Analyzer doesn't understand relation of Pester blocks"
@@ -31,7 +30,7 @@ Describe "Initialize-DockerImage" -Tags CI, Systest {
         $DockerOutput = Initialize-DockerImage -Session $Session -DockerImageName $DockerImageName
         $DockerOutput | Should -Contain "Successfully tagged $( $DockerImageName ):latest"
         $DockerOutput -Join "" | Should -BeLike "*Successfully built*"
-        
+
         Invoke-Command -Session $Session {
             docker inspect $Using:DockerImageName
         } | Should -Not -BeNullOrEmpty

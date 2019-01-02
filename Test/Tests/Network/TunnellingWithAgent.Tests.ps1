@@ -1,8 +1,8 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
@@ -27,6 +27,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\GlobalVrouterConfig.ps1
 
+$ContrailProject = 'ci_tests_tunneling'
+
 $TCPServerDockerImage = "python-http"
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -40,19 +42,19 @@ $Subnet = [SubnetConfiguration]::new(
 $Network = [Network]::New("testnet12", $Subnet)
 
 function Get-MaxIPv4DataSizeForMTU {
-    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    Param ([Parameter(Mandatory = $true)] [Int] $MTU)
     $MinimalIPHeaderSize = 20
     return $MTU - $MinimalIPHeaderSize
 }
 
 function Get-MaxICMPDataSizeForMTU {
-    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    Param ([Parameter(Mandatory = $true)] [Int] $MTU)
     $ICMPHeaderSize = 8
     return $(Get-MaxIPv4DataSizeForMTU -MTU $MTU) - $ICMPHeaderSize
 }
 
 function Get-MaxUDPDataSizeForMTU {
-    Param ([Parameter(Mandatory=$true)] [Int] $MTU)
+    Param ([Parameter(Mandatory = $true)] [Int] $MTU)
     $UDPHeaderSize = 8
     return $(Get-MaxIPv4DataSizeForMTU -MTU $MTU) - $UDPHeaderSize
 }
@@ -75,7 +77,7 @@ function Get-VrfStats {
         return @{
             MPLSoUDP = $PktCountMPLSoUDP
             MPLSoGRE = $PktCountMPLSoGRE
-            VXLAN = $PktCountVXLAN
+            VXLAN    = $PktCountVXLAN
         }
     }
     Write-Log "vrfstats for vif $VifIdx : $($Stats | Out-String)"
@@ -102,7 +104,7 @@ Test-WithRetries 3 {
         # Do it especially when logging in via WebUI for the first time.
         #
 
-        foreach($TunnelingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
+        foreach ($TunnelingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
             Context "Tunneling $TunnelingMethod" {
                 BeforeEach {
                     $EncapPrioritiesList = @($TunnelingMethod)
@@ -113,9 +115,9 @@ Test-WithRetries 3 {
                     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                         "PSUseDeclaredVarsMoreThanAssignments",
                         "Sessions",
-                        Justification="It's actually used in 'It' blocks."
+                        Justification = "It's actually used in 'It' blocks."
                     )]
-                    $Sessions = $MultiNode.Sessions
+                    $Sessions = $Testenv.Sessions
                 }
 
                 It "Uses specified tunneling method" {
@@ -216,32 +218,34 @@ Test-WithRetries 3 {
 
         BeforeAll {
             $Testenv = [Testenv]::New($TestenvConfFile)
+            $Testenv.Initialize()
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup `
                 -Testbeds $Testenv.Testbeds `
                 -ControllerConfig $Testenv.Controller `
-                -OpenStackConfig $Testenv.OpenStack
+                -OpenStackConfig $Testenv.OpenStack `
+                -ContrailProject $ContrailProject
 
             Write-Log "Creating virtual network: $($Network.Name)"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "ContrailNetwork",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $ContrailNetwork = Add-OrReplaceNetwork `
                 -API $MultiNode.NM `
-                -TenantName $Testenv.Controller.DefaultProject `
+                -TenantName $ContrailProject `
                 -Name $Network.Name `
                 -SubnetConfig $Subnet
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "LogSources",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
-            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Testenv.Sessions
 
-            foreach ($Session in $MultiNode.Sessions) {
+            foreach ($Session in $Testenv.Sessions) {
                 if ($PrepareEnv) {
                     Initialize-ComputeNode `
                         -Session $Session `
@@ -251,19 +255,19 @@ Test-WithRetries 3 {
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -TenantName $Testenv.Controller.DefaultProject
+                    -TenantName $ContrailProject
             }
         }
 
         AfterAll {
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
 
-                foreach ($Session in $MultiNode.Sessions) {
+                foreach ($Session in $Testenv.Sessions) {
                     Remove-DockerNetwork -Session $Session -Name $Network.Name
                 }
 
                 if ($PrepareEnv) {
-                    foreach ($Session in $MultiNode.Sessions) {
+                    foreach ($Session in $Testenv.Sessions) {
                         Clear-ComputeNode `
                             -Session $Session `
                             -SystemConfig $Testenv.System
@@ -287,13 +291,13 @@ Test-WithRetries 3 {
             Write-Log "Creating containers"
             Write-Log "Creating container: $Container1ID"
             New-Container `
-                -Session $MultiNode.Sessions[0] `
+                -Session $Testenv.Sessions[0] `
                 -NetworkName $Network.Name `
                 -Name $Container1ID `
                 -Image $TCPServerDockerImage
             Write-Log "Creating container: $Container2ID"
             New-Container `
-                -Session $MultiNode.Sessions[1] `
+                -Session $Testenv.Sessions[1] `
                 -NetworkName $Network.Name `
                 -Name $Container2ID `
                 -Image "microsoft/windowsservercore"
@@ -302,25 +306,25 @@ Test-WithRetries 3 {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Container1NetInfo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $MultiNode.Sessions[0] -ContainerID $Container1ID
+                -Session $Testenv.Sessions[0] -ContainerID $Container1ID
             $IP = $Container1NetInfo.IPAddress
             Write-Log "IP of ${Container1ID}: $IP"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Container2NetInfo",
-                Justification="It's actually used."
+                Justification = "It's actually used."
             )]
             $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $MultiNode.Sessions[1] -ContainerID $Container2ID
+                -Session $Testenv.Sessions[1] -ContainerID $Container2ID
             $IP = $Container2NetInfo.IPAddress
             Write-Log "IP of ${Container2ID}: $IP"
         }
 
         AfterEach {
-            $Sessions = $MultiNode.Sessions
+            $Sessions = $Testenv.Sessions
             try {
                 Merge-Logs -LogSources (
                     (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID),
@@ -329,7 +333,8 @@ Test-WithRetries 3 {
 
                 Write-Log "Removing all containers"
                 Remove-AllContainers -Sessions $Sessions
-            } finally {
+            }
+            finally {
                 Merge-Logs -DontCleanUp -LogSources $LogSources
             }
         }

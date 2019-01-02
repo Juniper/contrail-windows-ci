@@ -1,8 +1,7 @@
 . $PSScriptRoot\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\..\CIScripts\Common\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
-. $PSScriptRoot\..\CIScripts\Testenv\Testenv.ps1
-. $PSScriptRoot\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\..\CIScripts\Testenv\Configs.ps1
 
 . $PSScriptRoot\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\Utils\ComputeNode\Service.ps1

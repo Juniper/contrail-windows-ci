@@ -1,4 +1,3 @@
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
 function Initialize-DockerNetworks {

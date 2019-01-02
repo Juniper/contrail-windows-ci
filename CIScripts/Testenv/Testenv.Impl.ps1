@@ -1,95 +1,21 @@
-class OpenStackConfig {
-    [string] $Username
-    [string] $Password
-    [string] $Project
-    [string] $Address
-    [int] $Port
-
-    [string] AuthUrl() {
-        return "http://$( $this.Address ):$( $this.Port )/v2.0"
-    }
-}
-
-class ControllerConfig {
-    [string] $Address
-    [int] $RestApiPort
-    [string] $DefaultProject
-    [string] $AuthMethod
-
-    [string] RestApiUrl() {
-        return "http://$( $this.Address ):$( $this.RestApiPort )"
-    }
-}
-
-class SystemConfig {
-    [string] $AdapterName
-    [string] $VHostName
-    [string] $MgmtAdapterName
-    [string] $ForwardingExtensionName
-
-    [string] VMSwitchName() {
-        return "Layered " + $this.AdapterName
-    }
-}
-
 class Testenv {
     [SystemConfig] $System
     [OpenStackConfig] $OpenStack
     [ControllerConfig] $Controller
     [Testbed[]] $Testbeds
 
+    [PSSessionT[]] $Sessions
+
+    [Void] Initialize() {
+        $this.Sessions = New-RemoteSessions -VMs $this.Testbeds
+        Set-ConfAndLogDir -Sessions $this.Sessions
+        Sync-MicrosoftDockerImagesOnTestbeds -Sessions $this.Sessions
+    }
+
     Testenv([String] $TestenvConfFile) {
-        $this.System = Read-SystemConfig -Path $TestenvConfFile
-        $this.OpenStack = Read-OpenStackConfig -Path $TestenvConfFile
-        $this.Controller = Read-ControllerConfig -Path $TestenvConfFile
-        $this.Testbeds = Read-TestbedsConfig -Path $TestenvConfFile
+        $this.System = [SystemConfig]::LoadFromFile($TestenvConfFile)
+        $this.OpenStack = [OpenStackConfig]::LoadFromFile($TestenvConfFile)
+        $this.Controller = [ControllerConfig]::LoadFromFile($TestenvConfFile)
+        $this.Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
     }
-
-    Testenv([SystemConfig] $System,
-        [OpenStackConfig] $OpenStack,
-        [ControllerConfig] $Controller) {
-
-        $this.System = $System
-        $this.OpenStack = $OpenStack
-        $this.Controller = $Controller
-    }
-}
-
-function Read-TestenvFile {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    if (-not (Test-Path $Path)) {
-        throw [System.Management.Automation.ItemNotFoundException] "Testenv config file not found at specified location."
-    }
-    $FileContents = Get-Content -Path $Path -Raw
-    $Parsed = ConvertFrom-Yaml $FileContents
-    return $Parsed
-}
-
-function Read-OpenStackConfig {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    $Parsed = Read-TestenvFile -Path $Path
-    if ($Parsed.keys -notcontains 'OpenStack') {
-        return $null
-    }
-    return [OpenStackConfig] $Parsed.OpenStack
-}
-
-function Read-ControllerConfig {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    $Parsed = Read-TestenvFile -Path $Path
-    return [ControllerConfig] $Parsed.Controller
-}
-
-function Read-SystemConfig {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    $Parsed = Read-TestenvFile -Path $Path
-    return [SystemConfig] $Parsed.System
-}
-
-function Read-TestbedsConfig {
-    Param ([Parameter(Mandatory = $true)] [string] $Path)
-    $Parsed = Read-TestenvFile -Path $Path
-    [Testbed[]] $Testbeds = $Parsed.Testbeds
-    # The comma forces return value to always be array
-    return , $Testbeds
 }

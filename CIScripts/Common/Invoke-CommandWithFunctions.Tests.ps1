@@ -4,7 +4,6 @@ Param (
 )
 
 . $PSScriptRoot/Init.ps1
-. $PSScriptRoot/../Testenv/Testenv.ps1
 . $PSScriptRoot/../Testenv/Testbed.ps1
 
 . $PSScriptRoot/Invoke-CommandWithFunctions.ps1
@@ -66,7 +65,7 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
                 [Switch] $DoAThrow
             )
             [ScriptBlock]$Sb = [ScriptBlock]::Create( $TestString )
-            Test-InnerFunction -ScriptBlock $Sb -ArgumentList $TestString -DoAThrow:$DoAThrow 
+            Test-InnerFunction -ScriptBlock $Sb -ArgumentList $TestString -DoAThrow:$DoAThrow
         }
 
         function Test-InnerFunction {
@@ -83,7 +82,7 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
                 Invoke-Command -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList
             }
          }
-    
+
         $TestFunctions = @("Test-OuterFunction", "Test-InnerFunction")
 
         It "Inner function calls passed string as scriptblock and outputs result" {
@@ -114,7 +113,7 @@ Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
     }
 
     BeforeAll {
-        $Testbed = (Read-TestbedsConfig -Path $TestenvConfFile)[0]
+        $Testbed = ([Testbed]::LoadFromFile($TestenvConfFile))[0]
         $Sessions = New-RemoteSessions -VMs $Testbed
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "Session",

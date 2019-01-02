@@ -4,7 +4,6 @@ Param (
     [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
 
 Describe "New-Container" -Tags CI, Systest {
@@ -113,7 +112,7 @@ Describe "New-Container" -Tags CI, Systest {
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs (Read-TestbedsConfig -Path $TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Lifetime and visibility of variables is a matter beyond capabilities of code checker."

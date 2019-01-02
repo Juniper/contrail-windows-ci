@@ -8,7 +8,7 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
@@ -25,6 +25,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+
+$ContrailProject = 'ci_tests_agentrestart'
 
 $Container1ID = "jolly-lumberjack"
 $Container2ID = "juniper-tree"
@@ -87,13 +89,13 @@ Test-WithRetries 3 {
 
             Write-Log "Creating container: $Container3ID"
             New-Container `
-                -Session $MultiNode.Sessions[1] `
+                -Session $Testenv.Sessions[1] `
                 -NetworkName $Network.Name `
                 -Name $Container3ID `
                 -Image "microsoft/windowsservercore"
 
             $Container3NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $MultiNode.Sessions[1] -ContainerID $Container3ID
+                -Session $Testenv.Sessions[1] -ContainerID $Container3ID
             $IP = $Container3NetInfo.IPAddress
             Write-Log "IP of ${Container3ID}: $IP"
 
@@ -112,17 +114,20 @@ Test-WithRetries 3 {
 
         BeforeAll {
             $Testenv = [Testenv]::New($TestenvConfFile)
+            $Testenv.Initialize()
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup `
                 -Testbeds $Testenv.Testbeds `
                 -ControllerConfig $Testenv.Controller `
-                -OpenStackConfig $Testenv.OpenStack
+                -OpenStackConfig $Testenv.OpenStack `
+                -ContrailProject $ContrailProject
+
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "Sessions",
                 Justification = "It's actually used."
             )]
-            $Sessions = $MultiNode.Sessions
+            $Sessions = $Testenv.Sessions
 
             Write-Log "Creating virtual network: $($Network.Name)"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -132,7 +137,7 @@ Test-WithRetries 3 {
             )]
             $ContrailNetwork = Add-OrReplaceNetwork `
                 -API $MultiNode.NM `
-                -TenantName $Testenv.Controller.DefaultProject `
+                -TenantName $ContrailProject `
                 -Name $Network.Name `
                 -SubnetConfig $Subnet
 
@@ -141,7 +146,7 @@ Test-WithRetries 3 {
                 "LogSources",
                 Justification = "It's actually used."
             )]
-            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Testenv.Sessions
 
             foreach ($Session in $Sessions) {
                 if ($PrepareEnv) {
@@ -153,13 +158,13 @@ Test-WithRetries 3 {
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -TenantName $Testenv.Controller.DefaultProject
+                    -TenantName $ContrailProject
             }
         }
 
         AfterAll {
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                $Sessions = $MultiNode.Sessions
+                $Sessions = $Testenv.Sessions
                 $SystemConfig = $Testenv.System
 
                 foreach ($Session in $Sessions) {
@@ -191,13 +196,13 @@ Test-WithRetries 3 {
             Write-Log "Creating containers"
             Write-Log "Creating container: $Container1ID"
             New-Container `
-                -Session $MultiNode.Sessions[0] `
+                -Session $Testenv.Sessions[0] `
                 -NetworkName $Network.Name `
                 -Name $Container1ID `
                 -Image "microsoft/windowsservercore"
             Write-Log "Creating container: $Container2ID"
             New-Container `
-                -Session $MultiNode.Sessions[1] `
+                -Session $Testenv.Sessions[1] `
                 -NetworkName $Network.Name `
                 -Name $Container2ID `
                 -Image "microsoft/windowsservercore"
@@ -209,7 +214,7 @@ Test-WithRetries 3 {
                 Justification = "It's actually used."
             )]
             $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $MultiNode.Sessions[0] -ContainerID $Container1ID
+                -Session $Testenv.Sessions[0] -ContainerID $Container1ID
             $IP = $Container1NetInfo.IPAddress
             Write-Log "IP of ${Container1ID}: $IP"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -218,13 +223,13 @@ Test-WithRetries 3 {
                 Justification = "It's actually used."
             )]
             $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $MultiNode.Sessions[1] -ContainerID $Container2ID
+                -Session $Testenv.Sessions[1] -ContainerID $Container2ID
             $IP = $Container2NetInfo.IPAddress
             Write-Log "IP of ${Container2ID}: $IP"
         }
 
         AfterEach {
-            $Sessions = $MultiNode.Sessions
+            $Sessions = $Testenv.Sessions
 
             try {
                 Merge-Logs -LogSources (

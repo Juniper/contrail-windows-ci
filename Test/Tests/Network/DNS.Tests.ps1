@@ -28,6 +28,8 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
 . $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
 
+$ContrailProject = 'ci_tests_dns'
+
 $ContainersIDs = @("jolly-lumberjack","juniper-tree")
 
 $Subnet = [SubnetConfiguration]::new(
@@ -168,7 +170,7 @@ function ResolveCorrectly {
 
     Write-Log "Trying to resolve host '$Hostname', expecting ip '$IP'"
 
-    $result = Resolve-DNS -Session $MultiNode.Sessions[0] `
+    $result = Resolve-DNS -Session $Testenv.Sessions[0] `
         -ContainerName $ContainersIDs[0] -Hostname $Hostname
 
     if((-not $result.error)) {
@@ -187,7 +189,7 @@ function ResolveWithError {
 
     Write-Log "Trying to resolve host '$Hostname', expecting error '$ErrorType'"
 
-    $result = Resolve-DNS -Session $MultiNode.Sessions[0] `
+    $result = Resolve-DNS -Session $Testenv.Sessions[0] `
         -ContainerName $ContainersIDs[0] -Hostname $Hostname
     return (($result.error -eq $ErrorType) -and (-not $result.result))
 }
@@ -196,21 +198,23 @@ Test-WithRetries 1 {
     Describe "DNS tests" -Tag "Smoke" {
         BeforeAll {
             $Testenv = [Testenv]::New($TestenvConfFile)
+            $Testenv.Initialize()
             Initialize-PesterLogger -OutDir $LogDir
             $MultiNode = New-MultiNodeSetup `
                 -Testbeds $Testenv.Testbeds `
                 -ControllerConfig $Testenv.Controller `
-                -OpenStackConfig $Testenv.OpenStack
+                -OpenStackConfig $Testenv.OpenStack `
+                -ContrailProject $ContrailProject
 
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                 "PSUseDeclaredVarsMoreThanAssignments",
                 "LogSources",
                 Justification="It's actually used."
             )]
-            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $MultiNode.Sessions
+            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Testenv.Sessions
 
-            Install-DNSTestDependencies -Sessions $MultiNode.Sessions
-            Start-DNSServerOnTestBed -Session $MultiNode.Sessions[1]
+            Install-DNSTestDependencies -Sessions $Testenv.Sessions
+            Start-DNSServerOnTestBed -Session $Testenv.Sessions[1]
 
             $MgmtAdapterName = $Testenv.System.MgmtAdapterName
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -219,8 +223,8 @@ Test-WithRetries 1 {
                 Justification="It's actually used."
             )]
             $OldDNSs = Set-DNSServerAddressOnTestBed `
-                           -ClientSession $MultiNode.Sessions[0] `
-                           -ServerSession $MultiNode.Sessions[1] `
+                           -ClientSession $Testenv.Sessions[0] `
+                           -ServerSession $Testenv.Sessions[1] `
                            -InterfaceAlias $MgmtAdapterName
 
             Write-Log "Creating Virtual DNS Server in Contrail..."
@@ -232,7 +236,7 @@ Test-WithRetries 1 {
 
             if ($PrepareEnv) {
                 Write-Log "Initializing Contrail services on test beds..."
-                foreach($Session in $MultiNode.Sessions) {
+                foreach($Session in $Testenv.Sessions) {
                     Initialize-ComputeNode `
                         -Session $Session `
                         -Configs $Testenv
@@ -247,7 +251,7 @@ Test-WithRetries 1 {
             )]
             $ContrailNetwork = Add-OrReplaceNetwork `
                 -API $MultiNode.NM `
-                -TenantName $Testenv.Controller.DefaultProject `
+                -TenantName $ContrailProject `
                 -Name $Network.Name `
                 -SubnetConfig $Network.Subnet
         }
@@ -262,14 +266,14 @@ Test-WithRetries 1 {
             $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
             $IPAMRepo.SetIpamDNSMode($IPAM)
 
-            foreach($Session in $MultiNode.Sessions) {
+            foreach($Session in $Testenv.Sessions) {
                 Initialize-DockerNetworks `
                     -Session $Session `
                     -Networks @($Network) `
-                    -TenantName $Testenv.Controller.DefaultProject
+                    -TenantName $ContrailProject
             }
 
-            Start-Container -Session $MultiNode.Sessions[0] `
+            Start-Container -Session $Testenv.Sessions[0] `
                 -ContainerID $ContainersIDs[0] `
                 -ContainerImage "microsoft/windowsservercore" `
                 -NetworkName $Network.Name
@@ -278,14 +282,14 @@ Test-WithRetries 1 {
         function AfterEachContext {
             Invoke-Command -ErrorAction SilentlyContinue {
                 Merge-Logs -LogSources (
-                    (New-ContainerLogSource -Sessions $MultiNode.Sessions[0] -ContainerNames $ContainersIDs[0]),
-                    (New-ContainerLogSource -Sessions $MultiNode.Sessions[1] -ContainerNames $ContainersIDs[1])
+                    (New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIDs[0]),
+                    (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIDs[1])
                 )
 
                 Write-Log "Removing all containers and docker networks"
-                Remove-AllContainers -Sessions $MultiNode.Sessions
-                Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[0]
-                Remove-AllUnusedDockerNetworks -Session $MultiNode.Sessions[1]
+                Remove-AllContainers -Sessions $Testenv.Sessions
+                Remove-AllUnusedDockerNetworks -Session $Testenv.Sessions[0]
+                Remove-AllUnusedDockerNetworks -Session $Testenv.Sessions[1]
             }
         }
 
@@ -299,7 +303,7 @@ Test-WithRetries 1 {
 
             if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
                 if ($PrepareEnv) {
-                    foreach($Session in $MultiNode.Sessions) {
+                    foreach($Session in $Testenv.Sessions) {
                         Clear-ComputeNode `
                             -Session $Session `
                             -SystemConfig $Testenv.System
@@ -315,7 +319,7 @@ Test-WithRetries 1 {
 
                 if (Get-Variable "OldDNSs" -ErrorAction SilentlyContinue) {
                     Write-Log "Restoring old DNS servers on test bed..."
-                    Invoke-Command -Session $MultiNode.Sessions[0] -ScriptBlock {
+                    Invoke-Command -Session $Testenv.Sessions[0] -ScriptBlock {
                         Set-DnsClientServerAddress -InterfaceAlias $Using:MgmtAdapterName -ServerAddresses $Using:OldDNSs
                     }
                 }
@@ -400,7 +404,7 @@ Test-WithRetries 1 {
                 BeforeEachContext -DNSSetting ([TenantDNSSettings]::New(@($TenantDNSServerAddress)))
 
                 Start-Container `
-                    -Session $MultiNode.Sessions[1] `
+                    -Session $Testenv.Sessions[1] `
                     -ContainerID $ContainersIDs[1] `
                     -ContainerImage "python-dns" `
                     -NetworkName $Network.Name `
