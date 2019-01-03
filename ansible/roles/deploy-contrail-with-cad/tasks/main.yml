@@ -1,0 +1,29 @@
+---
+
+- name: Install build dependencies
+  package:
+    name: "{{ item }}"
+    state: present
+  become: true
+  with_items:
+    - ansible-2.4.2.0-1.el7
+
+- name: Upload contrail-ansible-deployer do deployer machine
+  copy:
+    src: contrail-ansible-deployer
+    dest: "./contrail-ansible-deployer"
+
+- name: Upload debug dlls do deployer machine
+  copy:
+    src: dlls
+    dest: "./dlls"
+
+- name: Run deployer playbooks
+  include_tasks: ../contrail-ansible-deployer/tasks/run_deployer_playbook.yml
+  vars:
+    playbook: '{{ item.playbook }}'
+    extra_options: '{{ item.extra_options | default("") }}'
+    docker_provision_dir: "contrail-ansible-deployer"
+  with_items:
+    - { playbook: 'playbooks/configure_instances.yml', extra_options: '-v' }
+    - { playbook: 'playbooks/install_contrail.yml'}
