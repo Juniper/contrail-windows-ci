@@ -6,8 +6,18 @@
     state: present
   become: true
   with_items:
-    - ansible-2.4.2.0-1.el7
     - git
+    - sshpass
+    - python-pip
+
+- name: install dependencies
+  pip:
+    name: "{{ item.name }}"
+    version: "{{ item.version | default(omit) }}"
+  with_items:
+    - name: requests
+    - name: ansible
+      version: 2.4.2
 
 - name: Clone contrail-ansible-deployer repository
   git:
@@ -27,7 +37,7 @@
     playbook: '{{ item.playbook }}'
     extra_options: '{{ item.extra_options | default("") }}'
   with_items:
-    - { playbook: 'playbooks/configure_instances.yml', extra_options: '-v' }
+    - { playbook: 'playbooks/configure_instances.yml', extra_options: '-vvv' }
     - { playbook: 'playbooks/install_openstack.yml' }
     - { playbook: 'playbooks/install_contrail.yml', extra_options: '-e orchestrator=openstack' }
 

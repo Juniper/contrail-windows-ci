@@ -29,6 +29,7 @@ IMAGES = [
     'contrail-external-zookeeper',
     'contrail-external-rabbitmq',
     'contrail-external-kafka',
+    'contrail-external-redis',
     'contrail-openstack-neutron-init',
     'contrail-openstack-compute-init',
     'contrail-openstack-ironic-notification-manager',
