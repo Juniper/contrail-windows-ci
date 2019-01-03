@@ -260,10 +260,10 @@ function Test-IfVmSwitchExist {
         [Parameter(Mandatory = $true)] [String] $VmSwitchName)
 
     $r = Invoke-Command -Session $Session -ScriptBlock {
-        Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select -ExpandProperty isDeleted
+        Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
     }
 
-    if(($r -eq $null) -or ($r -eq $true)) {
+    if(($null -eq $r) -or ($r -eq $true)) {
         return $false
     }
 
