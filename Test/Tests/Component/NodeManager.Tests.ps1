@@ -1,6 +1,6 @@
 Param (
     [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
     [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
@@ -8,18 +8,18 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
+. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
-. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 $ContrailProject = 'ci_tests_nodemanager'
@@ -61,8 +61,8 @@ function Test-NodeMgrConnectionWithController {
     $TestbedHostname = Invoke-Command -Session $Session -ScriptBlock {
         hostname
     }
-    $Out = Invoke-RestMethod ("http://" + $ControllerIP + ":8089/Snh_ShowCollectorServerReq?")
-    $OurNode = $Out.ShowCollectorServerResp.generators.list.GeneratorSummaryInfo.source | Where-Object "#text" -Like "$TestbedHostname"
+    $Out = Invoke-RestMethod ("http://$($ControllerIP):8089/Snh_ShowCollectorServerReq?")
+    $OurNode = $Out.ShowCollectorServerResp.generators.list.GeneratorSummaryInfo.source | Where-Object '#text' -Like $TestbedHostname
 
     return [bool]($OurNode)
 }
@@ -77,77 +77,38 @@ function Test-ControllerReceivesNodeStatus {
     return $true
 }
 
-Describe "Node manager" -Tag "Smoke" {
-    It "starts" {
+Describe 'Node manager' -Tag 'Smoke' {
+    It 'starts' {
         Eventually {
-            Test-NodeMgrLogs -Session $Session | Should Be True
+            Test-NodeMgrLogs -Session $Testenv.Sessions[0] | Should Be True
         } -Duration 60
     }
 
-    It "connects to controller" {
+    It 'connects to controller' {
         Eventually {
             Test-NodeMgrConnectionWithController `
-                -Session $Session `
+                -Session $Testenv.Sessions[0] `
                 -ControllerIP $Testenv.Controller.Address | Should Be True
         } -Duration 60
     }
 
     It "sets node state as 'Up'" -Pending {
         Eventually {
-            Test-ControllerReceivesNodeStatus -Session $Session | Should Be True
+            Test-ControllerReceivesNodeStatus -Session $Testenv.Sessions[0] | Should Be True
         } -Duration 60
     }
 
     AfterEach {
-        Merge-Logs -DontCleanUp -LogSources $LogSources
+        Merge-Logs -DontCleanUp -LogSources $Testenv.LogSources
     }
 
     BeforeAll {
         $Testenv = [Testenv]::New($TestenvConfFile)
         $Testenv.Initialize()
-        Initialize-PesterLogger -OutDir $LogDir
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "MultiNode",
-            Justification = "It's actually used."
-        )]
-        $MultiNode = New-MultiNodeSetup `
-            -Testbeds $Testenv.Testbeds `
-            -ControllerConfig $Testenv.Controller `
-            -OpenStackConfig $Testenv.OpenStack `
-            -ContrailProject $ContrailProject
-
-        $Session = $Testenv.Sessions[0]
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "LogSources",
-            Justification = "It's actually used."
-        )]
-        [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
-
-        if ($PrepareEnv) {
-            Install-Components -Session $Session
-            Clear-NodeMgrLogs -Session $Session
-
-            Initialize-ComputeServices `
-                -Session $Session `
-                -SystemConfig $Testenv.System `
-                -OpenStackConfig $Testenv.OpenStack `
-                -ControllerConfig $Testenv.Controller
-        }
+        $Testenv.Initialize_New($LogDir, $ContrailProject, $PrepareEnv)
     }
 
     AfterAll {
-        if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-
-            if ($PrepareEnv) {
-                Clear-ComputeNode -Session $Session -SystemConfig $Testenv.System
-                Clear-Logs -LogSources $LogSources
-            }
-
-            Remove-MultiNodeSetup -MultiNode $MultiNode
-            Remove-Variable "MultiNode"
-        }
+        $Testenv.Cleanup()
     }
 }
