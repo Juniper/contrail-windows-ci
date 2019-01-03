@@ -46,6 +46,7 @@ function Invoke-UntilSucceeds {
         [Parameter(Mandatory = $false)] [ScriptBlock] $Precondition,
         [Parameter(Mandatory = $false)] [String] $Name = "Invoke-UntilSucceds",
         [Parameter(Mandatory = $false)] [PSobject[]] $Arguments = $null,
+        [Parameter(Mandatory = $false)] [String] $DebugTag = $DebugTag,
         [Switch] $AssumeTrue
     )
     Write-Log "$DebugTag Function begins with job: $name"
