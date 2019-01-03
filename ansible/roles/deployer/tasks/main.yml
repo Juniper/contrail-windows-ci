@@ -1,0 +1,28 @@
+- name: Install c-a-d system dependencies
+  package:
+    name: "{{ item }}"
+    state: present
+  become: true
+  with_items:
+    - git
+    - sshpass
+
+# By default centOS knows no repo with pip.
+- name: get pip
+  uri:
+    url: "https://bootstrap.pypa.io/get-pip.py"
+    dest: ~/get-pip.py
+    method: GET
+
+- name: install pip
+  shell: >
+    python ~/get-pip.py
+
+- name: Install c-a-d python dependencies
+  pip:
+    name: "{{ item }}"
+    state: present
+  become: true
+  with_items:
+    - requests==2.18.4
+    - ansible==2.4.2.0
