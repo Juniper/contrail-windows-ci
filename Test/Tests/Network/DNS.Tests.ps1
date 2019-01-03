@@ -1,8 +1,8 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [bool] $PrepareEnv = $true,
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
+    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
@@ -23,39 +23,36 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
-. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\DNSServerRepo.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\IPAMRepo.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\ContrailAPI.ps1
+. $PSScriptRoot\..\..\Utils\TestCleanup\TestCleanup.ps1
 
 $ContrailProject = 'ci_tests_dns'
 
-$ContainersIDs = @("jolly-lumberjack","juniper-tree")
+$ContainersIDs = @('jolly-lumberjack', 'juniper-tree')
 
-$Subnet = [SubnetConfiguration]::new(
-    "10.0.5.0",
+$Subnet = [Subnet]::new(
+    '10.0.5.0',
     24,
-    "10.0.5.1",
-    "10.0.5.19",
-    "10.0.5.83"
+    '10.0.5.1',
+    '10.0.5.19',
+    '10.0.5.83'
 )
-$Network = [Network]::New("testnet12", $Subnet)
+$VirtualNetwork = [VirtualNetwork]::New('testnet_dns', $ContrailProject, $Subnet)
 
-$TenantDNSServerAddress = "10.0.5.80"
+$TenantDNSServerAddress = '10.0.5.80'
 
-$VirtualDNSServer = [DNSServer]::New("CreatedForTest")
+$VirtualDNSServer = [DNSServer]::New('CreatedForTest')
 
-$VirtualDNSrecords = @([DNSRecord]::New("vdnsrecord-nonetest", "1.1.1.1", "A", $VirtualDNSServer.GetFQName()),
-                       [DNSRecord]::New("vdnsrecord-defaulttest", "1.1.1.2", "A", $VirtualDNSServer.GetFQName()),
-                       [DNSRecord]::New("vdnsrecord-virtualtest", "1.1.1.3", "A", $VirtualDNSServer.GetFQName()),
-                       [DNSRecord]::New("vdnsrecord-tenanttest", "1.1.1.4", "A", $VirtualDNSServer.GetFQName())
-)
+$VirtualDNSrecords = @([DNSRecord]::New('vnone', $VirtualDNSServer.GetFQName(), 'vdnsrecord-nonetest', '1.1.1.1', 'A'),
+    [DNSRecord]::New('vdefa', $VirtualDNSServer.GetFQName(), 'vdnsrecord-defaulttest', '1.1.1.2', 'A'),
+    [DNSRecord]::New('vvirt', $VirtualDNSServer.GetFQName(), 'vdnsrecord-virtualtest', '1.1.1.3', 'A'),
+    [DNSRecord]::New('vtena', $VirtualDNSServer.GetFQName(), 'vdnsrecord-tenanttest', '1.1.1.4', 'A'))
 
-$DefaultDNSrecords = @([DNSRecord]::New("defaultrecord-nonetest.com", "3.3.3.1", "A", ""),
-                       [DNSRecord]::New("defaultrecord-defaulttest.com", "3.3.3.2", "A", ""),
-                       [DNSRecord]::New("defaultrecord-virtualtest.com", "3.3.3.3", "A", ""),
-                       [DNSRecord]::New("defaultrecord-tenanttest.com", "3.3.3.4", "A", "")
-)
+$DefaultDNSrecords = @([DNSRecord]::New('vnone', $null, 'defaultrecord-nonetest.com', '3.3.3.1', 'A'),
+    [DNSRecord]::New('vdefa', $null, 'defaultrecord-defaulttest.com', '3.3.3.2', 'A'),
+    [DNSRecord]::New('vvirt', $null, 'defaultrecord-virtualtest.com', '3.3.3.3', 'A'),
+    [DNSRecord]::New('vtena', $null, 'defaultrecord-tenanttest.com', '3.3.3.4', 'A'))
 
 # This function is used to generate command
 # that will be passed to docker exec.
@@ -63,23 +60,24 @@ $DefaultDNSrecords = @([DNSRecord]::New("defaultrecord-nonetest.com", "3.3.3.1",
 function Resolve-DNSLocally {
     $resolved = (Resolve-DnsName -Name $Hostname -Type A -ErrorAction SilentlyContinue)
 
-    if($error.Count -eq 0) {
-        Write-Host "found"
+    if ($error.Count -eq 0) {
+        Write-Host 'found'
         $resolved[0].IPAddress
-    } else {
-        Write-Host "error"
-        $error[0].CategoryInfo.Category
+        return
     }
+
+    Write-Host 'error'
+    $error[0].CategoryInfo.Category
 }
 $ResolveDNSLocallyCommand = (${function:Resolve-DNSLocally} -replace "`n|`r", ";")
 
 function Start-Container {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [string] $ContainerID,
-        [Parameter(Mandatory=$true)] [string] $ContainerImage,
-        [Parameter(Mandatory=$true)] [string] $NetworkName,
-        [Parameter(Mandatory=$false)] [string] $IP
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [string] $ContainerID,
+        [Parameter(Mandatory = $true)] [string] $ContainerImage,
+        [Parameter(Mandatory = $true)] [string] $NetworkName,
+        [Parameter(Mandatory = $false)] [string] $IP
     )
 
     Write-Log "Creating container: $ContainerID"
@@ -90,7 +88,7 @@ function Start-Container {
         -Image $ContainerImage `
         -IP $IP
 
-    Write-Log "Getting container NetAdapter Information"
+    Write-Log 'Getting container NetAdapter Information'
     $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation `
         -Session $Session -ContainerID $ContainerID
     $IP = $ContainerNetInfo.IPAddress
@@ -101,30 +99,30 @@ function Start-Container {
 
 function Start-DNSServerOnTestBed {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
-    Write-Log "Starting Test DNS Server on test bed..."
-    $DefaultDNSServerDir = "C:\DNS_Server"
+    Write-Log 'Starting Test DNS Server on test bed...'
+    $DefaultDNSServerDir = 'C:\DNS_Server'
     Invoke-Command -Session $Session -ScriptBlock {
         New-Item -ItemType Directory -Force $Using:DefaultDNSServerDir | Out-Null
         New-Item "$($Using:DefaultDNSServerDir + '\zones')" -Type File -Force
-        foreach($Record in $Using:DefaultDNSrecords) {
-            Add-Content -Path "$($Using:DefaultDNSServerDir + '\zones')" -Value "$($Record.Name)    $($Record.Type)    $($Record.Data)"
+        foreach ($Record in $Using:DefaultDNSrecords) {
+            Add-Content -Path "$($Using:DefaultDNSServerDir + '\zones')" -Value "$($Record.HostName)    $($Record.Type)    $($Record.Data)"
         }
     }
 
-    Copy-Item -ToSession $Session -Path ($DockerfilesPath + "python-dns\dnserver.py") -Destination $DefaultDNSServerDir
+    Copy-Item -ToSession $Session -Path ($DockerfilesPath + 'python-dns\dnserver.py') -Destination $DefaultDNSServerDir
     Invoke-Command -Session $Session -ScriptBlock {
         $env:ZONE_FILE = "$($Using:DefaultDNSServerDir + '\zones')"
-        Start-Process -FilePath "python" -ArgumentList "$($Using:DefaultDNSServerDir + '\dnserver.py')"
+        Start-Process -FilePath 'python' -ArgumentList "$($Using:DefaultDNSServerDir + '\dnserver.py')"
     }
 }
 
 function Set-DNSServerAddressOnTestBed {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $ClientSession,
-        [Parameter(Mandatory=$true)] [PSSessionT] $ServerSession,
-        [Parameter(Mandatory=$true)] [string] $InterfaceAlias
+        [Parameter(Mandatory = $true)] [PSSessionT] $ClientSession,
+        [Parameter(Mandatory = $true)] [PSSessionT] $ServerSession,
+        [Parameter(Mandatory = $true)] [string] $InterfaceAlias
     )
     $DefaultDNSServerAddress = Invoke-Command -Session $ServerSession -ScriptBlock {
         Get-NetIPAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object { $_.AddressFamily -eq 2 } | Select-Object -ExpandProperty IPAddress
@@ -140,32 +138,44 @@ function Set-DNSServerAddressOnTestBed {
     return $OldDNSs
 }
 
+function Restore-DNSServerOnTestBed {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $ClientSession,
+        [Parameter(Mandatory = $true)] [String] $InterfaceAlias,
+        [Parameter(Mandatory = $true)] [String] $OldDns
+    )
+    Write-Log 'Restoring old DNS servers on test bed...'
+    Invoke-Command -Session $ClientSession -ScriptBlock {
+        Set-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias -ServerAddresses $Using:OldDns
+    }
+}
+
 function Resolve-DNS {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [String] $ContainerName,
-        [Parameter(Mandatory=$true)] [String] $Hostname
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [String] $ContainerName,
+        [Parameter(Mandatory = $true)] [String] $Hostname
     )
 
-    $Command = $ResolveDNSLocallyCommand -replace '\$Hostname', ('"'+$Hostname+'"')
+    $Command = $ResolveDNSLocallyCommand -replace '\$Hostname', ('"' + $Hostname + '"')
 
     $Result = (Invoke-Command -Session $Session -ScriptBlock {
-        docker exec $Using:ContainerName powershell $Using:Command
-    }).Split([Environment]::NewLine)
+            docker exec $Using:ContainerName powershell $Using:Command
+        }).Split([Environment]::NewLine)
 
     Write-Log "Resolving effect: $($Result[0]) - $($Result[1])"
 
-    if($Result[0] -eq "error") {
-        return @{"error" = $Result[1]; "result" = $null}
+    if ($Result[0] -eq 'error') {
+        return @{'error' = $Result[1]; 'result' = $null}
     }
 
-    return @{"error" = $null; "result" = $Result[1]}
+    return @{'error' = $null; 'result' = $Result[1]}
 }
 
 function ResolveCorrectly {
     Param (
-        [Parameter(Mandatory=$true)] [String] $Hostname,
-        [Parameter(Mandatory=$false)] [String] $IP = "Any"
+        [Parameter(Mandatory = $true)] [String] $Hostname,
+        [Parameter(Mandatory = $false)] [String] $IP = 'Any'
     )
 
     Write-Log "Trying to resolve host '$Hostname', expecting ip '$IP'"
@@ -173,8 +183,8 @@ function ResolveCorrectly {
     $result = Resolve-DNS -Session $Testenv.Sessions[0] `
         -ContainerName $ContainersIDs[0] -Hostname $Hostname
 
-    if((-not $result.error)) {
-        if(($IP -eq "Any") -or ($result.result -eq $IP)) {
+    if ((-not $result.error)) {
+        if (($IP -eq 'Any') -or ($result.result -eq $IP)) {
             return $true
         }
     }
@@ -183,8 +193,8 @@ function ResolveCorrectly {
 
 function ResolveWithError {
     Param (
-        [Parameter(Mandatory=$true)] [String] $Hostname,
-        [Parameter(Mandatory=$true)] [String] $ErrorType
+        [Parameter(Mandatory = $true)] [String] $Hostname,
+        [Parameter(Mandatory = $true)] [String] $ErrorType
     )
 
     Write-Log "Trying to resolve host '$Hostname', expecting error '$ErrorType'"
@@ -194,220 +204,158 @@ function ResolveWithError {
     return (($result.error -eq $ErrorType) -and (-not $result.result))
 }
 
-Test-WithRetries 1 {
-    Describe "DNS tests" -Tag "Smoke" {
+Test-WithRetries 3 {
+    Describe 'DNS tests' -Tag 'Smoke' {
         BeforeAll {
             $Testenv = [Testenv]::New($TestenvConfFile)
             $Testenv.Initialize()
-            Initialize-PesterLogger -OutDir $LogDir
-            $MultiNode = New-MultiNodeSetup `
-                -Testbeds $Testenv.Testbeds `
-                -ControllerConfig $Testenv.Controller `
-                -OpenStackConfig $Testenv.OpenStack `
-                -ContrailProject $ContrailProject
+            $Testenv.Initialize_New($LogDir, $ContrailProject, $PrepareEnv)
 
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "LogSources",
-                Justification="It's actually used."
-            )]
-            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Testenv.Sessions
+            $BeforeAllStack = $Testenv.NewCleanupStack()
 
             Install-DNSTestDependencies -Sessions $Testenv.Sessions
             Start-DNSServerOnTestBed -Session $Testenv.Sessions[1]
-
-            $MgmtAdapterName = $Testenv.System.MgmtAdapterName
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "OldDNSs",
-                Justification="It's actually used."
-            )]
             $OldDNSs = Set-DNSServerAddressOnTestBed `
-                           -ClientSession $Testenv.Sessions[0] `
-                           -ServerSession $Testenv.Sessions[1] `
-                           -InterfaceAlias $MgmtAdapterName
+                -ClientSession $Testenv.Sessions[0] `
+                -ServerSession $Testenv.Sessions[1] `
+                -InterfaceAlias $Testenv.System.MgmtAdapterName
+            $BeforeAllStack.Push(${function:Restore-DNSServerOnTestBed}, @($Testenv.Sessions[0], $Testenv.System.MgmtAdapterName, $OldDNSs))
 
-            Write-Log "Creating Virtual DNS Server in Contrail..."
-            $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
-            $DNSServerRepo.AddDNSServer($VirtualDNSServer)
-            foreach($DNSRecord in $VirtualDNSrecords) {
-                $DNSServerRepo.AddDNSRecord($DNSRecord)
+            Write-Log 'Creating Virtual DNS Server in Contrail...'
+            $Testenv.ContrailRepo.AddOrReplace($VirtualDnsServer)
+            $BeforeAllStack.Push($VirtualDnsServer)
+
+            foreach ($DnsRecord in $VirtualDnsRecords) {
+                $Testenv.ContrailRepo.Add($DnsRecord)
+                $BeforeAllStack.Push($DnsRecord)
             }
 
-            if ($PrepareEnv) {
-                Write-Log "Initializing Contrail services on test beds..."
-                foreach($Session in $Testenv.Sessions) {
-                    Initialize-ComputeNode `
-                        -Session $Session `
-                        -Configs $Testenv
-                }
-            }
+            Write-Log "Creating virtual network: $($VirtualNetwork.Name)"
+            $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
+            $BeforeAllStack.Push($VirtualNetwork)
 
-            Write-Log "Creating virtual network: $($Network.Name)"
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "ContrailNetwork",
-                Justification="It's actually used."
+                'PSUseDeclaredVarsMoreThanAssignments', '',
+                Justification = "Analyzer doesn't understand relation of Pester blocks"
             )]
-            $ContrailNetwork = Add-OrReplaceNetwork `
-                -API $MultiNode.NM `
-                -TenantName $ContrailProject `
-                -Name $Network.Name `
-                -SubnetConfig $Network.Subnet
+            $BeforeEachStack = $Testenv.NewCleanupStack()
+        }
+
+        AfterAll {
+            $Testenv.Cleanup()
         }
 
         function BeforeEachContext {
             Param (
-                [Parameter(Mandatory=$true)] [IPAMDNSSettings] $DNSSettings
+                [Parameter(Mandatory = $true)] [IPAMDNSSettings] $DNSSettings
             )
 
             $IPAM = [IPAM]::New()
             $IPAM.DNSSettings = $DNSSettings
-            $IPAMRepo = [IPAMRepo]::New($MultiNode.NM)
-            $IPAMRepo.SetIpamDNSMode($IPAM)
+            $Testenv.ContrailRepo.Set($IPAM)
 
-            foreach($Session in $Testenv.Sessions) {
+            foreach ($Session in $Testenv.Sessions) {
                 Initialize-DockerNetworks `
                     -Session $Session `
-                    -Networks @($Network) `
+                    -Networks @($VirtualNetwork) `
                     -TenantName $ContrailProject
+                $BeforeEachStack.Push(${function:Remove-AllUnusedDockerNetworks}, @($Session))
             }
 
             Start-Container -Session $Testenv.Sessions[0] `
                 -ContainerID $ContainersIDs[0] `
-                -ContainerImage "microsoft/windowsservercore" `
-                -NetworkName $Network.Name
+                -ContainerImage 'microsoft/windowsservercore' `
+                -NetworkName $VirtualNetwork.Name
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+
+            $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIds[0]),
+                (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIds[1]))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
         }
 
         function AfterEachContext {
-            Invoke-Command -ErrorAction SilentlyContinue {
-                Merge-Logs -LogSources (
-                    (New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIDs[0]),
-                    (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIDs[1])
-                )
-
-                Write-Log "Removing all containers and docker networks"
-                Remove-AllContainers -Sessions $Testenv.Sessions
-                Remove-AllUnusedDockerNetworks -Session $Testenv.Sessions[0]
-                Remove-AllUnusedDockerNetworks -Session $Testenv.Sessions[1]
-            }
-        }
-
-        AfterAll {
-            if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
-                Write-Log "Deleting virtual network"
-                Remove-ContrailVirtualNetwork `
-                    -API $MultiNode.NM `
-                    -Uuid $ContrailNetwork
-            }
-
-            if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                if ($PrepareEnv) {
-                    foreach($Session in $Testenv.Sessions) {
-                        Clear-ComputeNode `
-                            -Session $Session `
-                            -SystemConfig $Testenv.System
-                    }
-                    Clear-Logs -LogSources $LogSources
-                }
-
-                if($VirtualDNSServer.Uuid) {
-                    Write-Log "Removing Virtual DNS Server from Contrail..."
-                    $DNSServerRepo = [DNSServerRepo]::New($MultiNode.NM)
-                    $DNSServerRepo.RemoveDNSServerWithDependencies($VirtualDNSServer)
-                }
-
-                if (Get-Variable "OldDNSs" -ErrorAction SilentlyContinue) {
-                    Write-Log "Restoring old DNS servers on test bed..."
-                    Invoke-Command -Session $Testenv.Sessions[0] -ScriptBlock {
-                        Set-DnsClientServerAddress -InterfaceAlias $Using:MgmtAdapterName -ServerAddresses $Using:OldDNSs
-                    }
-                }
-
-                Remove-MultiNodeSetup -MultiNode $MultiNode
-                Remove-Variable "MultiNode"
-            }
+            $BeforeEachStack.RunCleanup($Testenv.ContrailRepo)
         }
 
         AfterEach {
-            Merge-Logs -DontCleanUp -LogSources $LogSources
+            Merge-Logs -DontCleanUp -LogSources $Testenv.LogSources
         }
 
-        Context "DNS mode none" {
+        Context 'DNS mode none' {
             BeforeAll { BeforeEachContext -DNSSetting ([NoneDNSSettings]::New()) }
 
             AfterAll { AfterEachContext }
 
-            It "timeouts resolving juniper.net" {
+            It 'timeouts resolving juniper.net' {
                 ResolveWithError `
-                    -Hostname "Juniper.net" `
-                    -ErrorType "OperationTimeout" `
+                    -Hostname 'Juniper.net' `
+                    -ErrorType 'OperationTimeout' `
                     | Should -BeTrue
             }
         }
 
-        Context "DNS mode default" {
+        Context 'DNS mode default (may fail if run on working env)' {
             BeforeAll { BeforeEachContext -DNSSetting ([DefaultDNSSettings]::New()) }
 
             AfterAll { AfterEachContext }
 
             It "doesn't resolve juniper.net" {
                 ResolveWithError `
-                    -Hostname "Juniper.net" `
-                    -ErrorType "ResourceUnavailable" `
+                    -Hostname 'Juniper.net' `
+                    -ErrorType 'ResourceUnavailable' `
                     | Should -BeTrue
             }
 
             It "doesn't resolve virtual DNS" {
                 ResolveWithError `
-                    -Hostname "vdnsrecord-defaulttest.default-domain" `
-                    -ErrorType "ResourceUnavailable" `
+                    -Hostname 'vdnsrecord-defaulttest.default-domain' `
+                    -ErrorType 'ResourceUnavailable' `
                     | Should -BeTrue
             }
 
-            It "resolves default DNS server" {
+            It 'resolves default DNS server' {
                 ResolveCorrectly `
-                    -Hostname "defaultrecord-defaulttest.com" `
-                    -IP "3.3.3.2" `
+                    -Hostname 'defaultrecord-defaulttest.com' `
+                    -IP '3.3.3.2' `
                     | Should -BeTrue
             }
         }
 
-        Context "DNS mode virtual" {
+        Context 'DNS mode virtual' {
             BeforeAll { BeforeEachContext -DNSSetting ([VirtualDNSSettings]::New($VirtualDNSServer.GetFQName())) }
 
             AfterAll { AfterEachContext }
 
-            It "resolves juniper.net" {
+            It 'resolves juniper.net' {
                 ResolveCorrectly `
-                    -Hostname " juniper.net" `
+                    -Hostname 'juniper.net' `
                     | Should -BeTrue
             }
 
-            It "resolves virtual DNS" {
+            It 'resolves virtual DNS' {
                 ResolveCorrectly `
-                    -Hostname "vdnsrecord-virtualtest.default-domain" `
-                    -IP "1.1.1.3" `
+                    -Hostname 'vdnsrecord-virtualtest.default-domain' `
+                    -IP '1.1.1.3' `
                     | Should -BeTrue
             }
 
             It "doesn't resolve default DNS server" {
                 ResolveWithError `
-                    -Hostname "defaultrecord-virtualtest.com" `
-                    -ErrorType "ResourceUnavailable" `
+                    -Hostname 'defaultrecord-virtualtest.com' `
+                    -ErrorType 'ResourceUnavailable' `
                     | Should -BeTrue
             }
         }
 
-        Context "DNS mode tenant" {
+        Context 'DNS mode tenant' {
             BeforeAll {
                 BeforeEachContext -DNSSetting ([TenantDNSSettings]::New(@($TenantDNSServerAddress)))
 
                 Start-Container `
                     -Session $Testenv.Sessions[1] `
                     -ContainerID $ContainersIDs[1] `
-                    -ContainerImage "python-dns" `
-                    -NetworkName $Network.Name `
+                    -ContainerImage 'python-dns' `
+                    -NetworkName $VirtualNetwork.Name `
                     -IP $TenantDNSServerAddress
             }
 
@@ -415,29 +363,29 @@ Test-WithRetries 1 {
 
             It "doesn't resolve juniper.net" {
                 ResolveWithError `
-                    -Hostname "juniper.net" `
-                    -ErrorType "ResourceUnavailable" `
+                    -Hostname 'juniper.net' `
+                    -ErrorType 'ResourceUnavailable' `
                     | Should -BeTrue
             }
 
             It "doesn't resolve virtual DNS" {
                 ResolveWithError `
-                    -Hostname "vdnsrecord-tenanttest.default-domain" `
-                    -ErrorType "ResourceUnavailable" `
+                    -Hostname 'vdnsrecord-tenanttest.default-domain' `
+                    -ErrorType 'ResourceUnavailable' `
                     | Should -BeTrue
             }
 
             It "doesn't resolve default DNS server" {
                 ResolveWithError `
-                    -Hostname "defaultrecord-tenanttest.com" `
-                    -ErrorType "ResourceUnavailable" `
+                    -Hostname 'defaultrecord-tenanttest.com' `
+                    -ErrorType 'ResourceUnavailable' `
                     | Should -BeTrue
             }
 
-            It "resolves tenant DNS" {
+            It 'resolves tenant DNS' {
                 ResolveCorrectly `
-                    -Hostname "tenantrecord-tenanttest.com" `
-                    -IP "2.2.2.4" `
+                    -Hostname 'tenantrecord-tenanttest.com' `
+                    -IP '2.2.2.4' `
                     | Should -BeTrue
             }
         }
