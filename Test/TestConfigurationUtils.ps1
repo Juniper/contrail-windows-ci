@@ -255,6 +255,21 @@ function Wait-RemoteInterfaceIP {
     } | Out-Null
 }
 
+function Test-IfVmSwitchExist {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [String] $VmSwitchName)
+
+    $r = Invoke-Command -Session $Session -ScriptBlock {
+        Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select -ExpandProperty isDeleted
+    }
+
+    if(($r -eq $null) -or ($r -eq $true)) {
+        return $false
+    }
+
+    return $true
+}
+
 # Before running this function make sure CNM-Plugin config file is created.
 # It can be done by function New-CNMPluginConfigFile.
 function Initialize-CnmPluginAndExtension {
@@ -267,6 +282,9 @@ function Initialize-CnmPluginAndExtension {
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
+        if(Test-IfVmSwitchExist -Session $Session -VmSwitchName $SystemConfig.VMSwitchName()) {
+            throw "VmSwitch should not exist before CNMPlugin starts."
+        }
         Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 
         # CNMPlugin automatically enables Extension
