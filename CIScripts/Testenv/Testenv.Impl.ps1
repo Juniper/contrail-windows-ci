@@ -26,6 +26,7 @@ class Testenv {
         Sync-MicrosoftDockerImagesOnTestbeds -Sessions $this.Sessions
     }
 
+    # TODO Join this method with Initialize when all tests are refactored
     [Void] Initialize_New([String] $LogDir, [String] $ContrailProject, [Bool] $InstallComponents) {
         $CleanupStack = $this.NewCleanupStack()
 
