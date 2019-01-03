@@ -53,7 +53,7 @@ pipeline {
         stage('Fetch debug dlls from builder') {
             agent { label 'builder' }
             steps {
-                echo "Fetch debug dlls from builder"
+                deleteDir()
                 powershell script: '''
                     New-Item -ItemType Directory -Path ./dlls
                     foreach ($Lib in @("ucrtbased.dll", "vcruntime140d.dll", "msvcp140d.dll")) {
@@ -129,7 +129,7 @@ pipeline {
         //       have their separate stage (below).
         //       Those two steps should be eventually merged and use single
         //       run of contrail-ansible-deployer.
-        stage('Deploy with Contrail Ansible Deployer') {
+        stage('Deploy computes with Contrail Ansible Deployer') {
             agent { label 'ansible' }
             steps {
                 unstash "Deployer"
@@ -170,15 +170,19 @@ pipeline {
         LOG_SERVER_USER = "zuul-win"
         LOG_SERVER_FOLDER = "winci"
         LOG_ROOT_DIR = "/var/www/logs"
-        MYSQL = credentials('winstats-mysql')
-        MYSQL_HOST = "winci-winstats"
-        MYSQL_DATABASE = "monitoring"
     }
 
     post {
         always {
-            echo "Post"
-            // TODO
+            node('master') {
+                script {
+                    deleteDir()
+
+                    unstash 'CIScripts'
+
+                    // TODO
+                }
+            }
         }
     }
 }

@@ -13,4 +13,5 @@
 
 - name: Print instances.yaml
   when: (instances_file is defined) and (cat_instances|succeeded)
-  debug: msg={{ cat_instances.stdout }}
+  debug:
+    var: cat_instances.stdout_lines
