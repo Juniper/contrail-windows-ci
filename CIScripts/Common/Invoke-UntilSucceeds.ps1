@@ -7,8 +7,6 @@ class HardError : System.Exception {
     HardError([string] $msg, [System.Exception] $inner) : base($msg, $inner) {}
 }
 
-$DebugTag = "[DEBUG Invoke-UntilSucceeds]"
-
 function Invoke-UntilSucceeds {
     <#
     .SYNOPSIS
@@ -46,9 +44,11 @@ function Invoke-UntilSucceeds {
         [Parameter(Mandatory = $false)] [ScriptBlock] $Precondition,
         [Parameter(Mandatory = $false)] [String] $Name = "Invoke-UntilSucceds",
         [Parameter(Mandatory = $false)] [PSobject[]] $Arguments = $null,
-        [Parameter(Mandatory = $false)] [String] $DebugTag = $DebugTag,
         [Switch] $AssumeTrue
     )
+    
+    $DebugTag = "[DEBUG Invoke-UntilSucceeds]"
+    
     Write-Log "$DebugTag Function begins with job: $name"
     Write-Log "$DebugTag Duration: $Duration; NumRetries $NumRetries"
     if ((-not $Duration) -and (-not $NumRetries)) {
