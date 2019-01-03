@@ -1,6 +1,6 @@
 Param (
     [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
     [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
@@ -8,11 +8,14 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
-
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
+. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
@@ -21,25 +24,22 @@ Param (
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
-. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
-. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
-. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\ContrailAPI.ps1
 
 $ContrailProject = 'ci_tests_agentrestart'
 
-$Container1ID = "jolly-lumberjack"
-$Container2ID = "juniper-tree"
-$Container3ID = "mountain-mama"
+$ContainerIds = @('jolly-lumberjack', 'juniper-tree', 'mountain-mama')
+$ContainerNetInfos = @($null, $null, $null)
 
-$Subnet = [SubnetConfiguration]::new(
-    "10.0.5.0",
+$Subnet = [Subnet]::new(
+    '10.0.5.0',
     24,
-    "10.0.5.1",
-    "10.0.5.19",
-    "10.0.5.83"
+    '10.0.5.1',
+    '10.0.5.19',
+    '10.0.5.83'
 )
-$Network = [Network]::New("testnet14", $Subnet)
+$VirtualNetwork = [VirtualNetwork]::New('testnet_agentrestart', $ContrailProject, $Subnet)
 
 function Restart-Agent {
     Param (
@@ -58,7 +58,7 @@ function Get-NumberOfStoredPorts {
     )
 
     $NumberOfStoredPorts = Invoke-Command -Session $Session -ScriptBlock {
-        $PortsDir = "C:\\ProgramData\\Contrail\\var\\lib\\contrail\\ports"
+        $PortsDir = 'C:\\ProgramData\\Contrail\\var\\lib\\contrail\\ports'
         if (-not (Test-Path $PortsDir)) {
             return 0
         }
@@ -68,182 +68,98 @@ function Get-NumberOfStoredPorts {
 }
 
 Test-WithRetries 3 {
-    Describe "Agent restart tests" -Tag "Smoke" {
-        It "Ports are correctly restored after Agent restart" {
-            Write-Log "Testing ping before Agent restart..."
+    Describe 'Agent restart tests' -Tag 'Smoke' {
+        It 'Ports are correctly restored after Agent restart' {
+            Write-Log 'Testing ping before Agent restart...'
             Test-Ping `
-                -Session $Sessions[0] `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container2ID `
-                -DstIP $Container2NetInfo.IPAddress | Should Be 0
+                -Session $Testenv.Sessions[0] `
+                -SrcContainerName $ContainerIds[0] `
+                -DstContainerName $ContainerIds[1] `
+                -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
-            Get-NumberOfStoredPorts -Session $Sessions[0] | Should Be 1
-            Restart-Agent -Session $Sessions[0]
+            Get-NumberOfStoredPorts -Session $Testenv.Sessions[0] | Should Be 1
+            Restart-Agent -Session $Testenv.Sessions[0]
 
-            Write-Log "Testing ping after Agent restart..."
+            Write-Log 'Testing ping after Agent restart...'
             Test-Ping `
-                -Session $Sessions[0] `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container2ID `
-                -DstIP $Container2NetInfo.IPAddress | Should Be 0
+                -Session $Testenv.Sessions[0] `
+                -SrcContainerName $ContainerIds[0] `
+                -DstContainerName $ContainerIds[1] `
+                -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
-            Write-Log "Creating container: $Container3ID"
+            Write-Log "Creating container: $($ContainerIds[2])"
             New-Container `
                 -Session $Testenv.Sessions[1] `
-                -NetworkName $Network.Name `
-                -Name $Container3ID `
-                -Image "microsoft/windowsservercore"
+                -NetworkName $VirtualNetwork.Name `
+                -Name $ContainerIds[2] `
+                -Image 'microsoft/windowsservercore'
 
-            $Container3NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $Testenv.Sessions[1] -ContainerID $Container3ID
-            $IP = $Container3NetInfo.IPAddress
-            Write-Log "IP of ${Container3ID}: $IP"
+            $ContainerNetInfos[2] = Get-RemoteContainerNetAdapterInformation `
+                -Session $Testenv.Sessions[1] -ContainerID $ContainerIds[2]
+            Write-Log "IP of $($ContainerIds[2]): $($ContainerNetInfos[2].IPAddress)"
 
-            Get-NumberOfStoredPorts -Session $Sessions[0] | Should Be 1
+            Get-NumberOfStoredPorts -Session $Testenv.Sessions[0] | Should Be 1
 
-            Write-Log "Testing ping after Agent restart with new container..."
+            Write-Log 'Testing ping after Agent restart with new container...'
             Test-Ping `
-                -Session $Sessions[0] `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container3ID `
-                -DstIP $Container3NetInfo.IPAddress | Should Be 0
+                -Session $Testenv.Sessions[0] `
+                -SrcContainerName $ContainerIds[0] `
+                -DstContainerName $ContainerIds[2] `
+                -DstIP $ContainerNetInfos[2].IPAddress | Should Be 0
 
-            Remove-Container -Session $Sessions[0] -NameOrId $Container1ID
-            Get-NumberOfStoredPorts -Session $Sessions[0] | Should Be 0
+            Remove-Container -Session $Testenv.Sessions[0] -NameOrId $ContainerIds[0]
+            Get-NumberOfStoredPorts -Session $Testenv.Sessions[0] | Should Be 0
         }
 
         BeforeAll {
             $Testenv = [Testenv]::New($TestenvConfFile)
             $Testenv.Initialize()
-            Initialize-PesterLogger -OutDir $LogDir
-            $MultiNode = New-MultiNodeSetup `
-                -Testbeds $Testenv.Testbeds `
-                -ControllerConfig $Testenv.Controller `
-                -OpenStackConfig $Testenv.OpenStack `
-                -ContrailProject $ContrailProject
+            $Testenv.Initialize_New($LogDir, $ContrailProject, $PrepareEnv)
 
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "Sessions",
-                Justification = "It's actually used."
-            )]
-            $Sessions = $Testenv.Sessions
+            $BeforeAllStack = $Testenv.NewCleanupStack()
+            Write-Log "Creating virtual network: $($VirtualNetwork.Name)"
+            $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
+            $BeforeAllStack.Push($VirtualNetwork)
 
-            Write-Log "Creating virtual network: $($Network.Name)"
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "ContrailNetwork",
-                Justification = "It's actually used."
-            )]
-            $ContrailNetwork = Add-OrReplaceNetwork `
-                -API $MultiNode.NM `
-                -TenantName $ContrailProject `
-                -Name $Network.Name `
-                -SubnetConfig $Subnet
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "LogSources",
-                Justification = "It's actually used."
-            )]
-            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Testenv.Sessions
-
-            foreach ($Session in $Sessions) {
-                if ($PrepareEnv) {
-                    Initialize-ComputeNode `
-                        -Session $Session `
-                        -Configs $Testenv
-                }
-
+            Write-Log 'Creating docker networks'
+            foreach ($Session in $Testenv.Sessions) {
                 Initialize-DockerNetworks `
                     -Session $Session `
-                    -Networks @($Network) `
+                    -Networks @($VirtualNetwork) `
                     -TenantName $ContrailProject
+                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $VirtualNetwork.Name))
             }
         }
 
         AfterAll {
-            if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                $Sessions = $Testenv.Sessions
-                $SystemConfig = $Testenv.System
-
-                foreach ($Session in $Sessions) {
-                    Remove-DockerNetwork -Session $Session -Name $Network.Name
-                }
-
-                if ($PrepareEnv) {
-                    foreach ($Session in $Sessions) {
-                        Clear-ComputeNode `
-                            -Session $Session `
-                            -SystemConfig $SystemConfig
-                    }
-                    Clear-Logs -LogSources $LogSources
-                }
-
-                Write-Log "Deleting virtual network"
-                if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailNetwork
-                }
-
-                Remove-MultiNodeSetup -MultiNode $MultiNode
-                Remove-Variable "MultiNode"
-            }
+            $Testenv.Cleanup()
         }
 
         BeforeEach {
-            Write-Log "Creating containers"
-            Write-Log "Creating container: $Container1ID"
-            New-Container `
-                -Session $Testenv.Sessions[0] `
-                -NetworkName $Network.Name `
-                -Name $Container1ID `
-                -Image "microsoft/windowsservercore"
-            Write-Log "Creating container: $Container2ID"
-            New-Container `
-                -Session $Testenv.Sessions[1] `
-                -NetworkName $Network.Name `
-                -Name $Container2ID `
-                -Image "microsoft/windowsservercore"
+            $BeforeEachStack = $Testenv.NewCleanupStack()
+            $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
+            $BeforeEachStack.Push(${function:Start-AgentService}, @($Testenv.Sessions[0]))
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+            Write-Log 'Creating containers'
+            foreach ($i in 0..1) {
+                Write-Log "Creating container: $($ContainerIds[$i])"
+                New-Container `
+                    -Session $Testenv.Sessions[$i] `
+                    -NetworkName $VirtualNetwork.Name `
+                    -Name $ContainerIds[$i] `
+                    -Image 'microsoft/windowsservercore'
 
-            Write-Log "Getting containers' NetAdapter Information"
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "Container1NetInfo",
-                Justification = "It's actually used."
-            )]
-            $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $Testenv.Sessions[0] -ContainerID $Container1ID
-            $IP = $Container1NetInfo.IPAddress
-            Write-Log "IP of ${Container1ID}: $IP"
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "Container2NetInfo",
-                Justification = "It's actually used."
-            )]
-            $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $Testenv.Sessions[1] -ContainerID $Container2ID
-            $IP = $Container2NetInfo.IPAddress
-            Write-Log "IP of ${Container2ID}: $IP"
+                $ContainerNetInfos[$i] = Get-RemoteContainerNetAdapterInformation `
+                    -Session $Testenv.Sessions[$i] -ContainerID $ContainerIds[$i]
+                Write-Log "IP of $($ContainerIds[$i]): $($ContainerNetInfos[$i].IPAddress)"
+            }
+            $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainerIds[0]),
+                (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainerIds[1]))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
         }
 
         AfterEach {
-            $Sessions = $Testenv.Sessions
-
-            try {
-                Merge-Logs -LogSources (
-                    (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID),
-                    (New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID)
-                )
-
-                Write-Log "Removing all containers"
-                Remove-AllContainers -Sessions $Sessions
-                Start-AgentService -Session $Sessions[0]
-            }
-            finally {
-                Merge-Logs -DontCleanUp -LogSources $LogSources
-            }
+            $BeforeEachStack.RunCleanup($Testenv.ContrailRepo)
         }
     }
 }
