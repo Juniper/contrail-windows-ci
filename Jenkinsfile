@@ -319,7 +319,7 @@ pipeline {
                     }
 
                     unstash "Flakes"
-                    if (containsFlakiness("to_publish/$logFilename")) {
+                    if (containsFlakiness("to_publish/$logFilename") && currentBuild.result == 'FAILURE') {
                         echo "Flakiness detected"
                         if (isGithub()) {
                             sendGithubComment("recheck no bug")
@@ -369,14 +369,6 @@ pipeline {
                             '--mysql-password', env.MYSQL_PSW,
                         ] + getReportsLocationParam(fullLogsURL))
                     }
-                }
-            }
-        }
-
-        failure {
-            node('master') {
-                script {
-                    echo "DUPA DUPA DUPA FAILED"
                 }
             }
         }
