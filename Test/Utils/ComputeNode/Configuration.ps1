@@ -164,7 +164,7 @@ platform=windows
 servers=$ControllerIP
 
 [DNS]
-dns_client_port=53
+dns_client_port=52
 servers=$($ControllerIP):53
 
 [VIRTUAL-HOST-INTERFACE]
