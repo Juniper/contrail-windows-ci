@@ -5,7 +5,7 @@
 . $PSScriptRoot\Configuration.ps1
 . $PSScriptRoot\Installation.ps1
 . $PSScriptRoot\Service.ps1
-. $PSScriptRoot\..\DockerNetwork\DockerNetwork.ps1
+. $PSScriptRoot\..\DockerNetwork\Commands.ps1
 
 function Set-ConfAndLogDir {
     Param (

@@ -11,26 +11,19 @@ class Testenv {
     [LogSource[]] $LogSources = $null
     [ContrailRepo] $ContrailRepo = $null
 
-    Testenv([String] $TestenvConfFile) {
+    Initialize([String] $TestenvConfFile, [String] $LogDir, [String] $ContrailProject, [Bool] $InstallComponents) {
+        Initialize-PesterLogger -OutDir $LogDir
+
         $this.System = [SystemConfig]::LoadFromFile($TestenvConfFile)
         $this.OpenStack = [OpenStackConfig]::LoadFromFile($TestenvConfFile)
         $this.Controller = [ControllerConfig]::LoadFromFile($TestenvConfFile)
         $this.Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
-    }
 
-    [Void] Initialize() {
         $CleanupStack = $this.NewCleanupStack()
         $this.Sessions = New-RemoteSessions -VMs $this.Testbeds
-        $CleanupStack.Push({Param([PSSessionT[]] $Sessions) Remove-PSSession $Sessions}, @(, $this.Sessions))
+        $CleanupStack.Push( {Param([PSSessionT[]] $Sessions) Remove-PSSession $Sessions}, @(, $this.Sessions))
         Set-ConfAndLogDir -Sessions $this.Sessions
         Sync-MicrosoftDockerImagesOnTestbeds -Sessions $this.Sessions
-    }
-
-    # TODO Join this method with Initialize when all tests are refactored
-    [Void] Initialize_New([String] $LogDir, [String] $ContrailProject, [Bool] $InstallComponents) {
-        $CleanupStack = $this.NewCleanupStack()
-
-        Initialize-PesterLogger -OutDir $LogDir
 
         $this.MultiNode = New-MultiNodeSetup `
             -Testbeds $this.Testbeds `

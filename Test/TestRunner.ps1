@@ -1,6 +1,5 @@
 . $PSScriptRoot\..\CIScripts\TestRunner\Invoke-PesterTests.ps1
 
-. $PSScriptRoot\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\PesterHelpers\PesterHelpers.ps1
 
 function Invoke-IntegrationAndFunctionalTests {
