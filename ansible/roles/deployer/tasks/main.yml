@@ -15,8 +15,7 @@
     method: GET
 
 - name: install pip
-  shell: >
-    python ~/get-pip.py
+  command: python ~/get-pip.py
 
 - name: Install c-a-d python dependencies
   pip:
