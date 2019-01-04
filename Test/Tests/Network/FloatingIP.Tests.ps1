@@ -1,6 +1,6 @@
 Param (
     [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
     [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
@@ -19,157 +19,92 @@ Param (
 . $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\NetworkPolicy.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIPPool.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\FloatingIP.ps1
+
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\ContrailAPI.ps1
+. $PSScriptRoot\..\..\Utils\TestCleanup\TestCleanup.ps1
 
 $ContrailProject = 'ci_tests_floatingip'
 
-$PolicyName = "passallpolicy"
+$NetworkPolicy = [NetworkPolicy]::new_PassAll('passallpolicy', $ContrailProject)
 
-$ClientNetworkSubnet = [SubnetConfiguration]::new(
-    "10.1.1.0",
+$ClientNetworkSubnet = [Subnet]::new(
+    '10.1.1.0',
     24,
-    "10.1.1.1",
-    "10.1.1.11",
-    "10.1.1.100"
+    '10.1.1.1',
+    '10.1.1.11',
+    '10.1.1.100'
 )
-$ClientNetwork = [Network]::New("network1", $ClientNetworkSubnet)
+$ClientNetwork = [VirtualNetwork]::New('network_floatingip_client', $ContrailProject, $ClientNetworkSubnet)
+$ClientNetwork.NetworkPolicysFqNames = @($NetworkPolicy.GetFqName())
 
-$ServerNetworkSubnet = [SubnetConfiguration]::new(
-    "10.2.2.0",
+$ServerNetworkSubnet = [Subnet]::new(
+    '10.2.2.0',
     24,
-    "10.2.2.1",
-    "10.2.2.11",
-    "10.2.2.100"
+    '10.2.2.1',
+    '10.2.2.11',
+    '10.2.2.100'
 )
-$ServerNetwork = [Network]::New("network2", $ServerNetworkSubnet)
-
-$ServerFloatingIpPoolName = "pool"
-$ServerFloatingIpName = "fip"
-$ServerFloatingIpAddress = "10.2.2.10"
+$ServerNetwork = [VirtualNetwork]::New('network_floatingip_server', $ContrailProject, $ServerNetworkSubnet)
+$ServerNetwork.NetworkPolicysFqNames = @($NetworkPolicy.GetFqName())
 
 $Networks = @($ClientNetwork, $ServerNetwork)
 
-$ContainerImage = "microsoft/windowsservercore"
-$ContainerClientID = "fip-client"
-$ContainerServer1ID = "fip-server1"
+$ServerFloatingIpPool = [FloatingIpPool]::New('test_pool', $ServerNetwork.GetFqName())
+$ServerFloatingIp = [FloatingIp]::New('test_fip', $ServerFloatingIpPool.GetFqName(), '10.2.2.10')
 
-Describe "Floating IP" -Tag "Smoke" {
-    Context "Multinode" {
-        Context "2 networks" {
-            It "ICMP works" {
+$ContainerImage = 'microsoft/windowsservercore'
+$ContainerClientID = 'fip-client'
+$ContainerServerID = 'fip-server'
+
+Describe 'Floating IP' -Tag 'Smoke' {
+    Context 'Multinode' {
+        Context '2 networks' {
+            It 'ICMP works' {
                 Test-Ping `
                     -Session $Testenv.Sessions[0] `
                     -SrcContainerName $ContainerClientID `
-                    -DstIP $ServerFloatingIpAddress | Should Be 0
+                    -DstIP $ServerFloatingIp.Address | Should Be 0
             }
 
             BeforeAll {
-                Write-Log "Creating network policy: $PolicyName"
-                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                    "PSUseDeclaredVarsMoreThanAssignments",
-                    "ContrailPolicy",
-                    Justification = "It's actually used."
-                )]
-                $ContrailPolicy = New-ContrailPassAllPolicy `
-                    -API $MultiNode.NM `
-                    -Name $PolicyName `
-                    -TenantName $ContrailProject
+                $InnerBeforeAllStack = $Testenv.NewCleanupStack()
 
-                Write-Log "Creating virtual network: $ClientNetwork.Name"
-                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                    "PSUseDeclaredVarsMoreThanAssignments",
-                    "ContrailClientNetwork",
-                    Justification = "It's actually used."
-                )]
-                $ContrailClientNetwork = Add-OrReplaceNetwork `
-                    -API $MultiNode.NM `
-                    -TenantName $ContrailProject `
-                    -Name $ClientNetwork.Name `
-                    -SubnetConfig $ClientNetwork.Subnet
+                Write-Log "Creating network policy: $($NetworkPolicy.Name)"
+                $Testenv.ContrailRepo.AddOrReplace($NetworkPolicy) | Out-Null
+                $InnerBeforeAllStack.Push($NetworkPolicy)
 
-                Write-Log "Creating virtual network: $ServerNetwork.Name"
-                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                    "PSUseDeclaredVarsMoreThanAssignments",
-                    "ContrailServerNetwork",
-                    Justification = "It's actually used."
-                )]
-                $ContrailServerNetwork = Add-OrReplaceNetwork `
-                    -API $MultiNode.NM `
-                    -TenantName $ContrailProject `
-                    -Name $ServerNetwork.Name `
-                    -SubnetConfig $ServerNetwork.Subnet
+                Write-Log "Creating virtual network: $($ClientNetwork.Name)"
+                $Testenv.ContrailRepo.AddOrReplace($ClientNetwork) | Out-Null
+                $InnerBeforeAllStack.Push($ClientNetwork)
 
-                Write-Log "Creating floating IP pool: $ServerFloatingIpPoolName"
-                [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                    "PSUseDeclaredVarsMoreThanAssignments",
-                    "ContrailFloatingIpPool",
-                    Justification = "It's actually used."
-                )]
-                $ContrailFloatingIpPool = New-ContrailFloatingIpPool `
-                    -API $MultiNode.NM `
-                    -TenantName $ContrailProject `
-                    -NetworkName $ServerNetwork.Name `
-                    -Name $ServerFloatingIpPoolName
+                Write-Log "Creating virtual network: $($ServerNetwork.Name)"
+                $Testenv.ContrailRepo.AddOrReplace($ServerNetwork) | Out-Null
+                $InnerBeforeAllStack.Push($ServerNetwork)
 
-                Add-ContrailPolicyToNetwork `
-                    -API $MultiNode.NM `
-                    -PolicyUuid $ContrailPolicy `
-                    -NetworkUuid $ContrailClientNetwork
-
-                Add-ContrailPolicyToNetwork `
-                    -API $MultiNode.NM `
-                    -PolicyUuid $ContrailPolicy `
-                    -NetworkUuid $ContrailServerNetwork
+                Write-Log "Creating floating IP pool: $($ServerFloatingIpPool.Name)"
+                $Testenv.ContrailRepo.AddOrReplace($ServerFloatingIpPool) | Out-Null
+                $InnerBeforeAllStack.Push($ServerFloatingIpPool)
 
                 foreach ($Session in $Testenv.Sessions) {
                     Initialize-DockerNetworks `
                         -Session $Session `
                         -Networks $Networks `
                         -TenantName $ContrailProject
+                    $InnerBeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $ServerNetwork.Name))
+                    $InnerBeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $ClientNetwork.Name))
                 }
             }
 
             AfterAll {
-                foreach ($Session in $Testenv.Sessions) {
-                    foreach ($Network in $Networks) {
-                        Remove-DockerNetwork -Session $Session -Name $Network.Name
-                    }
-                }
-
-                Write-Log "Deleting floating IP pool"
-                if (Get-Variable ContrailFloatingIpPool -ErrorAction SilentlyContinue) {
-                    Remove-ContrailFloatingIpPool `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailFloatingIpPool
-                }
-
-                Write-Log "Deleting virtual network"
-                if (Get-Variable ContrailServerNetwork -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailServerNetwork
-                }
-
-                Write-Log "Deleting virtual network"
-                if (Get-Variable ContrailClientNetwork -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailClientNetwork
-                }
-
-                Write-Log "Deleting network policy"
-                if (Get-Variable ContrailPolicy -ErrorAction SilentlyContinue) {
-                    Remove-ContrailPolicy `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailPolicy
-                }
+                $InnerBeforeAllStack.RunCleanup($Testenv.ContrailRepo)
             }
 
             BeforeEach {
-                Write-Log "Creating containers"
+                $BeforeEachStack = $Testenv.NewCleanupStack()
+                $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
+                $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+
+                Write-Log 'Creating containers'
                 Write-Log "Creating container: $ContainerClientID"
                 New-Container `
                     -Session $Testenv.Sessions[0] `
@@ -177,98 +112,39 @@ Describe "Floating IP" -Tag "Smoke" {
                     -Name $ContainerClientID `
                     -Image $ContainerImage
 
-                Write-Log "Creating containers"
-                Write-Log "Creating container: $ContainerServer1ID"
+                Write-Log 'Creating containers'
+                Write-Log "Creating container: $ContainerServerID"
                 New-Container `
                     -Session $Testenv.Sessions[1] `
                     -NetworkName $ServerNetwork.Name `
-                    -Name $ContainerServer1ID `
+                    -Name $ContainerServerID `
                     -Image $ContainerImage
 
-                Write-Log "Creating floating IP: $ServerFloatingIpPoolName"
-                $ContrailFloatingIp = New-ContrailFloatingIp `
-                    -API $MultiNode.NM `
-                    -PoolUuid $ContrailFloatingIpPool `
-                    -Name $ServerFloatingIpName `
-                    -Address $ServerFloatingIpAddress
+                $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainerClientID),
+                    (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainerServerID))
+                $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
 
-                $PortFqNames = Get-ContrailVirtualNetworkPorts `
-                    -API $MultiNode.NM `
-                    -NetworkUuid $ContrailServerNetwork
+                $VirtualNetworkRepo = [VirtualNetworkRepo]::new($Testenv.MultiNode.ContrailRestApi)
+                $ServerFloatingIp.PortFqNames = $VirtualNetworkRepo.GetPorts($ServerNetwork)
 
-                Set-ContrailFloatingIpPorts `
-                    -API $MultiNode.NM `
-                    -IpUuid $ContrailFloatingIp `
-                    -PortFqNames $PortFqNames
+                Write-Log "Creating floating IP: $($ServerFloatingIp.Name)"
+                $Testenv.ContrailRepo.AddOrReplace($ServerFloatingIp)
+                $BeforeEachStack.Push($ServerFloatingIp)
             }
 
             AfterEach {
-                Write-Log "Deleting floating IP"
-                if (Get-Variable ContrailFloatingIp -ErrorAction SilentlyContinue) {
-                    Remove-ContrailFloatingIp `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailFloatingIp
-                }
-
-                $Sessions = $Testenv.Sessions
-                try {
-                    Merge-Logs -LogSources (
-                        (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $ContainerClientID),
-                        (New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $ContainerServer1ID)
-                    )
-
-                    Write-Log "Removing all containers"
-                    Remove-AllContainers -Sessions $Sessions
-                }
-                finally {
-                    Merge-Logs -DontCleanUp -LogSources $LogSources
-                }
+                $BeforeEachStack.RunCleanup($Testenv.ContrailRepo)
             }
         }
 
         BeforeAll {
             $Testenv = [Testenv]::New($TestenvConfFile)
             $Testenv.Initialize()
-            Initialize-PesterLogger -OutDir $LogDir
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "MultiNode",
-                Justification = "It's actually used."
-            )]
-            $MultiNode = New-MultiNodeSetup `
-                -Testbeds $Testenv.Testbeds `
-                -ControllerConfig $Testenv.Controller `
-                -OpenStackConfig $Testenv.OpenStack `
-                -ContrailProject $ContrailProject
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "LogSources",
-                Justification = "It's actually used."
-            )]
-            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Testenv.Sessions
-
-            if ($PrepareEnv) {
-                foreach ($Session in $Testenv.Sessions) {
-                    Initialize-ComputeNode -Session $Session -Configs $Testenv
-                }
-            }
+            $Testenv.Initialize_New($LogDir, $ContrailProject, $PrepareEnv)
         }
 
         AfterAll {
-            if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-                if ($PrepareEnv) {
-                    foreach ($Session in $Testenv.Sessions) {
-                        Clear-ComputeNode `
-                            -Session $Session `
-                            -SystemConfig $Testenv.System
-                    }
-                    Clear-Logs -LogSources $LogSources
-                }
-                Remove-MultiNodeSetup -MultiNode $MultiNode
-                Remove-Variable "MultiNode"
-            }
+            $Testenv.Cleanup()
         }
     }
 }
