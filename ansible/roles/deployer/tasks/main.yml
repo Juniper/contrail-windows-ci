@@ -16,6 +16,7 @@
 
 - name: install pip
   command: python ~/get-pip.py
+  skip_ansible_lint:
 
 - name: Install c-a-d python dependencies
   pip:
