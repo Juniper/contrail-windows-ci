@@ -93,3 +93,4 @@
   roles:
     - testenv-save-conf
     - testenv-create-instances-yml
+    - testenv-create-deployer-inventory

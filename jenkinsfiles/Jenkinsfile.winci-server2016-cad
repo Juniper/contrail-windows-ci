@@ -106,9 +106,11 @@ pipeline {
 
                         def testEnvConfPath = "${env.WORKSPACE}/testenv-conf.yaml"
                         def instancesPath = "${env.WORKSPACE}/contrail-ansible-deployer/config/instances.yaml"
+                        def deployerInventoryPath = "${env.WORKSPACE}/deployer.inventory.yaml"
                         def provisioningExtraVars = deployConfig + [
                             testenv_conf_file: testEnvConfPath,
                             instances_file: instancesPath,
+                            deployer_inventory_file: deployerInventoryPath,
                         ]
                         ansiblePlaybook inventory: 'inventory.testenv',
                                         playbook: 'vmware-deploy-testenv.yml',
@@ -120,6 +122,8 @@ pipeline {
                     dir('contrail-ansible-deployer/config') {
                         stash name: "InstancesYaml", includes: "instances.yaml"
                     }
+
+                    stash name: "DeployerInventory", includes: "deployer.inventory.yaml"
                 }
             }
         }
@@ -132,6 +136,7 @@ pipeline {
         stage('Deploy computes with Contrail Ansible Deployer') {
             agent { label 'ansible' }
             steps {
+                deleteDir()
                 unstash "Ansible"
                 unstash "Deployer"
                 unstash "Dlls"
@@ -140,7 +145,11 @@ pipeline {
                     unstash "InstancesYaml"
                 }
 
-                // TODO: call cad from controller node.
+                dir('ansible') {
+                    unstash "DeployerInventory"
+                    ansiblePlaybook inventory: 'deployer.inventory.yaml',
+                                    playbook: 'run-cad-remotely.yml'
+                }
             }
         }
 
@@ -149,7 +158,9 @@ pipeline {
             steps {
                 retry(3) {
                     deleteDir()
-                    powershell script: "git clone https://github.com/Juniper/contrail-windows-tools.git"
+                    dir("contrail-windows-tools") {
+                        git url: "https://github.com/Juniper/contrail-windows-tools.git"
+                    }
                 }
 
                 dir("contrail-windows-tools") {
