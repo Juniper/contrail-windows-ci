@@ -1,12 +1,22 @@
 ---
 
-- name: Install build dependencies
+- name: Install dependencies on deployer machine
   package:
     name: "{{ item }}"
     state: present
   become: true
   with_items:
-    - ansible-2.4.2.0-1.el7
+    - sshpass
+    - python-pip
+
+- name: Install dependencies on deployer machine through PIP
+  pip:
+    name: "{{ item.name }}"
+    version: "{{ item.version | default(omit) }}"
+  with_items:
+    - name: ansible
+      version: 2.4.2
+    - name: requests
 
 - name: Upload contrail-ansible-deployer do deployer machine
   copy:

@@ -149,7 +149,7 @@ pipeline {
             steps {
                 retry(3) {
                     deleteDir()
-                    powershell script: "git clone https://github.com/Juniper/contrail-windows-tools"
+                    powershell script: "git clone https://github.com/Juniper/contrail-windows-tools.git"
                 }
 
                 dir("contrail-windows-tools") {
