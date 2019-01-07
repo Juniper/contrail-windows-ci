@@ -132,6 +132,7 @@ pipeline {
         stage('Deploy computes with Contrail Ansible Deployer') {
             agent { label 'ansible' }
             steps {
+                unstash "Ansible"
                 unstash "Deployer"
                 unstash "Dlls"
 
@@ -139,24 +140,18 @@ pipeline {
                     unstash "InstancesYaml"
                 }
 
-                dir("contrail-ansible-deployer") {
-                    ansiblePlaybook inventory: 'inventory/',
-                                    playbook: 'playbooks/configure_instances.yml'
-
-                    ansiblePlaybook inventory: 'inventory/',
-                                    playbook: 'playbooks/install_contrail.yml'
-                }
+                // TODO: call cad from controller node.
             }
         }
 
         stage('Run diagnostic check') {
             agent { label "tester" }
             steps {
-                echo "Run diagnostic check"
-
                 retry(3) {
-                    powershell script: "git clone https://github.com/Juniper/contrail-windows-tools"
+                    deleteDir()
+                    powershell script: "git clone https://github.com/Juniper/contrail-windows-tools.git"
                 }
+
                 dir("contrail-windows-tools") {
                     unstash "InstancesYaml"
                     powershell script: '.\\Invoke-ScriptInRemoteSessions -ScriptFileName ".\\Invoke-DiagnosticCheck.ps1" -InstancesYaml ".\\instances.yaml"'
@@ -180,7 +175,21 @@ pipeline {
 
                     unstash 'CIScripts'
 
-                    // TODO
+                    def logFilename = 'log.full.txt.gz'
+
+                    dir('to_publish') {
+                        createCompressedLogFile(env.JOB_NAME, env.BUILD_NUMBER, logFilename)
+                    }
+
+                    def auth = sshAuthority(env.LOG_SERVER_USER, env.LOG_SERVER)
+                    def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
+                        env.BUILD_NUMBER, env.ZUUL_UUID)
+                    def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
+                    publishDirToLogServer("to_publish", auth, dst)
+
+                    def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
+                    def logDestMsg = "Full logs URL: ${fullLogsURL}"
+                    echo(logDestMsg)
                 }
             }
         }
