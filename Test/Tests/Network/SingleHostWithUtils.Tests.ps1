@@ -1,20 +1,23 @@
 Param (
     [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
+
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
+
+. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
+. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
@@ -24,17 +27,26 @@ Param (
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\Project.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\SecurityGroup.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\VirtualNetwork.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI_New\ContrailAPI.ps1
 
 $ContrailProject = 'ci_tests_utils'
 
-$Container1ID = "jolly-lumberjack"
-$Container2ID = "juniper-tree"
+$ContainerIds = @('jolly-lumberjack', 'juniper-tree')
+$ContainerNetInfos = @($null, $null)
+
+$DockerImages = @('python-http', 'microsoft/nanoserver')
+
+$Subnet = [Subnet]::new(
+    "10.0.0.0",
+    24,
+    "10.0.0.1",
+    "10.0.0.100",
+    "10.0.0.200"
+)
+$VirtualNetwork = [VirtualNetwork]::New('testnet_utils', $ContrailProject, $Subnet)
 
 Test-WithRetries 3 {
-    Describe "Single compute node protocol tests with utils" -Tag "Utils" {
+    Describe 'Single compute node protocol tests with utils' -Tag 'Utils' {
 
         function Initialize-ContainersConnection {
             Param (
@@ -45,8 +57,8 @@ Test-WithRetries 3 {
                 [Parameter(Mandatory = $true)] [PSSessionT] $Session
             )
 
-            Write-Log $("Setting a connection between " + $Container1NetInfo.MACAddress + `
-                    " and " + $Container2NetInfo.MACAddress + "...")
+            Write-Log $('Setting a connection between ' + $Container1NetInfo.MACAddress + `
+                    ' and ' + $Container2NetInfo.MACAddress + '...')
 
             Invoke-Command -Session $Session -ScriptBlock {
                 vif.exe --add $Using:VMNetInfo.IfName --mac $Using:VMNetInfo.MACAddress --vrf 0 --type physical
@@ -66,178 +78,125 @@ Test-WithRetries 3 {
             }
         }
 
-        It "Ping succeeds" {
+        It 'Ping succeeds' {
             Test-Ping `
                 -Session $Session `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container2ID `
-                -DstIP $Container2NetInfo.IPAddress | Should Be 0
+                -SrcContainerName $ContainerIds[0] `
+                -DstContainerName $ContainerIds[1] `
+                -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
             Test-Ping `
                 -Session $Session `
-                -SrcContainerName $Container2ID `
-                -DstContainerName $Container1ID `
-                -DstIP $Container1NetInfo.IPAddress | Should Be 0
+                -SrcContainerName $ContainerIds[1] `
+                -DstContainerName $ContainerIds[0] `
+                -DstIP $ContainerNetInfos[0].IPAddress | Should Be 0
         }
 
-        It "Ping with big buffer succeeds" {
+        It 'Ping with big buffer succeeds' {
             Test-Ping `
                 -Session $Session `
-                -SrcContainerName $Container1ID `
-                -DstContainerName $Container2ID `
-                -DstIP $Container2NetInfo.IPAddress `
+                -SrcContainerName $ContainerIds[0] `
+                -DstContainerName $ContainerIds[1] `
+                -DstIP $ContainerNetInfos[1].IPAddress `
                 -BufferSize 3500 | Should Be 0
 
             Test-Ping `
                 -Session $Session `
-                -SrcContainerName $Container2ID `
-                -DstContainerName $Container1ID `
-                -DstIP $Container1NetInfo.IPAddress `
+                -SrcContainerName $ContainerIds[1] `
+                -DstContainerName $ContainerIds[0] `
+                -DstIP $ContainerNetInfos[0].IPAddress `
                 -BufferSize 3500 | Should Be 0
         }
 
-        It "TCP connection works" {
+        It 'TCP connection works' {
+            $ContainerId = $ContainerIds[1]
+            $ContainerIp = $ContainerNetInfos[0].IPAddress
             Invoke-Command -Session $Session -ScriptBlock {
-                $Container1IP = $Using:Container1NetInfo.IPAddress
-                docker exec $Using:Container2ID powershell "Invoke-WebRequest -Uri http://${Container1IP}:8080/ -ErrorAction Continue" | Out-Null
+                docker exec $Using:ContainerId powershell "Invoke-WebRequest -Uri http://${Using:ContainerIP}:8080/ -ErrorAction Continue" | Out-Null
                 return $LASTEXITCODE
             } | Should Be 0
 
         }
 
         BeforeEach {
-            $Subnet = [SubnetConfiguration]::new(
-                "10.0.0.0",
-                24,
-                "10.0.0.1",
-                "10.0.0.100",
-                "10.0.0.200"
-            )
+            $BeforeEachStack = $Testenv.NewCleanupStack()
+            $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
 
-            Write-Log "Creating ContrailNetwork"
-            $NetworkName = "testnet"
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "ContrailNetwork",
-                Justification = "It's used in AfterEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
-            )]
-            $ContrailNetwork = Add-OrReplaceNetwork `
-                -API $ContrailNM `
-                -TenantName $ContrailProject `
-                -Name $NetworkName `
-                -SubnetConfig $Subnet
+            Write-Log "Creating virtual network: $($VirtualNetwork.Name)"
+            $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
+            $BeforeEachStack.Push($VirtualNetwork)
 
             New-CNMPluginConfigFile -Session $Session `
-                -AdapterName $SystemConfig.AdapterName `
-                -OpenStackConfig $OpenStackConfig `
-                -ControllerConfig $ControllerConfig
+                -AdapterName $Testenv.System.AdapterName `
+                -OpenStackConfig $Testenv.OpenStack `
+                -ControllerConfig $Testenv.Controller
 
             Initialize-CnmPluginAndExtension -Session $Session `
-                -SystemConfig $SystemConfig `
+                -SystemConfig $Testenv.System `
+
+            $BeforeEachStack.Push(${function:Clear-TestConfiguration}, @($Session, $Testenv.System))
 
             New-DockerNetwork -Session $Session `
                 -TenantName $ContrailProject `
-                -Name $NetworkName `
+                -Name $VirtualNetwork.Name `
                 -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
-            Write-Log "Creating container 1"
-            New-Container -Session $Session -NetworkName $NetworkName -Name $Container1ID -Image python-http | Out-Null
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @($Session))
 
-            Write-Log "Creating container 2"
-            New-Container -Session $Session -NetworkName $NetworkName -Name $Container2ID | Out-Null
+            foreach ($i in 0..1) {
+                Write-Log "Creating container: $($ContainerIds[$i])"
+                New-Container `
+                    -Session $Session `
+                    -NetworkName $VirtualNetwork.Name `
+                    -Name $ContainerIds[$i] `
+                    -Image $DockerImages[$i]
 
-            Write-Log "Getting VM NetAdapter Information"
+                $ContainerNetInfos[$i] = Get-RemoteContainerNetAdapterInformation `
+                    -Session $Session -ContainerID $ContainerIds[$i]
+                Write-Log "IP of $($ContainerIds[$i]): $($ContainerNetInfos[$i].IPAddress)"
+            }
+
+            Write-Log 'Getting VM NetAdapter Information'
             $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $SystemConfig.AdapterName
+                -AdapterName $Testenv.System.AdapterName
 
-            Write-Log "Getting vHost NetAdapter Information"
+            Write-Log 'Getting vHost NetAdapter Information'
             $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $SystemConfig.VHostName
-
-            Write-Log "Getting Containers NetAdapter Information"
-            $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $Session -ContainerID $Container1ID
-            $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $Session -ContainerID $Container2ID
+                -AdapterName $Testenv.System.VHostName
 
             Initialize-ContainersConnection -VMNetInfo $VMNetInfo -VHostInfo $VHostInfo `
-                -Container1NetInfo $Container1NetInfo -Container2NetInfo $Container2NetInfo `
+                -Container1NetInfo $ContainerNetInfos[0] -Container2NetInfo $ContainerNetInfos[1] `
                 -Session $Session
+
+            $ContainersLogs = @(New-ContainerLogSource -Sessions $Session -ContainerNames $ContainerIds[0], $ContainerIds[1])
+            $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
         }
 
         AfterEach {
-            try {
-                Merge-Logs -LogSources (
-                    (New-ContainerLogSource -Sessions $Session -ContainerNames $Container1ID, $Container2ID)
-                )
-
-                Write-Log "Removing containers"
-                Remove-AllContainers -Session $Session
-
-                Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-                if (Get-Variable "ContrailNetwork" -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $ContrailNM `
-                        -Uuid $ContrailNetwork
-                    Remove-Variable "ContrailNetwork"
-                }
-            }
-            finally {
-                Merge-Logs -DontCleanUp -LogSources $LogSources
-            }
+            $BeforeEachStack.RunCleanup($Testenv.ContrailRepo)
         }
 
         BeforeAll {
-            $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
-            $Session = $Sessions[0]
+            $Testenv = [Testenv]::New($TestenvConfFile)
+            $Testenv.Initialize()
+            $Testenv.Initialize_New($LogDir, $ContrailProject, $true)
 
-            $OpenStackConfig = [OpenStackConfig]::LoadFromFile($TestenvConfFile)
-            $ControllerConfig = [ControllerConfig]::LoadFromFile($TestenvConfFile)
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments", "",
-                Justification = "Analyzer doesn't understand relation of Pester blocks"
-            )]
-            $SystemConfig = [SystemConfig]::LoadFromFile($TestenvConfFile)
+            $BeforeAllStack = $Testenv.NewCleanupStack()
 
-            Initialize-PesterLogger -OutDir $LogDir
+            $Session = $Testenv.Sessions[0]
 
-            Install-CnmPlugin -Session $Session
-            Install-Extension -Session $Session
             Install-Utils -Session $Session
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "LogSources",
-                Justification = "It's actually used."
-            )]
-            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Session
-
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "ContrailNM",
-                Justification = "It's used in BeforeEach. Perhaps https://github.com/PowerShell/PSScriptAnalyzer/issues/804"
-            )]
-            $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig, $OpenStackConfig)
-            Add-OrReplaceContrailProject `
-                -API $ContrailNM `
-                -Name $ContrailProject
-            Add-OrReplaceContrailSecurityGroup `
-                -API $ContrailNM `
-                -TenantName $ContrailProject `
-                -Name 'default' | Out-Null
-
+            $BeforeAllStack.Push(${function:Uninstall-Utils}, @($Session))
             Test-IfUtilsCanLoadDLLs -Session $Session
+
+            Stop-NodeMgrService -Session $Session
+            Stop-CNMPluginService -Session $Session
+            Stop-AgentService -Session $Session
+            Disable-VRouterExtension -Session $Session -SystemConfig $TestEnv.System
         }
 
         AfterAll {
-            if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-
-            Uninstall-CnmPlugin -Session $Session
-            Uninstall-Extension -Session $Session
-            Uninstall-Utils -Session $Session
-
-            Remove-PSSession $Sessions
+            $Testenv.Cleanup()
         }
     }
 }
