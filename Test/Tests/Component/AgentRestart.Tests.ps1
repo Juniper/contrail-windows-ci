@@ -15,8 +15,7 @@ Test-WithRetries 3 {
             Initialize-PesterLogger -OutDir $LogDir
         }
 
-        It "ET goes home" {
-            Write-Log "OK This is epic flake"
+        It "OK This is epic flake" {
             $true | Should -BeTrue
         }
     }
