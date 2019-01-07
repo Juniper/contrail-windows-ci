@@ -8,15 +8,17 @@
     - sshpass
 
 # By default centOS knows no repo with pip.
-- name: get pip
+- name: Get pip
   uri:
     url: "https://bootstrap.pypa.io/get-pip.py"
     dest: ~/get-pip.py
     method: GET
+    creates: ~/get-pip.py
 
-- name: install pip
+- name: Install pip
   command: python ~/get-pip.py
-  skip_ansible_lint:
+  args:
+    creates: /usr/bin/pip
 
 - name: Install c-a-d python dependencies
   pip:
