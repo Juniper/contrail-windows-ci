@@ -54,9 +54,11 @@ $DefaultDNSrecords = @([DNSRecord]::New('vnone', $null, 'defaultrecord-nonetest.
     [DNSRecord]::New('vvirt', $null, 'defaultrecord-virtualtest.com', '3.3.3.3', 'A'),
     [DNSRecord]::New('vtena', $null, 'defaultrecord-tenanttest.com', '3.3.3.4', 'A'))
 
-# This function is used to generate command
-# that will be passed to docker exec.
+# This function is used to generate command that will be passed to docker exec.
 # $Hostname will be substituted.
+# Be carreful while changing it. It has to work after replacing each newline with ';' .
+# For instance, don't use if/else because VSCode auto-formatter will move else to newline,
+# and "if{...};else{}" is not proper PS code.
 function Resolve-DNSLocally {
     $resolved = (Resolve-DnsName -Name $Hostname -Type A -ErrorAction SilentlyContinue)
 
@@ -65,7 +67,7 @@ function Resolve-DNSLocally {
         $resolved[0].IPAddress
         return
     }
-
+    # Don't add 'else' here. For info why, read comment before function.
     Write-Host 'error'
     $error[0].CategoryInfo.Category
 }
