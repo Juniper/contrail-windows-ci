@@ -124,7 +124,7 @@ Test-WithRetries 3 {
 
             Write-Log "Creating virtual network: $($VirtualNetwork.Name)"
             $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
-            $BeforeAllStack.Push($VirtualNetwork)
+            $BeforeEachStack.Push($VirtualNetwork)
 
             New-CNMPluginConfigFile -Session $Session `
                 -AdapterName $Testenv.System.AdapterName `
