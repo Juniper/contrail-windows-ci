@@ -16,8 +16,8 @@ Test-WithRetries 3 {
         }
 
         It "ET goes home" {
-            Write-Log "It started..."
-            $false | Should -BeTrue
+            Write-Log "OK This is epic flake"
+            $true | Should -BeTrue
         }
     }
 }

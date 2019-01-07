@@ -346,7 +346,6 @@ pipeline {
                     if (isGithub()) {
                         sendGithubComment(logDestMsg)
                     }
-                    stash name: 'TestsLogs', includes: 'to_publish/**', allowEmpty: true
                 }
             }
 
