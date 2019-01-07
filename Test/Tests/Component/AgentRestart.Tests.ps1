@@ -16,7 +16,7 @@ Test-WithRetries 3 {
         }
 
         It "OK This is epic flake" {
-            $true | Should -BeTrue
+            $false | Should -BeTrue
         }
     }
 }
