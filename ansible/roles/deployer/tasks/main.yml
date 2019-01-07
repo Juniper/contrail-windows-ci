@@ -13,7 +13,7 @@
     url: "https://bootstrap.pypa.io/get-pip.py"
     dest: ~/get-pip.py
     method: GET
-    creates: ~/get-pip.py
+    creates: /usr/bin/pip
 
 - name: Install pip
   command: python ~/get-pip.py
