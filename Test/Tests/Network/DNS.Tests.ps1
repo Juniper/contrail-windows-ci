@@ -67,7 +67,7 @@ function Resolve-DNSLocally {
         $resolved[0].IPAddress
         return
     }
-    # Don't add 'else' here. For info why, read comment before function.
+    
     Write-Host 'error'
     $error[0].CategoryInfo.Category
 }
