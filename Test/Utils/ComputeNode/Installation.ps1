@@ -116,7 +116,7 @@ function Install-Nodemgr {
     $Archives = $Res.Output
     foreach($A in $Archives) {
         Write-Log "- (Nodemgr) Installing pip archive $A"
-        Invoke-NativeCommand -Session $Session -ScriptBlock {
+        Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock {
             pip install "C:\Artifacts\nodemgr\$Using:A"
         } | Out-Null
     }
