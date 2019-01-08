@@ -1,6 +1,6 @@
 Param (
     [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory = $false)] [string] $LogDir = "pesterLogs",
+    [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
     [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
@@ -29,17 +29,19 @@ Param (
 
 $ContrailProject = 'ci_tests_tunneling'
 
-$TCPServerDockerImage = "python-http"
-$Container1ID = "jolly-lumberjack"
-$Container2ID = "juniper-tree"
-$Subnet = [SubnetConfiguration]::new(
-    "10.0.5.0",
+$DockerImages = @('python-http', 'microsoft/windowsservercore')
+
+$ContainersIDs = @('jolly-lumberjack', 'juniper-tree')
+$ContainerNetInfos = @($null, $null)
+
+$Subnet = [Subnet]::new(
+    '10.0.5.0',
     24,
-    "10.0.5.1",
-    "10.0.5.19",
-    "10.0.5.83"
+    '10.0.5.1',
+    '10.0.5.19',
+    '10.0.5.83'
 )
-$Network = [Network]::New("testnet12", $Subnet)
+$VirtualNetwork = [VirtualNetwork]::New('testnet_tunneling', $ContrailProject, $Subnet)
 
 function Get-MaxIPv4DataSizeForMTU {
     Param ([Parameter(Mandatory = $true)] [Int] $MTU)
@@ -71,9 +73,9 @@ function Get-VrfStats {
     $VifIdx = 2
     $Stats = Invoke-Command -Session $Session -ScriptBlock {
         $Out = $(vrfstats --get $Using:VifIdx)
-        $PktCountMPLSoUDP = [regex]::new("Udp Mpls Tunnels ([0-9]+)").Match($Out[3]).Groups[1].Value
-        $PktCountMPLSoGRE = [regex]::new("Gre Mpls Tunnels ([0-9]+)").Match($Out[3]).Groups[1].Value
-        $PktCountVXLAN = [regex]::new("Vxlan Tunnels ([0-9]+)").Match($Out[3]).Groups[1].Value
+        $PktCountMPLSoUDP = [regex]::new('Udp Mpls Tunnels ([0-9]+)').Match($Out[3]).Groups[1].Value
+        $PktCountMPLSoGRE = [regex]::new('Gre Mpls Tunnels ([0-9]+)').Match($Out[3]).Groups[1].Value
+        $PktCountVXLAN = [regex]::new('Vxlan Tunnels ([0-9]+)').Match($Out[3]).Groups[1].Value
         return @{
             MPLSoUDP = $PktCountMPLSoUDP
             MPLSoGRE = $PktCountMPLSoGRE
@@ -85,7 +87,7 @@ function Get-VrfStats {
 }
 
 Test-WithRetries 3 {
-    Describe "Tunneling with Agent tests" -Tag "Smoke" {
+    Describe 'Tunneling with Agent tests' -Tag 'Smoke' {
 
         #
         #               !!!!!! IMPORTANT: DEBUGGING/DEVELOPING THESE TESTS !!!!!!
@@ -104,89 +106,80 @@ Test-WithRetries 3 {
         # Do it especially when logging in via WebUI for the first time.
         #
 
-        foreach ($TunnelingMethod in @("MPLSoGRE", "MPLSoUDP", "VXLAN")) {
+        foreach ($TunnelingMethod in @('MPLSoGRE', 'MPLSoUDP', 'VXLAN')) {
             Context "Tunneling $TunnelingMethod" {
                 BeforeEach {
-                    $EncapPrioritiesList = @($TunnelingMethod)
-                    Set-EncapPriorities `
-                        -API $MultiNode.NM `
-                        -PrioritiesList $EncapPrioritiesList
-
-                    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                        "PSUseDeclaredVarsMoreThanAssignments",
-                        "Sessions",
-                        Justification = "It's actually used in 'It' blocks."
-                    )]
-                    $Sessions = $Testenv.Sessions
+                    $GlobalVrouterConfig = [GlobalVrouterConfig]::New(@($TunnelingMethod))
+                    $Testenv.ContrailRepo.Set($GlobalVrouterConfig)
                 }
 
-                It "Uses specified tunneling method" {
-                    if ($TunnelingMethod -eq "VXLAN") {
+                It 'Uses specified tunneling method' {
+                    if ($TunnelingMethod -eq 'VXLAN') {
                         # Probably a bug here: https://github.com/Juniper/contrail-vrouter/blob/master/dp-core/vr_nexthop.c#L1983
                         Set-TestInconclusive "Test not performed, because VXLAN doesn't report correctly in vrfstats"
                     }
 
-                    $StatsBefore = Get-VrfStats -Session $Sessions[0]
+                    $StatsBefore = Get-VrfStats -Session $Testenv.Sessions[0]
 
                     Test-Ping `
-                        -Session $Sessions[0] `
-                        -SrcContainerName $Container1ID `
-                        -DstContainerName $Container2ID `
-                        -DstIP $Container2NetInfo.IPAddress | Should Be 0
+                        -Session $Testenv.Sessions[0] `
+                        -SrcContainerName $ContainersIDs[0] `
+                        -DstContainerName $ContainersIDs[1] `
+                        -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
-                    $StatsAfter = Get-VrfStats -Session $Sessions[0]
+                    $StatsAfter = Get-VrfStats -Session $Testenv.Sessions[0]
                     $StatsAfter[$TunnelingMethod] | Should BeGreaterThan $StatsBefore[$TunnelingMethod]
                 }
 
-                It "ICMP - Ping between containers on separate compute nodes succeeds" {
+                It 'ICMP - Ping between containers on separate compute nodes succeeds' {
                     Test-Ping `
-                        -Session $Sessions[0] `
-                        -SrcContainerName $Container1ID `
-                        -DstContainerName $Container2ID `
-                        -DstIP $Container2NetInfo.IPAddress | Should Be 0
+                        -Session $Testenv.Sessions[0] `
+                        -SrcContainerName $ContainersIDs[0] `
+                        -DstContainerName $ContainersIDs[1] `
+                        -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
                     Test-Ping `
-                        -Session $Sessions[1] `
-                        -SrcContainerName $Container2ID `
-                        -DstContainerName $Container1ID `
-                        -DstIP $Container1NetInfo.IPAddress | Should Be 0
+                        -Session $Testenv.Sessions[1] `
+                        -SrcContainerName $ContainersIDs[1] `
+                        -DstContainerName $ContainersIDs[0] `
+                        -DstIP $ContainerNetInfos[0].IPAddress | Should Be 0
                 }
 
-                It "TCP - HTTP connection between containers on separate compute nodes succeeds" {
+                It 'TCP - HTTP connection between containers on separate compute nodes succeeds' {
                     Test-TCP `
-                        -Session $Sessions[1] `
-                        -SrcContainerName $Container2ID `
-                        -DstContainerName $Container1ID `
-                        -DstIP $Container1NetInfo.IPAddress | Should Be 0
+                        -Session $Testenv.Sessions[1] `
+                        -SrcContainerName $ContainersIDs[1] `
+                        -DstContainerName $ContainersIDs[0] `
+                        -DstIP $ContainerNetInfos[0].IPAddress | Should Be 0
                 }
 
-                It "UDP - sending message between containers on separate compute nodes succeeds" {
-                    $MyMessage = "We are Tungsten Fabric. We come in peace."
+                It 'UDP - sending message between containers on separate compute nodes succeeds' {
+                    $MyMessage = 'We are Tungsten Fabric. We come in peace.'
 
                     Test-UDP `
-                        -ListenerContainerSession $Sessions[0] `
-                        -ListenerContainerName $Container1ID `
-                        -ListenerContainerIP $Container1NetInfo.IPAddress `
-                        -ClientContainerSession $Sessions[1] `
-                        -ClientContainerName $Container2ID `
+                        -ListenerContainerSession $Testenv.Sessions[0] `
+                        -ListenerContainerName $ContainersIDs[0] `
+                        -ListenerContainerIP $ContainerNetInfos[0].IPAddress `
+                        -ClientContainerSession $Testenv.Sessions[1] `
+                        -ClientContainerName $ContainersIDs[1] `
                         -Message $MyMessage | Should Be $true
                 }
 
-                It "IP fragmentation - ICMP - Ping with big buffer succeeds" {
-                    $Container1MsgFragmentationThreshold = Get-MaxICMPDataSizeForMTU -MTU $Container1NetInfo.MtuSize
-                    $Container2MsgFragmentationThreshold = Get-MaxICMPDataSizeForMTU -MTU $Container2NetInfo.MtuSize
+                It 'IP fragmentation - ICMP - Ping with big buffer succeeds' {
+                    $Container1MsgFragmentationThreshold = Get-MaxICMPDataSizeForMTU -MTU $ContainerNetInfos[0].MtuSize
+                    $Container2MsgFragmentationThreshold = Get-MaxICMPDataSizeForMTU -MTU $ContainerNetInfos[1].MtuSize
 
-                    $SrcContainers = @($Container1ID, $Container2ID)
-                    $DstContainers = @($Container2ID, $Container1ID)
-                    $DstIPs = @($Container2NetInfo.IPAddress, $Container1NetInfo.IPAddress)
+                    $SrcContainers = @($ContainersIDs[0], $ContainersIDs[1])
+                    $DstContainers = @($ContainersIDs[1], $ContainersIDs[0])
+                    $DstIPs = @($ContainerNetInfos[1].IPAddress, $ContainerNetInfos[0].IPAddress)
                     $BufferSizes = @($Container1MsgFragmentationThreshold, $Container2MsgFragmentationThreshold)
 
-                    foreach ($ContainerIdx in @(0, 1)) {
+                    foreach ($ContainerIdx in 0..1) {
                         $BufferSizeLargerBeforeTunneling = $BufferSizes[$ContainerIdx] + 1
                         $BufferSizeLargerAfterTunneling = $BufferSizes[$ContainerIdx] - 1
                         foreach ($BufferSize in @($BufferSizeLargerBeforeTunneling, $BufferSizeLargerAfterTunneling)) {
                             Test-Ping `
-                                -Session $Sessions[$ContainerIdx] `
+                                -Session $Testenv.Sessions[$ContainerIdx] `
                                 -SrcContainerName $SrcContainers[$ContainerIdx] `
                                 -DstContainerName $DstContainers[$ContainerIdx] `
                                 -DstIP $DstIPs[$ContainerIdx] `
@@ -195,18 +188,18 @@ Test-WithRetries 3 {
                     }
                 }
 
-                It "IP fragmentation - UDP - sending big buffer succeeds" {
-                    $MsgFragmentationThreshold = Get-MaxUDPDataSizeForMTU -MTU $Container1NetInfo.MtuSize
+                It 'IP fragmentation - UDP - sending big buffer succeeds' {
+                    $MsgFragmentationThreshold = Get-MaxUDPDataSizeForMTU -MTU $ContainerNetInfos[0].MtuSize
 
-                    $MessageLargerBeforeTunneling = "a" * $($MsgFragmentationThreshold + 1)
-                    $MessageLargerAfterTunneling = "a" * $($MsgFragmentationThreshold - 1)
+                    $MessageLargerBeforeTunneling = 'a' * $($MsgFragmentationThreshold + 1)
+                    $MessageLargerAfterTunneling = 'a' * $($MsgFragmentationThreshold - 1)
                     foreach ($Message in @($MessageLargerBeforeTunneling, $MessageLargerAfterTunneling)) {
                         Test-UDP `
-                            -ListenerContainerSession $Sessions[0] `
-                            -ListenerContainerName $Container1ID `
-                            -ListenerContainerIP $Container1NetInfo.IPAddress `
-                            -ClientContainerSession $Sessions[1] `
-                            -ClientContainerName $Container2ID `
+                            -ListenerContainerSession $Testenv.Sessions[0] `
+                            -ListenerContainerName $ContainersIDs[0] `
+                            -ListenerContainerIP $ContainerNetInfos[0].IPAddress `
+                            -ClientContainerSession $Testenv.Sessions[1] `
+                            -ClientContainerName $ContainersIDs[1] `
                             -Message $Message | Should Be $true
                     }
                 }
@@ -219,124 +212,52 @@ Test-WithRetries 3 {
         BeforeAll {
             $Testenv = [Testenv]::New($TestenvConfFile)
             $Testenv.Initialize()
-            Initialize-PesterLogger -OutDir $LogDir
-            $MultiNode = New-MultiNodeSetup `
-                -Testbeds $Testenv.Testbeds `
-                -ControllerConfig $Testenv.Controller `
-                -OpenStackConfig $Testenv.OpenStack `
-                -ContrailProject $ContrailProject
+            $Testenv.Initialize_New($LogDir, $ContrailProject, $PrepareEnv)
 
-            Write-Log "Creating virtual network: $($Network.Name)"
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "ContrailNetwork",
-                Justification = "It's actually used."
-            )]
-            $ContrailNetwork = Add-OrReplaceNetwork `
-                -API $MultiNode.NM `
-                -TenantName $ContrailProject `
-                -Name $Network.Name `
-                -SubnetConfig $Subnet
+            $BeforeAllStack = $Testenv.NewCleanupStack()
 
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "LogSources",
-                Justification = "It's actually used."
-            )]
-            [LogSource[]] $LogSources = New-ComputeNodeLogSources -Sessions $Testenv.Sessions
+            Write-Log "Creating virtual network: $($VirtualNetwork.Name)"
+            $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
+            $BeforeAllStack.Push($VirtualNetwork)
 
+            Write-Log 'Creating docker networks'
             foreach ($Session in $Testenv.Sessions) {
-                if ($PrepareEnv) {
-                    Initialize-ComputeNode `
-                        -Session $Session `
-                        -Configs $Testenv
-                }
-
                 Initialize-DockerNetworks `
                     -Session $Session `
-                    -Networks @($Network) `
+                    -Networks @($VirtualNetwork) `
                     -TenantName $ContrailProject
+                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $VirtualNetwork.Name))
             }
         }
 
         AfterAll {
-            if (Get-Variable "MultiNode" -ErrorAction SilentlyContinue) {
-
-                foreach ($Session in $Testenv.Sessions) {
-                    Remove-DockerNetwork -Session $Session -Name $Network.Name
-                }
-
-                if ($PrepareEnv) {
-                    foreach ($Session in $Testenv.Sessions) {
-                        Clear-ComputeNode `
-                            -Session $Session `
-                            -SystemConfig $Testenv.System
-                    }
-                    Clear-Logs -LogSources $LogSources
-                }
-
-                Write-Log "Deleting virtual network"
-                if (Get-Variable ContrailNetwork -ErrorAction SilentlyContinue) {
-                    Remove-ContrailVirtualNetwork `
-                        -API $MultiNode.NM `
-                        -Uuid $ContrailNetwork
-                }
-
-                Remove-MultiNodeSetup -MultiNode $MultiNode
-                Remove-Variable "MultiNode"
-            }
+            $Testenv.Cleanup()
         }
 
         BeforeEach {
-            Write-Log "Creating containers"
-            Write-Log "Creating container: $Container1ID"
-            New-Container `
-                -Session $Testenv.Sessions[0] `
-                -NetworkName $Network.Name `
-                -Name $Container1ID `
-                -Image $TCPServerDockerImage
-            Write-Log "Creating container: $Container2ID"
-            New-Container `
-                -Session $Testenv.Sessions[1] `
-                -NetworkName $Network.Name `
-                -Name $Container2ID `
-                -Image "microsoft/windowsservercore"
+            $BeforeEachStack = $Testenv.NewCleanupStack()
+            $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+            Write-Log 'Creating containers'
+            foreach ($i in 0..1) {
+                Write-Log "Creating container: $($ContainersIDs[$i])"
+                New-Container `
+                    -Session $Testenv.Sessions[$i] `
+                    -NetworkName $VirtualNetwork.Name `
+                    -Name $ContainersIDs[$i] `
+                    -Image $DockerImages[$i]
 
-            Write-Log "Getting containers' NetAdapter Information"
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "Container1NetInfo",
-                Justification = "It's actually used."
-            )]
-            $Container1NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $Testenv.Sessions[0] -ContainerID $Container1ID
-            $IP = $Container1NetInfo.IPAddress
-            Write-Log "IP of ${Container1ID}: $IP"
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                "PSUseDeclaredVarsMoreThanAssignments",
-                "Container2NetInfo",
-                Justification = "It's actually used."
-            )]
-            $Container2NetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $Testenv.Sessions[1] -ContainerID $Container2ID
-            $IP = $Container2NetInfo.IPAddress
-            Write-Log "IP of ${Container2ID}: $IP"
+                $ContainerNetInfos[$i] = Get-RemoteContainerNetAdapterInformation `
+                    -Session $Testenv.Sessions[$i] -ContainerID $ContainersIDs[$i]
+                Write-Log "IP of $($ContainersIDs[$i]): $($ContainerNetInfos[$i].IPAddress)"
+            }
+            $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIDs[0]),
+                (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIDs[1]))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
         }
 
         AfterEach {
-            $Sessions = $Testenv.Sessions
-            try {
-                Merge-Logs -LogSources (
-                    (New-ContainerLogSource -Sessions $Sessions[0] -ContainerNames $Container1ID),
-                    (New-ContainerLogSource -Sessions $Sessions[1] -ContainerNames $Container2ID)
-                )
-
-                Write-Log "Removing all containers"
-                Remove-AllContainers -Sessions $Sessions
-            }
-            finally {
-                Merge-Logs -DontCleanUp -LogSources $LogSources
-            }
+            $BeforeEachStack.RunCleanup($Testenv.ContrailRepo)
         }
     }
 }
