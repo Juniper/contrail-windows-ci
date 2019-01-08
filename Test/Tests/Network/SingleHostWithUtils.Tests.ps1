@@ -14,7 +14,6 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
@@ -23,7 +22,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
-. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
@@ -177,9 +175,8 @@ Test-WithRetries 3 {
         }
 
         BeforeAll {
-            $Testenv = [Testenv]::New($TestenvConfFile)
-            $Testenv.Initialize()
-            $Testenv.Initialize_New($LogDir, $ContrailProject, $true)
+            $Testenv = [Testenv]::New()
+            $Testenv.Initialize($TestenvConfFile, $LogDir, $ContrailProject, $true)
 
             $BeforeAllStack = $Testenv.NewCleanupStack()
 

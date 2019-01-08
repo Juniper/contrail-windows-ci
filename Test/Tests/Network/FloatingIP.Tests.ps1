@@ -16,8 +16,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
-. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
-. $PSScriptRoot\..\..\Utils\DockerNetwork\DockerNetwork.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI_New\ContrailAPI.ps1
@@ -138,9 +137,8 @@ Describe 'Floating IP' -Tag 'Smoke' {
         }
 
         BeforeAll {
-            $Testenv = [Testenv]::New($TestenvConfFile)
-            $Testenv.Initialize()
-            $Testenv.Initialize_New($LogDir, $ContrailProject, $PrepareEnv)
+            $Testenv = [Testenv]::New()
+            $Testenv.Initialize($TestenvConfFile, $LogDir, $ContrailProject, $PrepareEnv)
         }
 
         AfterAll {

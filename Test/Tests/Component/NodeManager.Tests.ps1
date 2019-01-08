@@ -12,7 +12,6 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailNetworkManager.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
@@ -103,9 +102,8 @@ Describe 'Node manager' -Tag 'Smoke' {
     }
 
     BeforeAll {
-        $Testenv = [Testenv]::New($TestenvConfFile)
-        $Testenv.Initialize()
-        $Testenv.Initialize_New($LogDir, $ContrailProject, $PrepareEnv)
+        $Testenv = [Testenv]::New()
+        $Testenv.Initialize($TestenvConfFile, $LogDir, $ContrailProject, $PrepareEnv)
     }
 
     AfterAll {

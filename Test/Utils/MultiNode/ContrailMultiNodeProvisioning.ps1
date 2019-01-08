@@ -15,9 +15,6 @@ function New-MultiNodeSetup {
         [Parameter(Mandatory = $true)] [String] $ContrailProject
     )
 
-    # For old API
-    $ContrailNM = [ContrailNetworkManager]::new($ControllerConfig, $OpenStackConfig)
-    # For new API
     $ContrailRestApi = [ContrailRestApi]::new($ControllerConfig, $OpenStackConfig)
 
     $ContrailRepo = [ContrailRepo]::new($ContrailRestApi)
@@ -37,7 +34,7 @@ function New-MultiNodeSetup {
         $VRouters += $VirtualRouter
     }
 
-    return [MultiNode]::New($ContrailNM, $ContrailRestApi, $VRouters, $Project)
+    return [MultiNode]::New($ContrailRestApi, $VRouters, $Project)
 }
 
 function Remove-MultiNodeSetup {
