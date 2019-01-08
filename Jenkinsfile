@@ -319,7 +319,7 @@ pipeline {
                     }
 
                     unstash "Flakes"
-                    if (containsFlakiness("to_publish/$logFilename")) {
+                    if (containsFlakiness("to_publish/$logFilename") && currentBuild.result == 'FAILURE') {
                         echo "Flakiness detected"
                         if (isGithub()) {
                             sendGithubComment("recheck no bug")
