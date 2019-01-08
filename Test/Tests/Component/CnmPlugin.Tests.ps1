@@ -14,7 +14,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 # TODO: This path should probably come from TestenvConfFile.
-$RemoteTestModulesDir = "C:\Artifacts\"
+$RemoteTestModulesDir = "C:\Artifacts\cnm-plugin"
 
 function Find-CnmPluginTests {
     Param (
