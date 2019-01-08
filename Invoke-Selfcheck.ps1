@@ -7,11 +7,11 @@ Param (
 )
 
 . $PSScriptRoot\CIScripts\Common\Init.ps1
-. $PSScriptRoot/CIScripts/TestRunner/Invoke-PesterTests.ps1
+. $PSScriptRoot\Test\TestRunner\Invoke-PesterTests.ps1
 
 # NOTE TO DEVELOPERS
 # ------------------
-# The idea behind this tool is that anyone can run the basic set of tests without ANY preparation 
+# The idea behind this tool is that anyone can run the basic set of tests without ANY preparation
 # (except Pester).
 # A new developer should be able to run `.\Invoke-Selfcheck.ps1` and it should pass 100% of the time,
 # without any special requirements, like libraries, testbed machines etc.
