@@ -137,7 +137,7 @@ function Uninstall-Nodemgr {
     $Archives = $Res.Output
     foreach($P in $Archives) {
         Write-Log "- (Nodemgr) Uninstalling pip package $P"
-        Invoke-NativeCommand -Session $Session -ScriptBlock {
+        Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock {
             pip uninstall "C:\Artifacts\nodemgr\$Using:P"
         }
     }
