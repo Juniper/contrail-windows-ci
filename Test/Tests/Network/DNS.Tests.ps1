@@ -23,7 +23,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI_New\ContrailAPI.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 . $PSScriptRoot\..\..\Utils\TestCleanup\TestCleanup.ps1
 
 $ContrailProject = 'ci_tests_dns'
