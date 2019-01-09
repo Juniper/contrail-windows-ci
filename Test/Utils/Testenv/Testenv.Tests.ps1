@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\Init.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\Configs.ps1
 . $PSScriptRoot\Testbed.ps1
 

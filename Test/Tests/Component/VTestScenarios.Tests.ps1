@@ -5,8 +5,8 @@ Param (
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\Utils\Testenv\Configs.ps1
+. $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1

@@ -14,7 +14,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\Utils\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 

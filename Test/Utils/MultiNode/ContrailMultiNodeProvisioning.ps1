@@ -1,5 +1,5 @@
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
+. $PSScriptRoot\..\Testenv\Testbed.ps1
+. $PSScriptRoot\..\Testenv\Configs.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\ContrailAPI_New\ContrailAPI.ps1
