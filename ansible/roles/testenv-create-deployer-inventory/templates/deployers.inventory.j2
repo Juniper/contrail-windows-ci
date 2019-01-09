@@ -1,0 +1,4 @@
+{% set controller_name = groups['controller'][0] %}
+{% set controller = hostvars[controller_name] %}
+[deployers]
+{{ controller.ansible_host }}

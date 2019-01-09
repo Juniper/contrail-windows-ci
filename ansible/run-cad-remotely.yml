@@ -1,0 +1,5 @@
+---
+
+- hosts: deployers
+  roles:
+    - deploy-contrail-with-cad
