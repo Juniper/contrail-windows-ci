@@ -268,8 +268,6 @@ function Initialize-CnmPluginAndExtension {
 
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
-        Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
-
         # CNMPlugin automatically enables Extension
         Start-CNMPluginService -Session $Session
 
@@ -279,9 +277,6 @@ function Initialize-CnmPluginAndExtension {
             $TestCNMRunning | Invoke-UntilSucceeds -Duration 15
 
             {
-                if (-not (Invoke-Command $TestCNMRunning)) {
-                    throw [HardError]::new("CNM plugin service didn't start")
-                }
                 Test-IsCnmPluginEnabled -Session $Session
             } | Invoke-UntilSucceeds -Duration 600 -Interval 5
 
