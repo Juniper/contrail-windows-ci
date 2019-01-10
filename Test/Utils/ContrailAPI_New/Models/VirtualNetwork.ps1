@@ -11,22 +11,23 @@ class VirtualNetwork : BaseResourceModel {
     [String] $ResourceName = 'virtual-network'
     [String] $ParentType = 'project'
 
-    hidden [void] init([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
+    hidden [void] init([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [FqName] $TagFqName) {
         $this.Name = $Name
         $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
         $this.Subnet = $Subnet
+        $this.TagFqName = $TagFqName
 
         $this.Dependencies += [Dependency]::new('instance-ip', 'instance_ip_back_refs')
         $this.Dependencies += [Dependency]::new('virtual-machine-interface', 'virtual_machine_interface_back_refs')
+
     }
 
     VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
-        $this.init($Name, $ProjectName, $Subnet)
+        $this.init($Name, $ProjectName, $Subnet, $null)
     }
 
     VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [FqName] $TagFqName) {
-        $this.init($Name, $ProjectName, $Subnet)
-        $this.TagFqName = $TagFqName
+        $this.init($Name, $ProjectName, $Subnet, $TagFqName)
     }
 
     [Hashtable] GetRequest() {
