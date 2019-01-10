@@ -24,36 +24,50 @@ function Install-Artifacts {
     Push-Location $ArtifactsDir
 
     Invoke-Command -Session $Session -ScriptBlock {
-        New-Item -ItemType Directory -Force C:\Artifacts | Out-Null
+        New-Item -ItemType Directory -Force 'C:\Artifacts' | Out-Null
     }
 
     if (Test-NonemptyDir "cnm-plugin") {
+        Invoke-Command -Session $Session -ScriptBlock {
+            New-Item -ItemType Directory -Force 'C:\Artifacts\cnm-plugin' | Out-Null
+        }
+
         Write-Host "Copying CNM plugin installer"
-        Copy-Item -ToSession $Session -Path "cnm-plugin\contrail-cnm-plugin.msi" -Destination C:\Artifacts\
+        Copy-Item -ToSession $Session -Path "cnm-plugin\contrail-cnm-plugin.msi" -Destination 'C:\Artifacts\cnm-plugin\'
 
         Write-Host "Copying CNM plugin tests"
-        Copy-Item -ToSession $Session -Path "cnm-plugin\*.test.exe" -Destination "C:\Artifacts\"
+        Copy-Item -ToSession $Session -Path "cnm-plugin\*.test.exe" -Destination 'C:\Artifacts\cnm-plugin\'
     }
 
     if (Test-NonemptyDir "agent") {
+        Invoke-Command -Session $Session -ScriptBlock {
+            New-Item -ItemType Directory -Force 'C:\Artifacts\agent' | Out-Null
+        }
+
         Write-Host "Copying Agent"
-        Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination C:\Artifacts\
+        Copy-Item -ToSession $Session -Path "agent\contrail-vrouter-agent.msi" -Destination 'C:\Artifacts\agent\'
     }
 
     if (Test-NonemptyDir "vrouter") {
-        Write-Host "Copying vRouter and Utils MSIs"
-        Copy-Item -ToSession $Session -Path "vrouter\vRouter.msi" -Destination C:\Artifacts\
-        Copy-Item -ToSession $Session -Path "vrouter\utils.msi" -Destination C:\Artifacts\
-        Copy-Item -ToSession $Session -Path "vrouter\*.cer" -Destination C:\Artifacts\ # TODO: Remove after JW-798
+        Invoke-Command -Session $Session -ScriptBlock {
+            New-Item -ItemType Directory -Force 'C:\Artifacts\vrouter' | Out-Null
+        }
 
-        Write-Host "Copying vtest scenarios"
-        Copy-Item -ToSession $Session -Path "vtest" -Destination C:\Artifacts\ -Recurse -Force
+        Write-Host "Copying vRouter and Utils MSIs"
+        Copy-Item -ToSession $Session -Path "vrouter\vRouter.msi" -Destination 'C:\Artifacts\vrouter\'
+        Copy-Item -ToSession $Session -Path "vrouter\utils.msi" -Destination 'C:\Artifacts\vrouter\'
+        Copy-Item -ToSession $Session -Path "vrouter\*.cer" -Destination 'C:\Artifacts\vrouter\' # TODO: Remove after JW-798
 
         Invoke-Command -Session $Session -ScriptBlock {
             Write-Host "Installing certificates"
-            Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
-            Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ "C:\Artifacts\vRouter.cer" | Out-Null # TODO: Remove after JW-798
+            Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ "C:\Artifacts\vrouter\vRouter.cer" | Out-Null # TODO: Remove after JW-798
+            Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ "C:\Artifacts\vrouter\vRouter.cer" | Out-Null # TODO: Remove after JW-798
         }
+    }
+
+    if (Test-NonemptyDir "vtest") {
+        Write-Host "Copying vtest scenarios"
+        Copy-Item -ToSession $Session -Path "vtest" -Destination C:\Artifacts\ -Recurse -Force
     }
 
     if (Test-NonemptyDir "nodemgr") {
@@ -73,4 +87,3 @@ function Install-Artifacts {
 
     Pop-Location
 }
-
