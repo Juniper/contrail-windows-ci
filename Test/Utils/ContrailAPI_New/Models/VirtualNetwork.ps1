@@ -19,7 +19,6 @@ class VirtualNetwork : BaseResourceModel {
 
         $this.Dependencies += [Dependency]::new('instance-ip', 'instance_ip_back_refs')
         $this.Dependencies += [Dependency]::new('virtual-machine-interface', 'virtual_machine_interface_back_refs')
-
     }
 
     VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
