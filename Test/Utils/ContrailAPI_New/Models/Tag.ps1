@@ -1,6 +1,6 @@
 class Tag : BaseResourceModel {
     [String] $TypeName
-    [string] $Value
+    [String] $Value
     [FqName] $ParentFqName
     [String] $ResourceName = 'tag'
     [String] $ParentType = 'project'
