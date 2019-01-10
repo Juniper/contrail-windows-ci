@@ -8,12 +8,15 @@ class Tag : BaseResourceModel {
     Tag([String] $TypeName, [string] $Value, [String] $ParentFqName) {
         $this.Value = $Value
         $this.TypeName = $TypeName
-        $this.ParentFqName = [FqName]::new($ParentFqName)
+        $this.ParentFqName = [FqName]::new(@('default-domain', $ParentFqName))
+    }
+
+    [string] GetName() {
+        return "$( $this.TypeName )=$( $this.Value )"
     }
 
     [FqName] GetFqName() {
-        $Name = "$( $this.TypeName )=$( $this.Value )"
-        return [FqName]::New($this.ParentFqName, $Name)
+        return [FqName]::New($this.ParentFqName, $this.GetName())
     }
 
     [Hashtable] GetRequest() {

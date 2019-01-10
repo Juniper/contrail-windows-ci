@@ -1,22 +1,32 @@
 # Those are just informative to show dependencies
 #include "Subnet.ps1"
 #include "NetworkPolicy.ps1"
+#include "Tag.ps1"
 
 class VirtualNetwork : BaseResourceModel {
     [Subnet] $Subnet
     [FqName] $IpamFqName = [FqName]::new(@("default-domain", "default-project", "default-network-ipam"))
     [FqName[]] $NetworkPolicysFqNames = @()
-
+    [Tag] $Tag
     [String] $ResourceName = 'virtual-network'
     [String] $ParentType = 'project'
 
-    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
+    hidden [void] init([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
         $this.Name = $Name
         $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
         $this.Subnet = $Subnet
 
         $this.Dependencies += [Dependency]::new('instance-ip', 'instance_ip_back_refs')
         $this.Dependencies += [Dependency]::new('virtual-machine-interface', 'virtual_machine_interface_back_refs')
+    }
+
+    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
+        $this.init($Name, $ProjectName, $Subnet)
+    }
+
+    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [Tag] $Tag) {
+        $this.init($Name, $ProjectName, $Subnet)
+        $this.Tag = $Tag
     }
 
     [Hashtable] GetRequest() {
@@ -44,9 +54,14 @@ class VirtualNetwork : BaseResourceModel {
             to   = $this.IpamFqName.ToStringArray()
         }
 
+        $TagRef = @{
+            to   = $this.Tag.GetFQName().ToStringArray()
+        }
+
         $Request = @{
             'virtual-network' = @{
                 network_ipam_refs = @($NetworkImap)
+                tag_refs = @($TagRef)
             }
         }
 
