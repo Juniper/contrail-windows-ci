@@ -7,7 +7,7 @@ class VirtualNetwork : BaseResourceModel {
     [Subnet] $Subnet
     [FqName] $IpamFqName = [FqName]::new(@("default-domain", "default-project", "default-network-ipam"))
     [FqName[]] $NetworkPolicysFqNames = @()
-    [Tag] $Tag
+    [FqName] $TagFqName
     [String] $ResourceName = 'virtual-network'
     [String] $ParentType = 'project'
 
@@ -24,9 +24,9 @@ class VirtualNetwork : BaseResourceModel {
         $this.init($Name, $ProjectName, $Subnet)
     }
 
-    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [Tag] $Tag) {
+    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [FqName] $TagFqName) {
         $this.init($Name, $ProjectName, $Subnet)
-        $this.Tag = $Tag
+        $this.TagFqName = $TagFqName
     }
 
     [Hashtable] GetRequest() {
@@ -54,15 +54,17 @@ class VirtualNetwork : BaseResourceModel {
             to   = $this.IpamFqName.ToStringArray()
         }
 
-        $TagRef = @{
-            to   = $this.Tag.GetFQName().ToStringArray()
-        }
-
         $Request = @{
             'virtual-network' = @{
                 network_ipam_refs = @($NetworkImap)
-                tag_refs = @($TagRef)
             }
+        }
+
+        if ($null -ne $this.TagFqName) {
+            $TagRef = @{
+                to = $this.TagFqName.ToStringArray()
+            }
+            $Request.'virtual-network'.Add('tag_refs', @($TagRef))
         }
 
         $Policys = $this.GetPolicysReferences()
