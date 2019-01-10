@@ -1,17 +1,16 @@
 class Tag : BaseResourceModel {
     [String] $TypeName
     [String] $Value
-    [FqName] $ParentFqName
     [String] $ResourceName = 'tag'
     [String] $ParentType = 'project'
 
-    Tag([String] $TypeName, [string] $Value, [String] $ParentFqName) {
+    Tag([String] $TypeName, [String] $Value, [String] $ProjectName) {
         $this.Value = $Value
         $this.TypeName = $TypeName
-        $this.ParentFqName = [FqName]::new(@('default-domain', $ParentFqName))
+        $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
     }
 
-    [string] GetName() {
+    [String] GetName() {
         return "$( $this.TypeName )=$( $this.Value )"
     }
 
