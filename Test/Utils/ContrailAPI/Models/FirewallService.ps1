@@ -3,7 +3,7 @@
 #include "PortRange.ps1"
 
 class FirewallService {
-    [Protocol] $Protocol = [Protocol]::any
+    [Protocol] $Protocol
     [PortRange] $SrcPorts
     [PortRange] $DstPorts
 
