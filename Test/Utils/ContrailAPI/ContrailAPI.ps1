@@ -10,6 +10,8 @@
 . $PSScriptRoot\Models\PortRange.ps1
 . $PSScriptRoot\Models\PolicyRule.ps1
 . $PSScriptRoot\Models\Subnet.ps1
+. $PSScriptRoot\Models\FirewallRuleEndpoint.ps1
+. $PSScriptRoot\Models\FirewallService.ps1
 
 # Resource models
 . $PSScriptRoot\Models\DNSRecord.ps1
@@ -23,6 +25,7 @@
 . $PSScriptRoot\Models\SecurityGroup.ps1
 . $PSScriptRoot\Models\VirtualNetwork.ps1
 . $PSScriptRoot\Models\VirtualRouter.ps1
+. $PSScriptRoot\Models\FirewallRule.ps1
 
 # Repositories
 . $PSScriptRoot\Repos\VirtualNetworkRepo.ps1
