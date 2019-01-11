@@ -225,6 +225,7 @@ pipeline {
                 unstash 'CIScripts'
                 unstash 'Artifacts'
                 unstash 'TestenvConf'
+                unstash 'Test'
 
                 powershell script: """./CIScripts/Deploy.ps1 `
                     -TestenvConfFile testenv-conf.yaml `

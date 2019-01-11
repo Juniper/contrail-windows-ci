@@ -16,7 +16,7 @@ Param (
 
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\Utils\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
@@ -25,7 +25,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI_New\ContrailAPI.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 
 $ContrailProject = 'ci_tests_utils'
 

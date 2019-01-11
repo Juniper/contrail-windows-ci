@@ -4,7 +4,7 @@ Param (
 )
 
 . $PSScriptRoot\..\..\CIScripts\Common\Init.ps1
-. $PSScriptRoot\..\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\..\Utils\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\TestConfigurationUtils.ps1
 . $PSScriptRoot\..\Utils\WinContainers\Containers.ps1

@@ -5,7 +5,7 @@ Param(
     [Parameter(Mandatory = $false)] [switch] $UseExistingServices
 )
 
-. $PSScriptRoot\TestRunner.ps1
+. $PSScriptRoot\TestRunner\TestRunner.ps1
 
 if (-not (Test-Path $TestReportDir)) {
     New-Item -ItemType Directory -Path $TestReportDir | Out-Null
@@ -14,7 +14,7 @@ if (-not (Test-Path $TestReportDir)) {
 $DetailedLogsDir = Join-Path $TestReportDir "detailed_logs"
 $CnmPluginJUnitLogsOutputDir = Join-Path $TestReportDir "cnm_plugin_junit_test_logs"
 
-$PesterOutReportDir = Join-Path $TestReportDir "raw_NUnit" 
+$PesterOutReportDir = Join-Path $TestReportDir "raw_NUnit"
 $PesterOutReportPath = Join-Path $PesterOutReportDir "report.xml"
 
 Invoke-IntegrationAndFunctionalTests `

@@ -14,7 +14,7 @@ Param (
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testenv.ps1
+. $PSScriptRoot\..\..\Utils\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
@@ -24,7 +24,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI_New\ContrailAPI.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 
 $ContrailProject = 'ci_tests_agentrestart'
 
