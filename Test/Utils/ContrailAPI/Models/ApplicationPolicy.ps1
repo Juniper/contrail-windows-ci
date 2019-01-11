@@ -1,13 +1,12 @@
 class ApplicationPolicy : BaseResourceModel {
-    [FqName] $ParentFqName
     [String] $ResourceName = 'application-policy-set'
     [String] $ParentType = 'policy-management'
     [FqName[]] $TagFqNames
     [FqName[]] $FirewallPolicyFqNames
 
-    ApplicationPolicy([FqName[]] $FirewallPolicyFqNames, [FqName[]] $TagFqNames, [String] $Name, [String] $ProjectName) {
+    ApplicationPolicy([String] $Name, [FqName[]] $FirewallPolicyFqNames, [FqName[]] $TagFqNames) {
         $this.Name = $Name
-        $this.ParentFqName = [FqName]::new(@('default-policy-management', $ProjectName))
+        $this.ParentFqName = [FqName]::new(@('default-policy-management'))
         $this.Tags = $TagFqNames
         $this.FirewallPolicyFqNames = $FirewallPolicyFqNames
     }
@@ -16,9 +15,9 @@ class ApplicationPolicy : BaseResourceModel {
         $References = @()
         foreach ($FPFqName in $this.FirewallPolicyFqNames) {
             $Ref = @{
-                "to" = $FPFqName.ToStringArray()
-                "attr" = @{
-                    "sequence" = "0"
+                'to' = $FPFqName.ToStringArray()
+                'attr' = @{
+                    'sequence' = '0'
                 }
             }
             $References += $Ref
@@ -31,7 +30,7 @@ class ApplicationPolicy : BaseResourceModel {
         $References = @()
         foreach ($TagFqName in $this.TagFqNames) {
             $Ref = @{
-                "to" = $TagFqName.ToStringArray()
+                'to' = $TagFqName.ToStringArray()
             }
             $References += $Ref
         }
