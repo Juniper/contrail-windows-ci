@@ -40,4 +40,8 @@ class FqName {
     [String[]] ToStringArray() {
         return $this.FqName
     }
+
+    [String] ToString() {
+        return [System.String]::Join(":", $this.FqName)
+    }
 }
