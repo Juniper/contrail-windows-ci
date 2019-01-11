@@ -2,12 +2,12 @@ class Tag : BaseResourceModel {
     [String] $TypeName
     [String] $Value
     [String] $ResourceName = 'tag'
-    [String] $ParentType = 'project'
+    [String] $ParentType = 'config-root'
 
-    Tag([String] $TypeName, [String] $Value, [String] $ProjectName) {
+    Tag([String] $TypeName, [String] $Value) {
         $this.Value = $Value
         $this.TypeName = $TypeName
-        $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
+        $this.ParentFqName = [FqName]::new(@())
     }
 
     [String] GetName() {
