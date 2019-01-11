@@ -246,12 +246,11 @@ function Wait-RemoteInterfaceIP {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $true)] [String] $AdapterName)
 
-    $SelectValidNetIPInterface = ${function:Select-ValidNetIPInterface}
     Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
-        Invoke-Command -Session $Session {
+        Invoke-CommandWithFunctions -Functions "Select-ValidNetIPInterface" -Session $Session {
             Get-NetAdapter -Name $Using:AdapterName `
             | Get-NetIPAddress -ErrorAction SilentlyContinue `
-            | &([ScriptBlock]::Create($Using:SelectValidNetIPInterface))
+            | Select-ValidNetIPInterface
         }
     } | Out-Null
 }
