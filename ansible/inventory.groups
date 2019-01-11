@@ -15,6 +15,9 @@ drive
 ansible-worker
 jenkins-server
 
+[centos:children]
+deployer
+
 [gerrit-variables:children]
 zuul
 gerrit
@@ -36,5 +39,7 @@ gerrit
 [builder]
 
 [testbed]
+
+[deployer]
 
 [contrail-controller]

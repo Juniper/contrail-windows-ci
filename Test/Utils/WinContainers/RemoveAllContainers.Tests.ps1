@@ -4,8 +4,8 @@ Param (
     [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Configs.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\..\Testenv\Configs.ps1
+. $PSScriptRoot\..\Testenv\Testbed.ps1
 
 . $PSScriptRoot\Containers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1

@@ -4,7 +4,7 @@ Param (
     [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
-. $PSScriptRoot\..\..\..\CIScripts\Testenv\Testbed.ps1
+. $PSScriptRoot\..\Testenv\Testbed.ps1
 
 Describe "New-Container" -Tags CI, Systest {
     It "Reports container id when container creation succeeds in first attempt" {

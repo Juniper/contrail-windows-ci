@@ -45,21 +45,26 @@ global_configuration:
 # TODO: Eventually use single interface configuration
 contrail_configuration:
   CONTRAIL_VERSION: latest
-  CLOUD_ORCHESTRATOR: openstack
+  CLOUD_ORCHESTRATOR: none
   RABBITMQ_NODE_PORT: 5673
   PHYSICAL_INTERFACE: ens192
   WINDOWS_PHYSICAL_INTERFACE: Ethernet1
   WINDOWS_ENABLE_TEST_SIGNING:
-  WINDOWS_DEBUG_DLLS_PATH: ../dlls
+  WINDOWS_DEBUG_DLLS_PATH: ../../dlls
   AUTH_MODE: keystone
   KEYSTONE_AUTH_ADMIN_PASSWORD: c0ntrail123
   KEYSTONE_AUTH_HOST: {{ controller.ansible_host }}
+  CONTROLLER_NODES: {{ controller.ansible_host }}
 
 kolla_config:
   kolla_globals:
+    api_interface: "ens192"
     network_interface: "ens192"
     kolla_external_vip_interface: "ens192"
     enable_haproxy: "no"
     openstack_release: "ocata"
+    neutron_external_interface: ens192
+    contrail_api_interface_address: {{ controller.ansible_host }}
+    enable_ironic: 'no'
   kolla_passwords:
     keystone_admin_password: c0ntrail123

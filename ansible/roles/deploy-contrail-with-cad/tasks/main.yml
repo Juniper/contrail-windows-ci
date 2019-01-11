@@ -20,13 +20,13 @@
 
 - name: Upload contrail-ansible-deployer do deployer machine
   copy:
-    src: contrail-ansible-deployer
-    dest: "./contrail-ansible-deployer"
+    src: "../../../contrail-ansible-deployer"
+    dest: "/root"
 
 - name: Upload debug dlls do deployer machine
   copy:
-    src: dlls
-    dest: "./dlls"
+    src: "../dlls"
+    dest: "/root"
 
 - name: Run deployer playbooks
   include_tasks: ../contrail-ansible-deployer/tasks/run_deployer_playbook.yml

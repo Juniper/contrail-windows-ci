@@ -1,6 +1,8 @@
 # Those are just informative to show dependencies
+#include "Protocol.ps1"
 #include "Address.ps1"
 #include "PortRange.ps1"
+#include "RuleAction.ps1"
 
 class PolicyRule {
     [String] $Direction = '>'
@@ -36,10 +38,6 @@ class PolicyRule {
     }
 }
 
-Enum Protocol {
-    any
-}
-
 Enum EtherType {
     IPv4
 }
@@ -58,13 +56,5 @@ class RuleSequence {
             major = $this.Major
             minor = $this.Minor
         }
-    }
-}
-
-class RuleAction {}
-
-class SimplePassRuleAction : RuleAction {
-    [Hashtable] GetRequest() {
-        return @{ 'simple_action' = 'pass' }
     }
 }

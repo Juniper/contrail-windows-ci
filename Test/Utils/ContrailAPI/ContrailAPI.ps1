@@ -5,6 +5,8 @@
 
 # Reusable, not resource models
 . $PSScriptRoot\Models\Address.ps1
+. $PSScriptRoot\Models\Protocol.ps1
+. $PSScriptRoot\Models\RuleAction.ps1
 . $PSScriptRoot\Models\PortRange.ps1
 . $PSScriptRoot\Models\PolicyRule.ps1
 . $PSScriptRoot\Models\Subnet.ps1

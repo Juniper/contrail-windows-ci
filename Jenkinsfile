@@ -225,6 +225,7 @@ pipeline {
                 unstash 'CIScripts'
                 unstash 'Artifacts'
                 unstash 'TestenvConf'
+                unstash 'Test'
 
                 powershell script: """./CIScripts/Deploy.ps1 `
                     -TestenvConfFile testenv-conf.yaml `
@@ -319,7 +320,7 @@ pipeline {
                     }
 
                     unstash "Flakes"
-                    if (containsFlakiness("to_publish/$logFilename")) {
+                    if (currentBuild.result == 'FAILURE' && containsFlakiness("to_publish/$logFilename")) {
                         echo "Flakiness detected"
                         if (isGithub()) {
                             sendGithubComment("recheck no bug")

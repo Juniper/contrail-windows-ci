@@ -1,6 +1,6 @@
-. $PSScriptRoot\..\CIScripts\TestRunner\Invoke-PesterTests.ps1
+. $PSScriptRoot\Invoke-PesterTests.ps1
 
-. $PSScriptRoot\PesterHelpers\PesterHelpers.ps1
+. $PSScriptRoot\..\PesterHelpers\PesterHelpers.ps1
 
 function Invoke-IntegrationAndFunctionalTests {
     Param (
@@ -16,9 +16,9 @@ function Invoke-IntegrationAndFunctionalTests {
     # TODO2: Changing AdditionalParams force us to modify all the tests that use it -> maybe find a better way to pass them?
 
     $AdditionalParams = @{
-        TestenvConfFile=$TestenvConfFile;
-        LogDir=$DetailedLogsOutputDir;
-        AdditionalJUnitsDir=$AdditionalJUnitsDir;
+        TestenvConfFile     = $TestenvConfFile;
+        LogDir              = $DetailedLogsOutputDir;
+        AdditionalJUnitsDir = $AdditionalJUnitsDir;
     }
     $IncludeTags = @()
     if ($UseExistingServices) {

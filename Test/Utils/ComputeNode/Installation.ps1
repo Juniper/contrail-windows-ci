@@ -40,7 +40,7 @@ function Install-Agent {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Installing Agent"
-    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\contrail-vrouter-agent.msi"
+    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\agent\contrail-vrouter-agent.msi"
 
     #TODO: remove this if conditional after msi do not anymore create agent's service
     $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName "ContrailAgent"
@@ -58,42 +58,42 @@ function Uninstall-Agent {
     Write-Log "Uninstalling Agent"
 
     Remove-AgentService -Session $Session
-    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\contrail-vrouter-agent.msi"
+    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\agent\contrail-vrouter-agent.msi"
 }
 
 function Install-Extension {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Installing vRouter Forwarding Extension"
-    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\vRouter.msi"
+    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\vRouter\vRouter.msi"
 }
 
 function Uninstall-Extension {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Uninstalling vRouter Forwarding Extension"
-    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\vRouter.msi"
+    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\vRouter\vRouter.msi"
 }
 
 function Install-Utils {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Installing vRouter utility tools"
-    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\utils.msi"
+    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\vRouter\utils.msi"
 }
 
 function Uninstall-Utils {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Uninstalling vRouter utility tools"
-    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\utils.msi"
+    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\vRouter\utils.msi"
 }
 
 function Install-CnmPlugin {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     Write-Log "Installing CNM Plugin"
-    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\contrail-cnm-plugin.msi"
+    Invoke-MsiExec -Session $Session -Path "C:\Artifacts\cnm-plugin\contrail-cnm-plugin.msi"
     New-CNMPluginService -Session $Session
 }
 
@@ -103,7 +103,7 @@ function Uninstall-CnmPlugin {
     Write-Log "Uninstalling CNM plugin"
 
     Remove-CNMPluginService -Session $Session
-    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\contrail-cnm-plugin.msi"
+    Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\cnm-plugin\contrail-cnm-plugin.msi"
 }
 
 function Install-Nodemgr {
@@ -116,7 +116,7 @@ function Install-Nodemgr {
     $Archives = $Res.Output
     foreach($A in $Archives) {
         Write-Log "- (Nodemgr) Installing pip archive $A"
-        Invoke-NativeCommand -Session $Session -ScriptBlock {
+        Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock {
             pip install "C:\Artifacts\nodemgr\$Using:A"
         } | Out-Null
     }
@@ -137,7 +137,7 @@ function Uninstall-Nodemgr {
     $Archives = $Res.Output
     foreach($P in $Archives) {
         Write-Log "- (Nodemgr) Uninstalling pip package $P"
-        Invoke-NativeCommand -Session $Session -ScriptBlock {
+        Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock {
             pip uninstall "C:\Artifacts\nodemgr\$Using:P"
         }
     }
