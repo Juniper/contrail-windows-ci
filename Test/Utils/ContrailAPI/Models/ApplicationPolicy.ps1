@@ -1,13 +1,13 @@
 class ApplicationPolicy : BaseResourceModel {
     [FqName] $ParentFqName
     [String] $ResourceName = 'application-policy-set'
-    [String] $ParentType = 'project'
+    [String] $ParentType = 'policy-management'
     [FqName[]] $TagFqNames
     [FqName[]] $FirewallPolicyFqNames
 
     ApplicationPolicy([FqName[]] $FirewallPolicyFqNames, [FqName[]] $TagFqNames, [String] $Name, [String] $ProjectName) {
         $this.Name = $Name
-        $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
+        $this.ParentFqName = [FqName]::new(@('default-policy-management', $ProjectName))
         $this.Tags = $TagFqNames
         $this.FirewallPolicyFqNames = $FirewallPolicyFqNames
     }
