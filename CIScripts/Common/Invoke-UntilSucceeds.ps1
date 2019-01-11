@@ -101,16 +101,19 @@ function Invoke-UntilSucceeds {
                     }
                 })
             $PowerShellThread.Runspace = $Runspace
-
+            
+            $TimeElapsed = ((Get-Date) - $StartTime).TotalSeconds
+            Write-Log "$DebugTag Starting thread. TimeElapsed: $TimeElapsed"
             $ThreadHandle = $PowerShellThread.BeginInvoke()
 
             if ($Duration) {
                 [System.Threading.WaitHandle]::WaitAny($ThreadHandle.AsyncWaitHandle, $Duration * 1000) | Out-Null
-
+                $TimeElapsed = ((Get-Date) - $StartTime).TotalSeconds
+                Write-Log "$DebugTag Finished waiting thread. TimeElapsed: $TimeElapsed"
                 if (-not $ThreadHandle.IsCompleted) {
                     $PowerShellThread.Stop()
                     $TimeElapsed = ((Get-Date) - $StartTime).TotalSeconds
-                    throw "Job didn't finish in $Duration seconds. After $($TimeElapsed) we stopped trying."
+                    throw "Job didn't finish in $Duration seconds. After $TimeElapsed we stopped trying."
                 }
             }
             else {
@@ -124,6 +127,7 @@ function Invoke-UntilSucceeds {
 
             Write-Log "$DebugTag Task returned with ReturnVal: $ReturnVal"
             if ($AssumeTrue -or $ReturnVal) {
+                Write-Log "$DebugTag Returning value"
                 return $ReturnVal
             } else {
                 throw [CITimeoutException]::new(
@@ -131,11 +135,13 @@ function Invoke-UntilSucceeds {
                 )
             }
         } catch [HardError] {
+            Write-Log "$DebugTag Caught HardError. $($_.Exception.InnerException)"
             throw [CITimeoutException]::new(
                 "${Name}: Stopped retrying because HardError was thrown",
                 $_.Exception.InnerException
             )
         } catch {
+            Write-Log "$DebugTag Caught 'soft' exception. $($_.Exception)"
             if ($LastCheck) {
                 throw [CITimeoutException]::new("$Name failed.", $_.Exception)
             } else {
