@@ -339,8 +339,8 @@ pipeline {
                     def relLogsDstDir = logsRelPathBasedOnTriggerSource(env.JOB_NAME,
                         env.BUILD_NUMBER, env.ZUUL_UUID)
                     def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
-                    echo LOG_PATH
-                    publishDirToLogServer("to_publish", auth, LOG_PATH)
+                    echo ZUUL_LOG_PATH
+                    publishDirToLogServer("to_publish", auth, ZUUL_LOG_PATH)
 
                     def fullLogsURL = logsURL(env.LOG_SERVER, env.LOG_SERVER_FOLDER, relLogsDstDir)
                     def logDestMsg = "Full logs URL: ${fullLogsURL}"
