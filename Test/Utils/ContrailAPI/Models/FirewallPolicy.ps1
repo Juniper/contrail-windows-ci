@@ -13,7 +13,7 @@ class FirewallPolicy : BaseResourceModel {
     }
 
     [FirewallPolicy] AddFirewallRule([FqName] $FirewallRule, [int] $Sequence) {
-        $this.FirewallRulesReferences += \
+        $this.FirewallRulesReferences += `
             @([FirewallRuleReference]::new($FirewallRule, $Sequence))
         return $this
     }
