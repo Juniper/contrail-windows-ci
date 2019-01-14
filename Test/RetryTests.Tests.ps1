@@ -8,7 +8,7 @@ Param (
 
 . $PSScriptRoot\PesterHelpers\PesterHelpers.ps1
 
-Describe "Test-ResultsWithRetries" -Tags CI, Systest {
+Describe "Test-ResultsWithRetries" -Tags CISelfcheck, Systest {
     It "Reports success when all test succeed." {
         $Results = @(
             @{

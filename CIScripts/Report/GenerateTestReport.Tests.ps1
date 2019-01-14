@@ -149,10 +149,10 @@ function Invoke-ReportGenTests {
 }
 
 
-Describe "Generating test report - Unit tests" -Tags CI, Unit {
+Describe "Generating test report - Unit tests" -Tags CISelfcheck, Unit {
     Invoke-ReportGenTests -ReportunitWrapperFunc (Get-Item function:Invoke-FakeReportunit)
 }
 
-Describe "Generating test report - System tests" -Tags CI, Systest {
+Describe "Generating test report - System tests" -Tags CISelfcheck, Systest {
     Invoke-ReportGenTests -ReportunitWrapperFunc (Get-Item function:Invoke-RealReportunit)
 }

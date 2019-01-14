@@ -1,6 +1,6 @@
 # CI Selfcheck
 
-CI has a set of unit and integration tests, called 'CI selfcheck'.
+CI has a set of unit and integration tests, called 'CI Selfcheck'.
 
 ## Requirements
 
@@ -35,7 +35,7 @@ Examples:
   .\Invoke-Selfcheck.ps1 -TestenvConfFile './path/to/testenvconf.yaml'
   ```
   Note: to make sure that system tests pass, some requirements must be met (consult Sytest requirements above).
-  
+
 * skip static analysis
 
   ```
@@ -74,7 +74,7 @@ the default should require nothing.
 
 ### Tags
 
-`.\Invoke-Selfcheck.ps1` will look for Pester `Describe` blocks tagged with `CI`.
+`.\Invoke-Selfcheck.ps1` will look for Pester `Describe` blocks tagged with `CISelfcheck`.
 Integration and unit tests can be differentiated using `Systest` and `Unit` tags.
 If a test requires an external dependency (like running Contrail Controller, Windows Compute
 nodes or even a binary present on the OS), then it's a systest. Otherwise, it's probably a unit test.

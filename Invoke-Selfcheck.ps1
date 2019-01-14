@@ -26,7 +26,7 @@ function Write-VisibleMessage {
     Write-Host "$('='*80)$nl [Selfcheck] $Message$nl$('='*80)"
 }
 
-$IncludeTags = @("CI")
+$IncludeTags = @("CISelfcheck")
 $ExcludeTags = @()
 
 if ($SkipUnit) {

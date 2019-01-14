@@ -27,7 +27,7 @@ function Invoke-IntegrationAndFunctionalTests {
     }
 
     $Results = Invoke-PesterTests -TestRootDir $TestRootDir -ReportPath $PesterOutReportPath `
-        -ExcludeTags CI -IncludeTags $IncludeTags -AdditionalParams $AdditionalParams
+        -ExcludeTags CISelfcheck -IncludeTags $IncludeTags -AdditionalParams $AdditionalParams
     if (-not (Test-ResultsWithRetries -Results $Results.TestResult)) {
         throw "Some tests failed"
     }

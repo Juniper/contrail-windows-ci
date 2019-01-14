@@ -4,7 +4,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
-Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
+Describe "Invoke-UntilSucceeds" -Tags CISelfcheck, Unit {
     It "fails if ScriptBlock doesn't return anything" {
         { {} | Invoke-UntilSucceeds -Duration 3 } | Should Throw
     }
@@ -50,7 +50,7 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
     It "succeeds if ScriptBlock is eventually true" {
         $Script:Counter = 0
         {
-            { 
+            {
                 $Script:Counter += 1;
                 return ($Script:Counter -eq 3)
             } | Invoke-UntilSucceeds -Duration 3
@@ -60,10 +60,10 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
     It "keeps retrying even when exception is throw" {
         $Script:Counter = 0
         {
-            { 
+            {
                 $Script:Counter += 1;
                 if ($Script:Counter -eq 1) {
-                    return $false 
+                    return $false
                 } elseif ($Script:Counter -eq 2) {
                     throw "nope"
                 } elseif ($Script:Counter -eq 3) {
@@ -102,7 +102,7 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
         $Script:WasCalled = $false
         Invoke-UntilSucceeds {
             $Script:WasCalled = $true;
-            return $true 
+            return $true
         } -Interval 1 -Duration 1
         $Script:WasCalled | Should Be $true
     }

@@ -34,7 +34,7 @@ function Test-MultipleSourcesAndSessions {
 $DummyLog1Basename = "remotelog"
 $DummyLog2Basename = "remotelog_second"
 
-Describe "RemoteLogCollector" -Tags CI, Unit {
+Describe "RemoteLogCollector" -Tags CISelfcheck, Unit {
     It "appends collected logs to correct output file" {
         $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
         "remote log text" | Add-Content $DummyLog1
@@ -244,7 +244,7 @@ Describe "RemoteLogCollector" -Tags CI, Unit {
     }
 }
 
-Describe "RemoteLogCollector - with actual Testbeds" -Tags CI, Systest {
+Describe "RemoteLogCollector - with actual Testbeds" -Tags CISelfcheck, Systest {
 
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))

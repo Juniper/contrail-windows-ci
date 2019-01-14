@@ -11,7 +11,7 @@ function ItBlockOutsideOfDescribe() {
     }
 }
 
-Describe "Get-CurrentPesterScope" -Tags CI, Unit {
+Describe "Get-CurrentPesterScope" -Tags CISelfcheck, Unit {
     Context "when inside Context block" {
         It "getting Pester scope works" {
             Get-CurrentPesterScope | Should -BeExactly @("Get-CurrentPesterScope",
@@ -26,7 +26,7 @@ Describe "Get-CurrentPesterScope" -Tags CI, Unit {
                 Justification="PSAnalyzer doesn't understand relations of Pester's blocks.")
             ]
             $Name = "hi"
-            "hi" | Should -Not -BeIn Get-CurrentPesterScope 
+            "hi" | Should -Not -BeIn Get-CurrentPesterScope
         }
 
         function SomeFunc() {
