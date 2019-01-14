@@ -23,6 +23,7 @@
 . $PSScriptRoot\Models\NetworkPolicy.ps1
 . $PSScriptRoot\Models\Project.ps1
 . $PSScriptRoot\Models\SecurityGroup.ps1
+. $PSScriptRoot\Models\Tag.ps1
 . $PSScriptRoot\Models\VirtualNetwork.ps1
 . $PSScriptRoot\Models\VirtualRouter.ps1
 . $PSScriptRoot\Models\FirewallRule.ps1
