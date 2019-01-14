@@ -9,7 +9,8 @@ function Invoke-IntegrationAndFunctionalTests {
         [Parameter(Mandatory = $true)] [String] $PesterOutReportPath,
         [Parameter(Mandatory = $true)] [String] $DetailedLogsOutputDir,
         [Parameter(Mandatory = $true)] [String] $AdditionalJUnitsDir,
-        [Parameter(Mandatory = $false)] [switch] $UseExistingServices
+        [Parameter(Mandatory = $false)] [switch] $UseExistingServices,
+        [Parameter(Mandatory = $false)] [switch] $SmokeTestsOnly
     )
     # TODO: Maybe we should collect codecov statistics similarly in the future?
 
@@ -20,9 +21,14 @@ function Invoke-IntegrationAndFunctionalTests {
         LogDir              = $DetailedLogsOutputDir;
         AdditionalJUnitsDir = $AdditionalJUnitsDir;
     }
-    $IncludeTags = @()
+
     if ($UseExistingServices) {
         $AdditionalParams["PrepareEnv"] = $false
+    }
+
+    # Empty lists defaults to all tests.
+    $IncludeTags = @()
+    if ($SmokeTestsOnly) {
         $IncludeTags += "Smoke"
     }
 
