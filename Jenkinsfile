@@ -162,7 +162,7 @@ pipeline {
 
                 stage('Testenv provisioning') {
                     agent { label 'ansible' }
-                    when { environment name: "NIGHTLY_BUILD", value: null }
+                    when { expression { testLevel.runAny() } }
 
                     environment {
                         TESTBED = credentials('win-testbed')
@@ -218,7 +218,7 @@ pipeline {
 
         stage('Deploy') {
             agent { label 'tester' }
-            when { environment name: "NIGHTLY_BUILD", value: null }
+            when { expression { testLevel.runAny() } }
             steps {
                 deleteDir()
 
@@ -235,19 +235,20 @@ pipeline {
 
         stage('Test') {
             agent { label 'tester' }
-            when { environment name: "NIGHTLY_BUILD", value: null }
+            when { expression { testLevel.runAny() } }
             steps {
                 deleteDir()
                 unstash 'CIScripts'
                 unstash 'TestenvConf'
                 unstash 'Test'
                 script {
+                    def nightlyStr = testLevel.runAll() as String
                     try {
                         powershell script: """./CIScripts/Test.ps1 `
                             -TestRootDir Test `
                             -TestenvConfFile testenv-conf.yaml `
                             -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute `
-                            -Nightly:\$false"""
+                            -Nightly:\$${nightlyStr}"""
                     } finally {
                         stash name: 'windowsComputeNUnitLogs', includes: 'testReportsRaw/WindowsCompute/raw_NUnit/**', allowEmpty: true
 
