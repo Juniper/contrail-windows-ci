@@ -6,7 +6,7 @@ Param (
 
 . $PSScriptRoot\..\Testenv\Testbed.ps1
 
-Describe "New-Container" -Tags CI, Systest {
+Describe "New-Container" -Tags CISelfcheck, Systest {
     It "Reports container id when container creation succeeds in first attempt" {
         Invoke-Command -Session $Session {
             $DockerThatAlwaysSucceeds = @"

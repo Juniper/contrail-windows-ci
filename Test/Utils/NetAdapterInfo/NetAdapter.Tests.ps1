@@ -7,7 +7,7 @@ Param (
 
 . $PSScriptRoot\Impl.ps1
 
-Describe "Get-RemoteContainerNetAdapterInformation - Unit tests" -Tags CI, Unit {
+Describe "Get-RemoteContainerNetAdapterInformation - Unit tests" -Tags CISelfcheck, Unit {
     Context "Valid structure" {
         BeforeAll {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(

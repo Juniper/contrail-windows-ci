@@ -4,7 +4,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
-Describe "PesterHelpers" -Tags CI, Unit {
+Describe "PesterHelpers" -Tags CISelfcheck, Unit {
     Context "Consistently" {
         It "works on trivial cases" {
             { Consistently { $true | Should Be $true } -Duration 3 } | Should Not Throw
@@ -72,7 +72,7 @@ Describe "PesterHelpers" -Tags CI, Unit {
             { Eventually { $true | Should Not Be $false } -Duration 3 } | Should Not Throw
             { Eventually { $true | Should Not Be $true } -Duration 3 } | Should Throw
         }
-        
+
         It "calls assert multiple times until it is true" {
             $Script:Counter = 0
             Eventually { $Script:Counter += 1; $Script:Counter | Should Be 3 } `

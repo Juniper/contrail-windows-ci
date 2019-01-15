@@ -1,16 +1,16 @@
 . $PSScriptRoot\..\CIScripts\Common\Init.ps1
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
-Describe "Select-ValidNetIPInterface unit tests" -Tags CI, Unit {
+Describe "Select-ValidNetIPInterface unit tests" -Tags CISelfcheck, Unit {
     Context "Single valid/invalid Get-NetIPAddress output" {
         It "Both AddressFamily and SuffixOrigin match" {
-            $ValidGetNetIPAddress = @{ AddressFamily = "IPv4"; SuffixOrigin = @("Dhcp", "Manual") } 
+            $ValidGetNetIPAddress = @{ AddressFamily = "IPv4"; SuffixOrigin = @("Dhcp", "Manual") }
             $ValidGetNetIPAddress | Select-ValidNetIPInterface | Should Be $ValidGetNetIPAddress
         }
         It "One or all attributes don't match" {
-            $InvalidCases = @( 
+            $InvalidCases = @(
                 @{ AddressFamily = "IPv4"; SuffixOrigin = @("WellKnown", "Link", "Random") },
-                @{ AddressFamily = "IPv6"; SuffixOrigin = @("Dhcp", "Manual") }, 
+                @{ AddressFamily = "IPv6"; SuffixOrigin = @("Dhcp", "Manual") },
                 @{ AddressFamily = "IPv6"; SuffixOrigin = @("WellKnown", "Link", "Random") }
             )
 

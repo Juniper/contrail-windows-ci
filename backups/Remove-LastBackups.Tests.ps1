@@ -1,6 +1,6 @@
 . $PSScriptRoot\Remove-LastBackups.ps1
 
-Describe 'Remove-LastBackups' -Tags CI, Unit {
+Describe 'Remove-LastBackups' -Tags CISelfcheck, Unit {
     BeforeEach {
         $backupRepository = "TestDrive:\Backups\"
         New-Item -ItemType Directory -Path $backupRepository
