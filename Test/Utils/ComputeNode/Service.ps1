@@ -116,7 +116,7 @@ function Get-ServiceStatus {
 
 function New-ServiceConfiguration {
     Param (
-        [Parameter(Mandatory=$true)] [string] $ServiceName,
+        [Parameter(Mandatory=$true)] [PSSessionT] $ServiceName,
         [Parameter(Mandatory=$true)] [string] $ExecutablePath,
         [Parameter(Mandatory=$true)] [hashtable] $AdditionalParams
     )
