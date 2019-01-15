@@ -91,7 +91,7 @@ function Test-ResultsWithRetries {
     function Test-HasAnySuccess {
         Param (
             [Parameter(Mandatory=$true)] [String] $Describe,
-            [Parameter(Mandatory=$true)] [String] $Context,
+            [Parameter(Mandatory=$true)][AllowEmptyString()] [String] $Context,
             [Parameter(Mandatory=$true)] [String] $Name
         )
 
