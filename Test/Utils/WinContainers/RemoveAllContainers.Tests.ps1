@@ -58,7 +58,7 @@ Describe "Remove-AllContainers" {
 
         Invoke-Command -Session $Session {
             $DockerThatAlwaysFails = @'
-            if ($args[0] -eq "rm") {
+            if ("rm" -eq $args[0]) {
                 Write-Error "It's Docker here: I will never ever do that!"
                 exit 1
             } else {
@@ -85,7 +85,7 @@ Describe "Remove-AllContainers" {
         Invoke-Command -Session $Session {
             $FlakyDocker = @'
             $TmpFlagFile = "{0}"
-            if ($args[0] -eq "rm") {{
+            if ("rm" -eq $args[0]) {{
                 if (Test-Path $TmpFlagFile) {{
                     docker.exe $args
                 }} else {{

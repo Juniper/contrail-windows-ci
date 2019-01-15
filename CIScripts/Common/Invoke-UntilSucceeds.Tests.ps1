@@ -52,7 +52,7 @@ Describe "Invoke-UntilSucceeds" -Tags CISelfcheck, Unit {
         {
             {
                 $Script:Counter += 1;
-                return ($Script:Counter -eq 3)
+                return (3 -eq $Script:Counter)
             } | Invoke-UntilSucceeds -Duration 3
         } | Should Not Throw
     }
@@ -62,11 +62,11 @@ Describe "Invoke-UntilSucceeds" -Tags CISelfcheck, Unit {
         {
             {
                 $Script:Counter += 1;
-                if ($Script:Counter -eq 1) {
+                if (1 -eq $Script:Counter) {
                     return $false
-                } elseif ($Script:Counter -eq 2) {
+                } elseif (2 -eq $Script:Counter) {
                     throw "nope"
-                } elseif ($Script:Counter -eq 3) {
+                } elseif (3 -eq $Script:Counter) {
                     return $true
                 }
             } | Invoke-UntilSucceeds -Duration 3
@@ -91,7 +91,7 @@ Describe "Invoke-UntilSucceeds" -Tags CISelfcheck, Unit {
     It "runs at least one time" {
         $Script:TimeCalled = 0
         Mock Get-Date {
-            if ($Script:TimeCalled -eq 0) {
+            if (0 -eq $Script:TimeCalled) {
                 $Script:TimeCalled += 1
                 return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)
             } else {
@@ -138,7 +138,7 @@ Describe "Invoke-UntilSucceeds" -Tags CISelfcheck, Unit {
         Invoke-UntilSucceeds {
             Start-Sleep -Seconds 20
             $Script:Counter += 1
-            $Script:Counter -eq 2
+            2 -eq $Script:Counter
         } -Duration 10 -Interval 5
 
         $Script:Counter | Should Be 2
@@ -152,7 +152,7 @@ Describe "Invoke-UntilSucceeds" -Tags CISelfcheck, Unit {
         {
             Invoke-UntilSucceeds {
                 $Script:Counter += 1
-                $Script:Counter -eq 200
+                200 -eq $Script:Counter
             } -Duration 100 -Interval 1
         } | Should Throw
 

@@ -53,7 +53,7 @@ function Assert-AreDLLsPresent {
             }
         }
 
-        if ($MissingVisualDLLs.count -ne 0) {
+        if (0 -ne $MissingVisualDLLs.count) {
             throw "$MissingVisualDLLs must be present in $System32Dir"
         }
         else {
@@ -238,7 +238,7 @@ function Select-ValidNetIPInterface {
 
     Process { $_ `
         | Where-Object AddressFamily -eq "IPv4" `
-        | Where-Object { ($_.SuffixOrigin -eq "Dhcp") -or ($_.SuffixOrigin -eq "Manual") }
+        | Where-Object { ("Dhcp" -eq $_.SuffixOrigin) -or ("Manual" -eq $_.SuffixOrigin) }
     }
 }
 

@@ -48,7 +48,7 @@ Describe "New-Container" -Tags CISelfcheck, Systest {
             $TmpFlagFile = "HopeForLuckyTry"
             Remove-Item $TmpFlagFile -ErrorAction Ignore
             $DockerThatSucceedsInSecondAttempt = @'
-            if ($args[0] -eq "run") {{
+            if ("run" -eq $args[0]) {{
                 $TmpFlagFile = "{1}"
                 if (Test-Path $TmpFlagFile) {{
                     Write-Output "{0}"
@@ -83,7 +83,7 @@ Describe "New-Container" -Tags CISelfcheck, Systest {
             $TmpFlagFile = "HopeForLuckyTry"
             Remove-Item $TmpFlagFile -ErrorAction Ignore
             $DockerThatSucceedsInSecondAttempt = @'
-            if ($args[0] -eq "run") {{
+            if ("run" -eq $args[0]) {{
                 $TmpFlagFile = "{1}"
                 if (Test-Path $TmpFlagFile) {{
                     Write-Output "{0}"

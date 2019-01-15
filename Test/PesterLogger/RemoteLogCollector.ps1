@@ -220,7 +220,7 @@ class ContainerLogSource : LogSource {
         $Name = "$( $this.Container ) container logs"
         $Output = $Command.Output -join [Environment]::Newline
 
-        $Log = if ($Command.ExitCode -eq 0) {
+        $Log = if (0 -eq $Command.ExitCode) {
             [ValidCollectedLog] @{
                 Name = $Name
                 Tag = $this.Container
@@ -290,7 +290,7 @@ function New-EventLogLogSource {
 }
 
 function Invoke-CommandRemoteOrLocal {
-    param([ScriptBlock] $Func, [PSSessionT] $Session, [Object[]] $Arguments) 
+    param([ScriptBlock] $Func, [PSSessionT] $Session, [Object[]] $Arguments)
     if ($Session) {
         Invoke-Command -Session $Session $Func -ArgumentList $Arguments
     } else {
@@ -323,7 +323,7 @@ function Merge-Logs {
                 Write-Log -Tag $Tag "Error retrieving $($Log.Name): $($Log.Err)"
             }
         }
-        
+
         if (-not $DontCleanUp) {
             $LogSource.ClearContent()
         }

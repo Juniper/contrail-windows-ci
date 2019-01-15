@@ -74,7 +74,7 @@ try {
     # Invoke-AgentTestsBuild -LogsPath $LogsDir `
     #     -BuildMode $SconsBuildMode
 
-    if ($SconsBuildMode -eq "debug") {
+    if ("debug" -eq $SconsBuildMode) {
         Copy-DebugDlls -OutputPath $DllsOutputDir
     }
 

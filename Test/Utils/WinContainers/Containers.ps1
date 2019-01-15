@@ -15,7 +15,7 @@ function Remove-AllContainers {
                 }
                 $Containers = docker ps -aq
                 $TimesToGo = $TimesToGo - 1
-                if ( $Containers -and $TimesToGo -eq 0 ) {
+                if ( $Containers -and 0 -eq $TimesToGo ) {
                     $LASTEXITCODE = 1
                 }
             }
@@ -24,7 +24,7 @@ function Remove-AllContainers {
         }
 
         $OutputMessages = $Result.Output
-        if ($Result.ExitCode -ne 0) {
+        if (0 -ne $Result.ExitCode) {
             throw "Remove-AllContainers - removing containers failed with the following messages: $OutputMessages"
         } elseif ($Result.Output[-1] -gt 0) {
             Write-Host "Remove-AllContainers - removing containers was successful, but required more than one attempt: $OutputMessages"
@@ -73,7 +73,7 @@ function New-Container {
         Invoke-NativeCommand -Session $Session -AllowNonZero { docker rm -f $Using:ContainerID } | Out-Null
         Write-Log "Retrying container creation..."
         $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
-    } elseif ($Result.ExitCode -ne 0) {
+    } elseif (0 -ne $Result.ExitCode) {
         throw "New-Container failed with the following output: $OutputMessages"
     }
 

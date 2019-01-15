@@ -61,7 +61,7 @@ $DefaultDNSrecords = @([DNSRecord]::New('vnone', $null, 'defaultrecord-nonetest.
 function Resolve-DNSLocally {
     $resolved = (Resolve-DnsName -Name $Hostname -Type A -ErrorAction SilentlyContinue)
 
-    if ($error.Count -eq 0) {
+    if (0 -eq $error.Count) {
         Write-Host 'found'
         $resolved[0].IPAddress
         return
@@ -126,11 +126,11 @@ function Set-DNSServerAddressOnTestBed {
         [Parameter(Mandatory = $true)] [string] $InterfaceAlias
     )
     $DefaultDNSServerAddress = Invoke-Command -Session $ServerSession -ScriptBlock {
-        Get-NetIPAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object { $_.AddressFamily -eq 2 } | Select-Object -ExpandProperty IPAddress
+        Get-NetIPAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object { 2 -eq $_.AddressFamily } | Select-Object -ExpandProperty IPAddress
     }
     Write-Log "Setting default DNS Server on test bed for: $DefaultDNSServerAddress..."
     $OldDNSs = Invoke-Command -Session $ClientSession -ScriptBlock {
-        Get-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object {$_.AddressFamily -eq 2} | Select-Object -ExpandProperty ServerAddresses
+        Get-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object {2 -eq $_.AddressFamily} | Select-Object -ExpandProperty ServerAddresses
     }
     Invoke-Command -Session $ClientSession -ScriptBlock {
         Set-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias -ServerAddresses $Using:DefaultDNSServerAddress
@@ -166,7 +166,7 @@ function Resolve-DNS {
 
     Write-Log "Resolving effect: $($Result[0]) - $($Result[1])"
 
-    if ($Result[0] -eq 'error') {
+    if ('error' -eq $Result[0]) {
         return @{'error' = $Result[1]; 'result' = $null}
     }
 
@@ -185,7 +185,7 @@ function ResolveCorrectly {
         -ContainerName $ContainersIDs[0] -Hostname $Hostname
 
     if ((-not $result.error)) {
-        if (($IP -eq 'Any') -or ($result.result -eq $IP)) {
+        if (('Any' -eq $IP) -or ($result.result -eq $IP)) {
             return $true
         }
     }

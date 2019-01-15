@@ -35,7 +35,7 @@ Describe "PesterHelpers" -Tags CISelfcheck, Unit {
         It "runs at least one time" {
             $Script:TimeCalled = 0
             Mock Get-Date {
-                if ($Script:TimeCalled -eq 0) {
+                if (0 -eq $Script:TimeCalled) {
                     $Script:TimeCalled += 1
                     return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)
                 } else {

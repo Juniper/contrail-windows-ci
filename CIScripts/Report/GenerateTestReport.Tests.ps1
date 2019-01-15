@@ -4,7 +4,7 @@
 function Invoke-FakeReportunit {
     Param([Parameter(Mandatory = $true)] [string] $NUnitDir)
     $Files = Get-ChildItem -Path $NUnitDir -File
-    if ($Files.length -eq 0) {
+    if (0 -eq $Files.length) {
         throw "Empty directory"
     }
     if ($Files.length -gt 1) {

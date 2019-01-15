@@ -8,14 +8,14 @@ class ContrailRestApi {
 
         $this.ContrailUrl = $ControllerConfig.RestApiUrl()
 
-        if ($ControllerConfig.AuthMethod -eq 'keystone') {
+        if ('keystone' -eq $ControllerConfig.AuthMethod) {
             if (!$OpenStackConfig) {
                 throw 'AuthMethod is keystone, but no OpenStack config provided.'
             }
 
             $this.AuthToken = $this.GetAccessTokenFromKeystone($OpenStackConfig)
         }
-        elseif ($ControllerConfig.AuthMethod -eq 'noauth') {
+        elseif ('noauth' -eq $ControllerConfig.AuthMethod) {
             $this.AuthToken = $null
         }
         else {

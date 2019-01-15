@@ -23,7 +23,7 @@ function Test-Ping {
     Write-Log "Ping output:"
     Write-Log -NoTimestamp -NoTag "$Output"
 
-    if ($ExitCode -eq "0") {
+    if ("0" -eq $ExitCode) {
         # Ping's exit code suggests everything worked, but
         # "Destination host unreachable" also returns exit code 0,
         # therefore we parse output to make sure it actually passed.

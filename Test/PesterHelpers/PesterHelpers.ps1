@@ -23,7 +23,7 @@ function Consistently {
     if ($Duration -lt $Interval) {
         throw [CITimeoutException] "Duration must be longer than interval"
     }
-    if ($Interval -eq 0) {
+    if (0 -eq $Interval) {
         throw [CITimeoutException] "Interval must not be equal to zero"
     }
     $StartTime = Get-Date
@@ -99,7 +99,7 @@ function Test-ResultsWithRetries {
             if ($Result.Describe -eq $Describe `
                 -and $Result.Context -eq $Context `
                 -and $Result.Name -eq $Name `
-                -and $Result.Result -eq "Passed") {
+                -and "Passed" -eq $Result.Result) {
                     return $true
             }
         }
@@ -108,7 +108,7 @@ function Test-ResultsWithRetries {
     }
 
     ForEach ($Result in $Results) {
-        if ($Result.Result -eq "Failed") {
+        if ("Failed" -eq $Result.Result) {
             $AnySuccess = Test-HasAnySuccess `
                 -Describe $Result.Describe `
                 -Context $Result.Context `
@@ -126,7 +126,7 @@ function Suspend-PesterOnException {
     InModuleScope Pester {
 
         function global:CatchedExceptionHandler {
-            if($script:SuspendExecutionInput -ne "finish") {
+            if("finish" -ne $script:SuspendExecutionInput) {
 
                 $result = ConvertTo-PesterResult -Name $Name -ErrorRecord $_
                 $orderedParameters = Get-OrderedParameterDictionary -ScriptBlock $ScriptBlock -Dictionary $Parameters
@@ -231,7 +231,7 @@ function Set-PesterTestLoop {
 
             Assert-DescribeInProgress -CommandName $CommandUsed
 
-            if ($Pester.TestGroupStack.Count -eq 2) {
+            if (2 -eq $Pester.TestGroupStack.Count) {
                 if($Pester.TestNameFilter-and -not ($Pester.TestNameFilter | & $SafeCommands['Where-Object'] { $Name -like $_ })) {
                     return
                 }
@@ -266,10 +266,10 @@ function Set-PesterTestLoop {
                     Add-SetupAndTeardown -ScriptBlock $Fixture
                     Invoke-TestGroupSetupBlocks
 
-                    if($CommandUsed -eq 'Describe') {
+                    if('Describe' -eq $CommandUsed) {
                         do {
                             $null = & $Fixture
-                            if($script:SuspendExecutionInput -eq "finish") {
+                            if("finish" -eq $script:SuspendExecutionInput) {
                                 $script:SuspendExecutionInput = ""
                                 break
                             }
