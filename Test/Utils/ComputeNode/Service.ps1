@@ -169,14 +169,16 @@ function Get-ServicesLogPaths {
 }
 
 function Get-NodeMgrServiceConfiguration {
-
-    $NodeTypeParam = "--nodetype contrail-vrouter"
+    $AdditionalParams = @{
+        AppStdout = (Get-NodeMgrLogPath)
+        AppStderr = (Get-NodeMgrLogPath)
+        AppParameters = "--nodetype contrail-vrouter"
+    }
 
     New-ServiceConfiguration `
         -ServiceName "contrail-vrouter-nodemgr" `
         -ExecutablePath "C:\Python27\Scripts\contrail-nodemgr.exe" `
-        -LogFileName (Get-NodeMgrLogPath) `
-        -CommandLineParams @($NodeTypeParam)
+        -AdditionalParams $AdditionalParams
 }
 
 function Get-ServiceName {
