@@ -21,7 +21,7 @@ class Service {
 
 function Install-ServiceWithNSSM {
     Param (
-        [Parameter(Mandatory=$true)] [string] $Session,
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [string] $ServiceName,
         [Parameter(Mandatory=$true)] [string] $ExecutablePath,
         [Parameter(Mandatory=$false)] [hashtable] $AdditionalParams
@@ -116,7 +116,7 @@ function Get-ServiceStatus {
 
 function New-ServiceConfiguration {
     Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $ServiceName,
+        [Parameter(Mandatory=$true)] [string] $ServiceName,
         [Parameter(Mandatory=$true)] [string] $ExecutablePath,
         [Parameter(Mandatory=$true)] [hashtable] $AdditionalParams
     )
