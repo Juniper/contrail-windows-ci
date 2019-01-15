@@ -1,23 +1,38 @@
 # Those are just informative to show dependencies
 #include "Subnet.ps1"
 #include "NetworkPolicy.ps1"
+#include "Tag.ps1"
 
 class VirtualNetwork : BaseResourceModel {
     [Subnet] $Subnet
     [FqName] $IpamFqName = [FqName]::new(@("default-domain", "default-project", "default-network-ipam"))
     [FqName[]] $NetworkPolicysFqNames = @()
-    [Boolean] $IpFabricForwarding = $false
 
+    [Boolean] $IpFabricForwarding = $false
+    [String] $ProviderNetworkFqName
+    [String] $ProviderNetworkUuid
+    [String] $ProviderNetworkUrl
+
+    [FqName] $TagFqName
     [String] $ResourceName = 'virtual-network'
     [String] $ParentType = 'project'
 
-    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
+    hidden [void] init([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [FqName] $TagFqName) {
         $this.Name = $Name
         $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
         $this.Subnet = $Subnet
+        $this.TagFqName = $TagFqName
 
         $this.Dependencies += [Dependency]::new('instance-ip', 'instance_ip_back_refs')
         $this.Dependencies += [Dependency]::new('virtual-machine-interface', 'virtual_machine_interface_back_refs')
+    }
+
+    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
+        $this.init($Name, $ProjectName, $Subnet, $null)
+    }
+
+    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [FqName] $TagFqName) {
+        $this.init($Name, $ProjectName, $Subnet, $TagFqName)
     }
 
     EnableIpFabricForwarding([FqName] $ProviderNetworkFqName, [String] $ProviderNetworkUuid, [String] $ProviderNetworkUrl) {
@@ -58,6 +73,13 @@ class VirtualNetwork : BaseResourceModel {
             }
         }
 
+        if ($null -ne $this.TagFqName) {
+            $TagRef = @{
+                to = $this.TagFqName.ToStringArray()
+            }
+            $Request.'virtual-network'.Add('tag_refs', @($TagRef))
+        }
+
         $Policys = $this.GetPolicysReferences()
         $Request.'virtual-network'.Add('network_policy_refs', $Policys)
 
@@ -68,11 +90,11 @@ class VirtualNetwork : BaseResourceModel {
             }
             $Request.'virtual-network'.Add('provider_properties', $ProviderProperties)
 
-            $VirtualNetworkRefs = @{
+            $VirtualNetworkRefs = @(@{
                 href = $this.ProviderNetworkUrl
                 uuid = $this.ProviderNetworkUuid
                 to = $this.ProviderNetworkFqName
-            }
+            })
             $Request.'virtual-network'.Add('virtual_network_refs', $VirtualNetworkRefs)
         }
 

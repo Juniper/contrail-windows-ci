@@ -59,8 +59,8 @@ Test-WithRetries 3 {
 
             Write-Log "Creating virtual network: $($VirtualNetwork.Name)"
             $ProviderNetworkFqName = [FqName]::new(@('default-domain', 'default-project', 'ip-fabric'))
-            $ProviderNetworkUuid = $Testenv.ContrailRepo.FqNameToUuid('virtual-network', $ProviderNetworkFqName)
-            $ProviderNetworkUrl = $Testenv.ContrailRepo.GetResourceUrl('virtual-network', $ProviderNetworkUuid)
+            $ProviderNetworkUuid = $Testenv.ContrailRepo.API.FqNameToUuid('virtual-network', $ProviderNetworkFqName)
+            $ProviderNetworkUrl = $Testenv.ContrailRepo.API.GetResourceUrl('virtual-network', $ProviderNetworkUuid)
             $VirtualNetwork.EnableIpFabricForwarding($ProviderNetworkFqName, $ProviderNetworkUuid, $ProviderNetworkUrl)
             $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
             $BeforeAllStack.Push($VirtualNetwork)

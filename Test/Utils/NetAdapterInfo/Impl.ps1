@@ -19,7 +19,12 @@ function Read-RawRemoteContainerNetAdapterInformation {
         docker exec $Using:ContainerID powershell $RemoteCommand
     }
 
-    return $JsonAdapterInfo | ConvertFrom-Json
+    try {
+        return $JsonAdapterInfo | ConvertFrom-Json
+    }
+    catch {
+        throw $JsonAdapterInfo
+    }
 }
 
 function Assert-IsIpAddressInRawNetAdapterInfoValid {
