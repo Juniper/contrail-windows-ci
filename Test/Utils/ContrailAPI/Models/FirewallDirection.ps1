@@ -6,18 +6,6 @@ class FirewallDirection {
     }
 }
 
-class UniLeftFirewallDirection : FirewallDirection {
-    UniLeftFirewallDirection() {
-        $this.Direction = '<'
-    }
-}
-
-class UniRightFirewallDirection : FirewallDirection {
-    UniRightFirewallDirection() {
-        $this.Direction = '>'
-    }
-}
-
 class BiFirewallDirection : FirewallDirection {
     BiFirewallDirection() {
         $this.Direction = '<>'

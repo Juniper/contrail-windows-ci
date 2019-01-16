@@ -89,9 +89,10 @@ function Initialize-Security {
     $FirewallPolicy = [FirewallPolicy]::new('test-firewall-policy')
 
     foreach ($FirewallRule in $FirewallRules) {
+        $I = $FirewallRules.IndexOf($FirewallRule)
         Write-Log "Creating firewall rule: $($FirewallRule.Name)"
         $ContrailRepo.AddOrReplace($FirewallRule) | Out-Null
-        $FirewallPolicy.AddFirewallRule($FirewallRule.GetFqName(), 0)
+        $FirewallPolicy.AddFirewallRule($FirewallRule.GetFqName(), $I)
         $CleanupStack.Push($FirewallRule)
     }
 
@@ -108,7 +109,7 @@ function Initialize-Security {
 function Test-Security {
     Param (
         [Parameter(Mandatory = $true)] [FirewallRule[]] $TestRules,
-        [Parameter(Mandatory = $true)] [ContrailRepo] $ContrailRepo,
+        [Parameter(Mandatory = $true)] [Testenv] $Testenv,
         [Parameter(Mandatory = $true)] [ScriptBlock] $TestInvocation
     )
 
@@ -117,11 +118,11 @@ function Test-Security {
     Initialize-Security `
         -CleanupStack $TestCleanupStack `
         -FirewallRules $TestRules `
-        -ContrailRepo $ContrailRepo | Out-Null
+        -ContrailRepo $Testenv.ContrailRepo | Out-Null
 
     Invoke-Command $TestInvocation
 
-    $TestCleanupStack.RunCleanup($ContrailRepo)
+    $TestCleanupStack.RunCleanup($Testenv.ContrailRepo)
 }
 
 Test-WithRetries 1 {
@@ -139,7 +140,7 @@ Test-WithRetries 1 {
                     )
                 )
 
-                Test-Security -TestRules $TestRules -ContrailRepo $Testenv.ContrailRepo {
+                Test-Security -TestRules $TestRules -Testenv $Testenv {
                     Test-TCP `
                         -Session $Containers.client.HostSession `
                         -SrcContainerName $Containers.client.Name `
@@ -160,7 +161,7 @@ Test-WithRetries 1 {
                     )
                 )
 
-                Test-Security -TestRules $TestRules -ContrailRepo $Testenv.ContrailRepo {
+                Test-Security -TestRules $TestRules -Testenv $Testenv {
                     { Test-TCP `
                         -Session $Containers.client.HostSession `
                         -SrcContainerName $Containers.client.Name `
@@ -171,57 +172,18 @@ Test-WithRetries 1 {
         }
 
         Context 'UDP' {
-            # It 'Passes only one way traffic on all ports' {
-            #     $TestRules = @(
-            #         [FirewallRule]::new(
-            #             'test-firewall-rule-udp-pass-uniway-full',
-            #             [UniLeftFirewallDirection]::new(),
-            #             [SimplePassRuleAction]::new(),
-            #             [FirewallService]::new_UDP_Full(),
-            #             $ServerEndPoint,
-            #             $ClientEndpoint
-            #         ),
-            #         [FirewallRule]::new(
-            #             'test-firewall-rule-udp-deny-biway-full',
-            #             [BiFirewallDirection]::new(),
-            #             [SimpleDenyRuleAction]::new(),
-            #             [FirewallService]::new_UDP_Full(),
-            #             $ServerEndPoint,
-            #             $ClientEndpoint
-            #         )
-            #     )
-
-            #     Test-Security -TestRules $TestRules -ContrailRepo $Testenv.ContrailRepo {
-            #         Test-UDP `
-            #             -ListenerContainerSession $Containers.server.HostSession `
-            #             -ListenerContainerName $Containers.server.Name `
-            #             -ListenerContainerIP $Containers.server.NetInfo.IPAddress `
-            #             -ClientContainerSession $Containers.client.HostSession `
-            #             -ClientContainerName $Containers.client.Name `
-            #             -Message 'With contrail-security i feel safe now.' | Should Be $true
-
-            #         Test-UDP `
-            #             -ListenerContainerSession $Containers.client.HostSession `
-            #             -ListenerContainerName $Containers.client.Name `
-            #             -ListenerContainerIP $Containers.client.NetInfo.IPAddress `
-            #             -ClientContainerSession $Containers.server.HostSession `
-            #             -ClientContainerName $Containers.server.Name `
-            #             -Message 'With contrail-security i feel safe now.' | Should Be $false
-            #     }
-            # }
-
-            It 'Denies traffic on src port' {
+            It 'Denies traffic on range of udp ports' {
                 $TestRules = @(
                     [FirewallRule]::new(
-                        'test-firewall-rule-udp-pass-uniway-range',
+                        'test-firewall-rule-udp-deny-uniway-range',
                         [BiFirewallDirection]::new(),
-                        [SimplePassRuleAction]::new(),
+                        [SimpleDenyRuleAction]::new(),
                         [FirewallService]::new_UDP_range(1111, 2222),
                         $ServerEndPoint,
                         $ClientEndpoint
                     ),
                     [FirewallRule]::new(
-                        'test-firewall-rule-udp-deny-biway-full',
+                        'test-firewall-rule-udp-pass-biway-full',
                         [BiFirewallDirection]::new(),
                         [SimplePassRuleAction]::new(),
                         [FirewallService]::new_UDP_Full(),
@@ -230,7 +192,7 @@ Test-WithRetries 1 {
                     )
                 )
 
-                Test-Security -TestRules $TestRules -ContrailRepo $Testenv.ContrailRepo {
+                Test-Security -TestRules $TestRules -Testenv $Testenv {
                     Test-UDP `
                         -ListenerContainerSession $Containers.server.HostSession `
                         -ListenerContainerName $Containers.server.Name `
@@ -239,7 +201,7 @@ Test-WithRetries 1 {
                         -ClientContainerName $Containers.client.Name `
                         -Message 'With contrail-security i feel safe now.' `
                         -UDPServerPort 1111 `
-                        -UDPClientPort 2222 | Should Be $true
+                        -UDPClientPort 2222 | Should Be $false
 
                     Test-UDP `
                         -ListenerContainerSession $Containers.server.HostSession `
@@ -249,7 +211,7 @@ Test-WithRetries 1 {
                         -ClientContainerName $Containers.client.Name `
                         -Message 'With contrail-security i feel safe now.' `
                         -UDPServerPort 3333 `
-                        -UDPClientPort 4444 | Should Be $false
+                        -UDPClientPort 4444 | Should Be $true
                 }
             }
         }
