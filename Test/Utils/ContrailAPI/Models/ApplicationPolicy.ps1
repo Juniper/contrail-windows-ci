@@ -7,7 +7,7 @@ class ApplicationPolicy : BaseResourceModel {
     ApplicationPolicy([String] $Name, [FqName[]] $FirewallPolicyFqNames, [FqName[]] $TagFqNames) {
         $this.Name = $Name
         $this.ParentFqName = [FqName]::new(@('default-policy-management'))
-        $this.Tags = $TagFqNames
+        $this.TagFqNames = $TagFqNames
         $this.FirewallPolicyFqNames = $FirewallPolicyFqNames
     }
 

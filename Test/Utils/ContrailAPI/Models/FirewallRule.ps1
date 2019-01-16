@@ -2,9 +2,10 @@
 #include "RuleAction.ps1"
 #include "FirewallRuleEndpoint.ps1"
 #include "FirewallService.ps1"
+#include "FirewallDirection.ps1"
 
 class FirewallRule : BaseResourceModel {
-    [String] $Direction
+    [FirewallDirection] $Direction
     [RuleAction] $Action
     [FirewallService] $Service
     [FirewallRuleEndpoint] $Endpoint1
@@ -15,7 +16,7 @@ class FirewallRule : BaseResourceModel {
 
     FirewallRule(
         [String] $Name,
-        [String] $Direction,
+        [FirewallDirection] $Direction,
         [RuleAction] $Action,
         [FirewallService] $Service,
         [FirewallRuleEndpoint] $Endpoint1,
@@ -33,7 +34,7 @@ class FirewallRule : BaseResourceModel {
     [Hashtable] GetRequest() {
         $Request = @{
             $this.ResourceName = @{
-                direction   = $this.Direction
+                direction   = $this.Direction.Get()
                 action_list = $this.Action.GetRequest()
                 service     = $this.Service.GetRequest()
                 endpoint_1  = $this.Endpoint1.GetRequest()

@@ -12,10 +12,8 @@ class FirewallPolicy : BaseResourceModel {
         $this.ParentFqName = [FqName]::New(@('default-policy-management'))
     }
 
-    [FirewallPolicy] AddFirewallRule([FqName] $FirewallRule, [int] $Sequence) {
-        $this.FirewallRulesReferences += `
-            @([FirewallRuleReference]::new($FirewallRule, $Sequence))
-        return $this
+    [void] AddFirewallRule([FqName] $FirewallRule, [int] $Sequence) {
+        $this.FirewallRulesReferences += @([FirewallRuleReference]::new($FirewallRule, $Sequence))
     }
 
     [Hashtable] GetRequest() {
