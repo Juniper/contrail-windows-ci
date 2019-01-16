@@ -120,9 +120,12 @@ function Test-Security {
         -FirewallRules $TestRules `
         -ContrailRepo $Testenv.ContrailRepo | Out-Null
 
-    Invoke-Command $TestInvocation
-
-    $TestCleanupStack.RunCleanup($Testenv.ContrailRepo)
+    try {
+        Invoke-Command $TestInvocation
+    }
+    finally {
+        $TestCleanupStack.RunCleanup($Testenv.ContrailRepo)
+    }
 }
 
 Test-WithRetries 1 {
