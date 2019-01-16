@@ -26,7 +26,7 @@ function Install-ServiceWithNSSM {
     )
 
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
-        nssm install $Using:Configuration.ServiceName "$Using:Configuration.ExecutablePath"
+        nssm install $Using:Configuration.ServiceName $Using:Configuration.ExecutablePath
     } -AllowNonZero -CaptureOutput
 
     $NSSMServiceAlreadyCreatedError = 5
@@ -34,7 +34,7 @@ function Install-ServiceWithNSSM {
         Write-Log $Output.Output
     }
     elseif ($Output.ExitCode -eq $NSSMServiceAlreadyCreatedError) {
-        Write-Log "$Configuration.ServiceName service already created, continuing..."
+        Write-Log "$($Configuration.ServiceName) service already created, continuing..."
     }
     else {
         $ExceptionMessage = @"
