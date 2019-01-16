@@ -27,7 +27,7 @@ class FirewallService {
         return [FirewallService]::new([Protocol]::tcp, [PortRange]::new_Full(), [PortRange]::new_Full())
     }
 
-    static [FirewallService] new_UDP_specific([Int] $Start, [Int] $End) {
+    static [FirewallService] new_UDP_range([Int] $Start, [Int] $End) {
         return [FirewallService]::new([Protocol]::udp, [PortRange]::new($Start, $End), [PortRange]::new($Start, $End))
     }
 

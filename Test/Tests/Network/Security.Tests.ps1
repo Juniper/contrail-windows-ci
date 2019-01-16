@@ -216,7 +216,7 @@ Test-WithRetries 1 {
                         'test-firewall-rule-udp-pass-uniway-range',
                         [BiFirewallDirection]::new(),
                         [SimplePassRuleAction]::new(),
-                        [FirewallService]::new_udp_range(1111, 2222),
+                        [FirewallService]::new_UDP_range(1111, 2222),
                         $ServerEndPoint,
                         $ClientEndpoint
                     ),
