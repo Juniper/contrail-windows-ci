@@ -25,20 +25,23 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 
 $ContrailProject = 'ci_tests_ip_fabric'
-$DockerImages = @('microsoft/windowsservercore')
-$ContainersIDs = @('jolly-lumberjack')
-$ContainerNetInfos = @($null)
+$DockerImage = 'microsoft/windowsservercore'
+$ContainerID = 'jolly-lumberjack'
+$ContainerNetInfo = $null
 
 $Subnet = [Subnet]::new(
     '172.16.0.128',
     28,
     '172.16.0.129',
-    '172.16.0.150',
-    '172.16.0.180'
+    '172.16.0.130',
+    '172.16.0.140'
 )
 
 $ComputeAddressInUnderlay = '172.16.0.2'
+$NetworkPolicy = [NetworkPolicy]::new_PassAll('passallpolicy', $ContrailProject)
 $VirtualNetwork = [VirtualNetwork]::New('testnet_fabric_ip', $ContrailProject, $Subnet)
+$VirtualNetwork.NetworkPolicysFqNames = @($NetworkPolicy.GetFqName())
+$VirtualNetwork.EnableIpFabricForwarding()
 
 Test-WithRetries 3 {
     Describe 'IP Fabric tests' -Tag 'Smoke' {
@@ -46,7 +49,7 @@ Test-WithRetries 3 {
             It 'Container can ping compute node in underlay network' {
                 Test-Ping `
                     -Session $Testenv.Sessions[0] `
-                    -SrcContainerName $ContainersIDs[0] `
+                    -SrcContainerName $ContainerID `
                     -DstContainerName "compute node in underlay network" `
                     -DstIP $ComputeAddressInUnderlay | Should Be 0
             }
@@ -57,11 +60,11 @@ Test-WithRetries 3 {
             $Testenv.Initialize($TestenvConfFile, $LogDir, $ContrailProject, $PrepareEnv)
             $BeforeAllStack = $Testenv.NewCleanupStack()
 
+            Write-Log "Creating network policy: $($NetworkPolicy.Name)"
+            $Testenv.ContrailRepo.AddOrReplace($NetworkPolicy) | Out-Null
+            $BeforeAllStack.Push($NetworkPolicy)
+
             Write-Log "Creating virtual network: $($VirtualNetwork.Name)"
-            $ProviderNetworkFqName = [FqName]::new(@('default-domain', 'default-project', 'ip-fabric'))
-            $ProviderNetworkUuid = $Testenv.ContrailRepo.API.FqNameToUuid('virtual-network', $ProviderNetworkFqName)
-            $ProviderNetworkUrl = $Testenv.ContrailRepo.API.GetResourceUrl('virtual-network', $ProviderNetworkUuid)
-            $VirtualNetwork.EnableIpFabricForwarding($ProviderNetworkFqName, $ProviderNetworkUuid, $ProviderNetworkUrl)
             $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
             $BeforeAllStack.Push($VirtualNetwork)
 
@@ -83,21 +86,19 @@ Test-WithRetries 3 {
             $BeforeEachStack = $Testenv.NewCleanupStack()
             $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
             $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
-            Write-Log 'Creating containers'
-            foreach ($i in $ContainersIDs.length) {
-                Write-Log "Creating container: $($ContainersIDs[$i])"
-                New-Container `
-                    -Session $Testenv.Sessions[$i] `
-                    -NetworkName $VirtualNetwork.Name `
-                    -Name $ContainersIDs[$i] `
-                    -Image $DockerImages[$i]
 
-                $ContainerNetInfos[$i] = Get-RemoteContainerNetAdapterInformation `
-                    -Session $Testenv.Sessions[$i] -ContainerID $ContainersIDs[$i]
-                Write-Log "IP of $($ContainersIDs[$i]): $($ContainerNetInfos[$i].IPAddress)"
-            }
-            $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIDs[0]),
-                (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIDs[1]))
+            Write-Log "Creating container: $ContainerID"
+            New-Container `
+                -Session $Testenv.Sessions[0] `
+                -NetworkName $VirtualNetwork.Name `
+                -Name $ContainerID `
+                -Image $DockerImage
+
+            $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation `
+                -Session $Testenv.Sessions[0] -ContainerID $ContainerID
+            Write-Log "IP of $($ContainerID): $($ContainerNetInfo.IPAddress)"
+
+            $ContainersLogs = @(, (New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainerID))
             $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
         }
 

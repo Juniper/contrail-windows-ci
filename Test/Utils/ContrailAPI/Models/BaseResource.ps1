@@ -42,6 +42,6 @@ class FqName {
     }
 
     [String] ToString() {
-        return [System.String]::Join(":", $this.FqName)
+        return [String]::Join(":", $this.FqName)
     }
 }

@@ -9,9 +9,6 @@ class VirtualNetwork : BaseResourceModel {
     [FqName[]] $NetworkPolicysFqNames = @()
 
     [Boolean] $IpFabricForwarding = $false
-    [String] $ProviderNetworkFqName
-    [String] $ProviderNetworkUuid
-    [String] $ProviderNetworkUrl
 
     [FqName] $TagFqName
     [String] $ResourceName = 'virtual-network'
@@ -35,11 +32,8 @@ class VirtualNetwork : BaseResourceModel {
         $this.init($Name, $ProjectName, $Subnet, $TagFqName)
     }
 
-    EnableIpFabricForwarding([FqName] $ProviderNetworkFqName, [String] $ProviderNetworkUuid, [String] $ProviderNetworkUrl) {
+    [void] EnableIpFabricForwarding() {
         $this.IpFabricForwarding = $true
-        $this.ProviderNetworkFqName = $ProviderNetworkFqName
-        $this.ProviderNetworkUuid = $ProviderNetworkUuid
-        $this.ProviderNetworkUrl = $ProviderNetworkUrl
     }
 
     [Hashtable] GetRequest() {
@@ -84,16 +78,18 @@ class VirtualNetwork : BaseResourceModel {
         $Request.'virtual-network'.Add('network_policy_refs', $Policys)
 
         if ($true -eq $this.IpFabricForwarding) {
+            $ProviderNetworkFqName = [FqName]::new(
+                @('default-domain', 'default-project', 'ip-fabric')
+            )
+
             $ProviderProperties = @{
                 segmentation_id = 0
-                physical_network = $this.ProviderNetworkFqName.ToString()
+                physical_network = $ProviderNetworkFqName.ToString()
             }
             $Request.'virtual-network'.Add('provider_properties', $ProviderProperties)
 
             $VirtualNetworkRefs = @(@{
-                href = $this.ProviderNetworkUrl
-                uuid = $this.ProviderNetworkUuid
-                to = $this.ProviderNetworkFqName
+                to = $ProviderNetworkFqName.ToStringArray()
             })
             $Request.'virtual-network'.Add('virtual_network_refs', $VirtualNetworkRefs)
         }

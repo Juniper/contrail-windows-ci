@@ -39,7 +39,7 @@ class IPAM : BaseResourceModel {
     hidden [Void] AddVirtualDNSInformation ($Request) {
         $DNSServer = @{
             "ipam_dns_server" = @{
-                "virtual_dns_server_name" = [String]::Join(":", $this.DNSSettings.FqServerName.ToStringArray())
+                "virtual_dns_server_name" = $this.DNSSettings.FqServerName.ToString()
             }
         }
         $Request."network-ipam"."network_ipam_mgmt" += $DNSServer
