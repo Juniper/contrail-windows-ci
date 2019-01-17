@@ -26,7 +26,7 @@ function Invoke-MsiExec {
             return
         }
 
-        if ($Result.ExitCode -ne 0) {
+        if (0 -ne $Result.ExitCode) {
             $WhatWentWrong = if ($Using:Uninstall) {"Uninstallation"} else {"Installation"}
             throw "$WhatWentWrong of $Using:Path failed with $($Result.ExitCode)"
         }
@@ -45,7 +45,7 @@ function Install-Agent {
     #TODO: remove this if conditional after msi do not anymore create agent's service
     $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName "ContrailAgent"
 
-    $IsOldAgentServicePresent = ($ServiceStatus -eq "Running") -or ($ServiceStatus -eq "Started")
+    $IsOldAgentServicePresent = ("Running" -eq $ServiceStatus) -or ("Started" -eq $ServiceStatus)
     if ($IsOldAgentServicePresent) {
         Stop-RemoteService -Session $Session -ServiceName "ContrailAgent"
     }

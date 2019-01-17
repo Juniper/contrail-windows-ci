@@ -83,7 +83,7 @@ Describe "CNM Plugin" -Tag "Smoke" {
         )]
 
         $FoundTestModules = @(Find-CnmPluginTests -RemoteSearchDir $RemoteTestModulesDir -Session $Session)
-        if ($FoundTestModules.Count -eq 0) {
+        if (0 -eq $FoundTestModules.Count) {
             throw [System.IO.FileNotFoundException]::new(
                 "Could not find any file matching '*.test.exe' in $RemoteTestModulesDir directory."
             )

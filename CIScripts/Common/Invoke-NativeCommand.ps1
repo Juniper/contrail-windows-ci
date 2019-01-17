@@ -13,7 +13,7 @@ function Invoke-NativeCommand {
     # exception to be thrown (as well as kills the command).
     # We don't want this, but we also want to know whether the command was successful or not.
     # This is what this wrapper aims to do.
-    # 
+    #
     # This wrapper will throw only if the whole command failed. It will suppress any exceptions
     # when the command is running.
     #
@@ -88,7 +88,7 @@ function Invoke-NativeCommand {
     # (that's needed to be done only on the local machine)
     $Global:LastExitCode = $null
 
-    if ($AllowNonZero -eq $false -and $ExitCode -ne 0) {
+    if ($false -eq $AllowNonZero -and 0 -ne $ExitCode) {
         if ($CaptureOutput) {
             $Output | Write-Host
         }

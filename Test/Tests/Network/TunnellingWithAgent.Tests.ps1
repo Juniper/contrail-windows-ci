@@ -111,7 +111,7 @@ Test-WithRetries 3 {
                 }
 
                 It 'Uses specified tunneling method' {
-                    if ($TunnelingMethod -eq 'VXLAN') {
+                    if ('VXLAN' -eq $TunnelingMethod) {
                         # Probably a bug here: https://github.com/Juniper/contrail-vrouter/blob/master/dp-core/vr_nexthop.c#L1983
                         Set-TestInconclusive "Test not performed, because VXLAN doesn't report correctly in vrfstats"
                     }

@@ -20,7 +20,7 @@ class CleanupStack {
 
     [Void] RunCleanup([ContrailRepo] $ContrailRepo) {
         $this.ContrailRepo = $ContrailRepo
-        while ($this.Stack.Count -ne 0) {
+        while (0 -ne $this.Stack.Count) {
             $RemoveObject = $this.Stack.Pop()
             try {
                 $this.Remove($RemoveObject)

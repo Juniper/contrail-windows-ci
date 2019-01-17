@@ -34,7 +34,7 @@ function Install-ServiceWithNSSM {
     } -AllowNonZero -CaptureOutput
 
     $NSSMServiceAlreadyCreatedError = 5
-    if ($Output.ExitCode -eq 0) {
+    if (0 -eq $Output.ExitCode) {
         Write-Log $Output.Output
     }
     elseif ($Output.ExitCode -eq $NSSMServiceAlreadyCreatedError) {
@@ -207,7 +207,7 @@ function Test-IsCNMPluginServiceRunning {
     )
 
     $ServiceName = Get-CNMPluginServiceName
-    return $((Get-ServiceStatus -ServiceName $ServiceName -Session $Session) -eq "Running")
+    return $("Running" -eq (Get-ServiceStatus -ServiceName $ServiceName -Session $Session))
 }
 
 function New-RemoteService {
@@ -336,7 +336,7 @@ function Remove-CNMPluginService {
     $ServiceName = Get-CNMPluginServiceName
     $ServiceStatus = Get-ServiceStatus -ServiceName $ServiceName -Session $Session
 
-    if ($ServiceStatus -ne "Stopped") {
+    if ("Stopped" -ne $ServiceStatus) {
         Stop-CNMPluginService -Session $Session
     }
 
@@ -351,7 +351,7 @@ function Remove-AgentService {
     $ServiceName = Get-AgentServiceName
     $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName $ServiceName
 
-    if ($ServiceStatus -ne "Stopped") {
+    if ("Stopped" -ne $ServiceStatus) {
         Stop-AgentService -Session $Session
     }
 
@@ -366,7 +366,7 @@ function Remove-NodeMgrService {
     $ServiceName = Get-NodeMgrServiceName
     $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName $ServiceName
 
-    if ($ServiceStatus -ne "Stopped") {
+    if ("Stopped" -ne $ServiceStatus) {
         Stop-NodeMgrService -Session $Session
     }
 

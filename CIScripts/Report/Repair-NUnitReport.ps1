@@ -145,9 +145,9 @@ function Get-TestResultCounts {
     $Nodes | ForEach-Object {
         $Counters.Total += 1
         if ($_.HasAttribute('result')) {
-            if ($_.'result' -eq 'Inconclusive') {
+            if ('Inconclusive' -eq $_.'result') {
                 $Counters.Inconclusive += 1
-            } elseif ($_.'result' -eq 'Failure') {
+            } elseif ('Failure' -eq $_.'result') {
                 $Counters.Failures += 1
             }
         }

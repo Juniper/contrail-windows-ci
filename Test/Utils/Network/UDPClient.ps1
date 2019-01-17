@@ -14,7 +14,7 @@ function Assert-IsUDPPortListening {
     '$NetstatInvocationCount = 0;' + `
     '$IsListenerPortOpenRegex = \"UDP.*?{0}\";' + `
     'do {{' + `
-    '    if ($NetstatInvocationCount++ -eq {1}) {{' + `
+    '    if ({1} -eq $NetstatInvocationCount++) {{' + `
     '       throw \"Port on {2} container is not listening!!!\";' + `
     '   }}' + `
     '   Start-Sleep -Seconds 1;' + `

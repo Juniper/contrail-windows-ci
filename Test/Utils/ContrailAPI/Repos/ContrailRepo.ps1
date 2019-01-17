@@ -20,7 +20,7 @@ class ContrailRepo {
             return $this.Add($Object)
         }
         catch {
-            if ($_.Exception.Response.StatusCode -ne [System.Net.HttpStatusCode]::Conflict) {
+            if ([System.Net.HttpStatusCode]::Conflict -ne $_.Exception.Response.StatusCode) {
                 throw
             }
         }

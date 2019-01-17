@@ -64,7 +64,7 @@ function Invoke-UntilSucceeds {
         }
     }
 
-    if ($Interval -eq 0) {
+    if (0 -eq $Interval) {
         throw "Interval must not be equal to zero"
     }
     $StartTime = Get-Date
@@ -101,7 +101,7 @@ function Invoke-UntilSucceeds {
                     }
                 })
             $PowerShellThread.Runspace = $Runspace
-            
+
             $TimeElapsed = ((Get-Date) - $StartTime).TotalSeconds
             Write-Log "$DebugTag Starting thread. TimeElapsed: $TimeElapsed"
             $ThreadHandle = $PowerShellThread.BeginInvoke()

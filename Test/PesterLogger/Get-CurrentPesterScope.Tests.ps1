@@ -79,7 +79,7 @@ Describe "Get-CurrentPesterScope" -Tags CISelfcheck, Unit {
         $PesterInfo = InModuleScope Pester {
             Get-Module Pester
         }
-        if ($PesterInfo.Version -ne "4.2.0") {
+        if ("4.2.0" -ne $PesterInfo.Version) {
             Set-TestInconclusive
         }
     }

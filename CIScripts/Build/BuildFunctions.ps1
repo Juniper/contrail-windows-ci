@@ -304,14 +304,14 @@ function Invoke-AgentUnitTestRunner {
         # return non-zero exit code.
         # TODO: It should be removed once the bug is fixed (JW-1110).
         $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $Command.Output
-        if ($Command.ExitCode -eq 0 -or $SeemsLegitimate) {
+        if (0 -eq $Command.ExitCode -or $SeemsLegitimate) {
             return 0
         } else {
             return $Command.ExitCode
         }
     }
 
-    if ($Res -eq 0) {
+    if (0 -eq $Res) {
         Write-Host "        Succeeded."
     } else {
         Write-Host "        Failed (exit code: $Res)."
@@ -411,7 +411,7 @@ function Invoke-AgentTestsBuild {
         $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*\.exe$'}
         Foreach ($TestExecutable in $AgentExecutables) {
             $TestRes = Invoke-AgentUnitTestRunner -TestExecutable $TestExecutable.FullName
-            if ($TestRes -ne 0) {
+            if (0 -ne $TestRes) {
                 throw "Running agent tests failed"
             }
         }
