@@ -38,7 +38,7 @@ function Install-ServiceWithNSSM {
     }
     else {
         $ExceptionMessage = @"
-Unknown (wild) error appeared while creating $Configuration.ServiceName service.
+Unknown (wild) error appeared while creating $($Configuration.ServiceName) service.
 ExitCode: $($Output.ExitCode)
 NSSM output: $($Output.Output)
 "@
@@ -137,15 +137,15 @@ function Get-ServicesLogPaths {
 }
 
 function Get-AgentServiceName {
-    return "contrail-vrouter-agent"
+    return 'contrail-vrouter-agent'
 }
 
 function Get-CNMPluginServiceName {
-    return "contrail-cnm-plugin"
+    return 'contrail-cnm-plugin'
 }
 
 function Get-NodeMgrServiceName {
-    return "contrail-vrouter-nodemgr"
+    return 'contrail-vrouter-nodemgr'
 }
 
 function Test-IsCNMPluginServiceRunning {
