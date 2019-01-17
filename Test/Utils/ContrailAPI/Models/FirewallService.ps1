@@ -22,4 +22,16 @@ class FirewallService {
 
         return $Request
     }
+
+    static [FirewallService] new_TCP_Full() {
+        return [FirewallService]::new([Protocol]::tcp, [PortRange]::new_Full(), [PortRange]::new_Full())
+    }
+
+    static [FirewallService] new_UDP_range([Int] $Start, [Int] $End) {
+        return [FirewallService]::new([Protocol]::udp, [PortRange]::new($Start, $End), [PortRange]::new($Start, $End))
+    }
+
+    static [FirewallService] new_UDP_Full() {
+        return [FirewallService]::new([Protocol]::udp, [PortRange]::new_Full(), [PortRange]::new_Full())
+    }
 }

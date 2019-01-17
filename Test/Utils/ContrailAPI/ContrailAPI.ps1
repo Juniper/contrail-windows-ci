@@ -13,8 +13,10 @@
 . $PSScriptRoot\Models\FirewallRuleEndpoint.ps1
 . $PSScriptRoot\Models\FirewallService.ps1
 . $PSScriptRoot\Models\FirewallRuleReference.ps1
+. $PSScriptRoot\Models\FirewallDirection.ps1
 
 # Resource models
+. $PSScriptRoot\Models\ApplicationPolicy.ps1
 . $PSScriptRoot\Models\DNSRecord.ps1
 . $PSScriptRoot\Models\DNSServer.ps1
 . $PSScriptRoot\Models\FloatingIp.ps1
