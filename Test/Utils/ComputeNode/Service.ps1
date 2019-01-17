@@ -4,17 +4,17 @@
 . $PSScriptRoot\Configuration.ps1
 
 class Service {
-    [string] $ServiceName;
-    [string] $ExecutablePath;
-    [hashtable] $AdditionalParams;
+    [String] $ServiceName;
+    [String] $ExecutablePath;
+    [Hashtable] $AdditionalParams;
 
-    [void] init([string] $ServiceName, [string] $ExecutablePath, [hashtable] $AdditionalParams) {
+    [Void] init([String] $ServiceName, [String] $ExecutablePath, [Hashtable] $AdditionalParams) {
         $this.ServiceName = $ServiceName
         $this.ExecutablePath = $ExecutablePath
         $this.AdditionalParams = $AdditionalParams
     }
 
-    Service ([string] $ServiceName, [string] $ExecutablePath, [hashtable] $AdditionalParams) {
+    Service ([String] $ServiceName, [String] $ExecutablePath, [Hashtable] $AdditionalParams) {
         $this.init($ServiceName, $ExecutablePath, $AdditionalParams)
     }
 }
@@ -159,16 +159,16 @@ function Test-IsCNMPluginServiceRunning {
 
 function New-AgentService {
     Param (
-        [Parameter(Mandatory=$true)] $Session
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session
     )
 
     $AdditionalParams = @{
-        AppStdout = (Get-AgentLogPath)
-        AppStderr = (Get-AgentLogPath)
+        'AppStdout' = (Get-AgentLogPath)
+        'AppStderr' = (Get-AgentLogPath)
     }
     $Configuration = [Service]::new(
         (Get-AgentServiceName),
-        "C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe",
+        'C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe',
         $AdditionalParams
     )
     Install-ServiceWithNSSM `
@@ -178,16 +178,16 @@ function New-AgentService {
 
 function New-CNMPluginService {
     Param (
-        [Parameter(Mandatory=$true)] $Session
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session
     )
 
     $AdditionalParams = @{
-        AppStdout = (Get-CNMPluginServiceLogPath)
-        AppStderr = (Get-CNMPluginServiceLogPath)
+        'AppStdout' = (Get-CNMPluginServiceLogPath)
+        'AppStderr' = (Get-CNMPluginServiceLogPath)
     }
     $Configuration = [Service]::new(
         (Get-CNMPluginServiceName),
-        "C:\Program Files\Juniper Networks\cnm-plugin\contrail-cnm-plugin.exe",
+        'C:\Program Files\Juniper Networks\cnm-plugin\contrail-cnm-plugin.exe',
         $AdditionalParams
     )
     Install-ServiceWithNSSM `
@@ -197,17 +197,17 @@ function New-CNMPluginService {
 
 function New-NodeMgrService {
     Param (
-        [Parameter(Mandatory=$true)] $Session
+        [Parameter(Mandatory=$true)] [PSSessionT] $Session
     )
 
     $AdditionalParams = @{
-        AppStdout = (Get-NodeMgrLogPath)
-        AppStderr = (Get-NodeMgrLogPath)
-        AppParameters = "--nodetype contrail-vrouter"
+        'AppStdout' = (Get-NodeMgrLogPath)
+        'AppStderr' = (Get-NodeMgrLogPath)
+        'AppParameters' = '--nodetype contrail-vrouter'
     }
     $Configuration = [Service]::new(
         (Get-NodeMgrServiceName),
-        "C:\Python27\Scripts\contrail-nodemgr.exe",
+        'C:\Python27\Scripts\contrail-nodemgr.exe',
         $AdditionalParams
     )
     Install-ServiceWithNSSM `
