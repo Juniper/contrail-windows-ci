@@ -1,7 +1,7 @@
 Param (
-    [Parameter(Mandatory = $false)] [string] $TestenvConfFile = 'C:\source\xd\testenv-conf\testenv-conf.yaml',
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
     [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
-    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $false,
+    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
@@ -50,15 +50,17 @@ $GlobalTag = [Tag]::new('application', 'testapp')
 $ServerNetworkTag = [Tag]::new('tier', 'server_testnet_security')
 $ClientNetworkTag = [Tag]::new('tier', 'client_testnet_security')
 
-$ServerNetwork = [VirtualNetwork]::New('server_testnet_security', $ContrailProject, $ServerNetworkSubnet)
+$ServerNetwork = [VirtualNetwork]::New('ci_testnet_security_server', $ContrailProject, $ServerNetworkSubnet)
 $ServerNetwork.NetworkPolicysFqNames = @($NetworkPolicy.GetFqName())
-$ServerNetwork.TagsFqNames = @($GlobalTag.GetFqName(), $ServerNetworkTag.GetFqName())
-$ServerEndPoint = [TagsFirewallRuleEndpoint]::new(@($GlobalTag.GetName(), $ClientNetworkTag.GetName()))
+$ServerNetwork.AddTags(@($GlobalTag.GetFqName(), $ServerNetworkTag.GetFqName()))
 
-$ClientNetwork = [VirtualNetwork]::New('client_testnet_security', $ContrailProject, $ClientNetworkSubnet)
+$ServerEndPoint = [TagsFirewallRuleEndpoint]::new(@($GlobalTag.GetName(), $ServerNetworkTag.GetName()))
+
+$ClientNetwork = [VirtualNetwork]::New('ci_testnet_security_client', $ContrailProject, $ClientNetworkSubnet)
 $ClientNetwork.NetworkPolicysFqNames = @($NetworkPolicy.GetFqName())
-$ClientNetwork.TagsFqNames = @($GlobalTag.GetFqName(), $ClientNetworkTag.GetFqName())
-$ClientEndpoint = [TagsFirewallRuleEndpoint]::new(@($GlobalTag.GetName(), $ServerNetworkTag.GetName()))
+$ClientNetwork.AddTags(@($GlobalTag.GetFqName(), $ClientNetworkTag.GetFqName()))
+
+$ClientEndpoint = [TagsFirewallRuleEndpoint]::new(@($GlobalTag.GetName(), $ClientNetworkTag.GetName()))
 
 $Networks = @($ServerNetwork, $ClientNetwork)
 

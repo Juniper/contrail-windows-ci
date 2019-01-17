@@ -34,7 +34,7 @@ class FirewallRule : BaseResourceModel {
     [Hashtable] GetRequest() {
         $Request = @{
             $this.ResourceName = @{
-                direction   = $this.Direction.Get()
+                direction   = $this.Direction.GetRequest()
                 action_list = $this.Action.GetRequest()
                 service     = $this.Service.GetRequest()
                 endpoint_1  = $this.Endpoint1.GetRequest()

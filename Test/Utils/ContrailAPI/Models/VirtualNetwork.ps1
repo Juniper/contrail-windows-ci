@@ -62,6 +62,10 @@ class VirtualNetwork : BaseResourceModel {
         return $Request
     }
 
+    [void] AddTags([FqName[]] $TagsFqNames) {
+        $this.TagsFqNames = $TagsFqNames
+    }
+
     hidden [Hashtable[]] GetTagsReferences() {
         $References = @()
         foreach ($Tag in $this.TagsFqNames) {

@@ -1,7 +1,7 @@
 class FirewallDirection {
     [String] $Direction
 
-    [String] Get() {
+    [String] GetRequest() {
         return $this.Direction
     }
 }
