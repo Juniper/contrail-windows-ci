@@ -1,5 +1,5 @@
 enum TestLevel {
-    None, Sanity, Any
+    None, Sanity, All
 }
 
 def runAll() {
