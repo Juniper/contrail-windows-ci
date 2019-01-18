@@ -163,12 +163,14 @@ function New-AgentService {
     )
 
     $AdditionalParams = @{
+        'AppDirectory' = 'C:\Program Files\Juniper Networks\Agent'
+        'AppParameters' = '-NoProfile -File entrypoint.ps1'
         'AppStdout' = (Get-AgentLogPath)
         'AppStderr' = (Get-AgentLogPath)
     }
     $Configuration = [Service]::new(
         (Get-AgentServiceName),
-        'C:\Program Files\Juniper Networks\Agent\contrail-vrouter-agent.exe',
+        'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe',
         $AdditionalParams
     )
     Install-ServiceWithNSSM `
@@ -201,9 +203,9 @@ function New-NodeMgrService {
     )
 
     $AdditionalParams = @{
+        'AppParameters' = '--nodetype contrail-vrouter'
         'AppStdout' = (Get-NodeMgrLogPath)
         'AppStderr' = (Get-NodeMgrLogPath)
-        'AppParameters' = '--nodetype contrail-vrouter'
     }
     $Configuration = [Service]::new(
         (Get-NodeMgrServiceName),
