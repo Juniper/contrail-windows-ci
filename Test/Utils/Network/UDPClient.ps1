@@ -23,7 +23,7 @@ function Assert-IsUDPPortListening {
     '}} while (-not (netstat -ano | Select-String -Pattern $IsListenerPortOpenRegex));') -f $PortNumber, $MaxNetstatInvocationCount, $ContainerName
 
     Write-Log "Polling for port $PortNumber on container $ContainerName"
-    Invoke-UntilSucceeds -Duration $Timeout {
+    Invoke-UntilSucceeds -Duration $Timeout -AssumeTrue {
         Invoke-Command -Session $Session -ScriptBlock {
             docker exec $Using:ContainerName powershell "$Using:AssertCommand"
         }
