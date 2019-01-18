@@ -42,7 +42,7 @@ function Install-DNSTestDependencies {
             pip  install pathlib==1.0.1
         }
         Write-Log $Result.Output
-        if ($Result.ExitCode -ne 0) {
+        if (0 -ne $Result.ExitCode) {
             Write-Warning 'Installing DNS test dependecies failed'
         }
         else {

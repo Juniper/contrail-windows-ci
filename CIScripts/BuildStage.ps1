@@ -44,7 +44,7 @@ if ($CopyDisabledArtifacts) {
 }
 
 if (Test-Path Env:UPLOAD_ARTIFACTS) {
-    if ($Env:UPLOAD_ARTIFACTS -ne "0") {
+    if ("0" -ne $Env:UPLOAD_ARTIFACTS) {
         $ArtifactsPath = "\\$Env:SHARED_DRIVE_IP\SharedFiles\WindowsCI-UploadedArtifacts"
         $BuildMode = Resolve-BuildMode
         $Subdir = "$Env:JOB_NAME\$BuildMode\$Env:BUILD_NUMBER"

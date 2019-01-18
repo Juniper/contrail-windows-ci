@@ -54,5 +54,4 @@ function Remove-MultiNodeSetup {
     $MultiNode.Project = $null
 
     $MultiNode.ContrailRestApi = $null
-    $MultiNode.NM = $null
 }

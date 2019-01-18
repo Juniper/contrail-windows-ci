@@ -9,10 +9,12 @@ class PortRange {
         }
     }
 
+    PortRange([Int] $StartPort, [Int] $EndPort) {
+        $this.StartPort = $StartPort
+        $this.EndPort = $EndPort
+    }
+
     static [PortRange] new_Full() {
-        $range = [PortRange]::new()
-        $range.StartPort = 0
-        $range.EndPort = 65535
-        return $range
+        return [PortRange]::new(0, 65535)
     }
 }

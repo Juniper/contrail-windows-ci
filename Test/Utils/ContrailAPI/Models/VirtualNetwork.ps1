@@ -9,27 +9,18 @@ class VirtualNetwork : BaseResourceModel {
     [FqName[]] $NetworkPolicysFqNames = @()
 
     [Boolean] $IpFabricForwarding = $false
+    [FqName[]] $TagsFqNames
 
-    [FqName] $TagFqName
     [String] $ResourceName = 'virtual-network'
     [String] $ParentType = 'project'
 
-    hidden [void] init([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [FqName] $TagFqName) {
+    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
         $this.Name = $Name
         $this.ParentFqName = [FqName]::new(@('default-domain', $ProjectName))
         $this.Subnet = $Subnet
-        $this.TagFqName = $TagFqName
 
         $this.Dependencies += [Dependency]::new('instance-ip', 'instance_ip_back_refs')
         $this.Dependencies += [Dependency]::new('virtual-machine-interface', 'virtual_machine_interface_back_refs')
-    }
-
-    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet) {
-        $this.init($Name, $ProjectName, $Subnet, $null)
-    }
-
-    VirtualNetwork([String] $Name, [String] $ProjectName, [Subnet] $Subnet, [FqName] $TagFqName) {
-        $this.init($Name, $ProjectName, $Subnet, $TagFqName)
     }
 
     [void] EnableIpFabricForwarding() {
@@ -67,11 +58,9 @@ class VirtualNetwork : BaseResourceModel {
             }
         }
 
-        if ($null -ne $this.TagFqName) {
-            $TagRef = @{
-                to = $this.TagFqName.ToStringArray()
-            }
-            $Request.'virtual-network'.Add('tag_refs', @($TagRef))
+        if ($null -ne $this.TagsFqNames) {
+            $Tags = $this.GetTagsReferences()
+            $Request.'virtual-network'.Add('tag_refs', $Tags)
         }
 
         $Policys = $this.GetPolicysReferences()
@@ -95,6 +84,22 @@ class VirtualNetwork : BaseResourceModel {
         }
 
         return $Request
+    }
+
+    [void] AddTags([FqName[]] $TagsFqNames) {
+        $this.TagsFqNames = $TagsFqNames
+    }
+
+    hidden [Hashtable[]] GetTagsReferences() {
+        $References = @()
+        foreach ($Tag in $this.TagsFqNames) {
+            $Ref = @{
+                "to" = $Tag.ToStringArray()
+            }
+            $References += $Ref
+        }
+
+        return $References
     }
 
     hidden [Hashtable[]] GetPolicysReferences() {

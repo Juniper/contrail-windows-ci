@@ -3,7 +3,7 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
 . $PSScriptRoot/../Common/Init.ps1
-Describe "Repair-NUnitReport" -Tags CI, Unit {
+Describe "Repair-NUnitReport" -Tags CISelfcheck, Unit {
 
     function NormalizeXmlString {
         Param([Parameter(Mandatory = $true)] [string] $InputData)
@@ -270,7 +270,7 @@ Describe "Repair-NUnitReport" -Tags CI, Unit {
         }
 
         It "recalculates root node attributes like total, errors, failures etc" {
-            
+
             $TestData = NormalizeXmlString -InputData @"
 <?xml version="1.0"?>
 <test-results total="70" errors="0" failures="5" not-run="0" inconclusive="38" ignored="0" skipped="0" invalid="0">
@@ -399,7 +399,7 @@ Describe "Repair-NUnitReport" -Tags CI, Unit {
 </results>
 </test-suite>
 </test-results>
-"@    
+"@
             $Expected2 = NormalizeXmlString -InputData @"
 <?xml version="1.0"?>
 <test-results>

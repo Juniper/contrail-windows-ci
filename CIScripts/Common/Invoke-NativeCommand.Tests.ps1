@@ -61,7 +61,7 @@ function Invoke-FunctionalTests {
     }
 }
 
-Describe "Invoke-NativeCommand - Unit tests" -Tags CI, Unit {
+Describe "Invoke-NativeCommand - Unit tests" -Tags CISelfcheck, Unit {
     BeforeAll {
         Mock Write-Host {
             param([Parameter(ValueFromPipeline = $true)] $Object)
@@ -119,7 +119,7 @@ Describe "Invoke-NativeCommand - Unit tests" -Tags CI, Unit {
     }
 }
 
-Describe "Invoke-NativeCommand - System tests" -Tags CI, Systest {
+Describe "Invoke-NativeCommand - System tests" -Tags CISelfcheck, Systest {
     BeforeAll {
         $Testbed = ([Testbed]::LoadFromFile($TestenvConfFile))[0]
         $Sessions = New-RemoteSessions -VMs $Testbed

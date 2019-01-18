@@ -9,7 +9,8 @@ function Invoke-IntegrationAndFunctionalTests {
         [Parameter(Mandatory = $true)] [String] $PesterOutReportPath,
         [Parameter(Mandatory = $true)] [String] $DetailedLogsOutputDir,
         [Parameter(Mandatory = $true)] [String] $AdditionalJUnitsDir,
-        [Parameter(Mandatory = $false)] [switch] $UseExistingServices
+        [Parameter(Mandatory = $false)] [switch] $UseExistingServices,
+        [Parameter(Mandatory = $false)] [switch] $SmokeTestsOnly
     )
     # TODO: Maybe we should collect codecov statistics similarly in the future?
 
@@ -20,14 +21,19 @@ function Invoke-IntegrationAndFunctionalTests {
         LogDir              = $DetailedLogsOutputDir;
         AdditionalJUnitsDir = $AdditionalJUnitsDir;
     }
-    $IncludeTags = @()
+
     if ($UseExistingServices) {
         $AdditionalParams["PrepareEnv"] = $false
+    }
+
+    # Empty lists defaults to all tests.
+    $IncludeTags = @()
+    if ($SmokeTestsOnly) {
         $IncludeTags += "Smoke"
     }
 
     $Results = Invoke-PesterTests -TestRootDir $TestRootDir -ReportPath $PesterOutReportPath `
-        -ExcludeTags CI -IncludeTags $IncludeTags -AdditionalParams $AdditionalParams
+        -ExcludeTags CISelfcheck -IncludeTags $IncludeTags -AdditionalParams $AdditionalParams
     if (-not (Test-ResultsWithRetries -Results $Results.TestResult)) {
         throw "Some tests failed"
     }

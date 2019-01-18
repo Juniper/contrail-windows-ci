@@ -166,7 +166,7 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201812050309"
+                        TESTBED_TEMPLATE = "Template-testbed-201901111135"
                         CONTROLLER_TEMPLATE = "Template-CentOS-7.5"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"
@@ -246,7 +246,8 @@ pipeline {
                         powershell script: """./CIScripts/Test.ps1 `
                             -TestRootDir Test `
                             -TestenvConfFile testenv-conf.yaml `
-                            -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute"""
+                            -TestReportDir ${env.WORKSPACE}/testReportsRaw/WindowsCompute `
+                            -Nightly:\$false"""
                     } finally {
                         stash name: 'windowsComputeNUnitLogs', includes: 'testReportsRaw/WindowsCompute/raw_NUnit/**', allowEmpty: true
 

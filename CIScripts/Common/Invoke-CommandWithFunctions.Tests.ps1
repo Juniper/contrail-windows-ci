@@ -8,7 +8,7 @@ Param (
 
 . $PSScriptRoot/Invoke-CommandWithFunctions.ps1
 
-Describe "Invoke-CommandWithFunctions tests" -Tags CI, Systest {
+Describe "Invoke-CommandWithFunctions tests" -Tags CISelfcheck, Systest {
     function Test-CWF {
         param(
             [Parameter(Mandatory=$true)] [string[]] $Functions,

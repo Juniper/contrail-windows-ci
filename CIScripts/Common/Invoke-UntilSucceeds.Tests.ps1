@@ -4,7 +4,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
-Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
+Describe "Invoke-UntilSucceeds" -Tags CISelfcheck, Unit {
     It "fails if ScriptBlock doesn't return anything" {
         { {} | Invoke-UntilSucceeds -Duration 3 } | Should Throw
     }
@@ -50,9 +50,9 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
     It "succeeds if ScriptBlock is eventually true" {
         $Script:Counter = 0
         {
-            { 
+            {
                 $Script:Counter += 1;
-                return ($Script:Counter -eq 3)
+                return (3 -eq $Script:Counter)
             } | Invoke-UntilSucceeds -Duration 3
         } | Should Not Throw
     }
@@ -60,13 +60,13 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
     It "keeps retrying even when exception is throw" {
         $Script:Counter = 0
         {
-            { 
+            {
                 $Script:Counter += 1;
-                if ($Script:Counter -eq 1) {
-                    return $false 
-                } elseif ($Script:Counter -eq 2) {
+                if (1 -eq $Script:Counter) {
+                    return $false
+                } elseif (2 -eq $Script:Counter) {
                     throw "nope"
-                } elseif ($Script:Counter -eq 3) {
+                } elseif (3 -eq $Script:Counter) {
                     return $true
                 }
             } | Invoke-UntilSucceeds -Duration 3
@@ -91,7 +91,7 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
     It "runs at least one time" {
         $Script:TimeCalled = 0
         Mock Get-Date {
-            if ($Script:TimeCalled -eq 0) {
+            if (0 -eq $Script:TimeCalled) {
                 $Script:TimeCalled += 1
                 return $Script:MockStartDate.AddSeconds($Script:SecondsCounter)
             } else {
@@ -102,7 +102,7 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
         $Script:WasCalled = $false
         Invoke-UntilSucceeds {
             $Script:WasCalled = $true;
-            return $true 
+            return $true
         } -Interval 1 -Duration 1
         $Script:WasCalled | Should Be $true
     }
@@ -138,7 +138,7 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
         Invoke-UntilSucceeds {
             Start-Sleep -Seconds 20
             $Script:Counter += 1
-            $Script:Counter -eq 2
+            2 -eq $Script:Counter
         } -Duration 10 -Interval 5
 
         $Script:Counter | Should Be 2
@@ -152,7 +152,7 @@ Describe "Invoke-UntilSucceeds" -Tags CI, Unit {
         {
             Invoke-UntilSucceeds {
                 $Script:Counter += 1
-                $Script:Counter -eq 200
+                200 -eq $Script:Counter
             } -Duration 100 -Interval 1
         } | Should Throw
 

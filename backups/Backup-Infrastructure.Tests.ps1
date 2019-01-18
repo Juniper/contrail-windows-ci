@@ -17,7 +17,7 @@ function Start-VBRZip {
 }
 function Disconnect-VBRServer {}
 
-Describe 'Backup-Infrastructure' -Tags CI, Unit {
+Describe 'Backup-Infrastructure' -Tags CISelfcheck, Unit {
     BeforeEach {
         $backupRepository = "TestDrive:\Backups\"
         New-Item -ItemType Directory -Path $backupRepository
@@ -85,7 +85,7 @@ Describe 'Backup-Infrastructure' -Tags CI, Unit {
         }
 
         It 'should disconnect if one of the vms cannot be found' {
-            Mock Find-VBRViEntity { return $null } -ParameterFilter { $Name -eq "vm1" }
+            Mock Find-VBRViEntity { return $null } -ParameterFilter { "vm1" -eq $Name }
 
             {
                 Backup-Infrastructure -VirtualMachines $vmSpecList -Repository $backupRepository
@@ -124,11 +124,11 @@ Describe 'Backup-Infrastructure' -Tags CI, Unit {
 
             Assert-MockCalled  Start-VBRZip `
                 -Scope It `
-                -ParameterFilter { $Entity -eq "vm1" -and -not $DisableQuiesce } `
+                -ParameterFilter { "vm1" -eq $Entity -and -not $DisableQuiesce } `
                 -Times 1 -Exactly
             Assert-MockCalled  Start-VBRZip `
                 -Scope It `
-                -ParameterFilter { $Entity -eq "vm2" -and $DisableQuiesce } `
+                -ParameterFilter { "vm2" -eq $Entity -and $DisableQuiesce } `
                 -Times 1 -Exactly
         }
     }
@@ -141,7 +141,7 @@ Describe 'Backup-Infrastructure' -Tags CI, Unit {
                 [VMSpec]@{Name = "vm3"}
             )
 
-            Mock Find-VBRViEntity { return $null } -ParameterFilter { $Name -eq "vm2" }
+            Mock Find-VBRViEntity { return $null } -ParameterFilter { "vm2" -eq $Name }
 
             {
                 Backup-Infrastructure -VirtualMachines $vmSpecList -Repository $backupRepository
@@ -160,7 +160,7 @@ Describe 'Backup-Infrastructure' -Tags CI, Unit {
 
     Context 'resilience to Veeam errors' {
         It 'should create backups for other VMs if backing up vm1 has failed' {
-            Mock Start-VBRZip { throw "Very bad Veeam error" } -ParameterFilter { $Entity -eq "vm1" }
+            Mock Start-VBRZip { throw "Very bad Veeam error" } -ParameterFilter { "vm1" -eq $Entity }
 
             {
                 Backup-Infrastructure -VirtualMachines $vmSpecList -Repository $backupRepository

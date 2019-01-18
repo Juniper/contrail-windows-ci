@@ -29,12 +29,12 @@ function Assert-MeetsMinimalAnalyzerVersion($MinimumVersion) {
 function Remove-TypeNotFoundWarning ($Data) {
     # WORKAROUND
     # TypeNotFound error is fixed in 1.17.0 PSScriptAnalyzer, but it still produces a warning.
-    # Moreover, this warning cannot be surpressed in script analyzer settings. 
+    # Moreover, this warning cannot be surpressed in script analyzer settings.
     # We still want to treat warnings as errors, so the only way is to filter out this warning
     # out of the analyzer output. Until issue [1] is resolved TypeNotFound cannot be
     # suppressed like all the other errors.
     # [1] https://github.com/PowerShell/PSScriptAnalyzer/issues/1041
-    $Output | Where-Object -FilterScript { $_.RuleName -ne "TypeNotFound" }
+    $Output | Where-Object -FilterScript { "TypeNotFound" -ne $_.RuleName }
 }
 
 function Write-Results ($Data) {

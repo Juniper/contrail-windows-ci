@@ -38,7 +38,7 @@ function Initialize-DockerImage  {
             docker build --network none --tag $Using:DockerImageName $Using:TestbedDockerfilePath
         }
 
-        if ($Command.ExitCode -eq 0) {
+        if (0 -eq $Command.ExitCode) {
             return $true
         }
 

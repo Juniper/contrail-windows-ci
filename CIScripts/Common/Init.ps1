@@ -1,5 +1,5 @@
 # Enable all invoked commands tracing for debugging purposes
-if ($Env:ENABLE_TRACE -eq $true) {
+if ($true -eq $Env:ENABLE_TRACE) {
     Set-PSDebug -Trace 1
 }
 

@@ -5,7 +5,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
-Describe "PesterLogger" -Tags CI, Unit {
+Describe "PesterLogger" -Tags CISelfcheck, Unit {
     Context "Initialize-PesterLogger" {
         It "registers a new global Write-LogImpl function" {
             Initialize-PesterLogger -OutDir "TestDrive:\"

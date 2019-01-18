@@ -1,7 +1,7 @@
 . $PSScriptRoot\Init.ps1
 . $PSScriptRoot/Invoke-CommandInLocation.ps1
 
-Describe "Invoke-CommandInLocation" -Tags CI, Unit {
+Describe "Invoke-CommandInLocation" -Tags CISelfcheck, Unit {
     BeforeAll {
         New-Item -Type Directory TestDrive:\foo\bar
     }

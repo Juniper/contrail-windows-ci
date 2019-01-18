@@ -1,7 +1,8 @@
 Param(
     [Parameter(Mandatory = $true)] [string] $TestRootDir,
     [Parameter(Mandatory = $true)] [string] $TestReportDir,
-    [Parameter(Mandatory = $true)] [string] $TestenvConfFile
+    [Parameter(Mandatory = $true)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [switch] $Nightly
 )
 
 . $PSScriptRoot\Common\Init.ps1
@@ -12,6 +13,7 @@ $Job = [Job]::new("Test")
 . $PSScriptRoot\..\Test\Invoke-ProductTests.ps1 `
     -TestRootDir $TestRootDir `
     -TestReportDir $TestReportDir `
-    -TestenvConfFile $TestenvConfFile
+    -TestenvConfFile $TestenvConfFile `
+    -SmokeTestsOnly:$(!$Nightly)
 
 $Job.Done()

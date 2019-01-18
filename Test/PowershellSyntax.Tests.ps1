@@ -8,7 +8,7 @@ $TestCases = $AllScripts | ForEach-Object { @{File = Resolve-Path -Relative $_} 
 # Based on https://github.com/steviecoaster/PSSysadminToolkit/blob/d8afede4862f78608d1d0d385f693fb21583bf3b/Test/ScriptValidation.Tests.ps1#L18
 # by steviecoaster - MIT license
 
-Describe "Powershell syntax validation" -Tags CI, Unit {
+Describe "Powershell syntax validation" -Tags CISelfcheck, Unit {
     It "<File> should be valid PowerShell" -TestCases $TestCases {
         param($File)
 

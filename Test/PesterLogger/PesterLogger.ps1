@@ -31,7 +31,7 @@ function Initialize-PesterLogger {
 
         $Scope = & $DeducerFunc
         $Filename = ($Scope -join ".") + ".txt"
-        if (($Filename.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars())) -ne -1) {
+        if (-1 -ne ($Filename.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars()))) {
             throw [UnsupportedPesterTestNameException] "Invalid test name; it cannot contain some special characters, like ':', '/', etc."
         }
         $Outpath = Join-Path $Script:ConstOutdir $Filename
@@ -66,7 +66,7 @@ function Write-LogToFile {
     } else {
         "        | "
     }
-    
+
     $SplitValue = $Value | ForEach-Object {
         if ($_ -is [string]) {
             $_.Split([Environment]::Newline, [StringSplitOptions]::RemoveEmptyEntries)
@@ -132,20 +132,20 @@ function ConvertTo-LogItem {
         $Message = ""
 
         $Tuple = $Line.Split("|")
-        if ($Tuple.Length -eq 2) {
+        if (2 -eq $Tuple.Length) {
             # The was one separator, e.g.
             # ```
             #                            | remote log text
             # ```
             $Message = $Tuple[1]
-        } elseif ($Tuple.Length -eq 3) {
+        } elseif (3 -eq $Tuple.Length) {
             # There were two separators, e.g.
             # ```
             # 2018-11-27 11:53:44.544036 | test-runner | foo
             # ```
             $Timestamp, $Tag, $Message = $Tuple
         }
-        
+
         if ($Message.Length -gt 0) {
             # Skip first empty space in message
             $Message = $Message.Substring(1)
