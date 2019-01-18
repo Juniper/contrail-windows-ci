@@ -124,7 +124,6 @@ function Get-AdaptersInfo {
             -AdapterName $SystemConfig.AdapterName
 
     return @{
-        "VHostIfName" = $HNSTransparentAdapter.ifName;
         "VHostIfIndex" = $HNSTransparentAdapter.ifIndex;
         "PhysIfName" = $PhysicalAdapter.ifName
     }
@@ -150,7 +149,6 @@ function Get-VHostConfiguration {
 function Get-AgentConfig {
     Param (
         [Parameter(Mandatory = $true)] [string] $ControllerIP,
-        [Parameter(Mandatory = $true)] [string] $VHostIfName,
         [Parameter(Mandatory = $true)] [string] $VHostIfIndex,
         [Parameter(Mandatory = $true)] [string] $PhysIfName
     )
@@ -168,7 +166,7 @@ dns_client_port=53
 servers=$($ControllerIP):53
 
 [VIRTUAL-HOST-INTERFACE]
-name=$VHostIfName
+name=
 ip=$( $VHostConfguration.IP )/$( $VHostConfguration.PrefixLength )
 $( $VHostConfguration.GatewayConfig )
 physical_interface=$PhysIfName
@@ -191,7 +189,6 @@ function New-AgentConfigFile {
             # Save file with prepared config
             $ConfigFileContent = Get-AgentConfig `
                 -ControllerIP $Using:ControllerConfig.Address `
-                -VHostIfName $Using:AdaptersInfo.VHostIfName `
                 -VHostIfIndex $Using:AdaptersInfo.VHostIfIndex `
                 -PhysIfName $Using:AdaptersInfo.PhysIfName
 
