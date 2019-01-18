@@ -7,7 +7,10 @@ class VirtualNetwork : BaseResourceModel {
     [Subnet] $Subnet
     [FqName] $IpamFqName = [FqName]::new(@("default-domain", "default-project", "default-network-ipam"))
     [FqName[]] $NetworkPolicysFqNames = @()
+
+    [Boolean] $IpFabricForwarding = $false
     [FqName[]] $TagsFqNames
+
     [String] $ResourceName = 'virtual-network'
     [String] $ParentType = 'project'
 
@@ -18,6 +21,10 @@ class VirtualNetwork : BaseResourceModel {
 
         $this.Dependencies += [Dependency]::new('instance-ip', 'instance_ip_back_refs')
         $this.Dependencies += [Dependency]::new('virtual-machine-interface', 'virtual_machine_interface_back_refs')
+    }
+
+    [void] EnableIpFabricForwarding() {
+        $this.IpFabricForwarding = $true
     }
 
     [Hashtable] GetRequest() {
@@ -58,6 +65,23 @@ class VirtualNetwork : BaseResourceModel {
 
         $Policys = $this.GetPolicysReferences()
         $Request.'virtual-network'.Add('network_policy_refs', $Policys)
+
+        if ($true -eq $this.IpFabricForwarding) {
+            $ProviderNetworkFqName = [FqName]::new(
+                @('default-domain', 'default-project', 'ip-fabric')
+            )
+
+            $ProviderProperties = @{
+                segmentation_id = 0
+                physical_network = $ProviderNetworkFqName.ToString()
+            }
+            $Request.'virtual-network'.Add('provider_properties', $ProviderProperties)
+
+            $VirtualNetworkRefs = @(@{
+                to = $ProviderNetworkFqName.ToStringArray()
+            })
+            $Request.'virtual-network'.Add('virtual_network_refs', $VirtualNetworkRefs)
+        }
 
         return $Request
     }
