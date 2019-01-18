@@ -159,7 +159,7 @@ pipeline {
                 retry(3) {
                     deleteDir()
                     powershell script: '''
-                        git clone -b handle-domain https://github.com/Juniper/contrail-windows-tools.git 2>&1 | Out-Null
+                        git clone https://github.com/Juniper/contrail-windows-tools.git 2>&1 | Out-Null
                         if (0 -ne $LASTEXITCODE) {
                             throw "Could not download contrail-windows-tools."
                         }
