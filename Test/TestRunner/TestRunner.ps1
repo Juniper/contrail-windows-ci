@@ -17,13 +17,10 @@ function Invoke-IntegrationAndFunctionalTests {
     # TODO2: Changing AdditionalParams force us to modify all the tests that use it -> maybe find a better way to pass them?
 
     $AdditionalParams = @{
-        TestenvConfFile     = $TestenvConfFile;
-        LogDir              = $DetailedLogsOutputDir;
-        AdditionalJUnitsDir = $AdditionalJUnitsDir;
-    }
-
-    if ($UseExistingServices) {
-        $AdditionalParams["PrepareEnv"] = $false
+        TestenvConfFile     = $TestenvConfFile
+        LogDir              = $DetailedLogsOutputDir
+        AdditionalJUnitsDir = $AdditionalJUnitsDir
+        PrepareEnv          = -not $UseExistingServices
     }
 
     # Empty lists defaults to all tests.
