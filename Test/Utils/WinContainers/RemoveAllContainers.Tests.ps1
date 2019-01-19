@@ -13,7 +13,7 @@ Param (
 
 $NetworkName = "nat"
 
-Describe "Remove-AllContainers" {
+Describe "Remove-AllContainers" -Tags CISelfcheck, Systest {
     It "Removes single container if exists" {
         New-Container -Session $Session -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {

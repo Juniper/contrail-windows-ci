@@ -2,7 +2,7 @@
 . $PSScriptRoot\Configs.ps1
 . $PSScriptRoot\Testbed.ps1
 
-Describe "Testenv" {
+Describe "Testenv" -Tags CISelfcheck, Unit {
 
     It "should throw if filepath is invalid" {
         { [OpenStackConfig]::LoadFromFile('./bad/path.yaml') } | Should -Throw
