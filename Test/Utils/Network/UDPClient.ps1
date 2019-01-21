@@ -1,11 +1,13 @@
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
 
 function Assert-IsUDPPortListening {
     Param (
         [Parameter(Mandatory=$true)] [PSSessionT] $Session,
         [Parameter(Mandatory=$true)] [String] $ContainerName,
         [Parameter(Mandatory=$true)] [Int16] $PortNumber,
-        [Parameter(Mandatory=$false)] [Int16] $MaxNetstatInvocationCount = 100
+        [Parameter(Mandatory=$false)] [Int16] $MaxNetstatInvocationCount = 100,
+        [Parameter(Mandatory=$false)] [Int16] $Timeout = 600
     )
 
     # The do-while loop is workaround for slow listener port start,
@@ -20,8 +22,11 @@ function Assert-IsUDPPortListening {
     '   Start-Sleep -Seconds 1;' + `
     '}} while (-not (netstat -ano | Select-String -Pattern $IsListenerPortOpenRegex));') -f $PortNumber, $MaxNetstatInvocationCount, $ContainerName
 
-    Invoke-Command -Session $Session -ScriptBlock {
-        docker exec $Using:ContainerName powershell "$Using:AssertCommand"
+    Write-Log "Polling for port $PortNumber on container $ContainerName"
+    Invoke-UntilSucceeds -Duration $Timeout -AssumeTrue {
+        Invoke-Command -Session $Session -ScriptBlock {
+            docker exec $Using:ContainerName powershell "$Using:AssertCommand"
+        }
     } | Out-Null
 }
 function Send-UDPFromContainer {
