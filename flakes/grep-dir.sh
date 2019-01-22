@@ -3,8 +3,8 @@
 set -u
 set -o pipefail
 
-IFS=$'\n';
-DIR=$(dirname $BASH_SOURCE)
+IFS=$'\n'
+DIR=$(dirname ${BASH_SOURCE[0]})
 
 for f in $(find $1 -name '*.txt.gz')
 do
