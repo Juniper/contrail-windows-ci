@@ -55,7 +55,7 @@ $ContainerImage = 'microsoft/windowsservercore'
 $ContainerClientID = 'fip-client'
 $ContainerServerID = 'fip-server'
 
-Describe 'Floating IP' -Tag 'Smoke' {
+Describe 'Floating IP' -Tags Smoke, EnvSafe {
     Context 'Multinode' {
         Context '2 networks' {
             It 'ICMP works' {

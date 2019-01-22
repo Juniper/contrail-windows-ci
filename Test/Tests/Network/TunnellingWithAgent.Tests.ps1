@@ -84,7 +84,7 @@ function Get-VrfStats {
 }
 
 Test-WithRetries 3 {
-    Describe 'Tunneling with Agent tests' -Tag 'Smoke' {
+    Describe 'Tunneling with Agent tests' -Tags Smoke, EnvSafe {
 
         #
         #               !!!!!! IMPORTANT: DEBUGGING/DEVELOPING THESE TESTS !!!!!!

@@ -70,7 +70,7 @@ function Save-CnmPluginUnitTestReport {
     Copy-Item $FoundRemoteJUnitReports.FullName -Destination $LocalJUnitDir -FromSession $Session
 }
 
-Describe "CNM Plugin" -Tag "Smoke" {
+Describe "CNM Plugin" -Tags Smoke, EnvSafe {
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         $Session = $Sessions[0]
