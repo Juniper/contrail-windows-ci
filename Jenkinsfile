@@ -341,7 +341,7 @@ pipeline {
                         env.BUILD_NUMBER, env.ZUUL_UUID)
                     def dst = logsDirInFilesystem(env.LOG_ROOT_DIR, env.LOG_SERVER_FOLDER, relLogsDstDir)
                     if(isTriggeredFromZuulv3()){
-                        publishLogsTriggeredFromZuulv3("to_publish", auth, dst)
+                        publishLogsTriggeredFromZuulv3("to_publish", auth, env.ZUUL_LOG_PATH)
                     } else {
                         publishDirToLogServer("to_publish", auth, dst)
                     }
