@@ -1,112 +1,59 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(Mandatory=$false)] [string] $LogDir = "pesterLogs",
-    [Parameter(Mandatory=$false)] [string] $AdditionalJUnitsDir = "AdditionalJUnitLogs",
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
+    [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
-. $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
+. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
+
+. $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
-# TODO: This path should probably come from TestenvConfFile.
-$RemoteTestModulesDir = "C:\Artifacts\cnm-plugin"
+. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
+. $PSScriptRoot\..\..\Utils\Testenv\Testenv.ps1
 
-function Find-CnmPluginTests {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [string] $RemoteSearchDir
-    )
+. $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
-    return Invoke-Command -Session $Session {
-        Get-ChildItem -Recurse -Filter "*.test.exe" -Path $Using:RemoteSearchDir `
-            | Select-Object BaseName, FullName
-    }
-}
+. $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
+. $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
+. $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
+. $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
+. $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 
-function Invoke-CnmPluginUnitTest {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [string] $TestModulePath,
-        [Parameter(Mandatory=$true)] [string] $RemoteJUnitOutputDir
-    )
+$ContrailProject = 'ci_tests_dummy2'
 
-    $Command = @($TestModulePath, "--ginkgo.succinct", "--ginkgo.failFast")
-    $Command = $Command -join " "
+$ContainerIds = @('jolly-lumberjack', 'juniper-tree', 'mountain-mama')
+$ContainerNetInfos = @($null, $null, $null)
 
-    $Res = Invoke-NativeCommand -CaptureOutput -AllowNonZero -Session $Session {
-        Push-Location $Using:RemoteJUnitOutputDir
-        try {
-            Invoke-Expression -Command $Using:Command
-        } finally {
-            Pop-Location
-        }
-    }
+$Subnet = [Subnet]::new(
+    '10.0.5.0',
+    24,
+    '10.0.5.1',
+    '10.0.5.19',
+    '10.0.5.83'
+)
+$VirtualNetwork = [VirtualNetwork]::New('testnet_dummy2', $ContrailProject, $Subnet)
 
-    Write-Log $Res.Output
-
-    return $Res.ExitCode
-}
-
-function Save-CnmPluginUnitTestReport {
-    Param (
-        [Parameter(Mandatory=$true)] [PSSessionT] $Session,
-        [Parameter(Mandatory=$true)] [String] $RemoteJUnitDir,
-        [Parameter(Mandatory=$true)] [string] $LocalJUnitDir
-    )
-
-    if (-not (Test-Path $LocalJUnitDir)) {
-        New-Item -ItemType Directory -Path $LocalJUnitDir | Out-Null
-    }
-
-    $FoundRemoteJUnitReports = Invoke-Command -Session $Session -ScriptBlock {
-        Get-ChildItem -Filter "*_junit.xml" -Recurse -Path $Using:RemoteJUnitDir
-    }
-
-    Copy-Item $FoundRemoteJUnitReports.FullName -Destination $LocalJUnitDir -FromSession $Session
-}
-
-Describe "CNM Plugin" -Tag "Smoke" {
-    BeforeAll {
-        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
-        $Session = $Sessions[0]
-
-        Initialize-PesterLogger -OutDir $LogDir
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments",
-            "FileLogSources",
-            Justification="It's actually used in 'AfterEach' block."
-        )]
-
-        $FoundTestModules = @(Find-CnmPluginTests -RemoteSearchDir $RemoteTestModulesDir -Session $Session)
-        if (0 -eq $FoundTestModules.Count) {
-            throw [System.IO.FileNotFoundException]::new(
-                "Could not find any file matching '*.test.exe' in $RemoteTestModulesDir directory."
-            )
+Test-WithRetries 1 {
+    Describe 'Dummy tests no.2' -Tag 'Smoke' {
+        It 'is raining' {
+            $true | Should -BeTrue
         }
 
-        Write-Log "Discovered test modules: $($FoundTestModules.BaseName)"
-    }
+        BeforeAll {
+            $Testenv = [Testenv]::New()
+            $Testenv.Initialize($TestenvConfFile, $LogDir, $ContrailProject, $PrepareEnv)
+        }
 
-    AfterAll {
-        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-        Remove-PSSession $Sessions
-    }
-
-    foreach ($TestModule in $FoundTestModules) {
-        Context "Tests for module in $($TestModule.BaseName)" {
-            It "passes tests" {
-                $TestResult = Invoke-CnmPluginUnitTest -Session $Session -TestModulePath $TestModule.FullName -RemoteJUnitOutputDir $RemoteTestModulesDir
-                $TestResult | Should Be 0
-            }
-
-            AfterEach {
-                Save-CnmPluginUnitTestReport -Session $Session -RemoteJUnitDir $RemoteTestModulesDir -LocalJUnitDir $AdditionalJUnitsDir
-            }
+        AfterAll {
+            $Testenv.Cleanup()
         }
     }
 }
