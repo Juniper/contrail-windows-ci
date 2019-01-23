@@ -1,48 +1,17 @@
 class ContrailRestApi {
-    [Int] $CONVERT_TO_JSON_MAX_DEPTH = 100;
+    [Int] $CONVERT_TO_JSON_MAX_DEPTH = 100
 
-    [String] $AuthToken;
-    [String] $ContrailUrl;
+    [String] $RestApiUrl
 
-    ContrailRestApi([ControllerConfig] $ControllerConfig, [OpenStackConfig] $OpenStackConfig) {
+    [ContrailAuthenticator] $Authenticator
 
-        $this.ContrailUrl = $ControllerConfig.RestApiUrl()
-
-        if ('keystone' -eq $ControllerConfig.AuthMethod) {
-            if (!$OpenStackConfig) {
-                throw 'AuthMethod is keystone, but no OpenStack config provided.'
-            }
-
-            $this.AuthToken = $this.GetAccessTokenFromKeystone($OpenStackConfig)
-        }
-        elseif ('noauth' -eq $ControllerConfig.AuthMethod) {
-            $this.AuthToken = $null
-        }
-        else {
-            throw "Unknown authentification method: $($ControllerConfig.AuthMethod). Supported: keystone, noauth."
-        }
-    }
-
-    # The token returned by this method can expire.
-    # In that case all requests done using it will fail.
-    hidden [String] GetAccessTokenFromKeystone([OpenStackConfig] $OpenStackConfig) {
-        $Request = @{
-            auth = @{
-                tenantName          = $OpenStackConfig.Project
-                passwordCredentials = @{
-                    username = $OpenStackConfig.Username
-                    password = $OpenStackConfig.Password
-                }
-            }
-        }
-        $AuthUrl = $OpenStackConfig.AuthUrl() + '/tokens'
-        $Response = Invoke-RestMethod -Uri $AuthUrl -Method Post -ContentType 'application/json' `
-            -Body (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request)
-        return $Response.access.token.id
+    ContrailRestApi([String] $RestApiUrl, [ContrailAuthenticator] $Authenticator) {
+        $this.RestApiUrl = $RestApiUrl
+        $this.Authenticator = $Authenticator
     }
 
     hidden [String] GetResourceUrl([String] $Resource, [String] $Uuid) {
-        $RequestUrl = $this.ContrailUrl + '/' + $Resource
+        $RequestUrl = $this.RestApiUrl + '/' + $Resource
 
         if (-not $Uuid) {
             $RequestUrl += 's'
@@ -61,10 +30,7 @@ class ContrailRestApi {
         # http://www.azurefieldnotes.com/2017/05/02/replacefix-unicode-characters-created-by-convertto-json-in-powershell-for-arm-templates/
         $Body = (ConvertTo-Json -Depth $this.CONVERT_TO_JSON_MAX_DEPTH $Request |
                 ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) })
-        $Headers = @{}
-        if ($this.AuthToken) {
-            $Headers.Add('X-Auth-Token', $this.AuthToken)
-        }
+        $Headers = $this.Authenticator.GetAuthHeaders()
 
         $HeadersString = $Headers.GetEnumerator()  | ForEach-Object { "$($_.Name): $($_.Value)" }
         Write-Log "[Contrail][$Method]=>[$RequestUrl]"
@@ -107,7 +73,7 @@ class ContrailRestApi {
             type    = $Resource
             fq_name = $FqName.ToStringArray()
         }
-        $RequestUrl = $this.ContrailUrl + '/fqname-to-id'
+        $RequestUrl = $this.RestApiUrl + '/fqname-to-id'
         $Response = $this.SendRequest('Post', $RequestUrl, $Request)
         return $Response.'uuid'
     }

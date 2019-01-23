@@ -5,6 +5,8 @@ Param (
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
+. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
+
 . $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
@@ -19,7 +21,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
-. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 . $PSScriptRoot\..\..\Utils\TestCleanup\TestCleanup.ps1
 
 $ContrailProject = 'ci_tests_floatingip'

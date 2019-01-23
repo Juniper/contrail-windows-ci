@@ -7,6 +7,8 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
+. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
+
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
@@ -25,7 +27,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteHost.ps1
 . $PSScriptRoot\..\..\Utils\Network\Connectivity.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 
 $ContrailProject = 'ci_tests_utils'
 

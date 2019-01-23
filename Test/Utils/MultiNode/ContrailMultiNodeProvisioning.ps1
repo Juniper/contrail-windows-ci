@@ -3,6 +3,8 @@
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\ContrailAPI\ContrailAPI.ps1
+. $PSScriptRoot\..\ContrailAuthentication\Noauth.ps1
+. $PSScriptRoot\..\ContrailAuthentication\Keystone.ps1
 
 # Import order is chosen explicitly because of class dependency
 . $PSScriptRoot\MultiNode.ps1
@@ -11,12 +13,12 @@ function New-MultiNodeSetup {
     Param (
         [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
-        [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig,
+        [Parameter(Mandatory = $false)] [PSobject] $AuthConfig,
         [Parameter(Mandatory = $true)] [String] $ContrailProject
     )
 
-    $ContrailRestApi = [ContrailRestApi]::new($ControllerConfig, $OpenStackConfig)
-
+    $Authenticator = [AuthenticatorFactory]::GetAuthenticator($ControllerConfig.AuthMethod, $AuthConfig)
+    $ContrailRestApi = [ContrailRestApi]::new($ControllerConfig.RestApiUrl(), $Authenticator)
     $ContrailRepo = [ContrailRepo]::new($ContrailRestApi)
 
     $Project = [Project]::new($ContrailProject)
