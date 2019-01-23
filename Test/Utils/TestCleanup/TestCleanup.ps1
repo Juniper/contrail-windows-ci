@@ -1,3 +1,3 @@
 . $PSScriptRoot\FunctionObject.ps1
-. $PSScriptRoot\..\ContrailAPI\ContrailAPI.ps1
+Import-Module $PSScriptRoot\..\ContrailAPI
 . $PSScriptRoot\CleanupStack.ps1

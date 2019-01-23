@@ -2,7 +2,7 @@
 . $PSScriptRoot\..\Testenv\Configs.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\ComputeNode\Installation.ps1
-. $PSScriptRoot\..\ContrailAPI\ContrailAPI.ps1
+Import-Module $PSScriptRoot\..\ContrailAPI
 . $PSScriptRoot\..\ContrailAuthentication\Noauth.ps1
 . $PSScriptRoot\..\ContrailAuthentication\Keystone.ps1
 
