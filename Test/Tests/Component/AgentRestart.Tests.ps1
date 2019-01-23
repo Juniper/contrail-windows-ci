@@ -54,6 +54,8 @@ Test-WithRetries 1 {
 
         AfterAll {
             $Testenv.Cleanup()
+
+            Write-Host "Error variable: $Error"
         }
     }
 }
