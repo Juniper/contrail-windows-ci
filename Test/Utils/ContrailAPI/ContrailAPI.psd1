@@ -60,7 +60,7 @@
     ScriptsToProcess  = @(
         # Common files
         'Models\BaseResource.ps1',
-        'Authentication\ContrailAuthentification.ps1',
+        'Authentication\ContrailAuthenticator.ps1',
         'Authentication\AuthenticatorFactory.ps1',
         'ContrailRestApi.ps1',
         'Repos\ContrailRepo.ps1',

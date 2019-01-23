@@ -5,7 +5,7 @@ Param (
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
-Import-Module $PSScriptRoot\..\..\Utils\ContrailAPI\
+Import-Module $PSScriptRoot\..\..\Utils\ContrailAPI
 
 . $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
 

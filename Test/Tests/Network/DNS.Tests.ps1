@@ -8,7 +8,7 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
-Import-Module $PSScriptRoot\..\..\Utils\ContrailAPI\
+Import-Module $PSScriptRoot\..\..\Utils\ContrailAPI
 
 . $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
 
