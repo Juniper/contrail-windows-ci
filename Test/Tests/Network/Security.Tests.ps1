@@ -7,9 +7,10 @@ Param (
 
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
-. $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
+
+. $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1

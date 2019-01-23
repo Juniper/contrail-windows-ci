@@ -28,7 +28,7 @@ class Testenv {
         $this.MultiNode = New-MultiNodeSetup `
             -Testbeds $this.Testbeds `
             -ControllerConfig $this.Controller `
-            -OpenStackConfig $this.OpenStack `
+            -AuthConfig $this.OpenStack `
             -ContrailProject $ContrailProject
         $CleanupStack.Push(${function:Remove-MultiNodeSetup}, @($this.MultiNode))
 

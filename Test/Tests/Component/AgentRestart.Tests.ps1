@@ -8,6 +8,8 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
+. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
+
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
@@ -24,7 +26,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Service.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
-. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 
 $ContrailProject = 'ci_tests_agentrestart'
 

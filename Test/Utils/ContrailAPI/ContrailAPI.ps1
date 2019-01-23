@@ -1,5 +1,7 @@
 # Common files
 . $PSScriptRoot\Models\BaseResource.ps1
+. $PSScriptRoot\Authentication\ContrailAuthenticator.ps1
+. $PSScriptRoot\Authentication\AuthenticatorFactory.ps1
 . $PSScriptRoot\ContrailRestApi.ps1
 . $PSScriptRoot\Repos\ContrailRepo.ps1
 
