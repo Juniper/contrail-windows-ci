@@ -29,17 +29,14 @@ Param (
 
 $ContrailProject = 'ci_tests_dummy1'
 
-$ContainerIds = @('jolly-lumberjack', 'juniper-tree', 'mountain-mama')
-$ContainerNetInfos = @($null, $null, $null)
-
-$Subnet = [Subnet]::new(
-    '10.0.5.0',
-    24,
-    '10.0.5.1',
-    '10.0.5.19',
-    '10.0.5.83'
-)
-$VirtualNetwork = [VirtualNetwork]::New('testnet_dummy1', $ContrailProject, $Subnet)
+#$Subnet = [Subnet]::new(
+#    '10.0.5.0',
+#    24,
+#    '10.0.5.1',
+#    '10.0.5.19',
+#    '10.0.5.83'
+#)
+#$VirtualNetwork = [VirtualNetwork]::New('testnet_dummy1', $ContrailProject, $Subnet)
 
 Test-WithRetries 1 {
     Describe 'Dummy tests no.1' -Tag 'Smoke' {
