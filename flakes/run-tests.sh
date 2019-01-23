@@ -9,7 +9,7 @@ set -e
 set -u
 # Not doing `set -o pipefail` to allow empty grep output.
 
-DIR=$(dirname $BASH_SOURCE)
+DIR=$(dirname ${BASH_SOURCE[0]})
 
 cd "$DIR"/tests
 
