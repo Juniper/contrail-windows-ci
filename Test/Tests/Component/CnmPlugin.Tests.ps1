@@ -41,7 +41,7 @@ $ContrailProject = 'ci_tests_dummy2'
 Test-WithRetries 1 {
     Describe 'Dummy tests no.2' -Tag 'Smoke' {
         It 'is raining' {
-            Write-Error "OMG something went wrong!!! Everybody will die!!!"
+            
             $true | Should -BeTrue
         }
 
@@ -54,6 +54,10 @@ Test-WithRetries 1 {
             $Testenv.Cleanup()
 
             Write-Host "Error variable: $Error"
+        }
+        
+        AfterEach {
+            Write-Error "OMG something went wrong!!! Everybody will die!!!"
         }
     }
 }
