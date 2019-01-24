@@ -57,5 +57,7 @@ class Testenv {
         foreach ($CleanupStack in $this.CleanupStacks) {
             $CleanupStack.RunCleanup($this.ContrailRepo)
         }
+        Write-Host 'Removing ContrailAPI'
+        Remove-Module ContrailAPI -ErrorAction SilentlyContinue
     }
 }
