@@ -109,6 +109,11 @@ function Uninstall-CnmPlugin {
 function Install-Nodemgr {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
+    # Temporary workround untill freezing dependencies in NodeMgr packages
+    Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock {
+        pip install psutil==5.4.8
+    } | Out-Null
+
     Write-Log "Installing Nodemgr"
     $Res = Invoke-NativeCommand -Session $Session -AllowNonZero -CaptureOutput -ScriptBlock {
         Get-ChildItem "C:\Artifacts\nodemgr\*.tar.gz" -Name
