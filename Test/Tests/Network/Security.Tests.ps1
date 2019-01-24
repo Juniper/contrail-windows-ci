@@ -132,7 +132,7 @@ function Test-Security {
 }
 
 Test-WithRetries 1 {
-    Describe 'Contrail-Security tests' {
+    Describe 'Contrail-Security tests' -Tag EnvSafe {
         Context 'TCP' {
             It 'Passes all the traffic' {
                 $TestRules = @(

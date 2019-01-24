@@ -129,19 +129,12 @@ Run selected test:
 
 ### Running tests on an already deployed environment
 
-Smoke tests can be run on an already deployed environment (for example by contrail-ansible-deployer). Setting PrepareEnv
+EnvSafe tests can be run on an already deployed environment (for example by contrail-ansible-deployer). Setting PrepareEnv
 flag to false will cause tests to not setup any services and become independant from deployment method:
 
 ```
- Invoke-Pester -Tag 'Smoke' -Script @{ Path = './Tests/Network/*'; Parameters = @{ PrepareEnv = $false; TestenvConfFile="testenv-conf.yaml" };}
+Invoke-Pester -Tag 'EnvSafe' -Script @{ Path = './Tests/**/*'; Parameters = @{ PrepareEnv = $false; TestenvConfFile="testenv-conf.yaml" };}
 ```
-
-You can also run it by invoking product tests script:
-
-```
-.\Invoke-ProductTests.ps1 -TestRootDir . -TestenvConfFile ..\testenv-conf.yaml -TestReportDir ../reports -UseExistingServices -SmokeTestsOnly
-```
-
 
 ### Running tests in loop
 

@@ -11,7 +11,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
-Describe 'vTest scenarios' -Tag 'Smoke' {
+Describe 'vTest scenarios' -Tag Smoke {
     It 'passes all vtest scenarios' {
         $VMSwitchName = $SystemConfig.VMSwitchName()
         {

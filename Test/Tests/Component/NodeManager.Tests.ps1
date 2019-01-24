@@ -76,7 +76,7 @@ function Test-ControllerReceivesNodeStatus {
     return $true
 }
 
-Describe 'Node manager' -Tag 'Smoke' {
+Describe 'Node manager' -Tags Smoke, EnvSafe {
     It 'starts' {
         Eventually {
             Test-NodeMgrLogs -Session $Testenv.Sessions[0] | Should Be True
