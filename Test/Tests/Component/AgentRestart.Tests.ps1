@@ -107,7 +107,7 @@ Test-WithRetries 3 {
                 -DstContainerName $ContainerIds[2] `
                 -DstIP $ContainerNetInfos[2].IPAddress | Should Be 0
 
-            Remove-Container -Session $Testenv.Sessions[0] -NameOrId $ContainerIds[0]
+            Stop-Container -Session $Testenv.Sessions[0] -NameOrId $ContainerIds[0]
             Get-NumberOfStoredPorts -Session $Testenv.Sessions[0] | Should Be 0
         }
 
