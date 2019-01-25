@@ -8,7 +8,8 @@ def zuulBranchIsUnsupported(ArrayList<String> supportedBranches) {
 
 def call() {
 	def SUPPORTED_BRANCHES = [
-		"master"
+		"master",
+		"R5.1"
 	]
 
 	echo "Zuulv3: SUPPORTED_BRANCHES = " + SUPPORTED_BRANCHES
