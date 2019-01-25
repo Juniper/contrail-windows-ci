@@ -107,6 +107,9 @@ Test-WithRetries 3 {
                 -DstContainerName $ContainerIds[2] `
                 -DstIP $ContainerNetInfos[2].IPAddress | Should Be 0
 
+            $ContainersLogs = @(New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainerIds[0])
+            Merge-Logs -LogSources $ContainersLogs
+
             Remove-Container -Session $Testenv.Sessions[0] -NameOrId $ContainerIds[0]
             Get-NumberOfStoredPorts -Session $Testenv.Sessions[0] | Should Be 0
         }
@@ -152,8 +155,7 @@ Test-WithRetries 3 {
                     -Session $Testenv.Sessions[$i] -ContainerID $ContainerIds[$i]
                 Write-Log "IP of $($ContainerIds[$i]): $($ContainerNetInfos[$i].IPAddress)"
             }
-            $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainerIds[0]),
-                (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainerIds[1]))
+            $ContainersLogs = @(New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainerIds[1])
             $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
         }
 
