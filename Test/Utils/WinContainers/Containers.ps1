@@ -32,6 +32,15 @@ function Remove-AllContainers {
     }
 }
 
+function Stop-Container {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+           [Parameter(Mandatory = $false)] [string] $NameOrId)
+
+    Invoke-Command -Session $Session -ScriptBlock {
+        docker kill $Using:NameOrId | Out-Null
+    }
+}
+
 function Remove-Container {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
            [Parameter(Mandatory = $false)] [string] $NameOrId)
