@@ -98,7 +98,7 @@ Describe 'Node manager' -Tags Smoke, EnvSafe {
     }
 
     AfterEach {
-        Merge-Logs -DontCleanUp -LogSources $Testenv.LogSources
+        Merge-Logs -LogSources $Testenv.LogSources
     }
 
     BeforeAll {

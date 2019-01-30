@@ -119,7 +119,7 @@ Test-WithRetries 3 {
 
         BeforeEach {
             $BeforeEachStack = $Testenv.NewCleanupStack()
-            $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
 
             Write-Log "Creating virtual network: $($VirtualNetwork.Name)"
             $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
@@ -168,7 +168,7 @@ Test-WithRetries 3 {
                 -Session $Session
 
             $ContainersLogs = @(New-ContainerLogSource -Sessions $Session -ContainerNames $ContainerIds[0], $ContainerIds[1])
-            $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
         }
 
         AfterEach {
