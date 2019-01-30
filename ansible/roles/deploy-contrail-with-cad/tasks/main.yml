@@ -35,5 +35,5 @@
     extra_options: '{{ item.extra_options | default("") }}'
     docker_provision_dir: "contrail-ansible-deployer"
   with_items:
-    - { playbook: 'playbooks/configure_instances.yml', extra_options: '-v' }
-    - { playbook: 'playbooks/install_contrail.yml'}
+    - { playbook: 'playbooks/configure_instances.yml', extra_options: '-vvvv' }
+    - { playbook: 'playbooks/install_contrail.yml', extra_options: '-vvvv' }
