@@ -101,7 +101,7 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
 
             BeforeEach {
                 $BeforeEachStack = $Testenv.NewCleanupStack()
-                $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
+                $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
                 $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
 
                 Write-Log 'Creating containers'
@@ -122,7 +122,7 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
 
                 $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainerClientID),
                     (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainerServerID))
-                $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
+                $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
 
                 $VirtualNetworkRepo = [VirtualNetworkRepo]::new($Testenv.MultiNode.ContrailRestApi)
                 $ServerFloatingIp.PortFqNames = $VirtualNetworkRepo.GetPorts($ServerNetwork)

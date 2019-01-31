@@ -299,8 +299,7 @@ function Invoke-CommandRemoteOrLocal {
 }
 
 function Merge-Logs {
-    Param([Parameter(Mandatory = $true)] [LogSource[]] $LogSources,
-          [Parameter(Mandatory = $false)] [switch] $DontCleanUp)
+    Param([Parameter(Mandatory = $true)] [LogSource[]] $LogSources)
 
     foreach ($LogSource in $LogSources) {
         $SourceHost = if ($LogSource.Session) {
@@ -322,10 +321,6 @@ function Merge-Logs {
                 $Tag = "$SourceHost -> ERROR"
                 Write-Log -Tag $Tag "Error retrieving $($Log.Name): $($Log.Err)"
             }
-        }
-
-        if (-not $DontCleanUp) {
-            $LogSource.ClearContent()
         }
     }
 }

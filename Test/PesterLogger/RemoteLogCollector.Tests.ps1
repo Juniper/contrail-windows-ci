@@ -1,6 +1,6 @@
 Param (
-    [Parameter(Mandatory=$false)] [string] $TestenvConfFile,
-    [Parameter(ValueFromRemainingArguments=$true)] $UnusedParams
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
 . $PSScriptRoot\..\..\CIScripts\Common\Init.ps1
@@ -22,8 +22,7 @@ function Test-MultipleSourcesAndSessions {
         $Source3 = New-FileLogSource -Sessions $Sess2 -Path $DummyLog1
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
-        Merge-Logs -DontCleanUp -LogSources @($Source1, $Source2, $Source3)
+        Merge-Logs -LogSources @($Source1, $Source2, $Source3)
 
         $DescribeBlockName = (Get-CurrentPesterScope)[0]
         $ContentRaw = Get-Content -Raw "TestDrive:\$DescribeBlockName.works with multiple log sources and sessions.txt"
@@ -76,18 +75,9 @@ Describe "RemoteLogCollector" -Tags CISelfcheck, Unit {
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
         Merge-Logs -LogSources $Source1
+        $Source1.ClearContent()
 
         Get-Content $DummyLog1 | Should -Be $null
-    }
-
-    It "doesn't clean logs in source directory if DontCleanUp flag passed" {
-        $Source1 = New-FileLogSource -Sessions $Sess1 -Path $DummyLog1
-        "remote log text" | Add-Content $DummyLog1
-        Initialize-PesterLogger -OutDir "TestDrive:\"
-
-        Merge-Logs -DontCleanUp -LogSources $Source1
-
-        Get-Content $DummyLog1 | Should -Not -Be $null
     }
 
     It "adds a prefix describing source directory" {
@@ -141,8 +131,7 @@ Describe "RemoteLogCollector" -Tags CISelfcheck, Unit {
         Initialize-PesterLogger -OutDir "TestDrive:\"
         Write-Log "first message"
 
-        # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
-        Merge-Logs -DontCleanUp -LogSources $Source2
+        Merge-Logs -LogSources $Source2
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.works with multiple sessions in single log source.txt"
         $ContentRaw | Should -BeLike "*first message*$DummyLog1*$DummyLog1*"
@@ -158,8 +147,7 @@ Describe "RemoteLogCollector" -Tags CISelfcheck, Unit {
         "another file content" | Add-Content $DummyLog2
         Initialize-PesterLogger -OutDir "TestDrive:\"
 
-        # We pass -DontCleanUp because in the tests, both sessions point at the same computer.
-        Merge-Logs -DontCleanUp -LogSources @($Source1, $Source2)
+        Merge-Logs -LogSources @($Source1, $Source2)
 
         $ContentRaw = Get-Content -Raw "TestDrive:\RemoteLogCollector.works with multiple log sources.txt"
         $ContentRaw | Should -BeLike "*$DummyLog1*$DummyLog2*"
@@ -236,10 +224,10 @@ Describe "RemoteLogCollector" -Tags CISelfcheck, Unit {
 
     BeforeAll {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Sess1", Justification="Pester blocks are handled incorrectly by analyzer.")]
+            "Sess1", Justification = "Pester blocks are handled incorrectly by analyzer.")]
         $Sess1 = $null
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Sess2", Justification="Pester blocks are handled incorrectly by analyzer.")]
+            "Sess2", Justification = "Pester blocks are handled incorrectly by analyzer.")]
         $Sess2 = $null
     }
 }
@@ -249,10 +237,10 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CISelfcheck, Systest 
     BeforeAll {
         $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Sess1", Justification="Pester blocks are handled incorrectly by analyzer.")]
+            "Sess1", Justification = "Pester blocks are handled incorrectly by analyzer.")]
         $Sess1 = $Sessions[0]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Sess2", Justification="Pester blocks are handled incorrectly by analyzer.")]
+            "Sess2", Justification = "Pester blocks are handled incorrectly by analyzer.")]
         $Sess2 = $Sessions[1]
     }
 

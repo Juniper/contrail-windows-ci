@@ -272,7 +272,7 @@ Test-WithRetries 1 {
 
         BeforeEach {
             $BeforeEachStack = $Testenv.NewCleanupStack()
-            $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
             $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
             $ContainersLogs = @()
             Write-Log 'Creating containers'
@@ -290,7 +290,7 @@ Test-WithRetries 1 {
                 $ContainersLogs += New-ContainerLogSource -Sessions $Container.HostSession -ContainerNames $Container.Name
                 Write-Log "IP of $($Container.Name): $($Container.NetInfo.IPAddress)"
             }
-            $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
         }
 
         AfterEach {

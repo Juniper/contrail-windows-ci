@@ -232,7 +232,7 @@ Test-WithRetries 3 {
 
         BeforeEach {
             $BeforeEachStack = $Testenv.NewCleanupStack()
-            $BeforeEachStack.Push(${function:Merge-Logs}, @($Testenv.LogSources, $true))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
             $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
             Write-Log 'Creating containers'
             foreach ($i in 0..1) {
@@ -249,7 +249,7 @@ Test-WithRetries 3 {
             }
             $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIDs[0]),
                 (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIDs[1]))
-            $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
         }
 
         AfterEach {

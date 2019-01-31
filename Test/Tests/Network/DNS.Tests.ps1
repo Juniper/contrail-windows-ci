@@ -272,7 +272,7 @@ Test-WithRetries 3 {
 
             $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIds[0]),
                 (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIds[1]))
-            $BeforeEachStack.Push(${function:Merge-Logs}, @($ContainersLogs, $false))
+            $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
         }
 
         function AfterEachContext {
@@ -280,7 +280,7 @@ Test-WithRetries 3 {
         }
 
         AfterEach {
-            Merge-Logs -DontCleanUp -LogSources $Testenv.LogSources
+            Merge-Logs -LogSources $Testenv.LogSources
         }
 
         Context 'DNS mode none' {
