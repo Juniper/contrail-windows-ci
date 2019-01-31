@@ -8,8 +8,6 @@
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
 
-$AGENT_EXECUTABLE_PATH = "C:/Program Files/Juniper Networks/agent/contrail-vrouter-agent.exe"
-
 function Assert-AreDLLsPresent {
     Param (
         [Parameter(Mandatory=$true)] $ExitCode
