@@ -43,7 +43,7 @@
     name: DockerMsftProvider
 
 - name: Install Docker-EE
-  win_shell: "Install-Package -Name Docker -ProviderName DockerMsftProvider -Force"
+  win_shell: "Install-Package -Name Docker -ProviderName DockerMsftProvider -RequiredVersion 18.03 -Force"
 
 - name: Make sure Docker has started
   win_service:
