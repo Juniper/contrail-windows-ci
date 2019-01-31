@@ -25,29 +25,21 @@ function Set-ConfAndLogDir {
 function Initialize-ComputeNode {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [Testenv] $Configs
+        [Parameter(Mandatory = $true)] [Testenv] $Configs,
+        [Parameter(Mandatory = $true)] [CleanupStack] $CleanupStack
     )
+    Write-Log "Installing components on testbed: $($Session.ComputerName)"
+    Install-Components `
+        -Session $Session `
+        -CleanupStack $CleanupStack
 
-    Write-Log "Installing components on testbed..."
-    Install-Components -Session $Session
-
-    Write-Log "Initializing components on testbed..."
-    Initialize-ComputeServices -Session $Session `
+    Write-Log "Initializing components on testbed: $($Session.ComputerName)"
+    Initialize-ComputeServices `
+        -Session $Session `
         -SystemConfig $Configs.System `
         -OpenStackConfig $Configs.OpenStack `
-        -ControllerConfig $Configs.Controller
-}
-
-function Clear-ComputeNode {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
-    )
-
-    Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
-
-    Write-Log "Uninstalling components from testbed..."
-    Uninstall-Components -Session $Session
+        -ControllerConfig $Configs.Controller `
+        -CleanupStack $CleanupStack
 }
 
 function Initialize-ComputeServices {
@@ -55,25 +47,32 @@ function Initialize-ComputeServices {
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
         [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig,
-        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
+        [Parameter(Mandatory = $true)] [CleanupStack] $CleanupStack
     )
 
-    New-NodeMgrConfigFile -Session $Session  `
+    New-NodeMgrConfigFile `
+        -Session $Session  `
         -ControllerIP $ControllerConfig.Address `
         -MgmtAdapterName $SystemConfig.MgmtAdapterName
 
-    New-CNMPluginConfigFile -Session $Session `
+    New-CNMPluginConfigFile `
+        -Session $Session `
         -AdapterName $SystemConfig.AdapterName `
         -OpenStackConfig $OpenStackConfig `
         -ControllerConfig $ControllerConfig
 
-    Initialize-CnmPluginAndExtension -Session $Session `
+    Initialize-CnmPluginAndExtension `
+        -Session $Session `
         -SystemConfig $SystemConfig
+    $CleanupStack.Push(${function:Remove-CnmPluginAndExtension}, @($Session, $SystemConfig))
 
     New-AgentConfigFile -Session $Session `
         -ControllerConfig $ControllerConfig `
         -SystemConfig $SystemConfig
 
     Start-AgentService -Session $Session
+    $CleanupStack.Push(${function:Stop-AgentService}, @($Session))
     Start-NodeMgrService -Session $Session
+    $CleanupStack.Push(${function:Stop-NodeMgrService}, @($Session))
 }
