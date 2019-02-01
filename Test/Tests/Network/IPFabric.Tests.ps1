@@ -44,7 +44,7 @@ $VirtualNetwork.NetworkPolicysFqNames = @($NetworkPolicy.GetFqName())
 $VirtualNetwork.EnableIpFabricForwarding()
 
 Test-WithRetries 3 {
-    Describe 'IP Fabric tests' -Tag EnvSafe {
+    Describe 'IP Fabric tests' -Tag Smoke, EnvSafe {
         Context "Gateway-less forwarding" {
             It 'Container can ping compute node in underlay network' {
                 Test-Ping `
