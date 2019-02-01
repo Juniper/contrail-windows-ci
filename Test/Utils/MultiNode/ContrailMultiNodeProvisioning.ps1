@@ -14,18 +14,23 @@ function New-MultiNodeSetup {
         [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
         [Parameter(Mandatory = $false)] [PSobject] $AuthConfig,
-        [Parameter(Mandatory = $true)] [String] $ContrailProject
+        [Parameter(Mandatory = $true)] [String] $ContrailProject,
+        [Parameter(Mandatory = $true)] [CleanupStack] $CleanupStack
     )
 
     $Authenticator = [AuthenticatorFactory]::GetAuthenticator($ControllerConfig.AuthMethod, $AuthConfig)
     $ContrailRestApi = [ContrailRestApi]::new($ControllerConfig.RestApiUrl(), $Authenticator)
     $ContrailRepo = [ContrailRepo]::new($ContrailRestApi)
 
+    Write-Log "Adding project '$ContrailProject' to Contrail"
     $Project = [Project]::new($ContrailProject)
     $ContrailRepo.AddOrReplace($Project) | Out-Null
+    $CleanupStack.Push($Project)
 
+    Write-Log 'Adding SecurityGroup to Contrail project'
     $SecurityGroup = [SecurityGroup]::new_Default($ContrailProject)
     $ContrailRepo.AddOrReplace($SecurityGroup) | Out-Null
+    $CleanupStack.Push($SecurityGroup)
 
     $VRouters = @()
     foreach ($Testbed in $Testbeds) {
@@ -34,26 +39,8 @@ function New-MultiNodeSetup {
         $Response = $ContrailRepo.AddOrReplace($VirtualRouter)
         Write-Log "Reported UUID of new virtual router: $($Response.'virtual-router'.'uuid')"
         $VRouters += $VirtualRouter
+        $CleanupStack.Push($VirtualRouter)
     }
 
     return [MultiNode]::New($ContrailRestApi, $VRouters, $Project)
-}
-
-function Remove-MultiNodeSetup {
-    Param (
-        [Parameter(Mandatory = $true)] [MultiNode] $MultiNode
-    )
-    $ContrailRepo = [ContrailRepo]::new($MultiNode.ContrailRestApi)
-
-    foreach ($VRouter in $MultiNode.VRouters) {
-        Write-Log "Removing virtual router: $($VRouter.Name)"
-        $ContrailRepo.Remove($VRouter)
-    }
-    $MultiNode.VRouters = $null
-
-    Write-Log "Removing project: $($MultiNode.Project.Name) with dependencies"
-    $ContrailRepo.RemoveWithDependencies($MultiNode.Project)
-    $MultiNode.Project = $null
-
-    $MultiNode.ContrailRestApi = $null
 }

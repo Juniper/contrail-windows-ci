@@ -25,6 +25,7 @@ function Install-ServiceWithNSSM {
         [Parameter(Mandatory=$true)] [Service] $Configuration
     )
 
+    Write-Log "Installing service $($Configuration.ServiceName)"
     $Output = Invoke-NativeCommand -Session $Session -ScriptBlock {
         nssm install $Using:Configuration.ServiceName $Using:Configuration.ExecutablePath
     } -AllowNonZero -CaptureOutput
@@ -59,6 +60,8 @@ function Remove-ServiceWithNSSM {
         [Parameter(Mandatory=$true)] $Session,
         [Parameter(Mandatory=$true)] $ServiceName
     )
+
+    Write-Log "Uninstalling service $ServiceName"
 
     $Output = Invoke-NativeCommand -Session $Session {
         nssm remove $using:ServiceName confirm

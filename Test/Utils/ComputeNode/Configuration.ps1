@@ -30,6 +30,9 @@ function New-CNMPluginConfigFile {
         [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
+
+    Write-Log 'Creating CNM plugin config file'
+
     $ConfigPath = Get-DefaultCNMPluginsConfigPath
 
     $Config = @"
@@ -83,6 +86,8 @@ function New-NodeMgrConfigFile {
         [Parameter(Mandatory = $true)] [string] $ControllerIP,
         [Parameter(Mandatory = $true)] [string] $MgmtAdapterName
     )
+
+    Write-Log 'Creating node manager config file'
 
     $ConfigPath = Get-DefaultNodeMgrsConfigPath
     $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
@@ -179,6 +184,9 @@ function New-AgentConfigFile {
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
+
+    Write-Log 'Creating agent config files'
+
     $AdaptersInfo = Get-AdaptersInfo -Session $Session -SystemConfig $SystemConfig
     $AgentConfigPath = Get-DefaultAgentConfigPath
 

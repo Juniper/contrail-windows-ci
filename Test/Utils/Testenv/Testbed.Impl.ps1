@@ -71,8 +71,14 @@ function New-RemoteSessions {
     Param ([Parameter(Mandatory = $true)] [Testbed[]] $VMs)
 
     $Sessions = [System.Collections.ArrayList] @()
-    foreach ($VM in $VMs) {
-        $Sessions += $VM.NewSession()
+    try {
+        foreach ($VM in $VMs) {
+            $Sessions += $VM.NewSession()
+        }
+    }
+    catch {
+        Remove-PSSession $Sessions
+        throw
     }
     return $Sessions
 }

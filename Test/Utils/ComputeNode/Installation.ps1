@@ -13,6 +13,8 @@ function Invoke-MsiExec {
 
     $Action = if ($Uninstall) { "/x" } else { "/i" }
 
+    Write-Log "Running msiexec $Action $(Split-Path $Path -Leaf)"
+
     Invoke-Command -Session $Session -ScriptBlock {
         # Get rid of all leftover handles to the Service objects
         [System.GC]::Collect()
@@ -42,14 +44,13 @@ function Install-Agent {
     Write-Log "Installing Agent"
     Invoke-MsiExec -Session $Session -Path "C:\Artifacts\agent\contrail-vrouter-agent.msi"
 
-    #TODO: remove this if conditional after msi do not anymore create agent's service
-    $ServiceStatus = Get-ServiceStatus -Session $Session -ServiceName "ContrailAgent"
-
-    $IsOldAgentServicePresent = ("Running" -eq $ServiceStatus) -or ("Started" -eq $ServiceStatus)
-    if ($IsOldAgentServicePresent) {
-        Stop-RemoteService -Session $Session -ServiceName "ContrailAgent"
+    try {
+        New-AgentService -Session $Session
     }
-    New-AgentService -Session $Session
+    catch {
+        Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\agent\contrail-vrouter-agent.msi"
+        throw
+    }
 }
 
 function Uninstall-Agent {
@@ -94,7 +95,13 @@ function Install-CnmPlugin {
 
     Write-Log "Installing CNM Plugin"
     Invoke-MsiExec -Session $Session -Path "C:\Artifacts\cnm-plugin\contrail-cnm-plugin.msi"
-    New-CNMPluginService -Session $Session
+    try {
+        New-CNMPluginService -Session $Session
+    }
+    catch {
+        Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\cnm-plugin\contrail-cnm-plugin.msi"
+        throw
+    }
 }
 
 function Uninstall-CnmPlugin {
@@ -114,14 +121,27 @@ function Install-Nodemgr {
         Get-ChildItem "C:\Artifacts\nodemgr\*.tar.gz" -Name
     }
     $Archives = $Res.Output
-    foreach($A in $Archives) {
-        Write-Log "- (Nodemgr) Installing pip archive $A"
-        Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock {
-            pip install "C:\Artifacts\nodemgr\$Using:A"
-        } | Out-Null
-    }
+    $InstalledArchives = @()
+    try {
+        foreach($A in $Archives) {
+            Write-Log "- (Nodemgr) Installing pip archive $A"
+            Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock {
+                pip install "C:\Artifacts\nodemgr\$Using:A"
+            } | Out-Null
+            $InstalledArchives += $A
+        }
 
-    New-NodeMgrService -Session $Session
+        New-NodeMgrService -Session $Session
+    }
+    catch {
+        foreach($A in $InstalledArchives) {
+            Write-Log "- (Nodemgr) Uninstalling pip package $A"
+            Invoke-NativeCommand -Session $Session -CaptureOutput -ScriptBlock {
+                pip uninstall "C:\Artifacts\nodemgr\$Using:A"
+            } | Out-Null
+        }
+        throw
+    }
 }
 
 function Uninstall-Nodemgr {
@@ -144,21 +164,19 @@ function Uninstall-Nodemgr {
 }
 
 function Install-Components {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [CleanupStack] $CleanupStack
+    )
 
     Install-Extension -Session $Session
+    $CleanupStack.Push(${function:Uninstall-Extension}, @($Session))
     Install-CnmPlugin -Session $Session
+    $CleanupStack.Push(${function:Uninstall-CnmPlugin}, @($Session))
     Install-Agent -Session $Session
+    $CleanupStack.Push(${function:Uninstall-Agent}, @($Session))
     Install-Utils -Session $Session
+    $CleanupStack.Push(${function:Uninstall-Utils}, @($Session))
     Install-Nodemgr -Session $Session
-}
-
-function Uninstall-Components {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
-
-    Uninstall-Nodemgr -Session $Session
-    Uninstall-Utils -Session $Session
-    Uninstall-Agent -Session $Session
-    Uninstall-CnmPlugin -Session $Session
-    Uninstall-Extension -Session $Session
+    $CleanupStack.Push(${function:Uninstall-Nodemgr}, @($Session))
 }

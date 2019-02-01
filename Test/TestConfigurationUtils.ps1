@@ -8,31 +8,6 @@
 . $PSScriptRoot\Utils\DockerImageBuild.ps1
 . $PSScriptRoot\PesterLogger\PesterLogger.ps1
 
-$AGENT_EXECUTABLE_PATH = "C:/Program Files/Juniper Networks/agent/contrail-vrouter-agent.exe"
-
-function Stop-ProcessIfExists {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [string] $ProcessName)
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        $Proc = Get-Process $Using:ProcessName -ErrorAction SilentlyContinue
-        if ($Proc) {
-            $Proc | Stop-Process -Force -PassThru | Wait-Process -ErrorAction SilentlyContinue
-        }
-    }
-}
-
-function Test-IsProcessRunning {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [string] $ProcessName)
-
-    $Proc = Invoke-Command -Session $Session -ScriptBlock {
-        return $(Get-Process $Using:ProcessName -ErrorAction SilentlyContinue)
-    }
-
-    return [bool] $Proc
-}
-
 function Assert-AreDLLsPresent {
     Param (
         [Parameter(Mandatory=$true)] $ExitCode
@@ -118,23 +93,7 @@ function Disable-VRouterExtension {
     }
 }
 
-function Test-IsVRouterExtensionEnabled {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
-    )
-
-    $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
-    $VMSwitchName = $SystemConfig.VMSwitchName()
-
-    $Ext = Invoke-Command -Session $Session -ScriptBlock {
-        return $(Get-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName -ErrorAction SilentlyContinue)
-    }
-
-    return $($Ext.Enabled -and $Ext.Running)
-}
-
-function Test-IsCnmPluginEnabled {
+function Assert-CnmPluginEnabled {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
     function Test-IsCnmPluginListening {
@@ -149,8 +108,15 @@ function Test-IsCnmPluginEnabled {
         }
     }
 
-    return (Test-IsCnmPluginListening) -And `
-        (Test-IsCnmPluginRegistered)
+    $PipeOpened = Test-IsCnmPluginListening
+    $Registered = Test-IsCnmPluginRegistered
+
+    if($PipeOpened -and $Registered) {
+        return $true
+    }
+    else {
+        throw "CnmPlugin not enabled. PipeOpened: $PipeOpened, Registered in Docker: $Registered"
+    }
 }
 
 function Test-IfUtilsCanLoadDLLs {
@@ -171,30 +137,6 @@ function Test-IfUtilsCanLoadDLLs {
                 & $Util 2>&1 | Out-Null
                 Assert-AreDLLsPresent -ExitCode $LastExitCode
             }
-    }
-}
-
-function Test-IfAgentCanLoadDLLs {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
-    )
-    Invoke-CommandWithFunctions `
-        -Session $Session `
-        -Functions "Assert-AreDLLsPresent" `
-        -ScriptBlock {
-            & $using:AGENT_EXECUTABLE_PATH --version 2>&1 | Out-Null
-            Assert-AreDLLsPresent -ExitCode $LastExitCode
-    }
-}
-
-function Read-SyslogForAgentCrash {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [DateTime] $After)
-    Invoke-Command -Session $Session -ScriptBlock {
-        Get-EventLog -LogName "System" -EntryType "Error" `
-            -Source "Service Control Manager" `
-            -Message "The contrail-vrouter-agent service terminated unexpectedly*" `
-            -After ($Using:After).addSeconds(-1)
     }
 }
 
@@ -226,7 +168,7 @@ function New-DockerNetwork {
 function Remove-AllUnusedDockerNetworks {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
-    Write-Log "Removing all docker networks"
+    Write-Log "Removing unused docker networks"
 
     Invoke-Command -Session $Session -ScriptBlock {
         docker network prune --force | Out-Null
@@ -271,29 +213,45 @@ function Initialize-CnmPluginAndExtension {
         Start-CNMPluginService -Session $Session
 
         try {
-            $TestCNMRunning = { Test-IsCNMPluginServiceRunning -Session $Session }
+            Invoke-UntilSucceeds -Name 'IsCNMPluginServiceRunning' -Duration 15 {
+                Test-IsCNMPluginServiceRunning -Session $Session
+            }
 
-            $TestCNMRunning | Invoke-UntilSucceeds -Duration 15
+            Invoke-UntilSucceeds -Name 'IsCnmPluginEnabled' -Duration 600 -Interval 5 {
+                Assert-CnmPluginEnabled -Session $Session
+            }
 
-            {
-                Test-IsCnmPluginEnabled -Session $Session
-            } | Invoke-UntilSucceeds -Duration 600 -Interval 5
-
+            # TODO:JCH Wait-IsVmSwitchInitialized
             Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
 
             break
         }
         catch {
-            Write-Log $_
+            Write-Log "CNM plugin was not enabled. Exception: $_"
+            Write-Log "Trying to revert CNM Plugin initialization."
+
+            Remove-CnmPluginAndExtension -Session $Session -SystemConfig $SystemConfig
 
             if ($i -eq $NRetries) {
                 throw "CNM plugin was not enabled."
             } else {
-                Write-Log "CNM plugin was not enabled, retrying."
-                Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+                Write-Log "Retrying CNM Plugin initialization."
             }
         }
     }
+}
+
+function Remove-CnmPluginAndExtension {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+    )
+
+    Stop-CNMPluginService -Session $Session
+    Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
+
+    # TODO:JCH Wait-IsVmSwitchDeleted
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
 
 function Clear-TestConfiguration {
@@ -304,6 +262,7 @@ function Clear-TestConfiguration {
 
     Write-Log "Agent service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-AgentServiceName))"
     Write-Log "CNMPlugin service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-CNMPluginServiceName))"
+    Write-Log "NodeManager service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-NodeMgrServiceName))"
 
     Remove-AllUnusedDockerNetworks -Session $Session
     Stop-NodeMgrService -Session $Session
@@ -311,6 +270,7 @@ function Clear-TestConfiguration {
     Stop-AgentService -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
+    # TODO:JCH Wait-IsVmSwitchDeleted
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
 
