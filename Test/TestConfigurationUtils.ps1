@@ -197,6 +197,45 @@ function Wait-RemoteInterfaceIP {
     } | Out-Null
 }
 
+function Test-IfVmSwitchExist {
+    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [String] $VmSwitchName)
+
+     $r = Invoke-Command -Session $Session -ScriptBlock {
+        Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
+    }
+
+     if(($null -eq $r) -or ($r -eq $true)) {
+        return $false
+    }
+
+     return $true
+}
+
+function Assert-VmSwitchInitialized {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+    )
+    if(-not (Test-IfVmSwitchExist -Session $Session -VmSwitchName $SystemConfig.VMSwitchName())) {
+        throw "VmSwitch is not created. No need to wait for IP on $($SystemConfig.VHostName)."
+    }
+
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+}
+
+function Assert-VmSwitchDeleted {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+    )
+    if(Test-IfVmSwitchExist -Session $Session -VmSwitchName $SystemConfig.VMSwitchName()) {
+        throw "VmSwitch is not going to be deleted. No need to wait for IP on $($SystemConfig.AdapterName)."
+    }
+
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
+}
+
 # Before running this function make sure CNM-Plugin config file is created.
 # It can be done by function New-CNMPluginConfigFile.
 function Initialize-CnmPluginAndExtension {
@@ -221,8 +260,7 @@ function Initialize-CnmPluginAndExtension {
                 Assert-CnmPluginEnabled -Session $Session
             }
 
-            # TODO:JCH Wait-IsVmSwitchInitialized
-            Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+            Assert-VmSwitchInitialized -Session $Session -SystemConfig $SystemConfig
 
             break
         }
@@ -250,8 +288,7 @@ function Remove-CnmPluginAndExtension {
     Stop-CNMPluginService -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
-    # TODO:JCH Wait-IsVmSwitchDeleted
-    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
+    Assert-VmSwitchDeleted -Session $Session -SystemConfig $SystemConfig
 }
 
 function Clear-TestConfiguration {
@@ -270,8 +307,7 @@ function Clear-TestConfiguration {
     Stop-AgentService -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
-    # TODO:JCH Wait-IsVmSwitchDeleted
-    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
+    Assert-VmSwitchDeleted -Session $Session -SystemConfig $SystemConfig
 }
 
 function Remove-DockerNetwork {
