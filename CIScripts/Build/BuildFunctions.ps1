@@ -40,14 +40,23 @@ function Invoke-CnmPluginBuild {
            [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath)
 
+
+    Write-Host "Invoke-CnmPluginBuild Params:"
+    Write-Host "SigntoolPath: $SigntoolPath"
+    Write-Host "CertPath: $CertPath"
+    Write-Host "CertPasswordFilePath: $CertPasswordFilePath"
+    Write-Host "OutputPath: $OutputPath"
+    Write-Host "LogsPath: $LogsPath"
+
     $Job.PushStep("CNM plugin build")
     $GoPath = Get-Location
+    Write-Host "GoPath: $GoPath"
     if (Test-Path Env:GOPATH) {
         $GoPath +=  ";$Env:GOPATH"
     }
     $Env:GOPATH = $GoPath
     $srcPath = "$GoPath/src/$PluginSrcPath"
-
+    Write-Host "srcPath: $srcPath"
     New-Item -ItemType Directory ./bin | Out-Null
 
     Push-Location $srcPath
