@@ -51,7 +51,10 @@ class Testenv {
                     -Session $Session `
                     -Configs $this `
                     -CleanupStack $CleanupStack
+
+                $CleanupStack.Push(${function:Remove-AllUnusedDockerNetworks}, @($Session))
             }
+            $CleanupStack.Push(${function:Remove-AllContainers}, @(, $this.Sessions))
         }
 
         $this.ContrailRepo = [ContrailRepo]::new($this.MultiNode.ContrailRestApi)
