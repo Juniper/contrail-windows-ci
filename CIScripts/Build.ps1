@@ -8,6 +8,9 @@
 
 $Job = [Job]::new("Build")
 
+Write-Host "Envs: "
+Get-ChildItem Env:
+
 Initialize-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
 
 $SconsBuildMode = Resolve-BuildMode
