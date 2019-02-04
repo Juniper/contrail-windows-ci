@@ -185,8 +185,10 @@ function Select-ValidNetIPInterface {
 }
 
 function Wait-RemoteInterfaceIP {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-           [Parameter(Mandatory = $true)] [String] $AdapterName)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [String] $AdapterName
+    )
 
     Invoke-UntilSucceeds -Name "Waiting for IP on interface $AdapterName" -Duration 60 {
         Invoke-CommandWithFunctions -Functions "Select-ValidNetIPInterface" -Session $Session {
@@ -198,14 +200,16 @@ function Wait-RemoteInterfaceIP {
 }
 
 function Test-IfVmSwitchExist {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [String] $VmSwitchName)
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [String] $VmSwitchName
+    )
 
-     $r = Invoke-Command -Session $Session -ScriptBlock {
+    $r = Invoke-Command -Session $Session -ScriptBlock {
         Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
     }
 
-     if(($null -eq $r) -or ($r -eq $true)) {
+    if(($null -eq $r) -or ($r.Equals($true))) {
         return $false
     }
 
