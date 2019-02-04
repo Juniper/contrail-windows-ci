@@ -5,6 +5,9 @@
 
 $Job = [Job]::new("Checkout")
 
+Write-Host "Vars: "
+Get-ChildItem Env:
+
 if (Test-Path "Env:ZUUL_URL") {
     $ZuulAdditionalParams = @{
         Url = $Env:ZUUL_URL
