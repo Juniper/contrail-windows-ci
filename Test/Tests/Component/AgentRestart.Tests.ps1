@@ -31,7 +31,10 @@ Param (
 Test-WithRetries 3 {
     Describe 'Dummy test' -Tags Smoke, EnvSafe {
         It 'Fails' {
-            $true | Should -BeFalse
+            $ErrorActionPreference = 'Continue'
+            Write-Error '!!!!!!!!!!!!!!! Errrrrrrrrrrrooooooooooooooorrrrrrrrrrr !!!!!!!!!!!!!!!!!!!'
+            $true | Should -BeTrue
+            $ErrorActionPreference = 'Stop'
         }
     }
 }
