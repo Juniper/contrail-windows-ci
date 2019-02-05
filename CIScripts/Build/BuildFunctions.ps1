@@ -26,6 +26,11 @@ function Set-MSISignature {
            [Parameter(Mandatory = $true)] [string] $MSIPath)
     $Job.Step("Signing MSI", {
         $cerp = Get-Content $CertPasswordFilePath
+        Write-Host "Set-MSISignature Parameters: "
+        Write-Host "SigntoolPath: $SigntoolPath"
+        Write-Host "CertPath: $CertPath"
+        Write-Host "CertPasswordFilePath: $cerp"
+        Write-Host "MSIPath: $MSIPath"
         Invoke-NativeCommand -ScriptBlock {
             & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
         }
