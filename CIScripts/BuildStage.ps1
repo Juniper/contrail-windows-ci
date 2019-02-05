@@ -4,7 +4,7 @@
 . $PSScriptRoot\Common\Credentials.ps1
 . $PSScriptRoot\Build\BuildMode.ps1
 
-$Credentials = Get-MgmtCreds
+#$Credentials = Get-MgmtCreds
 
 $OutputRootDirectory = "output"
 
