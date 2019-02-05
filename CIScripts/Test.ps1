@@ -10,10 +10,15 @@ Param(
 
 $Job = [Job]::new("Test")
 
-. $PSScriptRoot\..\Test\Invoke-ProductTests.ps1 `
-    -TestRootDir $TestRootDir `
-    -TestReportDir $TestReportDir `
-    -TestenvConfFile $TestenvConfFile `
-    -SmokeTestsOnly:$(!$Nightly)
+try {
+    . $PSScriptRoot\..\Test\Invoke-ProductTests.ps1 `
+        -TestRootDir $TestRootDir `
+        -TestReportDir $TestReportDir `
+        -TestenvConfFile $TestenvConfFile `
+        -SmokeTestsOnly:$(!$Nightly)
+}
+finally {
+    $Job.Done()
+}
 
-$Job.Done()
+exit 0
