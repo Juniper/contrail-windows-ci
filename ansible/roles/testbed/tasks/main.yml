@@ -40,7 +40,7 @@
   wait_for_connection:
 
 - name: Install Docker-EE
-  win_shell: "Install-Package Docker -ProviderName DockerMsftProvider -Force"
+  win_shell: "Install-Package Docker -ProviderName DockerMsftProvider -RequiredVersion 18.03 -Force"
 
 - name: Make sure docker is started
   win_service:
