@@ -25,5 +25,6 @@ finally {
     $Job.Done()
 }
 
-Write-Host 'Exiting Test.ps1 wit exit 0. LastExitCode: $LastExitCode'
+Write-Host "Exiting Test.ps1 wit exit 0. LastExitCode: $LastExitCode"
+$Error.Clear()
 exit 0
