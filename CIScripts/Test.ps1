@@ -17,8 +17,13 @@ try {
         -TestenvConfFile $TestenvConfFile `
         -SmokeTestsOnly:$(!$Nightly)
 }
+catch {
+    Write-Host 'Invoke-ProductTests.ps1 has thrown an exception'
+    throw
+}
 finally {
     $Job.Done()
 }
 
+$Error.Clear()
 exit 0
