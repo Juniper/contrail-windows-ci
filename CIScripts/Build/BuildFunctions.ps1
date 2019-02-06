@@ -129,7 +129,7 @@ function Invoke-ExtensionBuild {
 
     $Job.Step("Running kernel unit tests", {
         Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption kernel-tests vrouter:test | Tee-Object -FilePath $LogsDir/vrouter_unit_tests.log
+            scons $BuildModeOption kernel-tests | Tee-Object -FilePath $LogsDir/vrouter_unit_tests.log
         }
     })
 
