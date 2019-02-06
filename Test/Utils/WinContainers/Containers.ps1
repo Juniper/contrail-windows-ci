@@ -3,6 +3,8 @@
 function Remove-AllContainers {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
 
+    Write-Log 'Removing all containers'
+
     foreach ($Session in $Sessions) {
         $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero {
             $Containers = docker ps -aq
@@ -26,8 +28,12 @@ function Remove-AllContainers {
         $OutputMessages = $Result.Output
         if (0 -ne $Result.ExitCode) {
             throw "Remove-AllContainers - removing containers failed with the following messages: $OutputMessages"
-        } elseif ($Result.Output[-1] -gt 0) {
+        }
+        elseif ($Result.Output[-1] -gt 0) {
             Write-Host "Remove-AllContainers - removing containers was successful, but required more than one attempt: $OutputMessages"
+        }
+        else {
+            Write-Host "Remove-AllContainers - removing containers was successful."
         }
     }
 }

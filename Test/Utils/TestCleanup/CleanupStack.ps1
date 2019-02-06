@@ -19,13 +19,17 @@ class CleanupStack {
     }
 
     [Void] RunCleanup([ContrailRepo] $ContrailRepo) {
-        $this.ContrailRepo = $ContrailRepo
+        Write-Log 'Testenv.RunCleanup() started'
+        if ($null -eq $this.ContrailRepo) {
+            $this.ContrailRepo = $ContrailRepo
+        }
         while (0 -ne $this.Stack.Count) {
             $RemoveObject = $this.Stack.Pop()
             try {
                 $this.Remove($RemoveObject)
             }
             catch {
+                Write-Log 'Exception during cleanup:'
                 Write-Log (Out-String -InputObject $_)
             }
         }

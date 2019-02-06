@@ -289,6 +289,8 @@ function Remove-CnmPluginAndExtension {
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
+    Write-Log "Removing CNMPlugin and Extension"
+
     Stop-CNMPluginService -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
 
@@ -320,6 +322,7 @@ function Remove-DockerNetwork {
         [Parameter(Mandatory = $true)] [string] $Name
     )
 
+    Write-Log "Removing docker network '$Name' from '$($Session.ComputerName)'"
     Invoke-Command -Session $Session -ScriptBlock {
         docker network rm $Using:Name | Out-Null
     }

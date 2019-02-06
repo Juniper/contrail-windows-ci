@@ -21,6 +21,7 @@ function New-MultiNodeSetup {
     $Authenticator = [AuthenticatorFactory]::GetAuthenticator($ControllerConfig.AuthMethod, $AuthConfig)
     $ContrailRestApi = [ContrailRestApi]::new($ControllerConfig.RestApiUrl(), $Authenticator)
     $ContrailRepo = [ContrailRepo]::new($ContrailRestApi)
+    $CleanupStack.ContrailRepo = $ContrailRepo
 
     Write-Log "Adding project '$ContrailProject' to Contrail"
     $Project = [Project]::new($ContrailProject)
