@@ -87,6 +87,7 @@ project-templates:
   - name: ci-contrail-windows-template
     check:
       - ci-contrail-windows-production
+          voting: False
 
   - name: ci-contrail-windows-other-projects-template
     check:
