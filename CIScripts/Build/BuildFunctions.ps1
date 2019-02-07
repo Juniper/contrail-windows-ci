@@ -30,9 +30,9 @@ function Set-MSISignature {
         Write-Host "SigntoolPath: $SigntoolPath"
         Write-Host "CertPath: $CertPath"
         Write-Host "CertPasswordFilePath: $cerp"
-        Write-Host "MSIPath: $MSIPath"
+        Write-Host "MSIPath: $MSIPath"b
         Invoke-NativeCommand -ScriptBlock {
-            & $SigntoolPath sign /sm /f $CertPath /p $cerp $MSIPath
+            & $SigntoolPath sign /sm /n codilime.com $MSIPath
         }
     })
 }
