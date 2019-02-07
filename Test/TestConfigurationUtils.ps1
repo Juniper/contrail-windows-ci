@@ -234,10 +234,13 @@ function Get-IPAddresses {
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
-
+    
+    $VHostName = $SystemConfig.VHostName
+    $AdapterName = $SystemConfig.AdapterName
+    
     $Ips = Invoke-Command -Session $Session -ScriptBlock {
-        (Get-NetAdapter -Name $SystemConfig.VHostName -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4").IPAddress
-        (Get-NetAdapter -Name $SystemConfig.AdapterName -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4").IPAddress
+        (Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4").IPAddress
+        (Get-NetAdapter -Name $Using:AdapterName -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4").IPAddress
     }
 
     Write-Log "IP on '$($SystemConfig.VHostName)': $($Ips[0])"
