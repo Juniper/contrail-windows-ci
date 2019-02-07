@@ -217,19 +217,19 @@ function Test-IfVmSwitchExist {
         return $false
     }
     elseif($r.Equals($true)) {
-        Write-Log '... it still exist, but is deleting.'
+        Write-Log '... it still exists, but is being deleted.'
         return $false
     }
     elseif($r.Equals($false)) {
-        Write-Log '... it still exist.'
+        Write-Log '... it still exists.'
         return $true
     }
 
     Write-Log "... it returned: $r"
-    throw "Checking if switch exist failed."
+    throw "Checking if switch exists failed."
 }
 
-function Get-IPAddresses {
+function Write-IpAddresses {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
@@ -256,7 +256,7 @@ function Assert-VmSwitchInitialized {
         throw "VmSwitch is not created. No need to wait for IP on $($SystemConfig.VHostName)."
     }
 
-    Get-IPAddresses -Session $Session -SystemConfig $SystemConfig
+    Write-IPAddresses -Session $Session -SystemConfig $SystemConfig
 
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
 }
@@ -270,7 +270,7 @@ function Assert-VmSwitchDeleted {
         throw "VmSwitch is not going to be deleted. No need to wait for IP on $($SystemConfig.AdapterName)."
     }
 
-    Get-IPAddresses -Session $Session -SystemConfig $SystemConfig
+    Write-IPAddresses -Session $Session -SystemConfig $SystemConfig
 
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
