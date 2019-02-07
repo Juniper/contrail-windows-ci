@@ -10,10 +10,20 @@ Param(
 
 $Job = [Job]::new("Test")
 
-. $PSScriptRoot\..\Test\Invoke-ProductTests.ps1 `
-    -TestRootDir $TestRootDir `
-    -TestReportDir $TestReportDir `
-    -TestenvConfFile $TestenvConfFile `
-    -SmokeTestsOnly:$(!$Nightly)
+try {
+    . $PSScriptRoot\..\Test\Invoke-ProductTests.ps1 `
+        -TestRootDir $TestRootDir `
+        -TestReportDir $TestReportDir `
+        -TestenvConfFile $TestenvConfFile `
+        -SmokeTestsOnly:$(!$Nightly)
+}
+catch {
+    Write-Host 'Invoke-ProductTests.ps1 has thrown an exception'
+    throw
+}
+finally {
+    $Job.Done()
+}
 
-$Job.Done()
+$Error.Clear()
+exit 0
