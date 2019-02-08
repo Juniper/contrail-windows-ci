@@ -16,6 +16,7 @@ pipelines:
             - ^master$
             - ^contrail/ocata$
             - ^contrail/queens$
+            - ^contrail/rocky$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^contrail_dpdk_17_11_3$
@@ -33,6 +34,7 @@ pipelines:
             - ^master$
             - ^contrail/ocata$
             - ^contrail/queens$
+            - ^contrail/rocky$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^contrail_dpdk_17_11_3$
@@ -50,6 +52,7 @@ pipelines:
             - ^master$
             - ^contrail/ocata$
             - ^contrail/queens$
+            - ^contrail/rocky$
             - ^contrail_dpdk_17_02$
             - ^contrail_dpdk_17_11$
             - ^contrail_dpdk_17_11_3$
