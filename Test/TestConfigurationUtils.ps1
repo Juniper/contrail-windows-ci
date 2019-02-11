@@ -289,7 +289,7 @@ function Remove-CnmPluginAndExtension {
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
-    Write-Log "Removing CNMPlugin and Extension"
+    Write-Log "Stopping CNMPlugin and disabling Extension"
 
     Stop-CNMPluginService -Session $Session
     Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
