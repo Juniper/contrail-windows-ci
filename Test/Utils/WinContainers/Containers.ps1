@@ -67,24 +67,13 @@ function New-Container {
     if ($IP) { $Arguments += "--ip", $IP }
     $Arguments += "--network", $NetworkName, $Image
 
-    $Result = Invoke-NativeCommand -Session $Session -CaptureOutput -AllowNonZero { docker @Using:Arguments }
-    $ContainerID = $Result.Output[0]
-    $OutputMessages = $Result.Output
+    $Result = Invoke-Command -Session $Session { docker @Using:Arguments ; $Global:LastExitCode }
 
-    # Workaround for occasional failures of container creation in Docker for Windows.
-    # In such a case Docker reports: "CreateContainer: failure in a Windows system call",
-    # container is created (enters CREATED state), but is not started and can not be
-    # started manually. It's possible to delete a faulty container and start it again.
-    # We want to capture just this specific issue here not to miss any new problem.
-    if ($Result.Output -match "CreateContainer: failure in a Windows system call") {
-        Write-Log "Container creation failed with the following output: $OutputMessages"
-        Write-Log "Removing incorrectly created container (if exists)..."
-        Invoke-NativeCommand -Session $Session -AllowNonZero { docker rm -f $Using:ContainerID } | Out-Null
-        Write-Log "Retrying container creation..."
-        $ContainerID = Invoke-Command -Session $Session { docker @Using:Arguments }
-    } elseif (0 -ne $Result.ExitCode) {
-        throw "New-Container failed with the following output: $OutputMessages"
+    # Check for exit code
+    if (0 -ne $Result[-1]) {
+        throw "New-Container failed with the following output: $Result"
     }
 
-    return $ContainerID
+    # Return created container id
+    return $Result[0]
 }
