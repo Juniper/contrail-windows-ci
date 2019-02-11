@@ -301,6 +301,8 @@ function Invoke-CommandRemoteOrLocal {
 function Merge-Logs {
     Param([Parameter(Mandatory = $true)] [LogSource[]] $LogSources)
 
+    Write-Log 'Merging logs'
+
     foreach ($LogSource in $LogSources) {
         $SourceHost = if ($LogSource.Session) {
             "Testbed machine $($LogSource.Session.ComputerName)"
@@ -327,6 +329,9 @@ function Merge-Logs {
 
 function Clear-Logs {
     Param([Parameter(Mandatory = $true)] [LogSource[]] $LogSources)
+
+    Write-Log 'Clearing logs'
+
     foreach ($LogSource in $LogSources) {
         $LogSource.ClearContent()
     }

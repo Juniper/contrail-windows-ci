@@ -24,7 +24,7 @@ class Testenv {
 
         Write-Log 'Creating sessions'
         $this.Sessions = New-RemoteSessions -VMs $this.Testbeds
-        $CleanupStack.Push( {Param([PSSessionT[]] $Sessions) Remove-PSSession $Sessions}, @(, $this.Sessions))
+        $CleanupStack.Push( {Param([PSSessionT[]] $Sessions) Write-Log 'Removing sessions'; Remove-PSSession $Sessions}, @(, $this.Sessions))
 
         Write-Log 'Preparing testbeds'
         Set-ConfAndLogDir -Sessions $this.Sessions
@@ -37,6 +37,7 @@ class Testenv {
             -AuthConfig $this.OpenStack `
             -ContrailProject $ContrailProject `
             -CleanupStack $CleanupStack
+        $this.ContrailRepo = [ContrailRepo]::new($this.MultiNode.ContrailRestApi)
 
         Write-Log 'Creating log sources'
         [LogSource[]] $this.LogSources = New-ComputeNodeLogSources -Sessions $this.Sessions
@@ -56,8 +57,6 @@ class Testenv {
             }
             $CleanupStack.Push(${function:Remove-AllContainers}, @(, $this.Sessions))
         }
-
-        $this.ContrailRepo = [ContrailRepo]::new($this.MultiNode.ContrailRestApi)
     }
 
     [CleanupStack] NewCleanupStack() {
@@ -67,6 +66,7 @@ class Testenv {
     }
 
     [Void] Cleanup() {
+        Write-Log 'Testenv.Cleanup() started'
         foreach ($CleanupStack in $this.CleanupStacks) {
             $CleanupStack.RunCleanup($this.ContrailRepo)
         }

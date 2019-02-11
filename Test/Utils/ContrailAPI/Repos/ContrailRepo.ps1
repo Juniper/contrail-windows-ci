@@ -44,6 +44,13 @@ class ContrailRepo {
     }
 
     Hidden [Void] RemoveObject([BaseResourceModel] $Object, [bool] $WithDependencies) {
+        Write-Log 'Removing contrail object'
+        Write-Log "`ttype: '$($Object.ResourceName)'"
+        Write-Log "`tfqname: '$($Object.GetFqname().ToString())'"
+        if ($WithDependencies) {
+            Write-Log "`twith dependencies"
+        }
+
         $Uuid = $this.API.FqNameToUuid($Object.ResourceName, $Object.GetFqName())
 
         if ($WithDependencies) {

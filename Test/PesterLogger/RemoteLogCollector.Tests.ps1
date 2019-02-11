@@ -63,9 +63,10 @@ Describe "RemoteLogCollector" -Tags CISelfcheck, Unit {
         $Content = Get-Content "TestDrive:\RemoteLogCollector.doesn't print any empty newlines.txt"
         # We expect three lines:
         # 1. "first message"
-        # 2. name of remote log file
-        # 3. "remote log text"
-        $Content.Length | Should -Be 3
+        # 2. Merging logs
+        # 3. name of remote log file
+        # 4. "remote log text"
+        $Content.Length | Should -Be 4
     }
 
     It "cleans logs in source directory" {
