@@ -116,7 +116,7 @@ function Test-ResultsWithRetries {
         if ($null -eq $It) {
             $It = $Context.Add($Result.Name, [SingleResult]::new())
         }
-        $It.OrSuccess('Passed' -eq $Result.Result)
+        $It.OrSuccess('Failed' -ne $Result.Result)
     }
 
     return $TestsResult.HadSucceeded()
