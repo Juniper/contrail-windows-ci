@@ -234,17 +234,21 @@ function Write-IpAddresses {
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
-    
-    $VHostName = $SystemConfig.VHostName
-    $AdapterName = $SystemConfig.AdapterName
-    
-    $Ips = Invoke-Command -Session $Session -ScriptBlock {
-        (Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4").IPAddress
-        (Get-NetAdapter -Name $Using:AdapterName -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4").IPAddress
+
+    $AdaptersNames = @($SystemConfig.VHostName, $SystemConfig.AdapterName)
+
+    $Infos = Invoke-Command -Session $Sessions[0] -ScriptBlock {
+        $Ret = @{}
+        $Using:AdaptersNames | ForEach-Object {
+            $Ip = (Get-NetAdapter -Name $_ -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4" | Select-Object -ExpandProperty IPAddress)
+            $Ret.Add($_,  $Ip)
+        }
+        return $Ret
     }
 
-    Write-Log "IP on '$($SystemConfig.VHostName)': $($Ips[0])"
-    Write-Log "IP on '$($SystemConfig.AdapterName)': $($Ips[1])"
+    foreach($Info in $Infos.GetEnumerator()) {
+        Write-Log "IP on '$($Info.Key)': $($Info.Value)"
+    }
 }
 
 function Assert-VmSwitchInitialized {
