@@ -237,7 +237,7 @@ function Write-IpAddresses {
 
     $AdaptersNames = @($SystemConfig.VHostName, $SystemConfig.AdapterName)
 
-    $Infos = Invoke-Command -Session $Sessions[0] -ScriptBlock {
+    $Infos = Invoke-Command -Session $Session -ScriptBlock {
         $Ret = @{}
         $Using:AdaptersNames | ForEach-Object {
             $Ip = (Get-NetAdapter -Name $_ -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4" | Select-Object -ExpandProperty IPAddress)
