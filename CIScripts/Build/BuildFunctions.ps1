@@ -320,7 +320,7 @@ function Invoke-AgentUnitTestRunner {
 }
 
 class UnitTestPath {
-    [string] get([string] $PathPrefix, [string] $TestName) {
+    static [string] get([string] $PathPrefix, [string] $TestName) {
         return "$PathPrefix/test/$TestName.exe"
     }
 }
