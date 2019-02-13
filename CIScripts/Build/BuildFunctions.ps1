@@ -319,6 +319,12 @@ function Invoke-AgentUnitTestRunner {
     return $Res
 }
 
+class AgentTestPath {
+    static [string] get([string] $PathPrefix, [string] $TestName) {
+        return "$PathPrefix/test/$TestName.exe"
+    }
+}
+
 function Invoke-AgentTestsBuild {
     Param ([Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
@@ -327,49 +333,52 @@ function Invoke-AgentTestsBuild {
 
     $BuildModeOption = "--optimization=" + $BuildMode
 
+    $TestPathPrefix = "build/$BuildMode"
+    $BaseTestPrefix = "$TestPathPrefix/base"
+    # $AgentPathPrefix = "$TestPathPrefix/vnsw/agent"
+
     $Job.Step("Building agent tests", {
         $Tests = @(
-            "agent:test_ksync",
-            "src/ksync:ksync_test",
-            "src/dns:dns_bind_test",
-            "src/dns:dns_config_test",
-            "src/dns:dns_mgr_test",
-            "controller/src/schema:test",
-            "src/xml:xml_test",
-            "controller/src/xmpp:test",
-            "src/base:libtask_test",
-            "src/base:bitset_test",
-            "src/base:index_allocator_test",
-            "src/base:dependency_test",
-            "src/base:label_block_test",
-            "src/base:queue_task_test",
-            "src/base:subset_test",
-            "src/base:patricia_test",
-            "src/base:boost_US_test"
+            # "agent:test_ksync",
+            # "src/ksync:ksync_test",
+            # "src/dns:dns_bind_test",
+            # "src/dns:dns_config_test",
+            # "src/dns:dns_mgr_test",
+            # "controller/src/schema:test",
+            # "src/xml:xml_test",
+            # "controller/src/xmpp:test",
+            [AgentTestPath]::get($BaseTestPrefix, "bitset_test"),
+            [AgentTestPath]::get($BaseTestPrefix, "index_allocator_test"),
+            [AgentTestPath]::get($BaseTestPrefix, "dependency_test"),
+            [AgentTestPath]::get($BaseTestPrefix, "label_block_test"),
+            [AgentTestPath]::get($BaseTestPrefix, "queue_task_test"),
+            [AgentTestPath]::get($BaseTestPrefix, "subset_test"),
+            [AgentTestPath]::get($BaseTestPrefix, "patricia_test"),
+            [AgentTestPath]::get($BaseTestPrefix, "boost_US_test")
 
             # oper
-            "agent:test_agent_sandesh",
-            "agent:test_config_manager",
-            "agent:test_intf",
-            "agent:test_intf_policy",
-            "agent:test_find_scale",
-            "agent:test_logical_intf",
-            "agent:test_vrf_assign",
-            "agent:test_inet_interface",
-            "agent:test_aap6",
-            "agent:test_ipv6",
-            "agent:test_forwarding_class",
-            "agent:test_qos_config",
-            "agent:test_oper_xml",
-            "agent:ifmap_dependency_manager_test",
-            "agent:test_physical_devices"
+            # "agent:test_agent_sandesh",
+            # "agent:test_config_manager",
+            # "agent:test_intf",
+            # "agent:test_intf_policy",
+            # "agent:test_find_scale",
+            # "agent:test_logical_intf",
+            # "agent:test_vrf_assign",
+            # "agent:test_inet_interface",
+            # "agent:test_aap6",
+            # "agent:test_ipv6",
+            # "agent:test_forwarding_class",
+            # "agent:test_qos_config",
+            # "agent:test_oper_xml",
+            # "agent:ifmap_dependency_manager_test",
+            # "agent:test_physical_devices"
         )
 
         $TestsString = ""
         if ($Tests.count -gt 0) {
             $TestsString = $Tests -join " "
         }
-        $TestsBuildCommand = "scons -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
+        $TestsBuildCommand = "scons -j 4 {0}" -f "$TestsString"
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "", Justification="Env variable is used by another executable")]
