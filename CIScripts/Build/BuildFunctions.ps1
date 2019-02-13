@@ -319,8 +319,8 @@ function Invoke-AgentUnitTestRunner {
     return $Res
 }
 
-class AgentTestPath {
-    static [string] get([string] $PathPrefix, [string] $TestName) {
+class UnitTestPath {
+    [string] get([string] $PathPrefix, [string] $TestName) {
         return "$PathPrefix/test/$TestName.exe"
     }
 }
@@ -347,14 +347,14 @@ function Invoke-AgentTestsBuild {
             # "controller/src/schema:test",
             # "src/xml:xml_test",
             # "controller/src/xmpp:test",
-            [AgentTestPath]::get($BaseTestPrefix, "bitset_test"),
-            [AgentTestPath]::get($BaseTestPrefix, "index_allocator_test"),
-            [AgentTestPath]::get($BaseTestPrefix, "dependency_test"),
-            [AgentTestPath]::get($BaseTestPrefix, "label_block_test"),
-            [AgentTestPath]::get($BaseTestPrefix, "queue_task_test"),
-            [AgentTestPath]::get($BaseTestPrefix, "subset_test"),
-            [AgentTestPath]::get($BaseTestPrefix, "patricia_test"),
-            [AgentTestPath]::get($BaseTestPrefix, "boost_US_test")
+            [UnitTestPath]::get($BaseTestPrefix, "bitset_test"),
+            [UnitTestPath]::get($BaseTestPrefix, "index_allocator_test"),
+            [UnitTestPath]::get($BaseTestPrefix, "dependency_test"),
+            [UnitTestPath]::get($BaseTestPrefix, "label_block_test"),
+            [UnitTestPath]::get($BaseTestPrefix, "queue_task_test"),
+            [UnitTestPath]::get($BaseTestPrefix, "subset_test"),
+            [UnitTestPath]::get($BaseTestPrefix, "patricia_test"),
+            [UnitTestPath]::get($BaseTestPrefix, "boost_US_test")
 
             # oper
             # "agent:test_agent_sandesh",
@@ -374,11 +374,8 @@ function Invoke-AgentTestsBuild {
             # "agent:test_physical_devices"
         )
 
-        $TestsString = ""
-        if ($Tests.count -gt 0) {
-            $TestsString = $Tests -join " "
-        }
-        $TestsBuildCommand = "scons -j 4 {0}" -f "$TestsString"
+        $TestsString = $Tests -join " "
+        $TestsBuildCommand = "scons -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "", Justification="Env variable is used by another executable")]
