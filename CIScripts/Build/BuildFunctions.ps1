@@ -276,19 +276,31 @@ function Copy-DebugDlls {
     })
 }
 
-function Test-IfGTestOutputSuggestsThatAllTestsHavePassed {
+# function Test-IfGTestOutputSuggestsThatAllTestsHavePassed {
+#     Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
+#     $NumberOfTests = -1
+#     Foreach ($Line in $TestOutput) {
+#         if ($Line -match "\[==========\] (?<HowManyTests>[\d]+) test[s]? from [\d]+ test [\w]* ran[.]*") {
+#             $NumberOfTests = $matches.HowManyTests
+#         }
+#         if ($Line -match "\[  PASSED  \] (?<HowManyTestsHavePassed>[\d]+) test[.]*" -and $NumberOfTests -ge 0) {
+#             return $($matches.HowManyTestsHavePassed -eq $NumberOfTests)
+#         }
+#     }
+#     return $False
+# }
+
+function Get-FailedUnitTests {
     Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
-    $NumberOfTests = -1
+    $FailedTests = @()
     Foreach ($Line in $TestOutput) {
-        if ($Line -match "\[==========\] (?<HowManyTests>[\d]+) test[s]? from [\d]+ test [\w]* ran[.]*") {
-            $NumberOfTests = $matches.HowManyTests
-        }
-        if ($Line -match "\[  PASSED  \] (?<HowManyTestsHavePassed>[\d]+) test[.]*" -and $NumberOfTests -ge 0) {
-            return $($matches.HowManyTestsHavePassed -eq $NumberOfTests)
+        if ($Line -match "\[  FAILED  \] (?<FailedTest>.*)$") {
+            $FailedTests += $matches.FailedTest
         }
     }
-    return $False
+    return $FailedTests
 }
+
 
 function Invoke-AgentUnitTestRunner {
     Param ([Parameter(Mandatory = $true)] [String] $TestExecutable)
@@ -297,33 +309,37 @@ function Invoke-AgentUnitTestRunner {
         $Command = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
             Invoke-Expression $TestExecutable
         }
-
+        $Result = @{}
         # This is a workaround for the following bug:
         # https://bugs.launchpad.net/opencontrail/+bug/1714205
         # Even if all tests actually pass, test executables can sometimes
         # return non-zero exit code.
         # TODO: It should be removed once the bug is fixed (JW-1110).
-        $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $Command.Output
-        if (0 -eq $Command.ExitCode -or $SeemsLegitimate) {
-            return 0
+        # $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $Command.Output
+        $Result.FailedTests = Get-FailedUnitTests -TestOutput $Command.Output
+        if (0 -eq $Command.ExitCode -and -not $Result.FailedTests.Count) {
+            $Result.ExitCode = 0
         } else {
-            return $Command.ExitCode
+            $Result.ExitCode = $Command.ExitCode
         }
+
+        return $Result
     }
 
-    if (0 -eq $Res) {
+    if (0 -eq $Res.ExitCode -and -not $Res.FailedTests.Count) {
         Write-Host "        Succeeded."
     } else {
-        Write-Host "        Failed (exit code: $Res)."
+        $FailedTests = $Res.FailedTests -join [Environment]::NewLine
+        Write-Host "        Failed:`r`n exit code: $Res. `r`n failed tests: `r`n $FailedTests "
     }
     return $Res
 }
 
-class UnitTestPath {
-    static [string] get([string] $PathPrefix, [string] $TestName) {
-        return "$PathPrefix/test/$TestName.exe"
-    }
-}
+# class UnitTestPath {
+#     static [string] get([string] $PathPrefix, [string] $TestName) {
+#         return "$PathPrefix/test/$TestName.exe"
+#     }
+# }
 
 function Invoke-AgentTestsBuild {
     Param ([Parameter(Mandatory = $true)] [string] $LogsPath,
@@ -334,7 +350,7 @@ function Invoke-AgentTestsBuild {
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $TestPathPrefix = "build/$BuildMode"
-    $BaseTestPrefix = "$TestPathPrefix/base"
+    # $BaseTestPrefix = "$TestPathPrefix/base"
     # $AgentPathPrefix = "$TestPathPrefix/vnsw/agent"
 
     $Job.Step("Building agent tests", {
@@ -347,14 +363,11 @@ function Invoke-AgentTestsBuild {
             # "controller/src/schema:test",
             # "src/xml:xml_test",
             # "controller/src/xmpp:test",
-            [UnitTestPath]::get($BaseTestPrefix, "bitset_test"),
-            [UnitTestPath]::get($BaseTestPrefix, "index_allocator_test"),
-            [UnitTestPath]::get($BaseTestPrefix, "dependency_test"),
-            [UnitTestPath]::get($BaseTestPrefix, "label_block_test"),
-            [UnitTestPath]::get($BaseTestPrefix, "queue_task_test"),
-            [UnitTestPath]::get($BaseTestPrefix, "subset_test"),
-            [UnitTestPath]::get($BaseTestPrefix, "patricia_test"),
-            [UnitTestPath]::get($BaseTestPrefix, "boost_US_test")
+
+            "src/contrail-common/base:test",
+            "src/contrail-common/io:test"
+            "controller/src/agent:test"
+            # "vrouter:test"
 
             # oper
             # "agent:test_agent_sandesh",
@@ -374,24 +387,6 @@ function Invoke-AgentTestsBuild {
             # "agent:test_physical_devices"
         )
 
-        $TestsString = $Tests -join " "
-        $TestsBuildCommand = "scons -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="Env variable is used by another executable")]
-        $Env:BUILD_ONLY = "1"
-        Invoke-NativeCommand -ScriptBlock {
-            Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
-        }
-        Remove-Item Env:\BUILD_ONLY
-    })
-
-    $rootBuildDir = "build\$BuildMode"
-
-    $Job.Step("Running agent tests", {
-        $backupPath = $Env:Path
-        $Env:Path += ";" + $(Get-Location).Path + "\build\bin"
-
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "", Justification="TASK_UTIL_WAIT_TIME is used agent tests for determining timeout's " +
             "threshold. They were copied from Linux unit test job.")]
@@ -402,28 +397,48 @@ function Invoke-AgentTestsBuild {
             "timeout's threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_RETRY_COUNT = 6000
 
-        $TestsFolders = @(
-            "base\test",
-            "dns\test",
-            "ksync\test",
-            "schema\test",
-            "vnsw\agent\cmn\test",
-            "vnsw\agent\oper\test",
-            "vnsw\agent\test",
-            "xml\test",
-            "xmpp\test"
-        ) | ForEach-Object { "$rootBuildDir\$_" }
+        $TestsString = $Tests -join " "
+        $TestsRunCommand = "scons -k --debug=explain -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
 
-        $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*\.exe$'}
-        Foreach ($TestExecutable in $AgentExecutables) {
-            $TestRes = Invoke-AgentUnitTestRunner -TestExecutable $TestExecutable.FullName
-            if (0 -ne $TestRes) {
-                throw "Running agent tests failed"
-            }
+        # [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+        #     "", Justification="Env variable is used by another executable")]
+        # $Env:BUILD_ONLY = "1"
+        $TestRes = Invoke-AgentUnitTestRunner -TestExecutable $TestsRunCommand
+        if (0 -ne $TestRes) {
+            throw "Running agent tests failed"
         }
 
-        $Env:Path = $backupPath
+        # Remove-Item Env:\BUILD_ONLY
     })
+
+    # $rootBuildDir = "build\$BuildMode"
+
+    # $Job.Step("Running agent tests", {
+    #     $backupPath = $Env:Path
+    #     $Env:Path += ";" + $(Get-Location).Path + "\build\bin"
+
+    #     # $TestsFolders = @(
+    #     #     "base\test",
+    #     #     "dns\test",
+    #     #     "ksync\test",
+    #     #     "schema\test",
+    #     #     "vnsw\agent\cmn\test",
+    #     #     "vnsw\agent\oper\test",
+    #     #     "vnsw\agent\test",
+    #     #     "xml\test",
+    #     #     "xmpp\test"
+    #     # ) | ForEach-Object { "$rootBuildDir\$_" }
+
+    #     # $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*\.exe$'}
+    #     Foreach ($TestExecutable in $AgentExecutables) {
+    #         $TestRes = Invoke-AgentUnitTestRunner -TestExecutable $TestExecutable.FullName
+    #         if (0 -ne $TestRes) {
+    #             throw "Running agent tests failed"
+    #         }
+    #     }
+
+    #     $Env:Path = $backupPath
+    # })
 
     $Job.PopStep()
 }
