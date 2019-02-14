@@ -349,7 +349,7 @@ function Invoke-AgentTestsBuild {
 
     $BuildModeOption = "--optimization=" + $BuildMode
 
-    $TestPathPrefix = "build/$BuildMode"
+    # $TestPathPrefix = "build/$BuildMode"
     # $BaseTestPrefix = "$TestPathPrefix/base"
     # $AgentPathPrefix = "$TestPathPrefix/vnsw/agent"
 
