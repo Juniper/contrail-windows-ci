@@ -205,15 +205,50 @@ function Test-IfVmSwitchExist {
         [Parameter(Mandatory = $true)] [String] $VmSwitchName
     )
 
+
+    Write-Log "Checking if VmSwitch '$VMSwitchName' exists..."
+
     $r = Invoke-Command -Session $Session -ScriptBlock {
         Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
     }
 
-    if(($null -eq $r) -or ($r.Equals($true))) {
+    if($null -eq $r) {
+        Write-Log '... it does not.'
         return $false
     }
+    elseif($r.Equals($true)) {
+        Write-Log '... it still exists, but is being deleted.'
+        return $false
+    }
+    elseif($r.Equals($false)) {
+        Write-Log '... it still exists.'
+        return $true
+    }
 
-     return $true
+    Write-Log "... it returned: $r"
+    throw "Checking if switch exists failed."
+}
+
+function Write-IpAddresses {
+    Param (
+        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+    )
+
+    $AdaptersNames = @($SystemConfig.VHostName, $SystemConfig.AdapterName)
+
+    $Infos = Invoke-Command -Session $Session -ScriptBlock {
+        $Ret = @{}
+        $Using:AdaptersNames | ForEach-Object {
+            $Ip = (Get-NetAdapter -Name $_ -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4" | Select-Object -ExpandProperty IPAddress)
+            $Ret.Add($_,  $Ip)
+        }
+        return $Ret
+    }
+
+    foreach($Info in $Infos.GetEnumerator()) {
+        Write-Log "IP on '$($Info.Key)': $($Info.Value)"
+    }
 }
 
 function Assert-VmSwitchInitialized {
@@ -224,6 +259,8 @@ function Assert-VmSwitchInitialized {
     if(-not (Test-IfVmSwitchExist -Session $Session -VmSwitchName $SystemConfig.VMSwitchName())) {
         throw "VmSwitch is not created. No need to wait for IP on $($SystemConfig.VHostName)."
     }
+
+    Write-IPAddresses -Session $Session -SystemConfig $SystemConfig
 
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
 }
@@ -236,6 +273,8 @@ function Assert-VmSwitchDeleted {
     if(Test-IfVmSwitchExist -Session $Session -VmSwitchName $SystemConfig.VMSwitchName()) {
         throw "VmSwitch is not going to be deleted. No need to wait for IP on $($SystemConfig.AdapterName)."
     }
+
+    Write-IPAddresses -Session $Session -SystemConfig $SystemConfig
 
     Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
 }
