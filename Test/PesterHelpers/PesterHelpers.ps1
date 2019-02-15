@@ -2,6 +2,7 @@ Import-Module Pester
 
 . $PSScriptRoot\..\..\CIScripts\Common\Aliases.ps1
 . $PSScriptRoot\..\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\Result.ps1
 
 function Consistently {
     <#
@@ -88,38 +89,37 @@ function Test-WithRetries {
 function Test-ResultsWithRetries {
     Param ([Parameter(Mandatory=$true)] [object] $Results)
 
-    function Test-HasAnySuccess {
-        Param (
-            [Parameter(Mandatory=$true)] [String] $Describe,
-            [Parameter(Mandatory=$true)][AllowEmptyString()] [String] $Context,
-            [Parameter(Mandatory=$true)] [String] $Name
-        )
+    if (0 -eq $Results.Count) {
+        return $true
+    }
+
+    [MultiResult] $TestsResult = [MultiResult]::new()
 
         ForEach ($Result in $Results) {
-            if ($Result.Describe -eq $Describe `
-                -and $Result.Context -eq $Context `
-                -and $Result.Name -eq $Name `
-                -and "Passed" -eq $Result.Result) {
-                    return $true
+        [MultiResult] $Describe = $TestsResult.Get($Result.Describe)
+        if ($null -eq $Describe) {
+            $Describe = $TestsResult.Add($Result.Describe, [MultiResult]::new())
             }
+        if ($Result.Name -eq "Error occurred in Describe block") {
+            continue
         }
 
-        return $false
+        [MultiResult] $Context = $Describe.Get($Result.Context)
+        if ($null -eq $Context) {
+            $Context = $Describe.Add($Result.Context, [MultiResult]::new())
+    }
+        if ($Result.Name -eq "Error occurred in Context block") {
+            continue
     }
 
-    ForEach ($Result in $Results) {
-        if ("Failed" -eq $Result.Result) {
-            $AnySuccess = Test-HasAnySuccess `
-                -Describe $Result.Describe `
-                -Context $Result.Context `
-                -Name $Result.Name
-            if (-not $AnySuccess) {
-                return $false
-            }
+        [SingleResult] $It = $Context.Get($Result.Name)
+        if ($null -eq $It) {
+            $It = $Context.Add($Result.Name, [SingleResult]::new())
         }
+        $It.OrSuccess('Failed' -ne $Result.Result)
     }
 
-    return $true
+    return $TestsResult.HadSucceeded()
 }
 
 function Suspend-PesterOnException {
