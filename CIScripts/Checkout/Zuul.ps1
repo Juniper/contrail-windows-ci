@@ -1,5 +1,3 @@
-. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Invoke-NativeCommand.ps1
-
 function Get-ZuulRepos {
     Param (
         [Parameter(Mandatory = $true)] [string] $GerritUrl,
@@ -34,8 +32,8 @@ function Get-ZuulRepos {
     )
 
     $Job.Step("Cloning zuul repositories", {
-        Invoke-NativeCommand -ScriptBlock {
+        Invoke-Command -ScriptBlock {
             zuul-cloner.exe @ZuulClonerOptions @ProjectList
-        }
+        } 2>&1
     })
 }

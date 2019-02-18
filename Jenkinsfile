@@ -51,6 +51,7 @@ pipeline {
             steps {
                 deleteDir()
                 unstash "CIScripts"
+                unstash "Test"
                 retry(3) {
                     powershell script: './CIScripts/Checkout.ps1'
                     stash name: "SourceCode", excludes: "CIScripts"
@@ -89,6 +90,7 @@ pipeline {
                     steps {
                         deleteDir()
                         unstash "CIScripts"
+                        unstash "Test"
 
                         unstash "Monitoring"
                         dir("monitoring") {
@@ -146,6 +148,7 @@ pipeline {
                         deleteDir()
 
                         unstash "CIScripts"
+                        unstash "Test"
                         unstash "SourceCode"
 
                         powershell script: './CIScripts/BuildStage.ps1'

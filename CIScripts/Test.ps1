@@ -6,7 +6,7 @@ Param(
 )
 
 . $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Init.ps1
-. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Job.ps1
+. $PSScriptRoot\Job.ps1
 
 $Job = [Job]::new("Test")
 

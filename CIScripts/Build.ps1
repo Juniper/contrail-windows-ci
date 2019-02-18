@@ -1,7 +1,7 @@
 # Build builds selected Windows Compute components.
 . $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Init.ps1
-. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Job.ps1
 
+. $PSScriptRoot\Job.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
 . $PSScriptRoot\Build\BuildMode.ps1
 . $PSScriptRoot\Build\Containers.ps1
