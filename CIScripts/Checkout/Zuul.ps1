@@ -32,9 +32,9 @@ function Get-ZuulRepos {
     )
 
     $Job.Step("Cloning zuul repositories", {
-            Invoke-Command -ScriptBlock {
-                zuul-cloner.exe @ZuulClonerOptions @ProjectList
-                exit 0
-            } -ErrorAction 'Continue' 2>&1
+            $ErrorActionPreference = 'Continue'
+            zuul-cloner.exe @ZuulClonerOptions @ProjectList 2>&1
+            $Global:LastExitCode = $null
+            $ErrorActionPreference = 'Stop'
         })
 }
