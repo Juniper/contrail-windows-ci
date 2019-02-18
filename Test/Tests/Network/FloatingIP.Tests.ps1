@@ -120,8 +120,8 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
                     -Name $ContainerServerID `
                     -Image $ContainerImage
 
-                $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainerClientID),
-                    (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainerServerID))
+                $ContainersLogs = @((New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainerClientID),
+                    (New-ContainerLogSource -Testbeds $Testenv.Testbeds[1] -ContainerNames $ContainerServerID))
                 $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
 
                 $VirtualNetworkRepo = [VirtualNetworkRepo]::new($Testenv.MultiNode.ContrailRestApi)

@@ -270,8 +270,8 @@ Test-WithRetries 3 {
                 -NetworkName $VirtualNetwork.Name
             $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
 
-            $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIds[0]),
-                (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIds[1]))
+            $ContainersLogs = @((New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainersIds[0]),
+                (New-ContainerLogSource -Testbeds $Testenv.Testbeds[1] -ContainerNames $ContainersIds[1]))
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
         }
 

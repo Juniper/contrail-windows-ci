@@ -243,8 +243,8 @@ Test-WithRetries 3 {
                     -Session $Testenv.Sessions[$i] -ContainerID $ContainersIDs[$i]
                 Write-Log "IP of $($ContainersIDs[$i]): $($ContainerNetInfos[$i].IPAddress)"
             }
-            $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainersIDs[0]),
-                (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainersIDs[1]))
+            $ContainersLogs = @((New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainersIDs[0]),
+                (New-ContainerLogSource -Testbeds $Testenv.Testbeds[1] -ContainerNames $ContainersIDs[1]))
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
         }
 
