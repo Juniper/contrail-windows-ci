@@ -273,7 +273,7 @@ pipeline {
         MYSQL = credentials('winstats-mysql')
         MYSQL_HOST = "winci-winstats"
         MYSQL_DATABASE = "monitoring"
-        COMMON_POWERSHELL_CODE = "${env.WORKSPACE}/Test/Common"
+        COMMON_POWERSHELL_CODE = "${pwd()}/Test/Common"
     }
 
     post {
