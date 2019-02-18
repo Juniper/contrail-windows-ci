@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\..\Utils\PowershellTools\Init.ps1
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'

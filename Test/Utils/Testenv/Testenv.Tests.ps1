@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Init.ps1
 . $PSScriptRoot\Configs.ps1
 . $PSScriptRoot\Testbed.ps1
 

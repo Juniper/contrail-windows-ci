@@ -3,7 +3,7 @@ Param (
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
-. $PSScriptRoot\..\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\..\Utils\PowershellTools\Init.ps1
 . $PSScriptRoot\..\Utils\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\TestConfigurationUtils.ps1

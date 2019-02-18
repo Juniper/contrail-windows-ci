@@ -1,5 +1,5 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Credentials.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Aliases.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Credentials.ps1
 . $PSScriptRoot\Configs.ps1
 
 # Dotsource needed files above this line

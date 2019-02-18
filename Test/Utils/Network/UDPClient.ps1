@@ -1,5 +1,5 @@
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Invoke-UntilSucceeds.ps1
 
 function Assert-IsUDPPortListening {
     Param (

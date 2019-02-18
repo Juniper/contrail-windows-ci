@@ -1,5 +1,5 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Init.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Invoke-CommandWithFunctions.ps1
 
 . $PSScriptRoot\..\Testenv\Configs.ps1
 

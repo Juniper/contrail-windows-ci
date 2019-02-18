@@ -1,6 +1,6 @@
-. $PSScriptRoot\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
-. $PSScriptRoot\..\CIScripts\Common\Invoke-NativeCommand.ps1
-. $PSScriptRoot\..\CIScripts\Common\Invoke-CommandWithFunctions.ps1
+. $PSScriptRoot\Utils\PowershellTools\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\Utils\PowershellTools\Invoke-NativeCommand.ps1
+. $PSScriptRoot\Utils\PowershellTools\Invoke-CommandWithFunctions.ps1
 . $PSScriptRoot\Utils\Testenv\Configs.ps1
 
 . $PSScriptRoot\Utils\ComputeNode\Configuration.ps1

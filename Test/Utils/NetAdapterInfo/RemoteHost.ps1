@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Aliases.ps1
 . $PSScriptRoot\Impl.ps1
 
 function Get-RemoteNetAdapterInformation {
