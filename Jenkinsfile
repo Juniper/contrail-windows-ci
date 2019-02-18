@@ -146,6 +146,7 @@ pipeline {
                         deleteDir()
 
                         unstash "CIScripts"
+                        unstash "Test"
                         unstash "SourceCode"
 
                         powershell script: './CIScripts/BuildStage.ps1'
@@ -302,6 +303,7 @@ pipeline {
                     deleteDir()
 
                     unstash 'CIScripts'
+                    unstash 'Test'
 
                     def logFilename = 'log.full.txt.gz'
 

@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\..\Test\Utils\PowershellTools\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\Build\Repository.ps1
 
 $PdbSubfolder = "pdb"

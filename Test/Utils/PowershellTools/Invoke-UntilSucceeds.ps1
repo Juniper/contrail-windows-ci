@@ -1,6 +1,6 @@
 . $PSScriptRoot\Aliases.ps1
 . $PSScriptRoot\Exceptions.ps1
-. $PSScriptRoot\..\..\Test\PesterLogger\PesterLogger.ps1
+. $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 
 class HardError : System.Exception {
     HardError([string] $msg) : base($msg) {}
