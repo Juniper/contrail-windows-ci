@@ -79,21 +79,21 @@ function Test-ControllerReceivesNodeStatus {
 Describe 'Node manager' -Tags Smoke, EnvSafe {
     It 'starts' {
         Eventually {
-            Test-NodeMgrLogs -Session $Testenv.Sessions[0] | Should Be True
+            Test-NodeMgrLogs -Session $Testenv.Testbeds[0] | Should Be True
         } -Duration 60
     }
 
     It 'connects to controller' {
         Eventually {
             Test-NodeMgrConnectionWithController `
-                -Session $Testenv.Sessions[0] `
+                -Session $Testenv.Testbeds[0] `
                 -ControllerIP $Testenv.Controller.Address | Should Be True
         } -Duration 60
     }
 
     It "sets node state as 'Up'" -Pending {
         Eventually {
-            Test-ControllerReceivesNodeStatus -Session $Testenv.Sessions[0] | Should Be True
+            Test-ControllerReceivesNodeStatus -Session $Testenv.Testbeds[0] | Should Be True
         } -Duration 60
     }
 
