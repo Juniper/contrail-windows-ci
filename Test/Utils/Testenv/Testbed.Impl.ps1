@@ -5,7 +5,7 @@ class Testbed {
     [string] $Username
     [string] $Password
 
-    [PSSessionT[]] $Sessions = @()
+    [PSSessionT] $Session = $null
 
     [PSSessionT] NewSession() {
         return $this.NewSession(10, 300000)
@@ -17,8 +17,12 @@ class Testbed {
     }
 
     [PSSessionT] NewSession([Int] $RetryCount, [Int] $Timeout) {
+        if ($null -ne $this.Session) {
+            Remove-PSSession $this.Session -ErrorAction SilentlyContinue
+        }
+
         $Creds = $this.GetCredentials()
-        $Session = if ($this.Address) {
+        $this.Session = if ($this.Address) {
             $pso = New-PSSessionOption -MaxConnectionRetryCount $RetryCount -OperationTimeout $Timeout
             New-PSSession -ComputerName $this.Address -Credential $Creds -SessionOption $pso
         }
@@ -29,16 +33,25 @@ class Testbed {
             throw "You need to specify 'address' or 'vmName' for a testbed to create a session."
         }
 
-        $this.InitializeSession($Session)
-        $this.Sessions += $Session
+        $this.InitializeSession($this.Session)
 
-        return $Session
+        return $this.Session
     }
 
     [Void] RemoveAllSessions() {
-        foreach ($Session in $this.Sessions) {
-            Remove-PSSession $Session -ErrorAction Continue
+        Remove-PSSession $this.Session -ErrorAction Continue
+        $this.Session = $null
+    }
+
+    [PSSessionT] GetSession() {
+        if (($null -ne $this.Session) -and ('Opened' -ne $this.Session.State)) {
+            Remove-PSSession $this.Session -ErrorAction SilentlyContinue
+            $this.Session = $null
         }
+        if ($null -eq $this.Session) {
+            $this.NewSession()
+        }
+        return $this.Session
     }
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText",
@@ -66,6 +79,36 @@ class Testbed {
         }
     }
 }
+
+class TestbedConverter : System.Management.Automation.PSTypeConverter {
+    $ToTypes = @([PSSessionT])
+
+    [Bool] CanConvertFrom([System.Object] $Source, [Type] $Destination) {
+        return $false
+    }
+    [System.Object] ConvertFrom([System.Object] $Source, [Type] $Destination, [System.IFormatProvider] $Provider, [Bool] $IgnoreCase) {
+        throw [System.InvalidCastException]::new();
+    }
+
+    [Bool] CanConvertTo([System.Object] $Source, [Type] $Destination) {
+        if ($Destination -in $this.ToTypes) {
+            return $true
+        }
+        return $false
+    }
+    [System.Object] ConvertTo([System.Object] $Source, [Type] $Destination, [System.IFormatProvider] $Provider, [Bool] $IgnoreCase) {
+        if ($Destination.Equals([PSSessionT])) {
+            return $this.ConvertToPSSession($Source)
+        }
+        throw [System.InvalidCastException]::new('Not implemented')
+    }
+
+    [PSSessionT] ConvertToPSSession([Testbed] $Testbed) {
+        return $Testbed.GetSession()
+    }
+}
+
+Update-TypeData -TypeName 'Testbed' -TypeConverter 'TestbedConverter' -ErrorAction SilentlyContinue
 
 function New-RemoteSessions {
     Param ([Parameter(Mandatory = $true)] [Testbed[]] $VMs)

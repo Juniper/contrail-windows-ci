@@ -4,8 +4,6 @@ class Testenv {
     [ControllerConfig] $Controller
     [Testbed[]] $Testbeds
 
-    [PSSessionT[]] $Sessions = $null
-
     [System.Collections.Stack] $CleanupStacks = [System.Collections.Stack]::new()
     [MultiNode] $Multinode = $null
     [LogSource[]] $LogSources = $null
@@ -23,8 +21,7 @@ class Testenv {
         $CleanupStack = $this.NewCleanupStack()
 
         Write-Log 'Creating sessions'
-        $this.Sessions = New-RemoteSessions -VMs $this.Testbeds
-        $CleanupStack.Push( {Param([PSSessionT[]] $Sessions) Write-Log 'Removing sessions'; Remove-PSSession $Sessions}, @(, $this.Sessions))
+        $CleanupStack.Push( {Param([Testbed[]] $Testbeds) foreach ($Testbed in $Tesbeds) { $Tesbeds.RemoveAllSessions() }}, @(, $this.Testbeds))
 
         Write-Log 'Preparing testbeds'
         Set-ConfAndLogDir -Sessions $this.Sessions
@@ -72,3 +69,6 @@ class Testenv {
         }
     }
 }
+
+# This is legacy alias for $Testbeds field
+Update-TypeData -TypeName 'Testenv' -MemberType 'AliasProperty' -MemberName 'Sessions' -Value 'Testbeds' -ErrorAction 'SilentlyContinue'
