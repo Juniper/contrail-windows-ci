@@ -3,7 +3,7 @@ Param(
     [Parameter(Mandatory = $true)] [string] $OutputDir
 )
 
-. $Env:COMMON_POWERSHELL_CODE\Init.ps1
+. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Init.ps1
 . $PSScriptRoot\Report\GenerateTestReport.ps1
 
 if ((Test-Path $RawNUnitPath) -and (Get-ChildItem $RawNUnitPath)) {

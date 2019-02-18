@@ -6,7 +6,7 @@ Param (
     [switch] $CodeCoverage
 )
 
-. $Env:COMMON_POWERSHELL_CODE\Init.ps1
+. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Init.ps1
 . $PSScriptRoot\Test\TestRunner\Invoke-PesterTests.ps1
 
 # NOTE TO DEVELOPERS

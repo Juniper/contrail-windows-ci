@@ -1,4 +1,4 @@
-. $Env:COMMON_POWERSHELL_CODE\Invoke-NativeCommand.ps1
+. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Invoke-NativeCommand.ps1
 
 class ContainerAttributes {
     [string] $Suffix;

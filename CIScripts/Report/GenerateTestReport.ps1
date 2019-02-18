@@ -1,6 +1,6 @@
 . $PSScriptRoot\Repair-NUnitReport.ps1
-. $Env:COMMON_POWERSHELL_CODE\Invoke-NativeCommand.ps1
-. $Env:COMMON_POWERSHELL_CODE\Invoke-CommandInLocation.ps1
+. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Invoke-NativeCommand.ps1
+. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Invoke-CommandInLocation.ps1
 
 function Convert-TestReportsToHtml {
     param (

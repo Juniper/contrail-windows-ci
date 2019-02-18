@@ -1,6 +1,6 @@
 # Build builds selected Windows Compute components.
-. $Env:COMMON_POWERSHELL_CODE\Init.ps1
-. $Env:COMMON_POWERSHELL_CODE\Job.ps1
+. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Init.ps1
+. $Env:Workspace\$Env:POWERSHELL_COMMON_CODE\Job.ps1
 
 . $PSScriptRoot\Build\BuildFunctions.ps1
 . $PSScriptRoot\Build\BuildMode.ps1
@@ -82,13 +82,13 @@ try {
     if (Test-Path Env:DOCKER_REGISTRY) {
         $ContainersAttributes = @(
             [ContainerAttributes]::New("vrouter", @(
-                $vRouterOutputDir,
-                $AgentOutputDir,
-                $NodemgrOutputDir
-            )),
+                    $vRouterOutputDir,
+                    $AgentOutputDir,
+                    $NodemgrOutputDir
+                )),
             [ContainerAttributes]::New("cnm-plugin", @(
-                $CnmPluginOutputDir
-            ))
+                    $CnmPluginOutputDir
+                ))
         )
         Invoke-ContainersBuild -WorkDir $ContainersWorkDir `
             -ContainersAttributes $ContainersAttributes `
@@ -97,7 +97,8 @@ try {
     }
 
     Remove-PDBfiles -OutputPaths @($vRouterOutputDir, $AgentOutputDir)
-} finally {
+}
+finally {
     $testDirs = Get-ChildItem ".\build\$SconsBuildMode" -Directory
     foreach ($d in $testDirs) {
         Copy-Item -Path $d.FullName -Destination $SconsTestsLogsDir `
