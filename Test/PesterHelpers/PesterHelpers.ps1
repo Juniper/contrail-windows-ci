@@ -1,7 +1,7 @@
 Import-Module Pester
 
-. $PSScriptRoot\..\..\CIScripts\Common\Aliases.ps1
-. $PSScriptRoot\..\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\..\Common\Aliases.ps1
+. $PSScriptRoot\..\Common\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\Result.ps1
 
 function Consistently {

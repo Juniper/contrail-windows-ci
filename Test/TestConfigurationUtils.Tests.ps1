@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\Common\Init.ps1
 . $PSScriptRoot\TestConfigurationUtils.ps1
 
 Describe "Select-ValidNetIPInterface unit tests" -Tags CISelfcheck, Unit {

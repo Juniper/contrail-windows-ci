@@ -21,6 +21,10 @@ pipeline {
         lock label: 'testenv_pool', quantity: 1
     }
 
+    environment {
+        COMMON_POWERSHELL_CODE = "${env.WORKSPACE}/Test/Common"
+    }
+
     stages {
         stage('Preparation') {
             agent { label 'ansible' }

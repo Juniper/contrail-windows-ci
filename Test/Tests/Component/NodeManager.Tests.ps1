@@ -5,8 +5,8 @@ Param (
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
-. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
+. $PSScriptRoot\..\..\Common\Init.ps1
+. $PSScriptRoot\..\..\Common\Aliases.ps1
 
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1

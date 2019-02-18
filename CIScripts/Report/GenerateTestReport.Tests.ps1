@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\Init.ps1
+. $Env:COMMON_POWERSHELL_CODE\Init.ps1
 . $PSScriptRoot\GenerateTestReport.ps1
 
 function Invoke-FakeReportunit {

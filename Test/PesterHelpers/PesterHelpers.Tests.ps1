@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\..\Common\Init.ps1
 . $PSScriptRoot\Result.ps1
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path

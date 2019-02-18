@@ -1,7 +1,7 @@
-. $PSScriptRoot\Common\Init.ps1
-. $PSScriptRoot\Common\Job.ps1
-. $PSScriptRoot\Common\Aliases.ps1
-. $PSScriptRoot\Common\Credentials.ps1
+. $Env:COMMON_POWERSHELL_CODE\Job.ps1
+. $Env:COMMON_POWERSHELL_CODE\Aliases.ps1
+. $Env:COMMON_POWERSHELL_CODE\Init.ps1
+. $Env:COMMON_POWERSHELL_CODE\Credentials.ps1
 . $PSScriptRoot\Build\BuildMode.ps1
 
 $Credentials = Get-MgmtCreds

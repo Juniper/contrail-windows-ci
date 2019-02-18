@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\..\Common\Invoke-NativeCommand.ps1
 
 function Get-DockerfilesPath {
     return 'C:\DockerFiles'

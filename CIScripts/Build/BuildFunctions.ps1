@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
+. $Env:COMMON_POWERSHELL_CODE\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\Build\Repository.ps1
 
 $PdbSubfolder = "pdb"

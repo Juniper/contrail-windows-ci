@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\..\CIScripts\Common\Aliases.ps1
+. $PSScriptRoot\..\Common\Aliases.ps1
 
 # [Shelly-Bug] Shelly doesn't detect `Get-Item function:Function` as usage
 . $PSScriptRoot\Get-CurrentPesterScope.ps1 # shelly: allow unused-imports

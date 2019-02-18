@@ -1,5 +1,5 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\..\Common\Init.ps1
 . $PSScriptRoot\Impl.ps1
 
 function Get-RemoteVMNetAdapterInformation {

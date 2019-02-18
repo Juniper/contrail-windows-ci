@@ -1,5 +1,5 @@
-. $PSScriptRoot\..\..\CIScripts\Common\Aliases.ps1
-. $PSScriptRoot\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\Common\Aliases.ps1
+. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
 
 . $PSScriptRoot\PesterLogger.ps1
 

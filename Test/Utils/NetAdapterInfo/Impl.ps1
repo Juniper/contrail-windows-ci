@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
+. $PSScriptRoot\..\..\Common\Aliases.ps1
 . $PSScriptRoot\DataStructs.ps1
 
 function Read-RawRemoteContainerNetAdapterInformation {
