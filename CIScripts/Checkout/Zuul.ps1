@@ -34,6 +34,6 @@ function Get-ZuulRepos {
     $Job.Step("Cloning zuul repositories", {
         Invoke-Command -ScriptBlock {
             zuul-cloner.exe @ZuulClonerOptions @ProjectList
-        } 2>&1
+        } -ErrorAction 'Continue' 2>&1
     })
 }
