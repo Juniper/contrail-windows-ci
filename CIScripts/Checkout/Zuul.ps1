@@ -34,7 +34,6 @@ function Get-ZuulRepos {
     $Job.Step("Cloning zuul repositories", {
             $ErrorActionPreference = 'Continue'
             zuul-cloner.exe @ZuulClonerOptions @ProjectList 2>&1
-            $Global:LastExitCode = $null
             $ErrorActionPreference = 'Stop'
         })
 }
