@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\..\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\..\..\Invoke-NativeCommand.ps1
 
 function Remove-AllContainers {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions)
@@ -11,7 +11,7 @@ function Remove-AllContainers {
             $MaxAttempts = 3
             $TimesToGo = $MaxAttempts
             while ( $Containers -and $TimesToGo -gt 0 ) {
-                if ($Containers) {
+                if($Containers) {
                     $Command = "docker rm -f $Containers"
                     Invoke-Expression -Command $Command
                 }
@@ -40,7 +40,7 @@ function Remove-AllContainers {
 
 function Stop-Container {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $false)] [string] $NameOrId)
+           [Parameter(Mandatory = $false)] [string] $NameOrId)
 
     Invoke-Command -Session $Session -ScriptBlock {
         docker kill $Using:NameOrId | Out-Null
@@ -49,7 +49,7 @@ function Stop-Container {
 
 function Remove-Container {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $false)] [string] $NameOrId)
+           [Parameter(Mandatory = $false)] [string] $NameOrId)
 
     Invoke-Command -Session $Session -ScriptBlock {
         docker rm -f $Using:NameOrId | Out-Null
@@ -59,10 +59,10 @@ function Remove-Container {
 
 function New-Container {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $NetworkName,
-        [Parameter(Mandatory = $false)] [string] $Name,
-        [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver",
-        [Parameter(Mandatory = $false)] [string] $IP)
+           [Parameter(Mandatory = $true)] [string] $NetworkName,
+           [Parameter(Mandatory = $false)] [string] $Name,
+           [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver",
+           [Parameter(Mandatory = $false)] [string] $IP)
 
     if (Test-Dockerfile $Image) {
         Initialize-DockerImage -Session $Session -DockerImageName $Image | Out-Null

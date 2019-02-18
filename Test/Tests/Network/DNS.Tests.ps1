@@ -5,8 +5,8 @@ Param (
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
-. $PSScriptRoot\..\..\Aliases.ps1
-. $PSScriptRoot\..\..\Init.ps1
+. $PSScriptRoot\..\..\Common\Aliases.ps1
+. $PSScriptRoot\..\..\Common\Init.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 
