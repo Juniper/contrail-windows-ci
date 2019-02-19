@@ -404,9 +404,9 @@ function Invoke-AgentTestsBuild {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "", Justification="Env variable is used by another executable")]
         $Env:BUILD_ONLY = "1"
-        $TestRes = Invoke-AgentUnitTestRunner -TestExecutable $TestsBuildCommand
-        if (0 -ne $TestRes) {
-            throw "Running agent tests failed"
+
+        Invoke-NativeCommand -ScriptBlock {
+            Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
         }
 
         Remove-Item Env:\BUILD_ONLY
