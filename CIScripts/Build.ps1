@@ -1,6 +1,6 @@
 # Build builds selected Windows Compute components.
 . $PSScriptRoot\..\Test\Utils\PowershellTools\Init.ps1
-. $PSScriptRoot\Common\Job.ps1
+. $PSScriptRoot\Job.ps1
 . $PSScriptRoot\Build\BuildFunctions.ps1
 . $PSScriptRoot\Build\BuildMode.ps1
 . $PSScriptRoot\Build\Containers.ps1

@@ -6,7 +6,7 @@ Param(
 )
 
 . $PSScriptRoot\..\Test\Utils\PowershellTools\Init.ps1
-. $PSScriptRoot\Common\Job.ps1
+. $PSScriptRoot\Job.ps1
 
 $Job = [Job]::new("Test")
 

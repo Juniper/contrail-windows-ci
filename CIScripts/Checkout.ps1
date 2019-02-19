@@ -1,5 +1,17 @@
-. $PSScriptRoot\Common\Init.ps1
-. $PSScriptRoot\Common\Job.ps1
+# Enable all invoked commands tracing for debugging purposes
+if ($true -eq $Env:ENABLE_TRACE) {
+    Set-PSDebug -Trace 1
+}
+
+Set-StrictMode -Version Latest
+
+# Refresh Path
+$Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+
+# Stop script on error
+$ErrorActionPreference = "Stop"
+
+. $PSScriptRoot\Job.ps1
 . $PSScriptRoot\Checkout\Zuul.ps1
 . $PSScriptRoot\Checkout\Tentacle.ps1
 
