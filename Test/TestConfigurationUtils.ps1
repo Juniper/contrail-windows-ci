@@ -295,12 +295,14 @@ function Initialize-CnmPluginAndExtension {
         Start-CNMPluginService -Session $Testbed.GetSession()
 
         try {
+            $Sess = $Testbed.GetSession()
+            
             Invoke-UntilSucceeds -Name 'IsCNMPluginServiceRunning' -Duration 15 {
-                Test-IsCNMPluginServiceRunning -Session $Testbed.GetSession()
+                Test-IsCNMPluginServiceRunning -Session $Sess
             }
 
             Invoke-UntilSucceeds -Name 'IsCnmPluginEnabled' -Duration 600 -Interval 5 {
-                Assert-CnmPluginEnabled -Session $Testbed.GetSession()
+                Assert-CnmPluginEnabled -Session $Sess
             }
 
             Assert-VmSwitchInitialized -Testbed $Testbed -SystemConfig $SystemConfig
