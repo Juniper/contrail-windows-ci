@@ -44,15 +44,15 @@ class Testenv {
         $CleanupStack.Push(${function:Merge-Logs}, @(, $this.LogSources))
 
         if ($InstallComponents) {
-            foreach ($Session in $this.Sessions) {
+            foreach ($Testbed in $this.Testbeds) {
                 Initialize-ComputeNode `
-                    -Session $Session `
+                    -Testbed $Testbed `
                     -Configs $this `
                     -CleanupStack $CleanupStack
 
-                $CleanupStack.Push(${function:Remove-AllUnusedDockerNetworks}, @($Session))
+                $CleanupStack.Push(${function:Remove-AllUnusedDockerNetworks}, @($Testbed))
             }
-            $CleanupStack.Push(${function:Remove-AllContainers}, @(, $this.Sessions))
+            $CleanupStack.Push(${function:Remove-AllContainers}, @(, $this.Testbeds))
         }
     }
 

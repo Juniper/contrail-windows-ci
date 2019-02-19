@@ -24,18 +24,18 @@ function Set-ConfAndLogDir {
 
 function Initialize-ComputeNode {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [Testenv] $Configs,
         [Parameter(Mandatory = $true)] [CleanupStack] $CleanupStack
     )
-    Write-Log "Installing components on testbed: $($Session.ComputerName)"
+    Write-Log "Installing components on testbed: $($Testbed.GetSession().ComputerName)"
     Install-Components `
-        -Session $Session `
+        -Testbed $Testbed `
         -CleanupStack $CleanupStack
 
-    Write-Log "Initializing components on testbed: $($Session.ComputerName)"
+    Write-Log "Initializing components on testbed: $($Testbed.GetSession().ComputerName)"
     Initialize-ComputeServices `
-        -Session $Session `
+        -Testbed $Testbed `
         -SystemConfig $Configs.System `
         -OpenStackConfig $Configs.OpenStack `
         -ControllerConfig $Configs.Controller `
@@ -44,7 +44,7 @@ function Initialize-ComputeNode {
 
 function Initialize-ComputeServices {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
         [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
@@ -52,27 +52,27 @@ function Initialize-ComputeServices {
     )
 
     New-NodeMgrConfigFile `
-        -Session $Session  `
+        -Session $Testbed.GetSession()  `
         -ControllerIP $ControllerConfig.Address `
         -MgmtAdapterName $SystemConfig.MgmtAdapterName
 
     New-CNMPluginConfigFile `
-        -Session $Session `
+        -Session $Testbed.GetSession() `
         -AdapterName $SystemConfig.AdapterName `
         -OpenStackConfig $OpenStackConfig `
         -ControllerConfig $ControllerConfig
 
     Initialize-CnmPluginAndExtension `
-        -Session $Session `
+        -Testbed $Testbed `
         -SystemConfig $SystemConfig
-    $CleanupStack.Push(${function:Remove-CnmPluginAndExtension}, @($Session, $SystemConfig))
+    $CleanupStack.Push(${function:Remove-CnmPluginAndExtension}, @($Testbed, $SystemConfig))
 
-    New-AgentConfigFile -Session $Session `
+    New-AgentConfigFile -Session $Testbed.GetSession() `
         -ControllerConfig $ControllerConfig `
         -SystemConfig $SystemConfig
 
-    Start-AgentService -Session $Session
-    $CleanupStack.Push(${function:Stop-AgentService}, @($Session))
-    Start-NodeMgrService -Session $Session
-    $CleanupStack.Push(${function:Stop-NodeMgrService}, @($Session))
+    Start-AgentService -Session $Testbed.GetSession()
+    $CleanupStack.Push(${function:Stop-AgentService}, @($Testbed))
+    Start-NodeMgrService -Session $Testbed.GetSession()
+    $CleanupStack.Push(${function:Stop-NodeMgrService}, @($Testbed))
 }

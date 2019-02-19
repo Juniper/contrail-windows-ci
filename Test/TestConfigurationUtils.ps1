@@ -253,37 +253,37 @@ function Write-IpAddresses {
 
 function Assert-VmSwitchInitialized {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
-    if(-not (Test-IfVmSwitchExist -Session $Session -VmSwitchName $SystemConfig.VMSwitchName())) {
+    if(-not (Test-IfVmSwitchExist -Session $Testbed.GetSession() -VmSwitchName $SystemConfig.VMSwitchName())) {
         throw "VmSwitch is not created. No need to wait for IP on $($SystemConfig.VHostName)."
     }
 
-    Write-IPAddresses -Session $Session -SystemConfig $SystemConfig
+    Write-IPAddresses -Session $Testbed.GetSession() -SystemConfig $SystemConfig
 
-    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.VHostName
 }
 
 function Assert-VmSwitchDeleted {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
-    if(Test-IfVmSwitchExist -Session $Session -VmSwitchName $SystemConfig.VMSwitchName()) {
+    if(Test-IfVmSwitchExist -Session $Testbed.GetSession() -VmSwitchName $SystemConfig.VMSwitchName()) {
         throw "VmSwitch is not going to be deleted. No need to wait for IP on $($SystemConfig.AdapterName)."
     }
 
-    Write-IPAddresses -Session $Session -SystemConfig $SystemConfig
+    Write-IPAddresses -Session $Testbed.GetSession() -SystemConfig $SystemConfig
 
-    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
+    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.AdapterName
 }
 
 # Before running this function make sure CNM-Plugin config file is created.
 # It can be done by function New-CNMPluginConfigFile.
 function Initialize-CnmPluginAndExtension {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
@@ -292,18 +292,18 @@ function Initialize-CnmPluginAndExtension {
     $NRetries = 3;
     foreach ($i in 1..$NRetries) {
         # CNMPlugin automatically enables Extension
-        Start-CNMPluginService -Session $Session
+        Start-CNMPluginService -Session $Testbed.GetSession()
 
         try {
             Invoke-UntilSucceeds -Name 'IsCNMPluginServiceRunning' -Duration 15 {
-                Test-IsCNMPluginServiceRunning -Session $Session
+                Test-IsCNMPluginServiceRunning -Session $Testbed.GetSession()
             }
 
             Invoke-UntilSucceeds -Name 'IsCnmPluginEnabled' -Duration 600 -Interval 5 {
-                Assert-CnmPluginEnabled -Session $Session
+                Assert-CnmPluginEnabled -Session $Testbed.GetSession()
             }
 
-            Assert-VmSwitchInitialized -Session $Session -SystemConfig $SystemConfig
+            Assert-VmSwitchInitialized -Testbed $Testbed -SystemConfig $SystemConfig
 
             break
         }
@@ -311,7 +311,7 @@ function Initialize-CnmPluginAndExtension {
             Write-Log "CNM plugin was not enabled. Exception: $_"
             Write-Log "Trying to revert CNM Plugin initialization."
 
-            Remove-CnmPluginAndExtension -Session $Session -SystemConfig $SystemConfig
+            Remove-CnmPluginAndExtension -Testbed $Testbed -SystemConfig $SystemConfig
 
             if ($i -eq $NRetries) {
                 throw "CNM plugin was not enabled."
@@ -324,16 +324,16 @@ function Initialize-CnmPluginAndExtension {
 
 function Remove-CnmPluginAndExtension {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
     Write-Log "Stopping CNMPlugin and disabling Extension"
 
-    Stop-CNMPluginService -Session $Session
-    Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
+    Stop-CNMPluginService -Session $Testbed.GetSession()
+    Disable-VRouterExtension -Session $Testbed.GetSession() -SystemConfig $SystemConfig
 
-    Assert-VmSwitchDeleted -Session $Session -SystemConfig $SystemConfig
+    Assert-VmSwitchDeleted -Testbed $Testbed -SystemConfig $SystemConfig
 }
 
 function Clear-TestConfiguration {

@@ -165,18 +165,18 @@ function Uninstall-Nodemgr {
 
 function Install-Components {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [CleanupStack] $CleanupStack
     )
 
-    Install-Extension -Session $Session
-    $CleanupStack.Push(${function:Uninstall-Extension}, @($Session))
-    Install-CnmPlugin -Session $Session
-    $CleanupStack.Push(${function:Uninstall-CnmPlugin}, @($Session))
-    Install-Agent -Session $Session
-    $CleanupStack.Push(${function:Uninstall-Agent}, @($Session))
-    Install-Utils -Session $Session
-    $CleanupStack.Push(${function:Uninstall-Utils}, @($Session))
-    Install-Nodemgr -Session $Session
-    $CleanupStack.Push(${function:Uninstall-Nodemgr}, @($Session))
+    Install-Extension -Session $Testbed.GetSession()
+    $CleanupStack.Push(${function:Uninstall-Extension}, @($Testbed))
+    Install-CnmPlugin -Session $Testbed.GetSession()
+    $CleanupStack.Push(${function:Uninstall-CnmPlugin}, @($Testbed))
+    Install-Agent -Session $Testbed.GetSession()
+    $CleanupStack.Push(${function:Uninstall-Agent}, @($Testbed))
+    Install-Utils -Session $Testbed.GetSession()
+    $CleanupStack.Push(${function:Uninstall-Utils}, @($Testbed))
+    Install-Nodemgr -Session $Testbed.GetSession()
+    $CleanupStack.Push(${function:Uninstall-Nodemgr}, @($Testbed))
 }
