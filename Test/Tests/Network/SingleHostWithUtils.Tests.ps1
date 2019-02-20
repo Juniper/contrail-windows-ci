@@ -130,7 +130,7 @@ Test-WithRetries 3 {
                 -OpenStackConfig $Testenv.OpenStack `
                 -ControllerConfig $Testenv.Controller
 
-            Initialize-CnmPluginAndExtension -Session $Session `
+            Initialize-CnmPluginAndExtension -Testbed $Testenv.Testbeds[0] `
                 -SystemConfig $Testenv.System `
 
             $BeforeEachStack.Push(${function:Clear-TestConfiguration}, @($Session, $Testenv.System))
