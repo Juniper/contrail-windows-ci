@@ -32,16 +32,7 @@ function Get-ZuulRepos {
     )
 
     $Job.Step("Cloning zuul repositories", {
-        $Global:LASTEXITCODE = $null
         $ErrorActionPreference = "Continue"
-        $ScriptBlock = {
-            zuul-cloner.exe @ZuulClonerOptions @ProjectList
-        }
-        Invoke-Command -ScriptBlock $ScriptBlock 2>&1 | Write-Host
-        $ExitCode = $Global:LASTEXITCODE
-        $Global:LASTEXITCODE = $null
-        if (0 -ne $ExitCode) {
-            throw "Command ``$ScriptBlock`` failed with exitcode: $ExitCode."
-        }
+        zuul-cloner.exe @ZuulClonerOptions @ProjectList 2>&1 | Write-Host
     })
 }

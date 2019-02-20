@@ -281,6 +281,7 @@ pipeline {
             node('tester') {
                 deleteDir()
                 unstash 'CIScripts'
+                unstash 'Test'
                 script {
                     if (tryUnstash('windowsComputeNUnitLogs')) {
                         powershell script: '''./CIScripts/GenerateTestReport.ps1 `
