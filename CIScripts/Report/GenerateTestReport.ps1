@@ -1,6 +1,6 @@
 . $PSScriptRoot\Repair-NUnitReport.ps1
-. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
-. $PSScriptRoot\..\Common\Invoke-CommandInLocation.ps1
+. $PSScriptRoot\..\..\Test\Utils\PowershellTools\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\..\Test\Utils\PowershellTools\Invoke-CommandInLocation.ps1
 
 function Convert-TestReportsToHtml {
     param (

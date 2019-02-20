@@ -1,4 +1,4 @@
-. $PSScriptRoot\..\Common\Aliases.ps1
+. $PSScriptRoot\..\..\Test\Utils\PowershellTools\Aliases.ps1
 
 function Copy-ArtifactsToTestbeds {
     Param ([Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions,

@@ -4,8 +4,8 @@ Param (
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
 )
 
-. $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Aliases.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Init.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 . $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1

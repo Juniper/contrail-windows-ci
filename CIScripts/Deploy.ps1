@@ -5,8 +5,8 @@ Param(
 
 # Deploy copies required artifacts onto already provisioned machines.
 
-. $PSScriptRoot\Common\Init.ps1
-. $PSScriptRoot\Common\Job.ps1
+. $PSScriptRoot\..\Test\Utils\PowershellTools\Init.ps1
+. $PSScriptRoot\Job.ps1
 . $PSScriptRoot\..\Test\Utils\Testenv\Testbed.ps1
 . $PSScriptRoot\Deploy\Deployment.ps1
 

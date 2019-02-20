@@ -1,5 +1,5 @@
-. $PSScriptRoot\..\..\..\CIScripts\Common\Aliases.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-UntilSucceeds.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Aliases.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Invoke-UntilSucceeds.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 
 . $PSScriptRoot\Impl.ps1

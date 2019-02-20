@@ -1,7 +1,7 @@
-. $PSScriptRoot\Common\Init.ps1
-. $PSScriptRoot\Common\Job.ps1
-. $PSScriptRoot\Common\Aliases.ps1
-. $PSScriptRoot\Common\Credentials.ps1
+. $PSScriptRoot\..\Test\Utils\PowershellTools\Init.ps1
+. $PSScriptRoot\Job.ps1
+. $PSScriptRoot\..\Test\Utils\PowershellTools\Aliases.ps1
+. $PSScriptRoot\..\Test\Utils\PowershellTools\Credentials.ps1
 . $PSScriptRoot\Build\BuildMode.ps1
 
 $Credentials = Get-MgmtCreds

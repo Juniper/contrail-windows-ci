@@ -4,7 +4,7 @@ Param (
     [Parameter(ValueFromRemainingArguments=$true)] $AdditionalParams
 )
 
-. $PSScriptRoot\..\CIScripts\Common\Init.ps1
+. $PSScriptRoot\Utils\PowershellTools\Init.ps1
 
 . $PSScriptRoot\PesterHelpers\PesterHelpers.ps1
 

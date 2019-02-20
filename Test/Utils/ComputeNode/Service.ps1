@@ -1,5 +1,5 @@
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
-. $PSScriptRoot\..\..\..\CIScripts\Common\Invoke-NativeCommand.ps1
+. $PSScriptRoot\..\..\Utils\PowershellTools\Invoke-NativeCommand.ps1
 . $PSScriptRoot\..\Testenv\Testbed.ps1
 . $PSScriptRoot\Configuration.ps1
 

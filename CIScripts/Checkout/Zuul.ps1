@@ -1,5 +1,3 @@
-. $PSScriptRoot\..\Common\Invoke-NativeCommand.ps1
-
 function Get-ZuulRepos {
     Param (
         [Parameter(Mandatory = $true)] [string] $GerritUrl,
@@ -34,8 +32,7 @@ function Get-ZuulRepos {
     )
 
     $Job.Step("Cloning zuul repositories", {
-        Invoke-NativeCommand -ScriptBlock {
-            zuul-cloner.exe @ZuulClonerOptions @ProjectList
-        }
+        $ErrorActionPreference = "Continue"
+        zuul-cloner.exe @ZuulClonerOptions @ProjectList 2>&1 | Write-Host
     })
 }
