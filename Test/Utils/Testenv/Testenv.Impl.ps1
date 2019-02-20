@@ -24,8 +24,8 @@ class Testenv {
         $CleanupStack.Push( {Param([Testbed[]] $Testbeds) foreach ($Testbed in $Tesbeds) { $Tesbeds.RemoveAllSessions() }}, @(, $this.Testbeds))
 
         Write-Log 'Preparing testbeds'
-        Set-ConfAndLogDir -Sessions $this.Sessions
-        Sync-MicrosoftDockerImagesOnTestbeds -Sessions $this.Sessions
+        Set-ConfAndLogDir -Testbeds $this.Testbeds
+        Sync-MicrosoftDockerImagesOnTestbeds -Testbeds $this.Testbeds
 
         Write-Log 'Setting up Contrail'
         $this.MultiNode = New-MultiNodeSetup `
@@ -37,7 +37,7 @@ class Testenv {
         $this.ContrailRepo = [ContrailRepo]::new($this.MultiNode.ContrailRestApi)
 
         Write-Log 'Creating log sources'
-        [LogSource[]] $this.LogSources = New-ComputeNodeLogSources -Sessions $this.Sessions
+        [LogSource[]] $this.LogSources = New-ComputeNodeLogSources -Testbeds $this.Testbeds
         if ($InstallComponents) {
             $CleanupStack.Push(${function:Clear-Logs}, @(, $this.LogSources))
         }

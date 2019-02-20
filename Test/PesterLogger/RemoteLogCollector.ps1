@@ -18,7 +18,7 @@ class InvalidCollectedLog : CollectedLog {
 }
 
 class LogSource {
-    [System.Management.Automation.Runspaces.PSSession] $Session
+    [Testbed] $Testbed
 
     [CollectedLog[]] GetContent() {
         throw "LogSource is an abstract class, use specific log source instead"
@@ -33,8 +33,8 @@ class FileLogSource : LogSource {
     [String] $FilePath
     [int64] $StartLine
 
-    FileLogSource($Session, $FilePath) {
-        $this.Session = $Session
+    FileLogSource($Testbed, $FilePath) {
+        $this.Testbed = $Testbed
         $this.FilePath = $FilePath
         $this.StartLine = $this.GetLineCount()
     }
@@ -48,7 +48,7 @@ class FileLogSource : LogSource {
                 return 0
             }
         }
-        return Invoke-CommandRemoteOrLocal -Func $GetLineCountBody -Session $this.Session -Arguments $this.FilePath
+        return Invoke-CommandRemoteOrLocal -Func $GetLineCountBody -Testbed $this.Testbed -Arguments $this.FilePath
     }
 
     [CollectedLog] GetContent() {
@@ -84,7 +84,7 @@ class FileLogSource : LogSource {
         # We cannot create [ValidCollectedLog] and [InvalidCollectedLog] classes directly
         # in the closure, as it may be executed in remote session, so as a workaround
         # we need to fix the types afterwards.
-        return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Session $this.Session -Arguments @($this.FilePath, $Start, $LineCount) |
+        return Invoke-CommandRemoteOrLocal -Func $ContentGetterBody -Testbed $this.Testbed -Arguments @($this.FilePath, $Start, $LineCount) |
             ForEach-Object {
                 if ($_['Err']) {
                     [InvalidCollectedLog] $_
@@ -111,7 +111,7 @@ class FileLogSource : LogSource {
             }
             return $false
         }
-        if (Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Session $this.Session -Arguments $this.FilePath){
+        if (Invoke-CommandRemoteOrLocal -Func $LogCleanerBody -Testbed $this.Testbed -Arguments $this.FilePath){
             $this.StartLine = 0
         }
     }
@@ -122,8 +122,8 @@ class EventLogLogSource : LogSource {
     [String] $EventLogSource
     [int64] $StartEventIdx
 
-    EventLogLogSource($Session, $EventLogName, $EventLogSource) {
-        $This.Session = $Session
+    EventLogLogSource($Testbed, $EventLogName, $EventLogSource) {
+        $This.Testbed = $Testbed
         $this.EventLogName = $EventLogName
         $this.EventLogSource = $EventLogSource
         $this.StartEventIdx = $this.GetLatestEventIdx() + 1
@@ -177,7 +177,7 @@ class EventLogLogSource : LogSource {
         $End = $this.GetLatestEventIdx()
         $this.StartEventIdx = $End + 1
 
-        return Invoke-CommandRemoteOrLocal -Func $LogGetterBody -Session $this.Session `
+        return Invoke-CommandRemoteOrLocal -Func $LogGetterBody -Testbed $this.Testbed `
                 -Arguments @($this.EventLogName, $this.EventLogSource, $Start, $End) |
             ForEach-Object {
                 if ($_['Err']) {
@@ -204,7 +204,7 @@ class EventLogLogSource : LogSource {
                 return 0
             }
         }
-        return Invoke-CommandRemoteOrLocal -Func $Getter -Session $this.Session `
+        return Invoke-CommandRemoteOrLocal -Func $Getter -Testbed $this.Testbed `
             -Arguments @($this.EventLogName, $this.EventLogSource)
     }
 }
@@ -214,7 +214,7 @@ class ContainerLogSource : LogSource {
     [String] $Container
 
     [CollectedLog[]] GetContent() {
-        $Command = Invoke-NativeCommand -Session $this.Session -CaptureOutput -AllowNonZero {
+        $Command = Invoke-NativeCommand -Session $this.Testbed -CaptureOutput -AllowNonZero {
             docker logs $Using:this.Container
         }
         $Name = "$( $this.Container ) container logs"
@@ -244,13 +244,13 @@ class ContainerLogSource : LogSource {
 
 function New-ContainerLogSource {
     Param([Parameter(Mandatory = $true)] [string[]] $ContainerNames,
-          [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
+          [Parameter(Mandatory = $false)] [Testbed[]] $Testbeds)
 
-    return $Sessions | ForEach-Object {
-        $Session = $_
+    return $Testbeds | ForEach-Object {
+        $Testbed = $_
         $ContainerNames | ForEach-Object {
             [ContainerLogSource] @{
-                Session = $Session
+                Testbed = $Testbed
                 Container = $_
             }
         }
@@ -259,7 +259,7 @@ function New-ContainerLogSource {
 
 function New-FileLogSource {
     Param([Parameter(Mandatory = $true)] [string] $Path,
-          [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
+          [Parameter(Mandatory = $false)] [Testbed[]] $Testbeds)
 
         $GetFilesPath = {
             Param([Parameter(Mandatory = $true)] [string] $Path)
@@ -270,11 +270,11 @@ function New-FileLogSource {
             return $Path
         }
 
-        return $Sessions | ForEach-Object {
-            $Session = $_
-            $FilePaths = @(Invoke-CommandRemoteOrLocal -Func $GetFilesPath -Session $Session -Arguments $Path)
+        return $Testbeds | ForEach-Object {
+            $Testbed = $_
+            $FilePaths = @(Invoke-CommandRemoteOrLocal -Func $GetFilesPath -Testbed $Testbed -Arguments $Path)
             $FilePaths | ForEach-Object {
-                [FileLogSource]::new($Session, $_)
+                [FileLogSource]::new($Testbed, $_)
             }
         }
 }
@@ -282,17 +282,17 @@ function New-FileLogSource {
 function New-EventLogLogSource {
     Param([Parameter(Mandatory = $true)] [string] $EventLogName,
           [Parameter(Mandatory = $true)] [string] $EventLogSource,
-          [Parameter(Mandatory = $false)] [PSSessionT[]] $Sessions)
+          [Parameter(Mandatory = $false)] [Testbed[]] $Testbeds)
 
-    return $Sessions | ForEach-Object {
+    return $Testbeds | ForEach-Object {
         [EventLogLogSource]::new($_, $EventLogName, $EventLogSource)
     }
 }
 
 function Invoke-CommandRemoteOrLocal {
-    param([ScriptBlock] $Func, [PSSessionT] $Session, [Object[]] $Arguments)
-    if ($Session) {
-        Invoke-Command -Session $Session $Func -ArgumentList $Arguments
+    param([ScriptBlock] $Func, [Testbed] $Testbed, [Object[]] $Arguments)
+    if ($Testbed) {
+        Invoke-Command -Session $Testbed.GetSession() $Func -ArgumentList $Arguments
     } else {
         Invoke-Command $Func -ArgumentList $Arguments
     }
@@ -304,8 +304,8 @@ function Merge-Logs {
     Write-Log 'Merging logs'
 
     foreach ($LogSource in $LogSources) {
-        $SourceHost = if ($LogSource.Session) {
-            "Testbed machine $($LogSource.Session.ComputerName)"
+        $SourceHost = if ($LogSource.Testbed) {
+            "Testbed machine $($LogSource.Testbed.GetSession().ComputerName)"
         } else {
             "localhost"
         }

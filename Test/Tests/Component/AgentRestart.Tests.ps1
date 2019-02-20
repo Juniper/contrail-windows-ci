@@ -9,6 +9,7 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
+. $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 
@@ -152,8 +153,8 @@ Test-WithRetries 3 {
                     -Session $Testenv.Sessions[$i] -ContainerID $ContainerIds[$i]
                 Write-Log "IP of $($ContainerIds[$i]): $($ContainerNetInfos[$i].IPAddress)"
             }
-            $ContainersLogs = @((New-ContainerLogSource -Sessions $Testenv.Sessions[0] -ContainerNames $ContainerIds[0]),
-                (New-ContainerLogSource -Sessions $Testenv.Sessions[1] -ContainerNames $ContainerIds[1]))
+            $ContainersLogs = @((New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainerIds[0]),
+                (New-ContainerLogSource -Testbeds $Testenv.Testbeds[1] -ContainerNames $ContainerIds[1]))
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
         }
 

@@ -9,13 +9,13 @@ function Get-DNSDockerName {
 }
 function Sync-MicrosoftDockerImagesOnTestbeds {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
+        [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds
     )
     Write-Log 'Downloading Docker images'
     $StartedJobs = @()
-    ForEach ($Session in $Sessions) {
-        $JobName = "$($session.ComputerName)-pulldockerms"
-        Invoke-Command -Session $Session -JobName $JobName -AsJob {
+    ForEach ($Testbed in $Testbeds) {
+        $JobName = "$($Testbed.GetSession().ComputerName)-pulldockerms"
+        Invoke-Command -Session $Testbed.GetSession() -JobName $JobName -AsJob {
             docker pull microsoft/windowsservercore
             docker pull microsoft/nanoserver
         } | Out-Null

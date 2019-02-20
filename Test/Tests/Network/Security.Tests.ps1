@@ -71,6 +71,7 @@ $Containers = @{
         'Image'        = 'python-http'
         'NetInfo'      = $null
         'HostSession'  = $null
+        'Testbed'      = $null
         'Network'      = $ServerNetwork
     }
     'client' = @{
@@ -78,6 +79,7 @@ $Containers = @{
         'Image'        = 'microsoft/windowsservercore'
         'NetInfo'      = $null
         'HostSession'  = $null
+        'Testbed'      = $null
         'Network'      = $ClientNetwork
     }
 }
@@ -227,7 +229,9 @@ Test-WithRetries 1 {
             $Testenv.Initialize($TestenvConfFile, $LogDir, $ContrailProject, $PrepareEnv)
 
             $Containers.client.HostSession = $Testenv.Sessions[0]
+            $Containers.client.Testbed = $Testenv.Testbeds[0]
             $Containers.server.HostSession = $Testenv.Sessions[1]
+            $Containers.server.Testbed = $Testenv.Testbeds[1]
 
             $BeforeAllStack = $Testenv.NewCleanupStack()
 
@@ -287,7 +291,7 @@ Test-WithRetries 1 {
 
                 $Container.NetInfo = Get-RemoteContainerNetAdapterInformation `
                     -Session $Container.HostSession -ContainerID $Container.Name
-                $ContainersLogs += New-ContainerLogSource -Sessions $Container.HostSession -ContainerNames $Container.Name
+                $ContainersLogs += New-ContainerLogSource -Testbeds $Container.Testbed -ContainerNames $Container.Name
                 Write-Log "IP of $($Container.Name): $($Container.NetInfo.IPAddress)"
             }
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))

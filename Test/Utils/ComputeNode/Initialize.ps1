@@ -9,13 +9,13 @@
 
 function Set-ConfAndLogDir {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
+        [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds
     )
     $ConfigDirPath = Get-DefaultConfigDir
     $LogDirPath = Get-ComputeLogsDir
 
-    foreach ($Session in $Sessions) {
-        Invoke-Command -Session $Session -ScriptBlock {
+    foreach ($Testbed in $Testbeds) {
+        Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
             New-Item -ItemType Directory -Path $using:ConfigDirPath -Force | Out-Null
             New-Item -ItemType Directory -Path $using:LogDirPath -Force | Out-Null
         } | Out-Null

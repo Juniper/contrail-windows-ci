@@ -8,6 +8,7 @@ Param (
 . $PSScriptRoot\..\..\..\CIScripts\Common\Init.ps1
 
 . $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
+. $PSScriptRoot\..\..\Utils\Testenv\Testbed.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
@@ -167,7 +168,7 @@ Test-WithRetries 3 {
                 -Container1NetInfo $ContainerNetInfos[0] -Container2NetInfo $ContainerNetInfos[1] `
                 -Session $Session
 
-            $ContainersLogs = @(New-ContainerLogSource -Sessions $Session -ContainerNames $ContainerIds[0], $ContainerIds[1])
+            $ContainersLogs = @(New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainerIds[0], $ContainerIds[1])
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
         }
 
