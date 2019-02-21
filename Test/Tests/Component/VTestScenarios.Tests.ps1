@@ -25,7 +25,8 @@ Describe 'vTest scenarios' -Tag Smoke {
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
+        $Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs $Testbeds
         $Session = $Sessions[0]
 
         $SystemConfig = [SystemConfig]::LoadFromFile($TestenvConfFile)
@@ -37,7 +38,7 @@ Describe 'vTest scenarios' -Tag Smoke {
 
     AfterAll {
         if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+        Clear-TestConfiguration -Testbed $Testbeds[0] -SystemConfig $SystemConfig
         Uninstall-Utils -Session $Session
         Uninstall-Extension -Session $Session
         Remove-PSSession $Sessions

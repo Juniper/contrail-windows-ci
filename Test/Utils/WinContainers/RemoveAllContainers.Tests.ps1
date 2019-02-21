@@ -112,16 +112,22 @@ Describe "Remove-AllContainers" -Tags CISelfcheck, Systest {
         Invoke-Command -Session $Session {
             Remove-Item docker.ps1 -ErrorAction Ignore
         }
-        Clear-TestConfiguration -Session $Session -SystemConfig $SystemConfig
+        Clear-TestConfiguration -Testbed $Testbed -SystemConfig $SystemConfig
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
+        $Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
+        $Sessions = New-RemoteSessions -VMs $Testbeds
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Analyzer doesn't understand relation of Pester blocks"
         )]
         $Session = $Sessions[0]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+            "PSUseDeclaredVarsMoreThanAssignments", "",
+            Justification="Analyzer doesn't understand relation of Pester blocks"
+        )]
+        $Testbed = $Testbeds[0]
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",

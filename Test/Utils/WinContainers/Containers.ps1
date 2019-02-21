@@ -30,10 +30,10 @@ function Remove-AllContainers {
             throw "Remove-AllContainers - removing containers failed with the following messages: $OutputMessages"
         }
         elseif ($Result.Output[-1] -gt 0) {
-            Write-Host "Remove-AllContainers - removing containers was successful, but required more than one attempt: $OutputMessages"
+            Write-Log "Remove-AllContainers - removing containers was successful, but required more than one attempt: $OutputMessages"
         }
         else {
-            Write-Host "Remove-AllContainers - removing containers was successful."
+            Write-Log "Remove-AllContainers - removing containers was successful."
         }
     }
 }

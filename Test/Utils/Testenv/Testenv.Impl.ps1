@@ -21,7 +21,7 @@ class Testenv {
         $CleanupStack = $this.NewCleanupStack()
 
         Write-Log 'Creating sessions'
-        $CleanupStack.Push( {Param([Testbed[]] $Testbeds) foreach ($Testbed in $Tesbeds) { $Tesbeds.RemoveAllSessions() }}, @(, $this.Testbeds))
+        $CleanupStack.Push( {Param([Testbed[]] $Testbeds) foreach ($Testbed in $Testbeds) { $Testbed.RemoveAllSessions() }}, @(, $this.Testbeds))
 
         Write-Log 'Preparing testbeds'
         Set-ConfAndLogDir -Testbeds $this.Testbeds
