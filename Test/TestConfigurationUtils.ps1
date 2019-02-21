@@ -296,7 +296,7 @@ function Initialize-CnmPluginAndExtension {
 
         try {
             $Sess = $Testbed.GetSession()
-            
+
             Invoke-UntilSucceeds -Name 'IsCNMPluginServiceRunning' -Duration 15 {
                 Test-IsCNMPluginServiceRunning -Session $Sess
             }
@@ -339,22 +339,22 @@ function Remove-CnmPluginAndExtension {
 }
 
 function Clear-TestConfiguration {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+    Param ([Parameter(Mandatory = $true)] [Testbed] $Testbed,
            [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig)
 
     Write-Log "Cleaning up test configuration"
 
-    Write-Log "Agent service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-AgentServiceName))"
-    Write-Log "CNMPlugin service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-CNMPluginServiceName))"
-    Write-Log "NodeManager service status: $(Get-ServiceStatus -Session $Session -ServiceName $(Get-NodeMgrServiceName))"
+    Write-Log "Agent service status: $(Get-ServiceStatus -Session $Testbed.GetSession() -ServiceName $(Get-AgentServiceName))"
+    Write-Log "CNMPlugin service status: $(Get-ServiceStatus -Session $Testbed.GetSession() -ServiceName $(Get-CNMPluginServiceName))"
+    Write-Log "NodeManager service status: $(Get-ServiceStatus -Session $Testbed.GetSession() -ServiceName $(Get-NodeMgrServiceName))"
 
-    Remove-AllUnusedDockerNetworks -Session $Session
-    Stop-NodeMgrService -Session $Session
-    Stop-CNMPluginService -Session $Session
-    Stop-AgentService -Session $Session
-    Disable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
+    Remove-AllUnusedDockerNetworks -Session $Testbed.GetSession()
+    Stop-NodeMgrService -Session $Testbed.GetSession()
+    Stop-CNMPluginService -Session $Testbed.GetSession()
+    Stop-AgentService -Session $Testbed.GetSession()
+    Disable-VRouterExtension -Session $Testbed.GetSession() -SystemConfig $SystemConfig
 
-    Assert-VmSwitchDeleted -Session $Session -SystemConfig $SystemConfig
+    Assert-VmSwitchDeleted -Testbed $Testbed -SystemConfig $SystemConfig
 }
 
 function Remove-DockerNetwork {
