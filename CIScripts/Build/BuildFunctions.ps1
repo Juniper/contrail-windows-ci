@@ -294,11 +294,11 @@ function Get-FailedUnitTests {
     Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
     $FailedTests = @()
     Foreach ($Line in $TestOutput) {
-        if ($Line -match "\[  FAILED  \] (?<FailedTest>\D\S*?)$") {
+        if ($Line -match "\[  FAILED  \] (?<FailedTest>\D\S*)\s\(\d*\sms\)$") {
             $FailedTests += $matches.FailedTest
         }
     }
-    return $FailedTests
+    return ,$FailedTests
 }
 
 
@@ -325,7 +325,7 @@ function Invoke-AgentUnitTestRunner {
         return $Result
     }
 
-    if (0 -eq $Res.ExitCode) {
+    if (-not $Res.ExitCode) {
         Write-Host "        Succeeded."
     } else {
         $FailedTests = $Res.FailedTests -join [Environment]::NewLine
@@ -416,9 +416,9 @@ function Invoke-AgentTestsBuild {
             "", Justification="Env variable is used by another executable")]
         $Env:BUILD_ONLY = "1"
 
-        Invoke-NativeCommand -ScriptBlock {
+        Invoke-NativeCommand -ScriptBlock -CaptureOutput {
             Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
-        }
+        } | Out-Host
 
         Remove-Item Env:\BUILD_ONLY
     })
@@ -443,9 +443,8 @@ function Invoke-AgentTestsBuild {
 
         $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*?\.exe$'}
 
-        $TestRes = @()
-        Foreach ($TestExecutable in $AgentExecutables) {
-            $TestRes += Invoke-AgentUnitTestRunner -TestExecutable $( $TestExecutable.FullName )
+        $TestRes = $AgentExecutables | ForEach-Object {
+            Invoke-AgentUnitTestRunner -TestExecutable $( $_.FullName )
         }
 
         $TestRes | ForEach-Object {
