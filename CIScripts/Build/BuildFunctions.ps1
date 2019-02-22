@@ -122,6 +122,14 @@ function Invoke-ExtensionBuild {
             "", Justification="Cerp env variable required by vRouter build.")]
         $Env:cerp = Get-Content $CertPasswordFilePath
 
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="Required by vRouter build")]
+        $Env:CERT_FILEPATH = $CertPath
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="Required by vRouter build")]
+        $Env:CERT_PASSWORD = Get-Content $CertPasswordFilePath
+
         Invoke-NativeCommand -ScriptBlock {
             scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
         }
