@@ -441,11 +441,11 @@ function Invoke-AgentTestsBuild {
             "xmpp\test"
         ) | ForEach-Object { Join-Path $rootBuildDir $_ }
 
-        $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*\.exe$'}
+        $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*?\.exe$'}
 
         $TestRes = @()
         Foreach ($TestExecutable in $AgentExecutables) {
-            $TestRes += Invoke-AgentUnitTestRunner -TestExecutable ".\$( $TestExecutable.FullName )"
+            $TestRes += Invoke-AgentUnitTestRunner -TestExecutable $( $TestExecutable.FullName )
         }
 
         $TestRes | ForEach-Object {
