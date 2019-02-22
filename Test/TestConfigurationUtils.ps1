@@ -221,7 +221,7 @@ function Test-IfVmSwitchExist {
         return $false
     }
     elseif($r.Equals($false)) {
-        Write-Log '... it still exists.'
+        Write-Log '... it exists.'
         return $true
     }
 
@@ -265,6 +265,54 @@ function Assert-VmSwitchInitialized {
     Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.VHostName
 }
 
+class RestartNeededException : System.Exception {
+    RestartNeededException([string] $msg) : base($msg) {}
+    RestartNeededException([string] $msg, [System.Exception] $inner) : base($msg, $inner) {}
+}
+
+function Restart-Testbed {
+    Param (
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
+        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
+        [Parameter(Mandatory = $true)] [ScriptBlock] $AfterRestart
+    )
+
+    Write-Log "Restarting testbed $($Testbed.GetSession().ComputerName)"
+
+    $VHostName = $SystemConfig.VHostName
+
+    $IPInfo = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
+        Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | `
+            Get-NetIPAddress -ErrorAction SilentlyContinue | `
+            Where-Object AddressFamily -eq "IPv4"
+    }
+
+    Invoke-Command -Session $Testbed.GetSession() {
+        netcfg -D
+        Restart-Computer -Force
+    }
+
+    Invoke-UntilSucceeds `
+        -Name "Waiting for $($Testbed.Address) to restart" `
+        -Interval 10 `
+        -Duration 600 `
+        -ScriptBlock {
+            Test-Connection -Quiet -ComputerName $Testbed.Address
+        }
+
+    $IP = $IPInfo.IPAddress
+    $Pref = $IPInfo.PrefixLength
+    $AdapterName = $SystemConfig.AdapterName
+
+    . $AfterRestart
+
+    Invoke-Command -Session $Testbed.GetSession() {
+        Set-NetIPInterface -InterfaceAlias $Using:AdapterName -Dhcp Disabled -PolicyStore PersistentStore
+        Restart-NetAdapter -InterfaceAlias $Using:AdapterName
+        New-NetIPAddress -InterfaceAlias $Using:AdapterName -IPAddress $Using:IP -PrefixLength $Using:Pref
+    }
+}
+
 function Assert-VmSwitchDeleted {
     Param (
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
@@ -276,7 +324,12 @@ function Assert-VmSwitchDeleted {
 
     Write-IPAddresses -Session $Testbed.GetSession() -SystemConfig $SystemConfig
 
-    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.AdapterName
+    try {
+        Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.AdapterName
+    }
+    catch {
+        throw [RestartNeededException]::new("Restart needed.")
+    }
 }
 
 # Before running this function make sure CNM-Plugin config file is created.
@@ -335,7 +388,16 @@ function Remove-CnmPluginAndExtension {
     Stop-CNMPluginService -Session $Testbed.GetSession()
     Disable-VRouterExtension -Session $Testbed.GetSession() -SystemConfig $SystemConfig
 
-    Assert-VmSwitchDeleted -Testbed $Testbed -SystemConfig $SystemConfig
+    try {
+        Assert-VmSwitchDeleted -Testbed $Testbed -SystemConfig $SystemConfig
+    }
+    catch [RestartNeededException] {
+        Write-Log "Error while removing vSwitch."
+
+        Restart-Testbed -Testbed $Testbed -SystemConfig $SystemConfig -AfterRestart {
+            Stop-CNMPluginService -Session $Testbed.GetSession()
+        }
+    }
 }
 
 function Clear-TestConfiguration {
@@ -354,7 +416,18 @@ function Clear-TestConfiguration {
     Stop-AgentService -Session $Testbed.GetSession()
     Disable-VRouterExtension -Session $Testbed.GetSession() -SystemConfig $SystemConfig
 
-    Assert-VmSwitchDeleted -Testbed $Testbed -SystemConfig $SystemConfig
+    try {
+        Assert-VmSwitchDeleted -Testbed $Testbed -SystemConfig $SystemConfig
+    }
+    catch [RestartNeededException] {
+        Write-Log "Error while removing vSwitch."
+
+        Restart-Testbed -Testbed $Testbed -SystemConfig $SystemConfig -AfterRestart {
+            Stop-NodeMgrService -Session $Testbed.GetSession()
+            Stop-CNMPluginService -Session $Testbed.GetSession()
+            Stop-AgentService -Session $Testbed.GetSession()
+        }
+    }
 }
 
 function Remove-DockerNetwork {
