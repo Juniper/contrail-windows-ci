@@ -317,16 +317,15 @@ function Invoke-AgentUnitTestRunner {
         # TODO: It should be removed once the bug is fixed (JW-1110).
         # $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $Command.Output
         $Result.FailedTests = Get-FailedUnitTests -TestOutput $Command.Output
-        if ($Result.FailedTests.Count) {
-            $Result.ExitCode = $Command.ExitCode
-        } else {
+        $Result.ExitCode = $Command.ExitCode
+        if (-not $Result.FailedTests.Count) {
             $Result.ExitCode = 0
         }
 
         return $Result
     }
 
-    if (0 -eq $Res.ExitCode -and -not $Res.FailedTests.Count) {
+    if (0 -eq $Res.ExitCode) {
         Write-Host "        Succeeded."
     } else {
         $FailedTests = $Res.FailedTests -join [Environment]::NewLine
@@ -350,8 +349,8 @@ function Invoke-AgentTestsBuild {
 
     $BuildModeOption = "--optimization=" + $BuildMode
 
-    # $TestPathPrefix = "build/$BuildMode"
-    # $BaseTestPrefix = "$TestPathPrefix/base"
+    $TestPathPrefix = "build/$BuildMode"
+    $BaseTestPrefix = "$TestPathPrefix/base/test"
     # $AgentPathPrefix = "$TestPathPrefix/vnsw/agent"
 
     $Job.Step("Building agent tests", {
@@ -364,8 +363,20 @@ function Invoke-AgentTestsBuild {
             # "controller/src/schema:test",
             # "src/xml:xml_test",
             # "controller/src/xmpp:test",
+            "$BaseTestPrefix/trace_test.exe"
+            "$BaseTestPrefix/timer_test.exe"
+            "$BaseTestPrefix/test_task_monitor.exe"
+            "$BaseTestPrefix/task_annotations_test.exe"
+            "$BaseTestPrefix/subset_test.exe"
+            "$BaseTestPrefix/queue_task_test.exe"
+            "$BaseTestPrefix/patricia_test.exe"
+            "$BaseTestPrefix/label_block_test.exe"
+            "$BaseTestPrefix/factory_test.exe"
+            "$BaseTestPrefix/index_allocator_test.exe"
+            "$BaseTestPrefix/dependency_test.exe"
+            "$BaseTestPrefix/bitset_test.exe"
 
-            "src/contrail-common/base:test"
+            #"src/contrail-common/base:test"
             # "src/contrail-common/io:test"
             # "controller/src/agent:test"
             # "vrouter:test"
@@ -434,7 +445,7 @@ function Invoke-AgentTestsBuild {
 
         $TestRes = @()
         Foreach ($TestExecutable in $AgentExecutables) {
-            $TestRes += Invoke-AgentUnitTestRunner -TestExecutable $TestExecutable.FullName
+            $TestRes += Invoke-AgentUnitTestRunner -TestExecutable ".\$( $TestExecutable.FullName )"
         }
 
         $TestRes | ForEach-Object {
