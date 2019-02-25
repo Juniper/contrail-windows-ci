@@ -40,8 +40,6 @@ function New-CNMPluginConfigFile {
 Adapter=$AdapterName
 ControllerIP=$( $ControllerConfig.Address )
 ControllerPort=8082
-AgentURL=http://127.0.0.1:9091
-VSwitchName=Layered?<adapter>
 
 [LOGGING]
 LogLevel=Debug
