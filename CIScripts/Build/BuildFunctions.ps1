@@ -385,7 +385,7 @@ function Invoke-AgentTestsBuild {
             "", Justification="Env variable is used by another executable")]
         $Env:BUILD_ONLY = "1"
 
-        $Build = Invoke-NativeCommand -ScriptBlock -CaptureOutput {
+        $Build = Invoke-NativeCommand -CaptureOutput -ScriptBlock {
             Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
         }
 
