@@ -335,12 +335,6 @@ function Invoke-AgentUnitTestRunner {
     return $Res.ExitCode
 }
 
-# class UnitTestPath {
-#     static [string] get([string] $PathPrefix, [string] $TestName) {
-#         return "$PathPrefix/test/$TestName.exe"
-#     }
-# }
-
 function Invoke-AgentTestsBuild {
     Param ([Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
@@ -355,14 +349,6 @@ function Invoke-AgentTestsBuild {
 
     $Job.Step("Building agent tests", {
         $Tests = @(
-            # "agent:test_ksync",
-            # "src/ksync:ksync_test",
-            # "src/dns:dns_bind_test",
-            # "src/dns:dns_config_test",
-            # "src/dns:dns_mgr_test",
-            # "controller/src/schema:test",
-            # "src/xml:xml_test",
-            # "controller/src/xmpp:test",
             "$BaseTestPrefix/trace_test.exe"
             "$BaseTestPrefix/timer_test.exe"
             "$BaseTestPrefix/test_task_monitor.exe"
@@ -380,23 +366,6 @@ function Invoke-AgentTestsBuild {
             # "src/contrail-common/io:test"
             # "controller/src/agent:test"
             # "vrouter:test"
-
-            # oper
-            # "agent:test_agent_sandesh",
-            # "agent:test_config_manager",
-            # "agent:test_intf",
-            # "agent:test_intf_policy",
-            # "agent:test_find_scale",
-            # "agent:test_logical_intf",
-            # "agent:test_vrf_assign",
-            # "agent:test_inet_interface",
-            # "agent:test_aap6",
-            # "agent:test_ipv6",
-            # "agent:test_forwarding_class",
-            # "agent:test_qos_config",
-            # "agent:test_oper_xml",
-            # "agent:ifmap_dependency_manager_test",
-            # "agent:test_physical_devices"
         )
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
@@ -416,11 +385,13 @@ function Invoke-AgentTestsBuild {
             "", Justification="Env variable is used by another executable")]
         $Env:BUILD_ONLY = "1"
 
-        Invoke-NativeCommand -ScriptBlock -CaptureOutput {
+        $Build = Invoke-NativeCommand -ScriptBlock -CaptureOutput {
             Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
-        } | Out-Host
+        }
 
         Remove-Item Env:\BUILD_ONLY
+
+        $Build.Output | Out-Host
     })
 
     $rootBuildDir = "build\$BuildMode"
