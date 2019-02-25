@@ -352,7 +352,6 @@ function Invoke-AgentTestsBuild {
             "$BaseTestPrefix/trace_test.exe"
             "$BaseTestPrefix/timer_test.exe"
             "$BaseTestPrefix/test_task_monitor.exe"
-            "$BaseTestPrefix/task_annotations_test.exe"
             "$BaseTestPrefix/subset_test.exe"
             "$BaseTestPrefix/queue_task_test.exe"
             "$BaseTestPrefix/patricia_test.exe"
