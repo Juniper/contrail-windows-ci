@@ -123,13 +123,13 @@ function Invoke-ExtensionBuild {
         $Env:cerp = Get-Content $CertPasswordFilePath
 
         Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
+            scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsPath/vrouter_build.log
         }
     })
 
     $Job.Step("Running kernel unit tests", {
         Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption kernel-tests vrouter:test | Tee-Object -FilePath $LogsDir/vrouter_unit_tests.log
+            scons $BuildModeOption kernel-tests vrouter:test | Tee-Object -FilePath $LogsPath/vrouter_unit_tests.log
         }
     })
 
@@ -276,20 +276,6 @@ function Copy-DebugDlls {
     })
 }
 
-# function Test-IfGTestOutputSuggestsThatAllTestsHavePassed {
-#     Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
-#     $NumberOfTests = -1
-#     Foreach ($Line in $TestOutput) {
-#         if ($Line -match "\[==========\] (?<HowManyTests>[\d]+) test[s]? from [\d]+ test [\w]* ran[.]*") {
-#             $NumberOfTests = $matches.HowManyTests
-#         }
-#         if ($Line -match "\[  PASSED  \] (?<HowManyTestsHavePassed>[\d]+) test[.]*" -and $NumberOfTests -ge 0) {
-#             return $($matches.HowManyTestsHavePassed -eq $NumberOfTests)
-#         }
-#     }
-#     return $False
-# }
-
 function Get-FailedUnitTests {
     Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
     $FailedTests = @()
@@ -301,21 +287,26 @@ function Get-FailedUnitTests {
     return ,$FailedTests
 }
 
-
 function Invoke-AgentUnitTestRunner {
-    Param ([Parameter(Mandatory = $true)] [String] $TestExecutable)
+    Param (
+        [Parameter(Mandatory = $true)] [String] $TestExecutable
+    )
+
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
+        $TestExecDir = Split-Path $TestExecutable
+
         $Command = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
-            Invoke-Expression $TestExecutable
+            # TODO: Delete the tee-object part when using aliases instead of raw filepaths
+            Invoke-Expression $TestExecutable | Tee-Object -FilePath "$TestExecutable.log"
         }
+
         $Result = @{}
         # This is a workaround for the following bug:
         # https://bugs.launchpad.net/opencontrail/+bug/1714205
         # Even if all tests actually pass, test executables can sometimes
         # return non-zero exit code.
         # TODO: It should be removed once the bug is fixed (JW-1110).
-        # $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $Command.Output
         $Result.FailedTests = Get-FailedUnitTests -TestOutput $Command.Output
         $Result.ExitCode = $Command.ExitCode
         if (-not $Result.FailedTests.Count) {
@@ -326,10 +317,10 @@ function Invoke-AgentUnitTestRunner {
     }
 
     if (-not $Res.ExitCode) {
-        Write-Host "        Succeeded."
+        Write-Host "   Succeeded."
     } else {
         $FailedTests = $Res.FailedTests -join [Environment]::NewLine
-        Write-Host "        Failed:`r`n exit code: $($Res.ExitCode) `r`n failed tests: `r`n $FailedTests "
+        Write-Host "   Failed:`r`n exit code: $($Res.ExitCode) `r`n failed tests: `r`n $FailedTests "
     }
 
     return $Res.ExitCode
@@ -410,7 +401,8 @@ function Invoke-AgentTestsBuild {
         ) | ForEach-Object { Join-Path $rootBuildDir $_ }
 
         $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*?\.exe$'}
-
+        # TODO: Some unit tests of Agent need DLLs present in the same
+        # directory as executable.
         $TestRes = $AgentExecutables | ForEach-Object {
             Invoke-AgentUnitTestRunner -TestExecutable $( $_.FullName )
         }
