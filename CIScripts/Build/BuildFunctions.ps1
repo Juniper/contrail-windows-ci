@@ -361,9 +361,14 @@ function Invoke-AgentTestsBuild {
         $Env:TASK_UTIL_WAIT_TIME = 10000
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="TASK_UTIL_RETRY_COUNT is used agent tests for determining " +
+            "", Justification="TASK_UTIL_RETRY_COUNT is used in agent tests for determining " +
             "timeout's threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_RETRY_COUNT = 6000
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="CONCURRENCY_CHECK_ENABLE is used in agent tests." +
+            " They were copied from Linux unit test job.")]
+        $Env:CONCURRENCY_CHECK_ENABLE = "true"
 
         $TestsString = $Tests -join " "
         $TestsBuildCommand = "scons -k --debug=explain -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
