@@ -294,8 +294,6 @@ function Invoke-AgentUnitTestRunner {
 
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
-        $TestExecDir = Split-Path $TestExecutable
-
         $Command = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
             # TODO: Delete the tee-object part when using aliases instead of raw filepaths
             Invoke-Expression $TestExecutable | Tee-Object -FilePath "$TestExecutable.log"
