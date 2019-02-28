@@ -385,11 +385,6 @@ function Invoke-AgentTestsBuild {
             "timeout's threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_RETRY_COUNT = 6000
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="CONCURRENCY_CHECK_ENABLE is used in agent tests." +
-            " They were copied from Linux unit test job.")]
-        $Env:CONCURRENCY_CHECK_ENABLE = "true"
-
         $TestsFolders = @(
             "base\test",
             "dns\test",
