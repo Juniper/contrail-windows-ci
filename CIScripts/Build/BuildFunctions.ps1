@@ -398,8 +398,7 @@ function Invoke-AgentTestsBuild {
         ) | ForEach-Object { Join-Path $rootBuildDir $_ }
 
         $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*?\.exe$'}
-        # TODO: Some unit tests of Agent need DLLs present in the same
-        # directory as executable.
+
         $TestRes = $AgentExecutables | ForEach-Object {
             Invoke-AgentUnitTestRunner -TestExecutable $( $_.FullName )
         }

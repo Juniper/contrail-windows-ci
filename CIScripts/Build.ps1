@@ -70,7 +70,6 @@ try {
         -LogsPath $LogsDir `
         -BuildMode $SconsBuildMode
 
-    # Building agent unit tests - disabled.
     Invoke-AgentTestsBuild -LogsPath $LogsDir `
         -BuildMode $SconsBuildMode
 
