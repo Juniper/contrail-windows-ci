@@ -17,10 +17,20 @@ function Invoke-ContainerBuild {
            [Parameter(Mandatory = $true)] [string] $Registry)
 
     $ContainerSuffix = $ContainerAttributes.Suffix
-    New-Item -Name $WorkDir\$ContainerSuffix -ItemType directory
-    Compress-Archive -Path $ContainerAttributes.Folders -DestinationPath $WorkDir\$ContainerSuffix\artifacts.zip
-    # Docker pre 18.03 needs Dockerfile to be within the build context
-    Copy-Item $PSScriptRoot\Dockerfile $WorkDir\$ContainerSuffix
+    New-Item -Name $WorkDir\$ContainerSuffix\Art -ItemType directory
+    Copy-Item -Path $ContainerAttributes.Folders -Destination $WorkDir\$ContainerSuffix\Art -Recurse
+    $BaseImage = 'microsoft/nanoserver'
+    $DockerFile = @"
+# escape=`
+FROM $BaseImage
+
+COPY Art C:\Art
+VOLUME C:\Artifacts
+
+CMD xcopy C:\Art\* C:\Artifacts\* /I /S /E
+
+"@
+    Set-Content $WorkDir\$ContainerSuffix\Dockerfile -Value $DockerFile
     # We use ${} to delimit the name before the colon
     $ContainerName = "contrail-windows-${ContainerSuffix}:$ContainerTag"
     Invoke-NativeCommand -ScriptBlock {
