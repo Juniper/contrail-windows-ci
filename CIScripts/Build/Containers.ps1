@@ -21,7 +21,7 @@ function Invoke-ContainerBuild {
     Copy-Item -Path $ContainerAttributes.Folders -Destination $WorkDir\$ContainerSuffix\Art -Recurse
     $BaseImage = 'microsoft/nanoserver'
     $DockerFile = @"
-# escape=`
+# escape=``
 FROM $BaseImage
 
 COPY Art C:\Art
