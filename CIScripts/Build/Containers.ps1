@@ -19,7 +19,19 @@ function Invoke-ContainerBuild {
     $ContainerSuffix = $ContainerAttributes.Suffix
     New-Item -Name $WorkDir\$ContainerSuffix\Art -ItemType directory
     Copy-Item -Path $ContainerAttributes.Folders -Destination $WorkDir\$ContainerSuffix\Art -Recurse
-    $BaseImage = 'microsoft/nanoserver'
+
+    switch -regex ((Get-CimInstance Win32_OperatingSystem).Caption) {
+        'Windows Server 2016' {
+            $BaseImage = 'microsoft/nanoserver'
+        }
+        'Windows Server 2019' {
+            $BaseImage = 'mcr.microsoft.com/windows/nanoserver:1809'
+        }
+        Default {
+            throw 'Unknow Windows Server version'
+        }
+    }
+
     $DockerFile = @"
 # escape=``
 FROM $BaseImage
