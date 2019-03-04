@@ -82,18 +82,25 @@
   win_shell: |
     Get-NetNat | Remove-NetNat -Confirm:$false
 
+- name: set Windows Server version var
+  set_fact:
+    windows_server_version: "{{ ansible_distribution | regex_findall('Windows Server (\\d{4})') | first }}"
+
 # Workaround for flaky HNS behavior.
 # Removing container networks sometimes ends with "Unspecified error".
 # For environment cleanup in tests it is acceptable to just ignore this error
 # (-ErrorAction SilentlyContinue). However, this is not acceptable for
 # template creation (we don't want to have unreliable template).
-- name: Remove container networks (first attempt)
+- name: remove container networks on Windows Server 2016
   win_shell: |
     Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
-
-- name: Remove container networks (final attempt)
-  win_shell: |
     Get-ContainerNetwork | Remove-ContainerNetwork -Force
+  when: windows_server_version == '2016'
+
+- name: remove container networks on Windows Server 2019
+  win_shell: |
+    Get-HnsNetwork | Remove-HnsNetwork
+  when: windows_server_version == '2019'
 
 - name: Create docker config directory
   win_file:
