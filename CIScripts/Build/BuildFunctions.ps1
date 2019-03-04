@@ -131,13 +131,13 @@ function Invoke-ExtensionBuild {
         $Env:CERT_PASSWORD = Get-Content $CertPasswordFilePath
 
         Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsDir/vrouter_build.log
+            scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsPath/vrouter_build.log
         }
     })
 
     $Job.Step("Running kernel unit tests", {
         Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption kernel-tests vrouter:test | Tee-Object -FilePath $LogsDir/vrouter_unit_tests.log
+            scons $BuildModeOption kernel-tests vrouter:test | Tee-Object -FilePath $LogsPath/vrouter_unit_tests.log
         }
     })
 
@@ -284,47 +284,52 @@ function Copy-DebugDlls {
     })
 }
 
-function Test-IfGTestOutputSuggestsThatAllTestsHavePassed {
+function Get-FailedUnitTests {
     Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
-    $NumberOfTests = -1
+    $FailedTests = @()
     Foreach ($Line in $TestOutput) {
-        if ($Line -match "\[==========\] (?<HowManyTests>[\d]+) test[s]? from [\d]+ test [\w]* ran[.]*") {
-            $NumberOfTests = $matches.HowManyTests
-        }
-        if ($Line -match "\[  PASSED  \] (?<HowManyTestsHavePassed>[\d]+) test[.]*" -and $NumberOfTests -ge 0) {
-            return $($matches.HowManyTestsHavePassed -eq $NumberOfTests)
+        if ($Line -match "\[  FAILED  \] (?<FailedTest>\D\S*)\s\(\d*\sms\)$") {
+            $FailedTests += $matches.FailedTest
         }
     }
-    return $False
+    return ,$FailedTests
 }
 
 function Invoke-AgentUnitTestRunner {
-    Param ([Parameter(Mandatory = $true)] [String] $TestExecutable)
+    Param (
+        [Parameter(Mandatory = $true)] [String] $TestExecutable
+    )
+
     Write-Host "===> Agent tests: running $TestExecutable..."
     $Res = Invoke-Command -ScriptBlock {
         $Command = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
-            Invoke-Expression $TestExecutable
+            # TODO: Delete the tee-object part when using aliases instead of raw filepaths
+            Invoke-Expression $TestExecutable | Tee-Object -FilePath "$TestExecutable.log"
         }
 
+        $Result = @{}
         # This is a workaround for the following bug:
         # https://bugs.launchpad.net/opencontrail/+bug/1714205
         # Even if all tests actually pass, test executables can sometimes
         # return non-zero exit code.
         # TODO: It should be removed once the bug is fixed (JW-1110).
-        $SeemsLegitimate = Test-IfGTestOutputSuggestsThatAllTestsHavePassed -TestOutput $Command.Output
-        if (0 -eq $Command.ExitCode -or $SeemsLegitimate) {
-            return 0
-        } else {
-            return $Command.ExitCode
+        $Result.FailedTests = Get-FailedUnitTests -TestOutput $Command.Output
+        $Result.ExitCode = $Command.ExitCode
+        if (-not $Result.FailedTests.Count) {
+            $Result.ExitCode = 0
         }
+
+        return $Result
     }
 
-    if (0 -eq $Res) {
-        Write-Host "        Succeeded."
+    if (-not $Res.ExitCode) {
+        Write-Host "   Succeeded."
     } else {
-        Write-Host "        Failed (exit code: $Res)."
+        $FailedTests = $Res.FailedTests -join [Environment]::NewLine
+        Write-Host "   Failed:`r`n exit code: $($Res.ExitCode) `r`n failed tests: `r`n $FailedTests "
     }
-    return $Res
+
+    return $Res.ExitCode
 }
 
 function Invoke-AgentTestsBuild {
@@ -335,56 +340,40 @@ function Invoke-AgentTestsBuild {
 
     $BuildModeOption = "--optimization=" + $BuildMode
 
+    $TestPathPrefix = "build/$BuildMode"
+    $BaseTestPrefix = "$TestPathPrefix/base/test"
+    # $AgentPathPrefix = "$TestPathPrefix/vnsw/agent"
+
     $Job.Step("Building agent tests", {
         $Tests = @(
-            "agent:test_ksync",
-            "src/ksync:ksync_test",
-            "src/dns:dns_bind_test",
-            "src/dns:dns_config_test",
-            "src/dns:dns_mgr_test",
-            "controller/src/schema:test",
-            "src/xml:xml_test",
-            "controller/src/xmpp:test",
-            "src/base:libtask_test",
-            "src/base:bitset_test",
-            "src/base:index_allocator_test",
-            "src/base:dependency_test",
-            "src/base:label_block_test",
-            "src/base:queue_task_test",
-            "src/base:subset_test",
-            "src/base:patricia_test",
-            "src/base:boost_US_test"
+            "$BaseTestPrefix/trace_test.exe"
+            "$BaseTestPrefix/test_task_monitor.exe"
+            "$BaseTestPrefix/subset_test.exe"
+            "$BaseTestPrefix/queue_task_test.exe"
+            "$BaseTestPrefix/patricia_test.exe"
+            "$BaseTestPrefix/label_block_test.exe"
+            "$BaseTestPrefix/factory_test.exe"
+            "$BaseTestPrefix/index_allocator_test.exe"
+            "$BaseTestPrefix/dependency_test.exe"
+            "$BaseTestPrefix/bitset_test.exe"
 
-            # oper
-            "agent:test_agent_sandesh",
-            "agent:test_config_manager",
-            "agent:test_intf",
-            "agent:test_intf_policy",
-            "agent:test_find_scale",
-            "agent:test_logical_intf",
-            "agent:test_vrf_assign",
-            "agent:test_inet_interface",
-            "agent:test_aap6",
-            "agent:test_ipv6",
-            "agent:test_forwarding_class",
-            "agent:test_qos_config",
-            "agent:test_oper_xml",
-            "agent:ifmap_dependency_manager_test",
-            "agent:test_physical_devices"
+            #"src/contrail-common/base:test"
+            # "src/contrail-common/io:test"
+            # "controller/src/agent:test"
+            # "vrouter:test"
         )
 
-        $TestsString = ""
-        if ($Tests.count -gt 0) {
-            $TestsString = $Tests -join " "
-        }
-        $TestsBuildCommand = "scons -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
+        $TestsString = $Tests -join " "
+        $TestsBuildCommand = "scons -k --debug=explain -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "", Justification="Env variable is used by another executable")]
         $Env:BUILD_ONLY = "1"
+
         Invoke-NativeCommand -ScriptBlock {
             Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
-        }
+        } | Out-Null
+
         Remove-Item Env:\BUILD_ONLY
     })
 
@@ -400,7 +389,7 @@ function Invoke-AgentTestsBuild {
         $Env:TASK_UTIL_WAIT_TIME = 10000
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="TASK_UTIL_RETRY_COUNT is used agent tests for determining " +
+            "", Justification="TASK_UTIL_RETRY_COUNT is used in agent tests for determining " +
             "timeout's threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_RETRY_COUNT = 6000
 
@@ -414,12 +403,16 @@ function Invoke-AgentTestsBuild {
             "vnsw\agent\test",
             "xml\test",
             "xmpp\test"
-        ) | ForEach-Object { "$rootBuildDir\$_" }
+        ) | ForEach-Object { Join-Path $rootBuildDir $_ }
 
-        $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*\.exe$'}
-        Foreach ($TestExecutable in $AgentExecutables) {
-            $TestRes = Invoke-AgentUnitTestRunner -TestExecutable $TestExecutable.FullName
-            if (0 -ne $TestRes) {
+        $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*?\.exe$'}
+
+        $TestRes = $AgentExecutables | ForEach-Object {
+            Invoke-AgentUnitTestRunner -TestExecutable $( $_.FullName )
+        }
+
+        $TestRes | ForEach-Object {
+            if (0 -ne $_) {
                 throw "Running agent tests failed"
             }
         }

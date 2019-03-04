@@ -70,9 +70,8 @@ try {
         -LogsPath $LogsDir `
         -BuildMode $SconsBuildMode
 
-    # Building agent unit tests - disabled.
-    # Invoke-AgentTestsBuild -LogsPath $LogsDir `
-    #     -BuildMode $SconsBuildMode
+    Invoke-AgentTestsBuild -LogsPath $LogsDir `
+        -BuildMode $SconsBuildMode
 
     if ("debug" -eq $SconsBuildMode) {
         Copy-DebugDlls -OutputPath $DllsOutputDir
