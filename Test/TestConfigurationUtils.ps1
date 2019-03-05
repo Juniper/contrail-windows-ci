@@ -279,13 +279,7 @@ function Restart-Testbed {
 
     Write-Log "Restarting testbed $($Testbed.GetSession().ComputerName)"
 
-    $VHostName = $SystemConfig.VHostName
-
-    $IPInfo = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
-        Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | `
-            Get-NetIPAddress -ErrorAction SilentlyContinue | `
-            Where-Object AddressFamily -eq "IPv4"
-    }
+    $IPInfo = $Testbed.VhostInfo
 
     Invoke-Command -Session $Testbed.GetSession() {
         netcfg -D

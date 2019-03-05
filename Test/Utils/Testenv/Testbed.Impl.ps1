@@ -4,6 +4,7 @@ class Testbed {
     [string] $Address
     [string] $Username
     [string] $Password
+    [string] $VhostInfo
 
     [PSSessionT] $Session = $null
 
@@ -41,6 +42,14 @@ class Testbed {
     [Void] RemoveAllSessions() {
         Remove-PSSession $this.Session -ErrorAction Continue
         $this.Session = $null
+    }
+
+    [Void] SaveVHostInfo([string] $VhostName) {
+        $this.VhostInfo = Invoke-Command -Session $this.GetSession() -ScriptBlock {
+            Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | `
+                Get-NetIPAddress -ErrorAction SilentlyContinue | `
+                Where-Object AddressFamily -eq "IPv4"
+        }
     }
 
     [PSSessionT] GetSession() {
