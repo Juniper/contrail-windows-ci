@@ -91,13 +91,13 @@
 # For environment cleanup in tests it is acceptable to just ignore this error
 # (-ErrorAction SilentlyContinue). However, this is not acceptable for
 # template creation (we don't want to have unreliable template).
-- name: remove container networks on Windows Server 2016
+- name: Remove container networks on Windows Server 2016
   win_shell: |
     Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
     Get-ContainerNetwork | Remove-ContainerNetwork -Force
   when: windows_server_version == '2016'
 
-- name: remove container networks on Windows Server 2019
+- name: Remove container networks on Windows Server 2019
   win_shell: |
     Get-HnsNetwork | Remove-HnsNetwork
   when: windows_server_version == '2019'
