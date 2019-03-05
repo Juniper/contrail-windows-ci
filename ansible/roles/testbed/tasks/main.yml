@@ -82,7 +82,7 @@
   win_shell: |
     Get-NetNat | Remove-NetNat -Confirm:$false
 
-- name: set Windows Server version var
+- name: Set Windows Server version var
   set_fact:
     windows_server_version: "{{ ansible_distribution | regex_findall('Windows Server (\\d{4})') | first }}"
 
