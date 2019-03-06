@@ -279,7 +279,7 @@ function Restart-Testbed {
 
     Write-Log "Restarting testbed $($Testbed.GetSession().ComputerName)"
 
-    $IPInfo = $Testbed.VhostInfo
+    $VhostInfo = $Testbed.GetVhostInfo()
 
     Invoke-Command -Session $Testbed.GetSession() {
         netcfg -D
@@ -294,8 +294,8 @@ function Restart-Testbed {
             Test-Connection -Quiet -ComputerName $Testbed.Address
         }
 
-    $IP = $IPInfo.IPAddress
-    $Pref = $IPInfo.PrefixLength
+    $IP = $VhostInfo.IPAddress
+    $Pref = $VhostInfo.PrefixLength
     $AdapterName = $SystemConfig.AdapterName
 
     . $AfterRestart

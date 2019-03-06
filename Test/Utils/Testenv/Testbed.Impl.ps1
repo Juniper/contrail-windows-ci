@@ -4,8 +4,8 @@ class Testbed {
     [string] $Address
     [string] $Username
     [string] $Password
-    [System.Collections.Hashtable] $VhostInfo
 
+    hidden [System.Collections.Hashtable] $VhostInfo
     hidden [string] $VhostName
     hidden [string] $WinVersion
 
@@ -120,6 +120,14 @@ class Testbed {
             }
         }
         Write-host "$($this.Name) $($this.VhostInfo)"
+    }
+
+    [System.Collections.Hashtable] GetVhostInfo() {
+        if ($null -eq $this.VhostInfo) {
+            $this.SaveVhostInfo()
+        }
+        Write-host "$($this.Name) $($this.VhostInfo)"
+        return $this.VhostInfo
     }
 
     [Void] SetWindowsVersion() {

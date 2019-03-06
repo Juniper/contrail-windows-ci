@@ -161,8 +161,7 @@ Test-WithRetries 3 {
                 -AdapterName $Testenv.System.AdapterName
 
             Write-Log 'Getting vHost NetAdapter Information'
-            $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $Testenv.System.VHostName
+            $VHostInfo = $Testenv.Testbeds[0].GetVhostInfo()
 
             Initialize-ContainersConnection -VMNetInfo $VMNetInfo -VHostInfo $VHostInfo `
                 -Container1NetInfo $ContainerNetInfos[0] -Container2NetInfo $ContainerNetInfos[1] `
