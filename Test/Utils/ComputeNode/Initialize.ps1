@@ -67,7 +67,7 @@ function Initialize-ComputeServices {
         -SystemConfig $SystemConfig
     $CleanupStack.Push(${function:Remove-CnmPluginAndExtension}, @($Testbed, $SystemConfig))
 
-    New-AgentConfigFile -Session $Testbed.GetSession() `
+    New-AgentConfigFile -Testbed $Testbed `
         -ControllerConfig $ControllerConfig `
         -SystemConfig $SystemConfig
 

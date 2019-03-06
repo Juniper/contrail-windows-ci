@@ -1,6 +1,5 @@
 class SystemConfig {
     [string] $AdapterName
-    [string] $VHostName
     [string] $MgmtAdapterName
     [string] $ForwardingExtensionName
 

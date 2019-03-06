@@ -60,7 +60,7 @@ function Enable-VRouterExtension {
     # don't rely on this adapter to have the correct IP set for correctess.
     # We could implement retrying to avoid flakiness but it's easier to just
     # ignore the error.
-    # Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+    # Wait-RemoteInterfaceIP -Session $Session -AdapterName $Testbed.VHostName
 
     Invoke-Command -Session $Session -ScriptBlock {
         $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:ForwardingExtensionName | Where-Object Enabled
@@ -232,10 +232,11 @@ function Test-IfVmSwitchExist {
 function Write-IpAddresses {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [string] $AdapterName,
+        [Parameter(Mandatory = $true)] [string] $VhostName
     )
 
-    $AdaptersNames = @($SystemConfig.VHostName, $SystemConfig.AdapterName)
+    $AdaptersNames = @($VhostName, $AdapterName)
 
     $Infos = Invoke-Command -Session $Session -ScriptBlock {
         $Ret = @{}
@@ -256,13 +257,14 @@ function Assert-VmSwitchInitialized {
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
+    $vhostName = $Testbed.GetVhostName()
     if(-not (Test-IfVmSwitchExist -Session $Testbed.GetSession() -VmSwitchName $SystemConfig.VMSwitchName())) {
-        throw "VmSwitch is not created. No need to wait for IP on $($SystemConfig.VHostName)."
+        throw "VmSwitch is not created. No need to wait for IP on $vhostName."
     }
 
-    Write-IPAddresses -Session $Testbed.GetSession() -SystemConfig $SystemConfig
+    Write-IPAddresses -Session $Testbed.GetSession() -AdapterName $SystemConfig.AdapterName -VhostName $Testbed.GetVhostName()
 
-    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.VHostName
+    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $vhostName
 }
 
 class RestartNeededException : System.Exception {
@@ -316,7 +318,7 @@ function Assert-VmSwitchDeleted {
         throw "VmSwitch is not going to be deleted. No need to wait for IP on $($SystemConfig.AdapterName)."
     }
 
-    Write-IPAddresses -Session $Testbed.GetSession() -SystemConfig $SystemConfig
+    Write-IPAddresses -Session $Testbed.GetSession() -AdapterName $SystemConfig.AdapterName -VhostName $Testbed.GetVhostName()
 
     try {
         Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.AdapterName

@@ -7,7 +7,7 @@ class Testbed {
 
     hidden [System.Collections.Hashtable] $VhostInfo
     hidden [string] $VhostName
-    hidden [string] $WinVersion
+    hidden [WinVersion] $WinVersion
 
     [PSSessionT] $Session = $null
 
@@ -93,8 +93,8 @@ class Testbed {
     }
 
     [Void] SetVhostName() {
-        switch -Wildcard ($this.GetWindowsVersion()) {
-            "*2016*" {
+        switch ($this.GetWindowsVersion()) {
+            "2016" {
                 $this.VhostName = "vEthernet (HNSTransparent)"
             }
             default {
@@ -131,12 +131,23 @@ class Testbed {
     }
 
     [Void] SetWindowsVersion() {
-        $this.WinVersion = Invoke-Command -Session $this.GetSession() -ScriptBlock {
+        $ret = Invoke-Command -Session $this.GetSession() -ScriptBlock {
             (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ProductName
+        }
+        switch -Wildcard ($ret) {
+            "*2016*" {
+                $this.WinVersion = [WinVersion]::v2016
+            }
+            "*2019*" {
+                $this.WinVersion = [WinVersion]::v2019
+            }
+            default {
+                throw "Not supported Windows version"
+            }
         }
     }
 
-    [string] GetWindowsVersion() {
+    [WinVersion] GetWindowsVersion() {
         if ($null -eq $this.WinVersion) {
             $this.SetWindowsVersion()
         }
@@ -192,3 +203,8 @@ function New-RemoteSessions {
 }
 
 function Get-ComputeLogsDir { "C:/ProgramData/Contrail/var/log/contrail" }
+
+Enum WinVersion {
+    v2016
+    v2019
+}

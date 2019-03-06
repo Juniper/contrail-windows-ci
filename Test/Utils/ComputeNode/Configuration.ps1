@@ -115,16 +115,17 @@ sandesh_ssl_enable=False
 function Get-AdaptersInfo {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [string] $AdapterName,
+        [Parameter(Mandatory = $true)] [string] $VhostName
     )
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
             -Session $Session `
-            -AdapterName $SystemConfig.VHostName
+            -AdapterName $VhostName
 
     $PhysicalAdapter = Get-RemoteNetAdapterInformation `
             -Session $Session `
-            -AdapterName $SystemConfig.AdapterName
+            -AdapterName $AdapterName
 
     return @{
         "VHostIfIndex" = $HNSTransparentAdapter.ifIndex;
@@ -178,14 +179,17 @@ physical_interface=$PhysIfName
 
 function New-AgentConfigFile {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
     Write-Log 'Creating agent config files'
 
-    $AdaptersInfo = Get-AdaptersInfo -Session $Session -SystemConfig $SystemConfig
+    $AdaptersInfo = Get-AdaptersInfo `
+        -Session $Session `
+        -AdapterName $SystemConfig.AdapterName `
+        -VhostName $Testbed.GetVhostName()
     $AgentConfigPath = Get-DefaultAgentConfigPath
 
     Invoke-CommandWithFunctions `
