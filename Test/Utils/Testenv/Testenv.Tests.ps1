@@ -60,7 +60,6 @@ controller:
 
 system:
   AdapterName: Eth1
-  VHostName: vEth
   ForwardingExtensionName: MyExtension
 
 testbeds:

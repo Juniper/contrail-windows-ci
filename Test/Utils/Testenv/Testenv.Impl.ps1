@@ -55,7 +55,7 @@ class Testenv {
             $CleanupStack.Push(${function:Remove-AllContainers}, @(, $this.Testbeds))
         }
         foreach ($Testbed in $this.Testbeds) {
-            $Testbed.SaveVHostInfo($this.System.vHostName)
+            $Testbed.SaveVHostInfo()
         }
     }
 

@@ -4,7 +4,10 @@ class Testbed {
     [string] $Address
     [string] $Username
     [string] $Password
-    [string] $VhostInfo
+    [System.Collections.Hashtable] $VhostInfo
+
+    hidden [string] $VhostName
+    hidden [string] $WinVersion
 
     [PSSessionT] $Session = $null
 
@@ -44,13 +47,6 @@ class Testbed {
         $this.Session = $null
     }
 
-    [Void] SaveVHostInfo([string] $VhostName) {
-        $this.VhostInfo = Invoke-Command -Session $this.GetSession() -ScriptBlock {
-            Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | `
-                Get-NetIPAddress -ErrorAction SilentlyContinue | `
-                Where-Object AddressFamily -eq "IPv4"
-        }
-    }
 
     [PSSessionT] GetSession() {
         if (($null -ne $this.Session) -and ('Opened' -ne $this.Session.State)) {
@@ -58,7 +54,7 @@ class Testbed {
             $this.Session = $null
         }
         if ($null -eq $this.Session) {
-            $this.NewSession()
+            return $this.NewSession()
         }
         return $this.Session
     }
@@ -86,6 +82,58 @@ class Testbed {
                 "", Justification = "We refresh PATH on remote machine, we don't use it here.")]
             $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
         }
+    }
+
+    [string] GetVhostName() {
+        if ($null -eq $this.VhostName) {
+            $this.SetVhostName()
+        }
+        Write-host "$($this.Name) $($this.VhostName)"
+        return $this.VhostName
+    }
+
+    [Void] SetVhostName() {
+        switch -Wildcard ($this.GetWindowsVersion()) {
+            "*2016*" {
+                $this.VhostName = "vEthernet (HNSTransparent)"
+            }
+            default {
+                throw "Not supported Windows version"
+            }
+        }
+    }
+
+    [Void] SaveVhostInfo() {
+        $adapterName = $this.GetVhostName()
+        $this.VhostInfo = Invoke-Command -Session $this.GetSession() -ScriptBlock {
+            $ipInfo = Get-NetIPAddress -ErrorAction SilentlyContinue -AddressFamily "IPv4" -InterfaceAlias $Using:adapterName
+            $adapterInfo = Get-NetAdapter -ErrorAction SilentlyContinue -IncludeHidden -Name $Using:adapterName | `
+                Select-Object ifName, MacAddress, ifIndex
+
+            return @{
+                IfIndex = $adapterInfo.IfIndex;
+                IfName = $adapterInfo.ifName;
+                MACAddress = $adapterInfo.MacAddress.Replace("-", ":").ToLower();
+                MACAddressWindows = $adapterInfo.MacAddress.ToLower();
+                IPAddress = $ipInfo.IPAddress;
+                PrefixLength = $ipInfo.PrefixLength;
+            }
+        }
+        Write-host "$($this.Name) $($this.VhostInfo)"
+    }
+
+    [Void] SetWindowsVersion() {
+        $this.WinVersion = Invoke-Command -Session $this.GetSession() -ScriptBlock {
+            (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ProductName
+        }
+    }
+
+    [string] GetWindowsVersion() {
+        if ($null -eq $this.WinVersion) {
+            $this.SetWindowsVersion()
+        }
+        Write-host "$($this.Name) $($this.WinVersion)"
+        return $this.WinVersion
     }
 }
 
