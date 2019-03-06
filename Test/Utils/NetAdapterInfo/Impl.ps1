@@ -12,7 +12,7 @@ function Read-RawRemoteContainerNetAdapterInformation {
         $RemoteCommand = {
             $GetIPAddress = { ($_ | Get-NetIPAddress -AddressFamily IPv4).IPAddress }
             $Fields = 'ifIndex', 'ifName', 'Name', 'MacAddress', 'MtuSize', @{L='IPAddress'; E=$GetIPAddress}
-            $Adapter = (Get-NetAdapter -Name 'vEthernet (Container NIC *)')[0]
+            $Adapter = (Get-NetAdapter -Name 'vEthernet (*)')[0]
             return $Adapter | Select-Object $Fields | ConvertTo-Json -Depth 5
         }.ToString()
 
