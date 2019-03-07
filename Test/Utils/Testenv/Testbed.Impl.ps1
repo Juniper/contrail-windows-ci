@@ -5,6 +5,8 @@ class Testbed {
     [string] $Username
     [string] $Password
 
+    hidden [WinVersion] $WinVersion
+
     [PSSessionT] $Session = $null
 
     [PSSessionT] NewSession() {
@@ -49,7 +51,7 @@ class Testbed {
             $this.Session = $null
         }
         if ($null -eq $this.Session) {
-            $this.NewSession()
+            return $this.NewSession()
         }
         return $this.Session
     }
@@ -77,6 +79,31 @@ class Testbed {
                 "", Justification = "We refresh PATH on remote machine, we don't use it here.")]
             $Env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
         }
+    }
+
+    [Void] CheckWindowsVersion() {
+        $ret = Invoke-Command -Session $this.GetSession() -ScriptBlock {
+            (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName
+        }
+        switch -Wildcard ($ret) {
+            "*2016*" {
+                $this.WinVersion = [WinVersion]::v2016
+            }
+            "*2019*" {
+                $this.WinVersion = [WinVersion]::v2019
+            }
+            default {
+                throw 'Not supported Windows version'
+            }
+        }
+    }
+
+    [WinVersion] GetWindowsVersion() {
+        if ([WinVersion]::UnChecked -eq $this.WinVersion) {
+            $this.CheckWindowsVersion()
+        }
+        Write-Log "$($this.Name) $($this.WinVersion)"
+        return $this.WinVersion
     }
 }
 
@@ -127,3 +154,9 @@ function New-RemoteSessions {
 }
 
 function Get-ComputeLogsDir { "C:/ProgramData/Contrail/var/log/contrail" }
+
+Enum WinVersion {
+    UnChecked
+    v2016
+    v2019
+}
