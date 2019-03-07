@@ -4,12 +4,13 @@ class Testbed {
     [string] $Address
     [string] $Username
     [string] $Password
+    [string] $AdapterName
+    [string] $MgmtAdapterName
 
     hidden [System.Collections.Hashtable] $VhostInfo
     hidden [string] $VhostName
     hidden [WinVersion] $WinVersion
-
-    [PSSessionT] $Session = $null
+    hidden [PSSessionT] $Session = $null
 
     [PSSessionT] NewSession() {
         return $this.NewSession(10, 300000)
@@ -88,30 +89,33 @@ class Testbed {
         if ($null -eq $this.VhostName) {
             $this.SetVhostName()
         }
-        Write-host "$($this.Name) $($this.VhostName)"
         return $this.VhostName
     }
 
     [Void] SetVhostName() {
-        switch ($this.GetWindowsVersion()) {
-            "2016" {
-                $this.VhostName = "vEthernet (HNSTransparent)"
+        $intName = switch ($this.GetWindowsVersion()) {
+            "v2016" {
+                "HNSTransparent"
+            }
+            "v2019" {
+                $this.AdapterName
             }
             default {
                 throw "Not supported Windows version"
             }
         }
+        $this.VhostName = "vEthernet ($intName)"
     }
 
     [Void] SaveVhostInfo() {
-        $adapterName = $this.GetVhostName()
+        $vhost = $this.GetVhostName()
         $this.VhostInfo = Invoke-Command -Session $this.GetSession() -ScriptBlock {
-            $ipInfo = Get-NetIPAddress -ErrorAction SilentlyContinue -AddressFamily "IPv4" -InterfaceAlias $Using:adapterName
-            $adapterInfo = Get-NetAdapter -ErrorAction SilentlyContinue -IncludeHidden -Name $Using:adapterName | `
+            $ipInfo = Get-NetIPAddress -ErrorAction SilentlyContinue -AddressFamily "IPv4" -InterfaceAlias $Using:vhost 
+            $adapterInfo = Get-NetAdapter -ErrorAction SilentlyContinue -IncludeHidden -Name $Using:vhost | `
                 Select-Object ifName, MacAddress, ifIndex
 
             return @{
-                IfIndex = $adapterInfo.IfIndex;
+                IfIndex = $adapterInfo.ifIndex;
                 IfName = $adapterInfo.ifName;
                 MACAddress = $adapterInfo.MacAddress.Replace("-", ":").ToLower();
                 MACAddressWindows = $adapterInfo.MacAddress.ToLower();
@@ -119,14 +123,12 @@ class Testbed {
                 PrefixLength = $ipInfo.PrefixLength;
             }
         }
-        Write-host "$($this.Name) $($this.VhostInfo)"
     }
 
     [System.Collections.Hashtable] GetVhostInfo() {
         if ($null -eq $this.VhostInfo) {
             $this.SaveVhostInfo()
         }
-        Write-host "$($this.Name) $($this.VhostInfo)"
         return $this.VhostInfo
     }
 
@@ -151,7 +153,6 @@ class Testbed {
         if ($null -eq $this.WinVersion) {
             $this.SetWindowsVersion()
         }
-        Write-host "$($this.Name) $($this.WinVersion)"
         return $this.WinVersion
     }
 }

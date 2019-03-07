@@ -185,6 +185,7 @@ function New-AgentConfigFile {
     )
 
     Write-Log 'Creating agent config files'
+    $Session = $Testbed.GetSession()
 
     $AdaptersInfo = Get-AdaptersInfo `
         -Session $Session `

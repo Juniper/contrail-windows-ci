@@ -16,12 +16,14 @@ testbeds:
     address: <TESTBED1_IP>
     username: Administrator
     password: 'Contrail123!'
+    adapterName: Ethernet1
+    mgmtAdapterName: Ethernet0
   - name: <TESTBED2_NAME>
     address: <TESTBED2_IP>
     username: Administrator
     password: 'Contrail123!'
+    adapterName: Ethernet1
+    mgmtAdapterName: Ethernet0
 
 system:
-  adapterName: Ethernet1
-  mgmtAdapterName: Ethernet0
   forwardingExtensionName: vRouter forwarding extension

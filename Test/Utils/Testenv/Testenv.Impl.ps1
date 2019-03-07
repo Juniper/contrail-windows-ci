@@ -18,6 +18,10 @@ class Testenv {
         $this.Controller = [ControllerConfig]::LoadFromFile($TestenvConfFile)
         $this.Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
 
+        # TODO remove information about adapters from SystemConfig altogether
+        $this.System.AdapterName = $this.Testbeds[0].AdapterName
+        $this.System.MgmtAdapterName = $this.Testbeds[0].MgmtAdapterName
+
         $CleanupStack = $this.NewCleanupStack()
 
         Write-Log 'Creating sessions'
