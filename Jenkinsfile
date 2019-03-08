@@ -44,7 +44,7 @@ pipeline {
         }
 
         stage('Checkout projects') {
-            agent { label 'builder' }
+            agent { label 'builder2019' }
             environment {
                 CNM_PLUGIN_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
             }
@@ -103,7 +103,7 @@ pipeline {
                 }
 
                 stage('Static analysis - Windows') {
-                    agent { label 'builder' }
+                    agent { label 'builder2019' }
                     steps {
                         deleteDir()
                         unstash "StaticAnalysis"
