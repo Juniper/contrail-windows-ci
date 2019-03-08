@@ -105,6 +105,18 @@ class Testbed {
         Write-Log "$($this.Name) $($this.WinVersion)"
         return $this.WinVersion
     }
+
+    [String] GetDefaultDockerImage() {
+        switch ($this.GetWindowsVersion()) {
+            'v2016' {
+                return 'microsoft/windowsservercore'
+            }
+            'v2019' {
+                return 'mcr.microsoft.com/windows/servercore:1809'
+            }
+        }
+        throw 'Unknown default image for this Windows version'
+    }
 }
 
 class TestbedConverter : System.Management.Automation.PSTypeConverter {
