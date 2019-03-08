@@ -11,13 +11,23 @@ function Sync-MicrosoftDockerImagesOnTestbeds {
     Param (
         [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds
     )
+
     Write-Log 'Downloading Docker images'
     $StartedJobs = @()
     ForEach ($Testbed in $Testbeds) {
         $JobName = "$($Testbed.GetSession().ComputerName)-pulldockerms"
+        switch ($Testbed.GetWindowsVersion()) {
+            'v2016' {
+                $Images = @('microsoft/windowsservercore', 'microsoft/nanoserver')
+            }
+            'v2019' {
+                $Images = @('mcr.microsoft.com/windows/servercore:1809', 'mcr.microsoft.com/windows/nanoserver:1809')
+            }
+        }
         Invoke-Command -Session $Testbed.GetSession() -JobName $JobName -AsJob {
-            docker pull microsoft/windowsservercore
-            docker pull microsoft/nanoserver
+            foreach($Image in $Using:Images) {
+                docker pull $Image
+            }
         } | Out-Null
         $StartedJobs += $JobName
     }
