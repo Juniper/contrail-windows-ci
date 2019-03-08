@@ -89,7 +89,7 @@ Describe 'Node manager' -Tags Smoke, EnvSafe {
         Eventually {
             Test-NodeMgrConnectionWithController `
                 -Session $Sess `
-                -ControllerIP $Testenv.Controller.Address | Should Be True
+                -ControllerIP $Testenv.Controller.MgmtAddress | Should Be True
         } -Duration 60
     }
 

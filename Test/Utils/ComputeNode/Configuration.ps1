@@ -38,7 +38,7 @@ function New-CNMPluginConfigFile {
     $Config = @"
 [DRIVER]
 Adapter=$AdapterName
-ControllerIP=$( $ControllerConfig.Address )
+ControllerIP=$( $ControllerConfig.MgmtAddress )
 ControllerPort=8082
 
 [LOGGING]
@@ -151,7 +151,7 @@ function Get-VHostConfiguration {
 
 function Get-AgentConfig {
     Param (
-        [Parameter(Mandatory = $true)] [string] $ControllerIP,
+        [Parameter(Mandatory = $true)] [string] $ControllerCtrlIp,
         [Parameter(Mandatory = $true)] [string] $VHostIfIndex,
         [Parameter(Mandatory = $true)] [string] $PhysIfName
     )
@@ -162,11 +162,11 @@ function Get-AgentConfig {
 platform=windows
 
 [CONTROL-NODE]
-servers=$ControllerIP
+servers=$ControllerCtrlIp
 
 [DNS]
 dns_client_port=53
-servers=$($ControllerIP):53
+servers=$($ControllerCtrlIp):53
 
 [VIRTUAL-HOST-INTERFACE]
 name=
@@ -194,7 +194,7 @@ function New-AgentConfigFile {
         -ScriptBlock {
             # Save file with prepared config
             $ConfigFileContent = Get-AgentConfig `
-                -ControllerIP $Using:ControllerConfig.Address `
+                -ControllerCtrlIp $Using:ControllerConfig.CtrlAddress `
                 -VHostIfIndex $Using:AdaptersInfo.VHostIfIndex `
                 -PhysIfName $Using:AdaptersInfo.PhysIfName
 

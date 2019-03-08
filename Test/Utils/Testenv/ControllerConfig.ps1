@@ -1,10 +1,11 @@
 class ControllerConfig {
-    [string] $Address
+    [string] $MgmtAddress
+    [string] $CtrlAddress
     [int] $RestApiPort
     [string] $AuthMethod
 
     [string] RestApiUrl() {
-        return "http://$( $this.Address ):$( $this.RestApiPort )"
+        return "http://$( $this.MgmtAddress ):$( $this.RestApiPort )"
     }
 
     static [ControllerConfig] LoadFromFile([string] $Path) {

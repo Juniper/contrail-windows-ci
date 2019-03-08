@@ -22,7 +22,8 @@ Describe "Testenv" -Tags CISelfcheck, Unit {
 
         It "can read controller config from a .yaml file" {
             $Controller = [ControllerConfig]::LoadFromFile($YamlPath)
-            $Controller.Address | Should Be "1.2.3.1"
+            $Controller.MgmtAddress | Should Be "1.2.3.1"
+            $Controller.CtrlAddress | Should Be "1.2.3.2"
             $Controller.RestApiPort | Should Be "8082"
 
             $Controller.RestApiUrl() | Should Be "http://1.2.3.1:8082"
@@ -55,7 +56,8 @@ openStack:
   port: 5000
 
 controller:
-  address: 1.2.3.1
+  mgmtAddress: 1.2.3.1
+  ctrlAddress: 1.2.3.2
   restApiPort: 8082
 
 system:
