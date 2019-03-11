@@ -1,7 +1,6 @@
 class SystemConfig {
     [string] $DataAdapterName
     [string] $VHostName
-    [string] $MgmtAdapterName
     [string] $ForwardingExtensionName
 
     [string] VMSwitchName() {

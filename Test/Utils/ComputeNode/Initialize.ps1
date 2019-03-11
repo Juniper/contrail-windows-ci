@@ -52,9 +52,8 @@ function Initialize-ComputeServices {
     )
 
     New-NodeMgrConfigFile `
-        -Session $Testbed.GetSession()  `
-        -ControllerIP $ControllerConfig.MgmtAddress `
-        -MgmtAdapterName $SystemConfig.MgmtAdapterName
+        -Testbed $Testbed  `
+        -ControllerIP $ControllerConfig.MgmtAddress
 
     New-CNMPluginConfigFile `
         -Session $Testbed.GetSession() `

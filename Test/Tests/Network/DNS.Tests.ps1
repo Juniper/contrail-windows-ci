@@ -123,19 +123,18 @@ function Start-DNSServerOnTestBed {
 
 function Set-DNSServerAddressOnTestBed {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $ClientSession,
-        [Parameter(Mandatory = $true)] [PSSessionT] $ServerSession,
-        [Parameter(Mandatory = $true)] [string] $InterfaceAlias
+        [Parameter(Mandatory = $true)] [Testbed] $Client,
+        [Parameter(Mandatory = $true)] [Testbed] $Server
     )
-    $DefaultDNSServerAddress = Invoke-Command -Session $ServerSession -ScriptBlock {
-        Get-NetIPAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object { 2 -eq $_.AddressFamily } | Select-Object -ExpandProperty IPAddress
+    $DefaultDNSServerAddress = Invoke-Command -Session $Server.GetSession() -ScriptBlock {
+        Get-NetIPAddress -InterfaceAlias $Using:Server.MgmtAdapterName | Where-Object { 2 -eq $_.AddressFamily } | Select-Object -ExpandProperty IPAddress
     }
     Write-Log "Setting default DNS Server on test bed for: $DefaultDNSServerAddress..."
-    $OldDNSs = Invoke-Command -Session $ClientSession -ScriptBlock {
-        Get-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias | Where-Object {2 -eq $_.AddressFamily} | Select-Object -ExpandProperty ServerAddresses
+    $OldDNSs = Invoke-Command -Session $Client.GetSession() -ScriptBlock {
+        Get-DnsClientServerAddress -InterfaceAlias $Using:Client.MgmtAdapterName | Where-Object {2 -eq $_.AddressFamily} | Select-Object -ExpandProperty ServerAddresses
     }
-    Invoke-Command -Session $ClientSession -ScriptBlock {
-        Set-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias -ServerAddresses $Using:DefaultDNSServerAddress
+    Invoke-Command -Session $Client.GetSession() -ScriptBlock {
+        Set-DnsClientServerAddress -InterfaceAlias $Using:Client.MgmtAdapterName -ServerAddresses $Using:DefaultDNSServerAddress
     }
 
     return $OldDNSs
@@ -218,10 +217,9 @@ Test-WithRetries 3 {
             Install-DNSTestDependencies -Sessions $Testenv.Sessions
             Start-DNSServerOnTestBed -Session $Testenv.Sessions[1]
             $OldDNSs = Set-DNSServerAddressOnTestBed `
-                -ClientSession $Testenv.Sessions[0] `
-                -ServerSession $Testenv.Sessions[1] `
-                -InterfaceAlias $Testenv.System.MgmtAdapterName
-            $BeforeAllStack.Push(${function:Restore-DNSServerOnTestBed}, @($Testenv.Sessions[0], $Testenv.System.MgmtAdapterName, $OldDNSs))
+                -Client $Testenv.Testbeds[0] `
+                -Server $Testenv.Testbeds[1]
+            $BeforeAllStack.Push(${function:Restore-DNSServerOnTestBed}, @($Testenv.Testbeds[0], $Testenv.Testbeds[0].MgmtAdapterName, $OldDNSs))
 
             Write-Log 'Creating Virtual DNS Server in Contrail...'
             $Testenv.ContrailRepo.AddOrReplace($VirtualDnsServer)

@@ -67,12 +67,11 @@ Os_token=
 
 function Get-NodeManagementIP {
     Param(
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $MgmtAdapterName
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
-    return Invoke-Command -Session $Session -ScriptBlock {
+    return Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Get-NetIPAddress |
-        Where-Object InterfaceAlias -like $Using:MgmtAdapterName |
+        Where-Object InterfaceAlias -like $Using:Testbed.MgmtAdapterName |
         Where-Object AddressFamily -eq IPv4 |
         Select-Object -ExpandProperty IPAddress
     }
@@ -80,9 +79,8 @@ function Get-NodeManagementIP {
 
 function New-NodeMgrConfigFile {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $ControllerIP,
-        [Parameter(Mandatory = $true)] [string] $MgmtAdapterName
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
+        [Parameter(Mandatory = $true)] [string] $ControllerIP
     )
 
     Write-Log 'Creating node manager config file'
@@ -90,7 +88,7 @@ function New-NodeMgrConfigFile {
     $ConfigPath = Get-DefaultNodeMgrsConfigPath
     $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
 
-    $HostIP = Get-NodeManagementIP -Session $Session -MgmtAdapterName $MgmtAdapterName
+    $HostIP = Get-NodeManagementIP -Testbed $Testbed
 
     $Config = @"
 [DEFAULTS]
@@ -107,7 +105,7 @@ introspect_ssl_enable=False
 sandesh_ssl_enable=False
 "@
 
-    Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Set-Content -Path $Using:ConfigPath -Value $Using:Config
     }
 }
