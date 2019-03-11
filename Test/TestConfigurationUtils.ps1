@@ -37,19 +37,53 @@ function Assert-AreDLLsPresent {
     }
 }
 
+function New-HnsTransparentNetwork
+{
+    Param (
+        [Parameter(Mandatory = $true)] [String] $Name,
+        [Parameter(Mandatory = $true)] [String] $NetworkAdapterName
+    )
+
+    $NetObj = @{
+        Type = 'Transparent'
+        Name = $Name
+        NetworkAdapterName = $NetworkAdapterName
+    }
+
+    $Request = ConvertTo-Json $NetObj -Depth 10
+    $Response = ""
+
+    $Signature = @'
+[DllImport("vmcompute.dll")]
+public static extern void HNSCall([MarshalAs(UnmanagedType.LPWStr)] string method, [MarshalAs(UnmanagedType.LPWStr)] string path, [MarshalAs(UnmanagedType.LPWStr)] string request, [MarshalAs(UnmanagedType.LPWStr)] out string response);
+'@
+    $HnsApi = Add-Type -MemberDefinition $Signature -Namespace WindowsCI.VmCompute -Name NativeMethods -PassThru
+    $HnsApi::HNSCall('POST', '/networks', "$Request", [ref] $Response)
+    if ($Response)
+    {
+        $Output = ($Response | ConvertFrom-Json)
+        if ($Output.PSobject.Properties.Name -contains 'Error') {
+             throw $Output
+        }
+        $Output = $Output.Output
+    }
+
+    return $Output
+}
+
 function Enable-VRouterExtension {
     Param (
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
-        [Parameter(Mandatory = $false)] [string] $ContainerNetworkName = "testnet"
+        [Parameter(Mandatory = $false)] [string] $ContainerNetworkName = "ContrailRootNetwork"
     )
 
     Write-Log "Enabling Extension"
 
     Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.DataAdapterName
 
-    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
-        New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:Testbed.DataAdapterName -Name $Using:ContainerNetworkName | Out-Null
+    Invoke-CommandWithFunctions -Functions "New-HnsTransparentNetwork" -Session $Testbed.GetSession() {
+        New-HnsTransparentNetwork -NetworkAdapterName $Using:Testbed.DataAdapterName -Name $Using:ContainerNetworkName | Out-Null
     }
 
     # We're not waiting for IP on this adapter, because our tests
@@ -80,8 +114,16 @@ function Disable-VRouterExtension {
 
     Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Disable-VMSwitchExtension -VMSwitchName $Using:Testbed.VmSwitchName -Name $Using:SystemConfig.ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
-        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
-        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -Force
+        if (Get-Command -Name Get-ContainerNetwork -ErrorAction SilentlyContinue) {
+            Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
+            Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -Force
+        }
+        elseif (Get-Command -Name Get-HnsNetwork -ErrorAction SilentlyContinue) {
+            Get-HnsNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-HnsNetwork
+        }
+        else {
+            throw 'Either Get/Remove-ContainerNetwork or Get/Remove-HnsNetwork cmdlets need to be avaliable.'
+        }
     }
 }
 
