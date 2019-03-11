@@ -250,28 +250,7 @@ function Stop-CNMPluginService {
         [Parameter(Mandatory=$true)] $Session
     )
 
-    $ServiceName = Get-CNMPluginServiceName
-
-    Stop-RemoteService -Session $Session -ServiceName $ServiceName
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        Stop-Service docker | Out-Null
-
-        # Removing NAT objects when 'winnat' service is stopped may fail.
-        # In this case, we have to try removing all objects but ignore failures for some of them.
-        Get-NetNat | ForEach-Object {
-            Remove-NetNat $_.Name -Confirm:$false -ErrorAction SilentlyContinue
-        }
-
-        # Removing ContainerNetworks may fail for NAT network when 'winnat'
-        # service is disabled, so we have to filter out all NAT networks.
-        Get-ContainerNetwork | Where-Object Name -NE nat | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
-        # Workaround for flaky HNS behavior.
-        # Removing container networks sometimes ends with "Unspecified error".
-        Get-ContainerNetwork | Where-Object Name -NE nat | Remove-ContainerNetwork -Force
-
-        Start-Service docker | Out-Null
-    }
+    Stop-RemoteService -Session $Session -ServiceName (Get-CNMPluginServiceName)
 }
 
 function Stop-AgentService {
