@@ -32,6 +32,18 @@ function New-CNMPluginConfigFile {
 
     Write-Log 'Creating CNM plugin config file'
 
+    switch ($Testbed.WinVersion) {
+        'v2016' {
+            $WsVersion = '2016'
+        }
+        'v2019' {
+            $WsVersion = '2019'
+        }
+        Default {
+            throw 'Unknown CNM Plugin Config for this Windows Server Version'
+        }
+    }
+
     $ConfigPath = Get-DefaultCNMPluginsConfigPath
 
     $Config = @"
@@ -39,6 +51,7 @@ function New-CNMPluginConfigFile {
 Adapter=$($Testbed.DataAdapterName)
 ControllerIP=$( $ControllerConfig.MgmtAddress )
 ControllerPort=8082
+WSVersion=$WsVersion
 
 [LOGGING]
 LogLevel=Debug
@@ -46,7 +59,7 @@ LogLevel=Debug
 [AUTH]
 AuthMethod=$( $ControllerConfig.AuthMethod )
 "@
-    if($OpenStackConfig) {
+    if ($OpenStackConfig) {
         $Config += @"
 
 
@@ -124,7 +137,7 @@ function Get-AdaptersInfo {
 
     return @{
         "VHostIfIndex" = $HNSTransparentAdapter.ifIndex;
-        "PhysIfName" = $PhysicalAdapter.ifName
+        "PhysIfName"   = $PhysicalAdapter.ifName
     }
 }
 
@@ -139,8 +152,8 @@ function Get-VHostConfiguration {
     $GatewayConfig = if ($Gateway) { "gateway=$( $Gateway.NextHop )" } else { "" }
 
     return @{
-        "IP" = $IP;
-        "PrefixLength" = $PrefixLength;
+        "IP"            = $IP;
+        "PrefixLength"  = $PrefixLength;
         "GatewayConfig" = $GatewayConfig
     }
 }
@@ -195,7 +208,7 @@ function New-AgentConfigFile {
                 -PhysIfName $Using:AdaptersInfo.PhysIfName
 
             Set-Content -Path $Using:AgentConfigPath -Value $ConfigFileContent
-    }
+        }
 }
 
 function New-ComputeNodeLogSources {
