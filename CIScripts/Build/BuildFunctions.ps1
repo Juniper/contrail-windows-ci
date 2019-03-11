@@ -284,49 +284,22 @@ function Copy-DebugDlls {
     })
 }
 
-function Get-FailedUnitTests {
-    Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
-    $FailedTests = @()
-    Foreach ($Line in $TestOutput) {
-        if ($Line -match "\[  FAILED  \] (?<FailedTest>\D\S*)\s\(\d*\sms\)$") {
-            $FailedTests += $matches.FailedTest
-        }
-    }
-    return ,$FailedTests
-}
-
 function Invoke-AgentUnitTestRunner {
     Param (
         [Parameter(Mandatory = $true)] [String] $TestExecutable
     )
 
     Write-Host "===> Agent tests: running $TestExecutable..."
-    $Res = Invoke-Command -ScriptBlock {
-        $Command = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
-            # TODO: Delete the tee-object part when using aliases instead of raw filepaths
-            Invoke-Expression $TestExecutable | Tee-Object -FilePath "$TestExecutable.log"
-        }
 
-        $Result = @{}
-        # This is a workaround for the following bug:
-        # https://bugs.launchpad.net/opencontrail/+bug/1714205
-        # Even if all tests actually pass, test executables can sometimes
-        # return non-zero exit code.
-        # TODO: It should be removed once the bug is fixed (JW-1110).
-        $Result.FailedTests = Get-FailedUnitTests -TestOutput $Command.Output
-        $Result.ExitCode = $Command.ExitCode
-        if (-not $Result.FailedTests.Count) {
-            $Result.ExitCode = 0
-        }
-
-        return $Result
+    $Res = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
+        # TODO: Delete the tee-object part when using aliases instead of raw filepaths
+        Invoke-Expression $TestExecutable | Tee-Object -FilePath "$TestExecutable.log"
     }
 
     if (-not $Res.ExitCode) {
         Write-Host "   Succeeded."
     } else {
-        $FailedTests = $Res.FailedTests -join [Environment]::NewLine
-        Write-Host "   Failed:`r`n exit code: $($Res.ExitCode) `r`n failed tests: `r`n $FailedTests "
+        Write-Host "   Failed:`r`n exit code: $($Res.ExitCode)"
     }
 
     return $Res.ExitCode
