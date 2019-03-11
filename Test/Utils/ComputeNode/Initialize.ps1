@@ -53,7 +53,7 @@ function Initialize-ComputeServices {
 
     New-NodeMgrConfigFile `
         -Session $Testbed.GetSession()  `
-        -ControllerIP $ControllerConfig.Address `
+        -ControllerIP $ControllerConfig.MgmtAddress `
         -MgmtAdapterName $SystemConfig.MgmtAdapterName
 
     New-CNMPluginConfigFile `

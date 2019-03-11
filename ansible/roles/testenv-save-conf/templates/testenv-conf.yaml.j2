@@ -9,7 +9,8 @@ openStack:
   port: 5000
 
 controller:
-  address: {{ controller.ansible_host }}
+  mgmtAddress: {{ controller.ansible_host }}
+  ctrlAddress: 172.16.0.1
   restApiPort: 8082
   # Supported auth methods: keystone|noauth
   authMethod: keystone
