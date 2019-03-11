@@ -124,7 +124,7 @@ function Get-AdaptersInfo {
 
     $PhysicalAdapter = Get-RemoteNetAdapterInformation `
             -Session $Session `
-            -AdapterName $SystemConfig.AdapterName
+            -AdapterName $SystemConfig.DataAdapterName
 
     return @{
         "VHostIfIndex" = $HNSTransparentAdapter.ifIndex;

@@ -46,11 +46,11 @@ function Enable-VRouterExtension {
 
     Write-Log "Enabling Extension"
 
-    $AdapterName = $SystemConfig.AdapterName
+    $AdapterName = $SystemConfig.DataAdapterName
     $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
     $VMSwitchName = $SystemConfig.VMSwitchName()
 
-    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
+    Wait-RemoteInterfaceIP -Session $Session -AdapterName $AdapterName
 
     Invoke-Command -Session $Session -ScriptBlock {
         New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
@@ -82,7 +82,7 @@ function Disable-VRouterExtension {
 
     Write-Log "Disabling Extension"
 
-    $AdapterName = $SystemConfig.AdapterName
+    $AdapterName = $SystemConfig.DataAdapterName
     $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
     $VMSwitchName = $SystemConfig.VMSwitchName()
 
@@ -235,7 +235,7 @@ function Write-IpAddresses {
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
-    $AdaptersNames = @($SystemConfig.VHostName, $SystemConfig.AdapterName)
+    $AdaptersNames = @($SystemConfig.VHostName, $SystemConfig.DataAdapterName)
 
     $Infos = Invoke-Command -Session $Session -ScriptBlock {
         $Ret = @{}
@@ -302,7 +302,7 @@ function Restart-Testbed {
 
     $IP = $IPInfo.IPAddress
     $Pref = $IPInfo.PrefixLength
-    $AdapterName = $SystemConfig.AdapterName
+    $AdapterName = $SystemConfig.DataAdapterName
 
     . $AfterRestart
 
@@ -319,13 +319,13 @@ function Assert-VmSwitchDeleted {
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
     if(Test-IfVmSwitchExist -Session $Testbed.GetSession() -VmSwitchName $SystemConfig.VMSwitchName()) {
-        throw "VmSwitch is not going to be deleted. No need to wait for IP on $($SystemConfig.AdapterName)."
+        throw "VmSwitch is not going to be deleted. No need to wait for IP on $($SystemConfig.DataAdapterName)."
     }
 
     Write-IPAddresses -Session $Testbed.GetSession() -SystemConfig $SystemConfig
 
     try {
-        Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.AdapterName
+        Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.DataAdapterName
     }
     catch {
         throw [RestartNeededException]::new("Restart needed.")

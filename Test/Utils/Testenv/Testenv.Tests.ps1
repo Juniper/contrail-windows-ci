@@ -31,7 +31,7 @@ Describe "Testenv" -Tags CISelfcheck, Unit {
 
         It "can read testbed config from a .yaml file" {
             $System = [SystemConfig]::LoadFromFile($YamlPath)
-            $System.AdapterName | Should Be "Eth1"
+            $System.DataAdapterName | Should Be "Eth1"
             $System.VMSwitchName() | Should Be "Layered Eth1"
             $System.ForwardingExtensionName | Should Be "MyExtension"
         }
@@ -61,7 +61,7 @@ controller:
   restApiPort: 8082
 
 system:
-  AdapterName: Eth1
+  dataAdapterName: Eth1
   VHostName: vEth
   ForwardingExtensionName: MyExtension
 

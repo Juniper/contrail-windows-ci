@@ -127,7 +127,7 @@ Test-WithRetries 3 {
             $BeforeEachStack.Push($VirtualNetwork)
 
             New-CNMPluginConfigFile -Session $Session `
-                -AdapterName $Testenv.System.AdapterName `
+                -AdapterName $Testenv.System.DataAdapterName `
                 -OpenStackConfig $Testenv.OpenStack `
                 -ControllerConfig $Testenv.Controller
 
@@ -158,7 +158,7 @@ Test-WithRetries 3 {
 
             Write-Log 'Getting VM NetAdapter Information'
             $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $Testenv.System.AdapterName
+                -AdapterName $Testenv.System.DataAdapterName
 
             Write-Log 'Getting vHost NetAdapter Information'
             $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `

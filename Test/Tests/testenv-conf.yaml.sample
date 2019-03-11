@@ -23,6 +23,6 @@ testbeds:
     password: 'Contrail123!'
 
 system:
-  adapterName: Ethernet1
+  dataAdapterName: Ethernet1
   vHostName: vEthernet (HNSTransparent)
   forwardingExtensionName: vRouter forwarding extension

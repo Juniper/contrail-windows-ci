@@ -1,11 +1,11 @@
 class SystemConfig {
-    [string] $AdapterName
+    [string] $DataAdapterName
     [string] $VHostName
     [string] $MgmtAdapterName
     [string] $ForwardingExtensionName
 
     [string] VMSwitchName() {
-        return "Layered " + $this.AdapterName
+        return "Layered " + $this.DataAdapterName
     }
 
     static [SystemConfig] LoadFromFile([string] $Path) {

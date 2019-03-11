@@ -58,7 +58,7 @@ function Initialize-ComputeServices {
 
     New-CNMPluginConfigFile `
         -Session $Testbed.GetSession() `
-        -AdapterName $SystemConfig.AdapterName `
+        -AdapterName $SystemConfig.DataAdapterName `
         -OpenStackConfig $OpenStackConfig `
         -ControllerConfig $ControllerConfig
 
