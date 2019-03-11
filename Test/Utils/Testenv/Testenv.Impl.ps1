@@ -25,7 +25,12 @@ class Testenv {
 
         Write-Log 'Preparing testbeds'
         Set-ConfAndLogDir -Testbeds $this.Testbeds
-        Sync-MicrosoftDockerImagesOnTestbeds -Testbeds $this.Testbeds
+        try {
+            Sync-MicrosoftDockerImagesOnTestbeds -Testbeds $this.Testbeds
+        }
+        catch {
+            Write-Host 'Unable to update Microsoft docker images'
+        }
 
         Write-Log 'Setting up Contrail'
         $this.MultiNode = New-MultiNodeSetup `

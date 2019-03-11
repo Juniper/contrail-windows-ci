@@ -37,7 +37,6 @@ $Subnet = [Subnet]::new(
     '172.16.0.140'
 )
 
-$ComputeAddressInUnderlay = '172.16.0.2'
 $NetworkPolicy = [NetworkPolicy]::new_PassAll('passallpolicy', $ContrailProject)
 $VirtualNetwork = [VirtualNetwork]::New('testnet_fabric_ip', $ContrailProject, $Subnet)
 $VirtualNetwork.NetworkPolicysFqNames = @($NetworkPolicy.GetFqName())
@@ -47,6 +46,9 @@ Test-WithRetries 3 {
     Describe 'IP Fabric tests' -Tag Smoke, EnvSafe {
         Context "Gateway-less forwarding" {
             It 'Container can ping compute node in underlay network' {
+                $ComputeAddressInUnderlay = Invoke-Command -Session $Testenv.Testbeds[1].GetSession() -ScriptBlock {
+                    (Get-NetIPAddress -InterfaceAlias $Using:Testenv.System.VHostName | Where-Object AddressFamily -eq 'IPv4').IpAddress
+                }
                 Test-Ping `
                     -Session $Testenv.Sessions[0] `
                     -SrcContainerName $ContainerID `
