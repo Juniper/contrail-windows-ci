@@ -25,8 +25,7 @@ function Get-DefaultNodeMgrsConfigPath {
 
 function New-CNMPluginConfigFile {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $AdapterName,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
@@ -37,7 +36,7 @@ function New-CNMPluginConfigFile {
 
     $Config = @"
 [DRIVER]
-Adapter=$AdapterName
+Adapter=$($Testbed.DataAdapterName)
 ControllerIP=$( $ControllerConfig.MgmtAddress )
 ControllerPort=8082
 
@@ -60,7 +59,7 @@ Os_token=
 "@
     }
 
-    Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Set-Content -Path $Using:ConfigPath -Value $Using:Config
     }
 }
@@ -112,17 +111,17 @@ sandesh_ssl_enable=False
 
 function Get-AdaptersInfo {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
-            -Session $Session `
+            -Session $Testbed.GetSession() `
             -AdapterName $SystemConfig.VHostName
 
     $PhysicalAdapter = Get-RemoteNetAdapterInformation `
-            -Session $Session `
-            -AdapterName $SystemConfig.DataAdapterName
+            -Session $Testbed.GetSession() `
+            -AdapterName $Testbed.DataAdapterName
 
     return @{
         "VHostIfIndex" = $HNSTransparentAdapter.ifIndex;
@@ -176,19 +175,19 @@ physical_interface=$PhysIfName
 
 function New-AgentConfigFile {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
     Write-Log 'Creating agent config files'
 
-    $AdaptersInfo = Get-AdaptersInfo -Session $Session -SystemConfig $SystemConfig
+    $AdaptersInfo = Get-AdaptersInfo -Testbed $Testbed -SystemConfig $SystemConfig
     $AgentConfigPath = Get-DefaultAgentConfigPath
 
     Invoke-CommandWithFunctions `
         -Functions @("Get-VHostConfiguration", "Get-AgentConfig") `
-        -Session $Session `
+        -Session $Testbed.GetSession() `
         -ScriptBlock {
             # Save file with prepared config
             $ConfigFileContent = Get-AgentConfig `

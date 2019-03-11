@@ -126,8 +126,7 @@ Test-WithRetries 3 {
             $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
             $BeforeEachStack.Push($VirtualNetwork)
 
-            New-CNMPluginConfigFile -Session $Session `
-                -AdapterName $Testenv.System.DataAdapterName `
+            New-CNMPluginConfigFile -Testbed $Session `
                 -OpenStackConfig $Testenv.OpenStack `
                 -ControllerConfig $Testenv.Controller
 
@@ -158,7 +157,7 @@ Test-WithRetries 3 {
 
             Write-Log 'Getting VM NetAdapter Information'
             $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $Testenv.System.DataAdapterName
+                -AdapterName $Session.DataAdapterName
 
             Write-Log 'Getting vHost NetAdapter Information'
             $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
@@ -191,7 +190,7 @@ Test-WithRetries 3 {
             Stop-NodeMgrService -Session $Session
             Stop-CNMPluginService -Session $Session
             Stop-AgentService -Session $Session
-            Disable-VRouterExtension -Session $Session -SystemConfig $TestEnv.System
+            Disable-VRouterExtension -Testbed $Testenv.Testbeds[0] -SystemConfig $TestEnv.System
         }
 
         AfterAll {

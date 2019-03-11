@@ -5,6 +5,7 @@ class Testbed {
     [string] $Username
     [string] $Password
     [string] $MgmtAdapterName
+    [string] $DataAdapterName
 
     hidden [WinVersion] $WinVersion
 

@@ -30,10 +30,11 @@ Describe 'vTest scenarios' -Tag Smoke {
         $Session = $Sessions[0]
 
         $SystemConfig = [SystemConfig]::LoadFromFile($TestenvConfFile)
+        $SystemConfig.DataAdapterName = $Testbeds[0].DataAdapterName
 
         Install-Extension -Session $Session
         Install-Utils -Session $Session
-        Enable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
+        Enable-VRouterExtension -Testbed $Testbeds[0] -SystemConfig $SystemConfig
     }
 
     AfterAll {
