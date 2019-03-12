@@ -58,8 +58,7 @@ function Enable-VRouterExtension {
     # ignore the error.
     # Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.VHostName
 
-    $VMSwitchName = $SystemConfig.VMSwitchName()
-
+    $VMSwitchName = $Testbed.GetVmSwitchName()
     Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:SystemConfig.ForwardingExtensionName | Where-Object Enabled
         if ($Extension) {
@@ -80,8 +79,7 @@ function Disable-VRouterExtension {
 
     Write-Log "Disabling Extension"
 
-    $VMSwitchName = $SystemConfig.VMSwitchName()
-
+    $VMSwitchName = $Testbed.GetVmSwitchName()
     Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Disable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:SystemConfig.ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
         Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
@@ -197,14 +195,13 @@ function Wait-RemoteInterfaceIP {
 
 function Test-IfVmSwitchExist {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [String] $VmSwitchName
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
 
+    Write-Log "Checking if VmSwitch '$($Testbed.GetVmSwitchName())' exists..."
 
-    Write-Log "Checking if VmSwitch '$VMSwitchName' exists..."
-
-    $r = Invoke-Command -Session $Session -ScriptBlock {
+    $VMSwitchName = $Testbed.GetVmSwitchName()
+    $r = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
     }
 
@@ -252,7 +249,7 @@ function Assert-VmSwitchInitialized {
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
-    if(-not (Test-IfVmSwitchExist -Session $Testbed.GetSession() -VmSwitchName $SystemConfig.VMSwitchName())) {
+    if(-not (Test-IfVmSwitchExist -Testbed $Testbed)) {
         throw "VmSwitch is not created. No need to wait for IP on $($SystemConfig.VHostName)."
     }
 
@@ -314,7 +311,7 @@ function Assert-VmSwitchDeleted {
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
-    if(Test-IfVmSwitchExist -Session $Testbed.GetSession() -VmSwitchName $SystemConfig.VMSwitchName()) {
+    if(Test-IfVmSwitchExist -Testbed $Testbed) {
         throw "VmSwitch is not going to be deleted. No need to wait for IP on $($Testbed.DataAdapterName)."
     }
 

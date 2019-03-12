@@ -13,7 +13,7 @@ Param (
 
 Describe 'vTest scenarios' -Tag Smoke {
     It 'passes all vtest scenarios' {
-        $VMSwitchName = $SystemConfig.VMSwitchName()
+        $VMSwitchName = $Testbeds[0].GetVmSwitchName()
         {
             Invoke-Command -Session $Session -ScriptBlock {
                 Push-Location C:\Artifacts\
@@ -30,7 +30,6 @@ Describe 'vTest scenarios' -Tag Smoke {
         $Session = $Sessions[0]
 
         $SystemConfig = [SystemConfig]::LoadFromFile($TestenvConfFile)
-        $SystemConfig.DataAdapterName = $Testbeds[0].DataAdapterName
 
         Install-Extension -Session $Session
         Install-Utils -Session $Session

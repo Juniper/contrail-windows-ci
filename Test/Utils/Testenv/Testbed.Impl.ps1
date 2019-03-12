@@ -119,6 +119,18 @@ class Testbed {
         }
         throw 'Unknown default image for this Windows version'
     }
+
+    [string] GetVmSwitchName() {
+        switch ($this.GetWindowsVersion()) {
+            'v2016' {
+                return 'Layered ' + $this.DataAdapterName
+            }
+            'v2019' {
+                return 'ContrailRootNetwork'
+            }
+        }
+        throw 'Unknown VmSwitch name for this Windows version'
+    }
 }
 
 class TestbedConverter : System.Management.Automation.PSTypeConverter {

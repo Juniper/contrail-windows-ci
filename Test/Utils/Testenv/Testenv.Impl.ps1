@@ -17,8 +17,6 @@ class Testenv {
         $this.OpenStack = [OpenStackConfig]::LoadFromFile($TestenvConfFile)
         $this.Controller = [ControllerConfig]::LoadFromFile($TestenvConfFile)
         $this.Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
-        # TODO Remove affter moving vhost name to Testbed
-        $this.System.DataAdapterName = $this.Testbeds[0].DataAdapterName
         $CleanupStack = $this.NewCleanupStack()
 
         Write-Log 'Creating sessions'
