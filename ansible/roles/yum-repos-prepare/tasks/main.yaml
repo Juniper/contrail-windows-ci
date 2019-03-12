@@ -63,8 +63,11 @@
     name: contrail-tpc
     description: Contrail third-party dependencies
     file: contrail-tpc
-    baseurl: "http://{{ site_pulp.fqdn }}/pulp/repos/opencontrail-tpc/"
+    baseurl: "http://{{ nexus_url }}/repository/yum-tungsten-tpc/master/{{ item }}/"
     enabled: yes
     gpgcheck: no
+  with_items:
+    - source
+    - binary
   become: yes
   become_user: root
