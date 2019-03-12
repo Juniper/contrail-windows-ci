@@ -111,13 +111,12 @@ sandesh_ssl_enable=False
 
 function Get-AdaptersInfo {
     Param (
-        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
             -Session $Testbed.GetSession() `
-            -AdapterName $SystemConfig.VHostName
+            -AdapterName $Testbed.GetVHostName()
 
     $PhysicalAdapter = Get-RemoteNetAdapterInformation `
             -Session $Testbed.GetSession() `
@@ -182,7 +181,7 @@ function New-AgentConfigFile {
 
     Write-Log 'Creating agent config files'
 
-    $AdaptersInfo = Get-AdaptersInfo -Testbed $Testbed -SystemConfig $SystemConfig
+    $AdaptersInfo = Get-AdaptersInfo -Testbed $Testbed
     $AgentConfigPath = Get-DefaultAgentConfigPath
 
     Invoke-CommandWithFunctions `

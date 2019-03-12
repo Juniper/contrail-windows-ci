@@ -56,7 +56,7 @@ function Enable-VRouterExtension {
     # don't rely on this adapter to have the correct IP set for correctess.
     # We could implement retrying to avoid flakiness but it's easier to just
     # ignore the error.
-    # Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.VHostName
+    # Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.GetVHostName()
 
     $VMSwitchName = $Testbed.GetVmSwitchName()
     Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
@@ -224,11 +224,10 @@ function Test-IfVmSwitchExist {
 
 function Write-IpAddresses {
     Param (
-        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
 
-    $AdaptersNames = @($SystemConfig.VHostName, $Testbed.DataAdapterName)
+    $AdaptersNames = @($Testbed.GetVHostName(), $Testbed.DataAdapterName)
 
     $Infos = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         $Ret = @{}
@@ -246,16 +245,15 @@ function Write-IpAddresses {
 
 function Assert-VmSwitchInitialized {
     Param (
-        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
     if(-not (Test-IfVmSwitchExist -Testbed $Testbed)) {
-        throw "VmSwitch is not created. No need to wait for IP on $($SystemConfig.VHostName)."
+        throw "VmSwitch is not created. No need to wait for IP on $($Testbed.GetVHostName())."
     }
 
-    Write-IPAddresses -Testbed $Testbed -SystemConfig $SystemConfig
+    Write-IPAddresses -Testbed $Testbed
 
-    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.VHostName
+    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.GetVHostName()
 }
 
 class RestartNeededException : System.Exception {
@@ -266,14 +264,12 @@ class RestartNeededException : System.Exception {
 function Restart-Testbed {
     Param (
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
         [Parameter(Mandatory = $true)] [ScriptBlock] $AfterRestart
     )
 
     Write-Log "Restarting testbed $($Testbed.GetSession().ComputerName)"
 
-    $VHostName = $SystemConfig.VHostName
-
+    $VHostName = $Testbed.GetVHostName()
     $IPInfo = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | `
             Get-NetIPAddress -ErrorAction SilentlyContinue | `
@@ -315,7 +311,7 @@ function Assert-VmSwitchDeleted {
         throw "VmSwitch is not going to be deleted. No need to wait for IP on $($Testbed.DataAdapterName)."
     }
 
-    Write-IPAddresses -Testbed $Testbed -SystemConfig $SystemConfig
+    Write-IPAddresses -Testbed $Testbed
 
     try {
         Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.DataAdapterName
@@ -351,7 +347,7 @@ function Initialize-CnmPluginAndExtension {
                 Assert-CnmPluginEnabled -Session $Sess
             }
 
-            Assert-VmSwitchInitialized -Testbed $Testbed -SystemConfig $SystemConfig
+            Assert-VmSwitchInitialized -Testbed $Testbed
 
             break
         }
@@ -387,7 +383,7 @@ function Remove-CnmPluginAndExtension {
     catch [RestartNeededException] {
         Write-Log "Error while removing vSwitch."
 
-        Restart-Testbed -Testbed $Testbed -SystemConfig $SystemConfig -AfterRestart {
+        Restart-Testbed -Testbed $Testbed -AfterRestart {
             Stop-CNMPluginService -Session $Testbed.GetSession()
         }
     }
@@ -415,7 +411,7 @@ function Clear-TestConfiguration {
     catch [RestartNeededException] {
         Write-Log "Error while removing vSwitch."
 
-        Restart-Testbed -Testbed $Testbed -SystemConfig $SystemConfig -AfterRestart {
+        Restart-Testbed -Testbed $Testbed -AfterRestart {
             Stop-NodeMgrService -Session $Testbed.GetSession()
             Stop-CNMPluginService -Session $Testbed.GetSession()
             Stop-AgentService -Session $Testbed.GetSession()

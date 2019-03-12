@@ -131,6 +131,18 @@ class Testbed {
         }
         throw 'Unknown VmSwitch name for this Windows version'
     }
+
+    [string] GetVHostName() {
+        switch ($this.GetWindowsVersion()) {
+            'v2016' {
+                return 'vEthernet (HNSTransparent)'
+            }
+            'v2019' {
+                return "vEthernet ($($this.DataAdapterName))"
+            }
+        }
+        throw 'Unknown VHost name for this Windows version'
+    }
 }
 
 class TestbedConverter : System.Management.Automation.PSTypeConverter {

@@ -27,5 +27,4 @@ testbeds:
     dataAdapterName: Ethernet1
 
 system:
-  vHostName: vEthernet (HNSTransparent)
   forwardingExtensionName: vRouter forwarding extension

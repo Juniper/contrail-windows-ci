@@ -1,5 +1,4 @@
 class SystemConfig {
-    [string] $VHostName
     [string] $ForwardingExtensionName
 
     static [SystemConfig] LoadFromFile([string] $Path) {

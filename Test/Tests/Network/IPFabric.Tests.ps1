@@ -1,5 +1,5 @@
 Param (
-    [Parameter(Mandatory = $false)] [string] $TestenvConfFile,
+    [Parameter(Mandatory = $false)] [string] $TestenvConfFile = "C:\scripts\configurations\test_configuration.yaml",
     [Parameter(Mandatory = $false)] [string] $LogDir = 'pesterLogs',
     [Parameter(Mandatory = $false)] [bool] $PrepareEnv = $true,
     [Parameter(ValueFromRemainingArguments = $true)] $UnusedParams
@@ -46,8 +46,9 @@ Test-WithRetries 3 {
     Describe 'IP Fabric tests' -Tag Smoke, EnvSafe {
         Context "Gateway-less forwarding" {
             It 'Container can ping compute node in underlay network' {
+                $VHostName = $Testenv.Testbeds[1].GetVHostName()
                 $ComputeAddressInUnderlay = Invoke-Command -Session $Testenv.Testbeds[1].GetSession() -ScriptBlock {
-                    (Get-NetIPAddress -InterfaceAlias $Using:Testenv.System.VHostName | Where-Object AddressFamily -eq 'IPv4').IpAddress
+                    (Get-NetIPAddress -InterfaceAlias $Using:VHostName | Where-Object AddressFamily -eq 'IPv4').IpAddress
                 }
                 Test-Ping `
                     -Session $Testenv.Sessions[0] `
