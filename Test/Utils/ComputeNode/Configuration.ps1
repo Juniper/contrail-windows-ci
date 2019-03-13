@@ -85,7 +85,7 @@ function New-NodeMgrConfigFile {
     Write-Log 'Creating node manager config file'
 
     $ConfigPath = Get-DefaultNodeMgrsConfigPath
-    $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
+    $LogPath = Get-NodeMgrLogPath
 
     $HostIP = Get-NodeManagementIP -Testbed $Testbed
 
@@ -116,7 +116,7 @@ function Get-AdaptersInfo {
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
             -Session $Testbed.GetSession() `
-            -AdapterName $Testbed.GetVHostName()
+            -AdapterName $Testbed.VHostName
 
     $PhysicalAdapter = Get-RemoteNetAdapterInformation `
             -Session $Testbed.GetSession() `

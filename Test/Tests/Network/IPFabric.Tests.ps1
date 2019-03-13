@@ -46,10 +46,9 @@ Test-WithRetries 3 {
     Describe 'IP Fabric tests' -Tag Smoke, EnvSafe {
         Context "Gateway-less forwarding" {
             It 'Container can ping compute node in underlay network' {
-                $VHostName = $Testenv.Testbeds[1].GetVHostName()
                 # TODO Move getting IP for interface to Testbed class
                 $ComputeAddressInUnderlay = Invoke-Command -Session $Testenv.Testbeds[1].GetSession() -ScriptBlock {
-                    (Get-NetIPAddress -InterfaceAlias $Using:VHostName | Where-Object AddressFamily -eq 'IPv4').IpAddress
+                    (Get-NetIPAddress -InterfaceAlias $Using:Testenv.Testbeds[1].VHostName | Where-Object AddressFamily -eq 'IPv4').IpAddress
                 }
                 Test-Ping `
                     -Session $Testenv.Sessions[0] `

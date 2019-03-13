@@ -7,8 +7,10 @@ class Testbed {
     [string] $MgmtAdapterName
     [string] $DataAdapterName
 
-    hidden [WinVersion] $WinVersion
-
+    [WinVersion] $WinVersion
+    [String] $DefaultDockerImage
+    [String] $VmSwitchName
+    [String] $VHostName
     [PSSessionT] $Session = $null
 
     [PSSessionT] NewSession() {
@@ -17,7 +19,21 @@ class Testbed {
 
     static [Testbed[]] LoadFromFile([string] $Path) {
         $Parsed = Read-TestenvFile($Path)
-        return [Testbed[]] $Parsed.Testbeds
+        [Testbed[]] $Testbeds = [Testbed[]]::new($Parsed.Testbeds.Length)
+        foreach ($i in (0..($Parsed.Testbeds.Length-1))) {
+            $Testbeds[$i] = [Testbed]::new($Parsed.Testbeds[$i])
+        }
+        return $Testbeds
+    }
+
+    Testbed([HashTable] $Parsed) {
+        foreach($Field in $Parsed.GetEnumerator()) {
+            $this.$($Field.Name) = $Field.Value
+        }
+        $this.SetWindowsVersion()
+        $this.SetDefaultDockerImage()
+        $this.SetVmSwitchName()
+        $this.SetVHostName()
     }
 
     [PSSessionT] NewSession([Int] $RetryCount, [Int] $Timeout) {
@@ -83,7 +99,7 @@ class Testbed {
         }
     }
 
-    [Void] CheckWindowsVersion() {
+    hidden [Void] SetWindowsVersion() {
         $ret = Invoke-Command -Session $this.GetSession() -ScriptBlock {
             (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName
         }
@@ -98,50 +114,40 @@ class Testbed {
                 throw 'Not supported Windows version'
             }
         }
+        Write-Log "$($this.Name) is running Windows Server $($this.WinVersion)"
     }
 
-    [WinVersion] GetWindowsVersion() {
-        if ([WinVersion]::UnChecked -eq $this.WinVersion) {
-            $this.CheckWindowsVersion()
-        }
-        Write-Log "$($this.Name) $($this.WinVersion)"
-        return $this.WinVersion
-    }
-
-    [String] GetDefaultDockerImage() {
-        switch ($this.GetWindowsVersion()) {
+    hidden [Void] SetDefaultDockerImage() {
+        switch ($this.WinVersion) {
             'v2016' {
-                return 'microsoft/windowsservercore'
+                $this.DefaultDockerImage = 'microsoft/windowsservercore'
             }
             'v2019' {
-                return 'mcr.microsoft.com/windows/servercore:1809'
+                $this.DefaultDockerImage = 'mcr.microsoft.com/windows/servercore:1809'
             }
         }
-        throw 'Unknown default image for this Windows version'
     }
 
-    [string] GetVmSwitchName() {
-        switch ($this.GetWindowsVersion()) {
+    hidden [Void] SetVmSwitchName() {
+        switch ($this.WinVersion) {
             'v2016' {
-                return 'Layered ' + $this.DataAdapterName
+                $this.VmSwitchName = 'Layered ' + $this.DataAdapterName
             }
             'v2019' {
-                return 'ContrailRootNetwork'
+                $this.VmSwitchName = 'ContrailRootNetwork'
             }
         }
-        throw 'Unknown VmSwitch name for this Windows version'
     }
 
-    [string] GetVHostName() {
-        switch ($this.GetWindowsVersion()) {
+    hidden [Void] SetVHostName() {
+        switch ($this.WinVersion) {
             'v2016' {
-                return 'vEthernet (HNSTransparent)'
+                $this.VHostName = 'vEthernet (HNSTransparent)'
             }
             'v2019' {
-                return "vEthernet ($($this.DataAdapterName))"
+                $this.VHostName = "vEthernet ($($this.DataAdapterName))"
             }
         }
-        throw 'Unknown VHost name for this Windows version'
     }
 }
 

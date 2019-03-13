@@ -56,15 +56,14 @@ function Enable-VRouterExtension {
     # don't rely on this adapter to have the correct IP set for correctess.
     # We could implement retrying to avoid flakiness but it's easier to just
     # ignore the error.
-    # Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.GetVHostName()
+    # Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.VHostName
 
-    $VMSwitchName = $Testbed.GetVmSwitchName()
     Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:SystemConfig.ForwardingExtensionName | Where-Object Enabled
         if ($Extension) {
             Write-Warning "Extension already enabled on: $($Extension.SwitchName)"
         }
-        $Extension = Enable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:SystemConfig.ForwardingExtensionName
+        $Extension = Enable-VMSwitchExtension -VMSwitchName $Using:Testbed.VmSwitchName -Name $Using:SystemConfig.ForwardingExtensionName
         if ((-not $Extension.Enabled) -or (-not ($Extension.Running))) {
             throw "Failed to enable extension (not enabled or not running)"
         }
@@ -79,9 +78,8 @@ function Disable-VRouterExtension {
 
     Write-Log "Disabling Extension"
 
-    $VMSwitchName = $Testbed.GetVmSwitchName()
     Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
-        Disable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:SystemConfig.ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
+        Disable-VMSwitchExtension -VMSwitchName $Using:Testbed.VmSwitchName -Name $Using:SystemConfig.ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
         Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
         Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -Force
     }
@@ -198,11 +196,10 @@ function Test-IfVmSwitchExist {
         [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
 
-    Write-Log "Checking if VmSwitch '$($Testbed.GetVmSwitchName())' exists..."
+    Write-Log "Checking if VmSwitch '$($Testbed.VmSwitchName)' exists..."
 
-    $VMSwitchName = $Testbed.GetVmSwitchName()
     $r = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
-        Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
+        Get-VMSwitch $Using:Testbed.VmSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
     }
 
     if($null -eq $r) {
@@ -227,7 +224,7 @@ function Write-IpAddresses {
         [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
 
-    $AdaptersNames = @($Testbed.GetVHostName(), $Testbed.DataAdapterName)
+    $AdaptersNames = @($Testbed.VHostName, $Testbed.DataAdapterName)
 
     $Infos = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         $Ret = @{}
@@ -248,12 +245,12 @@ function Assert-VmSwitchInitialized {
         [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
     if(-not (Test-IfVmSwitchExist -Testbed $Testbed)) {
-        throw "VmSwitch is not created. No need to wait for IP on $($Testbed.GetVHostName())."
+        throw "VmSwitch is not created. No need to wait for IP on $($Testbed.VHostName)."
     }
 
     Write-IPAddresses -Testbed $Testbed
 
-    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.GetVHostName()
+    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.VHostName
 }
 
 class RestartNeededException : System.Exception {
@@ -269,9 +266,8 @@ function Restart-Testbed {
 
     Write-Log "Restarting testbed $($Testbed.GetSession().ComputerName)"
 
-    $VHostName = $Testbed.GetVHostName()
     $IPInfo = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
-        Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | `
+        Get-NetAdapter -Name $Using:Testbed.VHostName -ErrorAction SilentlyContinue | `
             Get-NetIPAddress -ErrorAction SilentlyContinue | `
             Where-Object AddressFamily -eq "IPv4"
     }
