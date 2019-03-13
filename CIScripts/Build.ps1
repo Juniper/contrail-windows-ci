@@ -70,7 +70,7 @@ try {
         -LogsPath $LogsDir `
         -BuildMode $SconsBuildMode
 
-    Invoke-AgentTestsBuild -LogsPath $LogsDir `
+    Invoke-ProductUnitTests -LogsPath $LogsDir `
         -BuildMode $SconsBuildMode
 
     if ("debug" -eq $SconsBuildMode) {
