@@ -62,8 +62,10 @@ class Testbed {
     }
 
     [Void] RemoveAllSessions() {
-        Remove-PSSession $this.Session -ErrorAction Continue
-        $this.Session = $null
+        if($null -ne $this.Session) {
+            Remove-PSSession $this.Session -ErrorAction Continue
+            $this.Session = $null
+        }
     }
 
     [PSSessionT] GetSession() {
