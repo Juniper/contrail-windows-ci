@@ -11,12 +11,19 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
+# We need to declare those two classes, because CleanupStack needs to know them, but in case of this test
+# doesn't use them. Alternative would be to dot-source ContrailAPI, which would be waste of resources.
+# TODO Make TestCleanup Module independent from ContrailAPI.
+class BaseResourceModel {}
+class ContrailRepo {}
+. $PSScriptRoot\..\..\Utils\TestCleanup\TestCleanup.ps1
+
 Describe 'vTest scenarios' -Tag Smoke {
     It 'passes all vtest scenarios' {
         {
-            Invoke-Command -Session $Session -ScriptBlock {
+            Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
                 Push-Location C:\Artifacts\
-                .\vtest\all_tests_run.ps1 -VMSwitchName $Using:Testbeds[0].VmSwitchName `
+                .\vtest\all_tests_run.ps1 -VMSwitchName $Using:Testbed.VmSwitchName `
                     -TestsFolder vtest\tests
                 Pop-Location
             }
@@ -24,22 +31,22 @@ Describe 'vTest scenarios' -Tag Smoke {
     }
 
     BeforeAll {
+        $CleanupStack = [CleanupStack]::new()
         $Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
-        $Sessions = New-RemoteSessions -VMs $Testbeds
-        $Session = $Sessions[0]
-
+        $CleanupStack.Push( {Param([Testbed[]] $Testbeds) foreach ($Testbed in $Testbeds) { $Testbed.RemoveAllSessions() }}, @(, $Testbeds))
+        $Testbed = $Testbeds[0]
         $SystemConfig = [SystemConfig]::LoadFromFile($TestenvConfFile)
 
-        Install-Extension -Session $Session
-        Install-Utils -Session $Session
-        Enable-VRouterExtension -Testbed $Testbeds[0] -SystemConfig $SystemConfig
+        Install-Extension -Session $Testbed.GetSession()
+        $CleanupStack.Push(${function:Uninstall-Extension}, @($Testbed))
+        Install-Utils -Session $Testbed.GetSession()
+        $CleanupStack.Push(${function:Uninstall-Utils}, @($Testbed))
+        # TODO Make Enable-VRouterExtension an atomic operation and move this cleanup step after enabling vrouter
+        $CleanupStack.Push(${function:Clear-TestConfiguration}, @($Testbed, $SystemConfig))
+        Enable-VRouterExtension -Testbed $Testbed -SystemConfig $SystemConfig
     }
 
     AfterAll {
-        if (-not (Get-Variable Sessions -ErrorAction SilentlyContinue)) { return }
-        Clear-TestConfiguration -Testbed $Testbeds[0] -SystemConfig $SystemConfig
-        Uninstall-Utils -Session $Session
-        Uninstall-Extension -Session $Session
-        Remove-PSSession $Sessions
+        $CleanupStack.RunCleanup($null)
     }
 }
