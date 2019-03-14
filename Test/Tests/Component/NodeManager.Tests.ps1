@@ -22,22 +22,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 $ContrailProject = 'ci_tests_nodemanager'
-
-# TODO: This variable is not passed down to New-NodeMgrConfig in ComponentsInstallation.ps1
-#       Should be refactored.
 $LogPath = Get-NodeMgrLogPath
-
-function Clear-NodeMgrLogs {
-    Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
-    )
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        if (Test-Path -Path $Using:LogPath) {
-            Remove-Item $Using:LogPath -Force
-        }
-    }
-}
 
 function Test-NodeMgrLogs {
     Param (
