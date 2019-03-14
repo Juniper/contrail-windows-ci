@@ -11,6 +11,7 @@ class Testbed {
     [String] $DefaultDockerImage
     [String] $VmSwitchName
     [String] $VHostName
+    [System.Collections.Hashtable] $DataIpInfo = $null
     [PSSessionT] $Session = $null
 
     [PSSessionT] NewSession() {
@@ -145,6 +146,16 @@ class Testbed {
             }
             'v2019' {
                 $this.VHostName = "vEthernet ($($this.DataAdapterName))"
+            }
+        }
+    }
+
+    [Void] SetDataAdapterIpInfo() {
+        $this.DataIpInfo = Invoke-Command -Session $this.GetSession() -ScriptBlock {
+            $Res = Get-NetIPAddress -ErrorAction SilentlyContinue -AddressFamily "IPv4" -InterfaceAlias $Using:this.DataAdapterName
+            return @{
+                IPAddress = $Res.IPAddress;
+                PrefixLength = $Res.PrefixLength;
             }
         }
     }

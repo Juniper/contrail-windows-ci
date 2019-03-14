@@ -49,6 +49,7 @@ class Testenv {
 
         if ($InstallComponents) {
             foreach ($Testbed in $this.Testbeds) {
+                $Testbed.SetDataAdapterIpInfo()
                 Initialize-ComputeNode `
                     -Testbed $Testbed `
                     -Configs $this `

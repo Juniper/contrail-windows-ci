@@ -25,6 +25,7 @@ Describe 'vTest scenarios' -Tag Smoke {
 
     BeforeAll {
         $Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
+        $Testbeds[0].SetDataAdapterIpInfo()
         $Sessions = New-RemoteSessions -VMs $Testbeds
         $Session = $Sessions[0]
 
