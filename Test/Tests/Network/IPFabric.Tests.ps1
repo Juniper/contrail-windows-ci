@@ -25,22 +25,59 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 
 $ContrailProject = 'ci_tests_ip_fabric'
-$DockerImage = 'microsoft/windowsservercore'
 $ContainerID = 'jolly-lumberjack'
 $ContainerNetInfo = $null
 
-$Subnet = [Subnet]::new(
-    '172.16.0.128',
-    28,
-    '172.16.0.129',
-    '172.16.0.130',
-    '172.16.0.140'
-)
-
 $NetworkPolicy = [NetworkPolicy]::new_PassAll('passallpolicy', $ContrailProject)
-$VirtualNetwork = [VirtualNetwork]::New('testnet_fabric_ip', $ContrailProject, $Subnet)
+$VirtualNetwork = [VirtualNetwork]::New('testnet_fabric_ip', $ContrailProject, $null)
 $VirtualNetwork.NetworkPolicysFqNames = @($NetworkPolicy.GetFqName())
 $VirtualNetwork.EnableIpFabricForwarding()
+
+function Get-ContainerSubnet {
+    Param(
+        [Parameter(Mandatory = $true)] [Hashtable] $IpInfo
+    )
+
+    function Convert-IpUInt32ToString {
+        Param([Parameter(Mandatory = $true)] [uInt32] $Ip)
+
+        [String[]] $Out = [String[]]::new(4)
+        foreach ($i in (3..0)) {
+            $Out[$i] = [convert]::ToString($Ip -band 255)
+            $Ip = $ip -shr 8
+        }
+        return ($out -join '.')
+    }
+
+    function Convert-IpStringToUInt32 {
+        Param([Parameter(Mandatory = $true)] [String] $Ip)
+
+        [String[]] $IPAddressArr = $Ip.Split('.')
+        [uInt32] $Out = 0
+        foreach ($i in (3..0)) {
+            $Out += ([convert]::ToUInt32($IPAddressArr[3 - $i]) -shl $i * 8)
+        }
+        return $Out
+    }
+
+    $NetPrefixMask = [uInt32]::MaxValue -shl (32 - $IpInfo.PrefixLength)
+    $NetIp = Convert-IpStringToUInt32 -Ip $IpInfo.IPAddress
+    $NetPrefix = $NetIp -band $NetPrefixMask
+    $NetBroadcast = $NetPrefix + (-bnot $NetPrefixMask)
+
+    $SubnetPoolEnd = $NetBroadcast - 1
+    $SubnetPoolBeg = $NetBroadcast - 1
+    $SubnetDefaultGate = $NetBroadcast - 6
+    $SubnetPrefix = $NetBroadcast - 7
+
+    return [Subnet]::new(
+        (Convert-IpUInt32ToString -Ip $SubnetPrefix),
+        29,
+        (Convert-IpUInt32ToString -Ip $SubnetDefaultGate),
+        (Convert-IpUInt32ToString -Ip $SubnetPoolBeg),
+        (Convert-IpUInt32ToString -Ip $SubnetPoolEnd)
+    )
+}
 
 Test-WithRetries 3 {
     Describe 'IP Fabric tests' -Tag Smoke, EnvSafe {
@@ -51,7 +88,7 @@ Test-WithRetries 3 {
                     (Get-NetIPAddress -InterfaceAlias $Using:Testenv.Testbeds[1].VHostName | Where-Object AddressFamily -eq 'IPv4').IpAddress
                 }
                 Test-Ping `
-                    -Session $Testenv.Sessions[0] `
+                    -Session $Testenv.Testbeds[0].GetSession() `
                     -SrcContainerName $ContainerID `
                     -DstContainerName "compute node in underlay network" `
                     -DstIP $ComputeAddressInUnderlay | Should Be 0
@@ -63,6 +100,8 @@ Test-WithRetries 3 {
             $Testenv.Initialize($TestenvConfFile, $LogDir, $ContrailProject, $PrepareEnv)
             $BeforeAllStack = $Testenv.NewCleanupStack()
 
+            $VirtualNetwork.Subnet = Get-ContainerSubnet -IpInfo $Testenv.Testbeds[1].DataIpInfo
+
             Write-Log "Creating network policy: $($NetworkPolicy.Name)"
             $Testenv.ContrailRepo.AddOrReplace($NetworkPolicy) | Out-Null
             $BeforeAllStack.Push($NetworkPolicy)
@@ -72,12 +111,12 @@ Test-WithRetries 3 {
             $BeforeAllStack.Push($VirtualNetwork)
 
             Write-Log 'Creating docker networks'
-            foreach ($Session in $Testenv.Sessions) {
+            foreach ($Testbed in $Testenv.Testbeds) {
                 Initialize-DockerNetworks `
-                    -Session $Session `
+                    -Session $Testbed.GetSession() `
                     -Networks @($VirtualNetwork) `
                     -TenantName $ContrailProject
-                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $VirtualNetwork.Name))
+                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Testbed, $VirtualNetwork.Name))
             }
         }
 
@@ -88,17 +127,17 @@ Test-WithRetries 3 {
         BeforeEach {
             $BeforeEachStack = $Testenv.NewCleanupStack()
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
-            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Testbeds))
 
             Write-Log "Creating container: $ContainerID"
             New-Container `
-                -Testbed $Testenv.Sessions[0] `
+                -Testbed $Testenv.Testbeds[0] `
                 -NetworkName $VirtualNetwork.Name `
                 -Name $ContainerID `
-                -Image $DockerImage
+                -Image $Testbed.DefaultDockerImage
 
             $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation `
-                -Session $Testenv.Sessions[0] -ContainerID $ContainerID
+                -Session $Testenv.Testbeds[0].GetSession() -ContainerID $ContainerID
             Write-Log "IP of $($ContainerID): $($ContainerNetInfo.IPAddress)"
 
             $ContainersLogs = @(, (New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainerID))
