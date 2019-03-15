@@ -52,7 +52,6 @@ $Networks = @($ClientNetwork, $ServerNetwork)
 $ServerFloatingIpPool = [FloatingIpPool]::New('test_pool', $ServerNetwork.GetFqName())
 $ServerFloatingIp = [FloatingIp]::New('test_fip', $ServerFloatingIpPool.GetFqName(), '10.2.2.10')
 
-$ContainerImage = 'microsoft/windowsservercore'
 $ContainerClientID = 'fip-client'
 $ContainerServerID = 'fip-server'
 
@@ -61,7 +60,7 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
         Context '2 networks' {
             It 'ICMP works' {
                 Test-Ping `
-                    -Session $Testenv.Sessions[0] `
+                    -Session $Testenv.Testbeds[0].GetSession() `
                     -SrcContainerName $ContainerClientID `
                     -DstIP $ServerFloatingIp.Address | Should Be 0
             }
@@ -85,13 +84,13 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
                 $Testenv.ContrailRepo.AddOrReplace($ServerFloatingIpPool) | Out-Null
                 $InnerBeforeAllStack.Push($ServerFloatingIpPool)
 
-                foreach ($Session in $Testenv.Sessions) {
+                foreach ($Testbed in $Testenv.Testbeds) {
                     Initialize-DockerNetworks `
-                        -Session $Session `
+                        -Session $Testbed.GetSession() `
                         -Networks $Networks `
                         -TenantName $ContrailProject
-                    $InnerBeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $ServerNetwork.Name))
-                    $InnerBeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $ClientNetwork.Name))
+                    $InnerBeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Testbed, $ServerNetwork.Name))
+                    $InnerBeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Testbed, $ClientNetwork.Name))
                 }
             }
 
@@ -102,23 +101,21 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
             BeforeEach {
                 $BeforeEachStack = $Testenv.NewCleanupStack()
                 $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
-                $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+                $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Testbeds))
 
                 Write-Log 'Creating containers'
                 Write-Log "Creating container: $ContainerClientID"
                 New-Container `
-                    -Testbed $Testenv.Sessions[0] `
+                    -Testbed $Testenv.Testbeds[0] `
                     -NetworkName $ClientNetwork.Name `
-                    -Name $ContainerClientID `
-                    -Image $ContainerImage
+                    -Name $ContainerClientID
 
                 Write-Log 'Creating containers'
                 Write-Log "Creating container: $ContainerServerID"
                 New-Container `
-                    -Testbed $Testenv.Sessions[1] `
+                    -Testbed $Testenv.Testbeds[1] `
                     -NetworkName $ServerNetwork.Name `
-                    -Name $ContainerServerID `
-                    -Image $ContainerImage
+                    -Name $ContainerServerID
 
                 $ContainersLogs = @((New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainerClientID),
                     (New-ContainerLogSource -Testbeds $Testenv.Testbeds[1] -ContainerNames $ContainerServerID))
