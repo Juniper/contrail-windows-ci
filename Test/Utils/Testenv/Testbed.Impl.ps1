@@ -19,8 +19,8 @@ class Testbed {
 
     static [Testbed[]] LoadFromFile([string] $Path) {
         $Parsed = Read-TestenvFile($Path)
-        [Testbed[]] $Testbeds = [Testbed[]]::new($Parsed.Testbeds.Length)
-        foreach ($i in (0..($Parsed.Testbeds.Length-1))) {
+        [Testbed[]] $Testbeds = [Testbed[]]::new($Parsed.Testbeds.Count)
+        foreach ($i in (0..($Parsed.Testbeds.Count-1))) {
             $Testbeds[$i] = [Testbed]::new($Parsed.Testbeds[$i])
         }
         return $Testbeds
