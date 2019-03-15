@@ -11,8 +11,11 @@ class Testbed {
     [String] $DefaultDockerImage
     [String] $VmSwitchName
     [String] $VHostName
-    [System.Collections.Hashtable] $DataIpInfo = $null
     [PSSessionT] $Session = $null
+
+    # Keep in mind that this vairiable will only be initialized when data adapter exists at the beginning of run
+    # in the environment (so when components are installed by tests, not preexisting)
+    [System.Collections.Hashtable] $DataIpInfo = $null
 
     [PSSessionT] NewSession() {
         return $this.NewSession(10, 300000)
