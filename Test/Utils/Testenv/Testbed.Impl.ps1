@@ -38,6 +38,7 @@ class Testbed {
         $this.SetDefaultDockerImage()
         $this.SetVmSwitchName()
         $this.SetVHostName()
+        $this.SetDataIpInfo()
     }
 
     [PSSessionT] NewSession([Int] $RetryCount, [Int] $Timeout) {
@@ -153,13 +154,26 @@ class Testbed {
         }
     }
 
-    [Void] SetDataAdapterIpInfo() {
-        $this.DataIpInfo = Invoke-Command -Session $this.GetSession() -ScriptBlock {
-            $Res = Get-NetIPAddress -ErrorAction SilentlyContinue -AddressFamily "IPv4" -InterfaceAlias $Using:this.DataAdapterName
-            return @{
-                IPAddress = $Res.IPAddress;
-                PrefixLength = $Res.PrefixLength;
+    [Void] SetDataIpInfo() {
+        function Get-IpInfo {
+            Param(
+                [Parameter(Mandatory=$true)] [string] $adapter
+            )
+            Invoke-Command -Session $this.GetSession() -ScriptBlock {
+                $Res = Get-NetIPAddress -ErrorAction SilentlyContinue -AddressFamily "IPv4" -InterfaceAlias $Using:adapter
+                if ($null -eq $Res) {
+                    return $Res
+                }
+                return @{
+                    IPAddress = $Res.IPAddress;
+                    PrefixLength = $Res.PrefixLength;
+                }
             }
+        }
+
+        $this.DataIpInfo = Get-IpInfo($this.DataAdapterName)
+        if ($null -eq $this.DataIpInfo) {
+            $this.DataIpInfo = Get-IpInfo($this.VHostName)
         }
     }
 }
