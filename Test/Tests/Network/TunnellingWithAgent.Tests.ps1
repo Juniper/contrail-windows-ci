@@ -234,7 +234,7 @@ Test-WithRetries 3 {
             foreach ($i in 0..1) {
                 Write-Log "Creating container: $($ContainersIDs[$i])"
                 New-Container `
-                    -Session $Testenv.Sessions[$i] `
+                    -Testbed $Testenv.Sessions[$i] `
                     -NetworkName $VirtualNetwork.Name `
                     -Name $ContainersIDs[$i] `
                     -Image $DockerImages[$i]

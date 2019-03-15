@@ -1,5 +1,5 @@
 # escape=`
-FROM python:3.6.5
+FROM python:3.7
 
 COPY dnslib-0.9.7.tar.gz C:\
 RUN pip install C:\dnslib-0.9.7.tar.gz

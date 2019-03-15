@@ -284,7 +284,7 @@ Test-WithRetries 1 {
                 $Container = $Containers[$Key]
                 Write-Log "Creating container: $($Container.Name)"
                 New-Container `
-                    -Session $Container.HostSession `
+                    -Testbed $Container.HostSession `
                     -NetworkName $Container.Network.Name `
                     -Name $Container.Name `
                     -Image $Container.Image

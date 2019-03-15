@@ -275,7 +275,7 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CISelfcheck, Systest 
         }
 
         It "captures logs of container" {
-            New-Container -Session $Sess1 -Name foo -Network nat
+            New-Container -Testbed $Sess1 -Name foo -Network nat
 
             Merge-Logs (New-ContainerLogSource -Testbeds $Sess1 -ContainerNames foo)
             $ContentRaw = Get-Content -Raw "TestDrive:\*.Container logs.captures logs of container.txt"

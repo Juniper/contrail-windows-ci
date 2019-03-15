@@ -92,7 +92,7 @@ Test-WithRetries 3 {
 
             Write-Log "Creating container: $ContainerID"
             New-Container `
-                -Session $Testenv.Sessions[0] `
+                -Testbed $Testenv.Sessions[0] `
                 -NetworkName $VirtualNetwork.Name `
                 -Name $ContainerID `
                 -Image $DockerImage

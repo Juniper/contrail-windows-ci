@@ -15,7 +15,7 @@ $NetworkName = "nat"
 
 Describe "Remove-AllContainers" -Tags CISelfcheck, Systest {
     It "Removes single container if exists" {
-        New-Container -Session $Session -NetworkName $NetworkName
+        New-Container -Testbed $Testbed -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {
             docker ps -aq
         } | Should Not BeNullOrEmpty
@@ -28,9 +28,9 @@ Describe "Remove-AllContainers" -Tags CISelfcheck, Systest {
     }
 
     It "Removes mutliple containers if exist" {
-        New-Container -Session $Session -NetworkName $NetworkName
-        New-Container -Session $Session -NetworkName $NetworkName
-        New-Container -Session $Session -NetworkName $NetworkName
+        New-Container -Testbed $Testbed -NetworkName $NetworkName
+        New-Container -Testbed $Testbed -NetworkName $NetworkName
+        New-Container -Testbed $Testbed -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {
             docker ps -aq
         } | Should Not BeNullOrEmpty
@@ -51,7 +51,7 @@ Describe "Remove-AllContainers" -Tags CISelfcheck, Systest {
     }
 
     It "Throws an exception when container removal consistently fails" {
-        New-Container -Session $Session -NetworkName $NetworkName
+        New-Container -Testbed $Testbed -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {
             docker ps -aq
         } | Should Not BeNullOrEmpty
@@ -76,7 +76,7 @@ Describe "Remove-AllContainers" -Tags CISelfcheck, Systest {
     }
 
     It "Removes single container if it exists even if first attempt fails" {
-        New-Container -Session $Session -NetworkName $NetworkName
+        New-Container -Testbed $Testbed -NetworkName $NetworkName
         Invoke-Command -Session $Session -ScriptBlock {
             docker ps -aq
         } | Should Not BeNullOrEmpty

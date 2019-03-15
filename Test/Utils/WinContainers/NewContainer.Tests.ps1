@@ -8,7 +8,7 @@ Param (
 
 Describe "New-Container" -Tags CISelfcheck, Systest {
     It "Reports container id when container creation succeeds in first attempt" {
-        Invoke-Command -Session $Session {
+        Invoke-Command -Session $Testbed.GetSession() {
             $DockerThatAlwaysSucceeds = @"
             Write-Output "{0}"
             exit 0
@@ -18,7 +18,7 @@ Describe "New-Container" -Tags CISelfcheck, Systest {
 
         {
             $NewContainerID = New-Container `
-                -Session $Session `
+                -Testbed $Testbed `
                 -NetworkName "BestNetwork" `
                 -Name "jolly-lumberjack"
             Set-Variable -Name "NewContainerID" -Value $NewContainerID -Scope 1
@@ -27,7 +27,7 @@ Describe "New-Container" -Tags CISelfcheck, Systest {
     }
 
     It "Throws exception when container creation fails" {
-        Invoke-Command -Session $Session {
+        Invoke-Command -Session $Testbed.GetSession() {
             $DockerThatAlwaysFails = @"
             Write-Error "It's Docker here: This is very very bad!"
             exit 1
@@ -37,14 +37,14 @@ Describe "New-Container" -Tags CISelfcheck, Systest {
 
         {
             New-Container `
-                -Session $Session `
+                -Testbed $Testbed `
                 -NetworkName "NetworkOfFriends" `
                 -Name "jolly-lumberjack"
         } | Should -Throw
     }
 
     It "Reports container id when container creation succeeds in second attempt after failing because of known issue" {
-        Invoke-Command -Session $Session {
+        Invoke-Command -Session $Testbed.GetSession() {
             $TmpFlagFile = "HopeForLuckyTry"
             Remove-Item $TmpFlagFile -ErrorAction Ignore
             $DockerThatSucceedsInSecondAttempt = @'
@@ -70,7 +70,7 @@ Describe "New-Container" -Tags CISelfcheck, Systest {
 
         {
             $NewContainerID = New-Container `
-                -Session $Session `
+                -Testbed $Testbed `
                 -NetworkName "SoftwareDefinedNetwork" `
                 -Name "jolly-lumberjack"
             Set-Variable -Name "NewContainerID" -Value $NewContainerID -Scope 1
@@ -79,7 +79,7 @@ Describe "New-Container" -Tags CISelfcheck, Systest {
     }
 
     It "Throws exception when container creation fails in first attempt and reports unknown issue" {
-        Invoke-Command -Session $Session {
+        Invoke-Command -Session $Testbed.GetSession() {
             $TmpFlagFile = "HopeForLuckyTry"
             Remove-Item $TmpFlagFile -ErrorAction Ignore
             $DockerThatSucceedsInSecondAttempt = @'
@@ -105,32 +105,29 @@ Describe "New-Container" -Tags CISelfcheck, Systest {
 
         {
             New-Container `
-                -Session $Session `
+                -Testbed $Testbed `
                 -NetworkName "SoftwareDefinedNetwork" `
                 -Name "jolly-lumberjack"
         } | Should -Throw
     }
 
     BeforeAll {
-        $Sessions = New-RemoteSessions -VMs ([Testbed]::LoadFromFile($TestenvConfFile))
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-            "PSUseDeclaredVarsMoreThanAssignments", "",
-            Justification="Lifetime and visibility of variables is a matter beyond capabilities of code checker."
-        )]
-        $Session = $Sessions[0]
+        $Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
+        $Testbed = $Testbeds[0]
+
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSUseDeclaredVarsMoreThanAssignments", "",
             Justification="Lifetime and visibility of variables is a matter beyond capabilities of code checker."
         )]
         $ContainerID = "47f6baf1e42fa83b5ddb6a8dca9103178129ce454689f47ee59140dafc2c9a7c"
-        Invoke-Command -Session $Session {
+        Invoke-Command -Session $Testbed.GetSession() {
             $OldPath = $Env:Path
             $Env:Path = ".;$OldPath"
         }
     }
 
     AfterAll {
-        Invoke-Command -Session $Session {
+        Invoke-Command -Session $Testbed.GetSession() {
             Remove-Item docker.ps1
         }
     }

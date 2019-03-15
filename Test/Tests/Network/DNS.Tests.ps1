@@ -76,7 +76,7 @@ $ResolveDNSLocallyCommand = (${function:Resolve-DNSLocally} -replace "`n|`r", ";
 
 function Start-Container {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [string] $ContainerID,
         [Parameter(Mandatory = $true)] [string] $ContainerImage,
         [Parameter(Mandatory = $true)] [string] $NetworkName,
@@ -85,7 +85,7 @@ function Start-Container {
 
     Write-Log "Creating container: $ContainerID"
     New-Container `
-        -Session $Session `
+        -Testbed $Testbed `
         -NetworkName $NetworkName `
         -Name $ContainerID `
         -Image $ContainerImage `
@@ -93,7 +93,7 @@ function Start-Container {
 
     Write-Log 'Getting container NetAdapter Information'
     $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation `
-        -Session $Session -ContainerID $ContainerID
+        -Session $Testbed.GetSession() -ContainerID $ContainerID
     $IP = $ContainerNetInfo.IPAddress
     Write-Log "IP of $ContainerID : $IP"
 
@@ -262,7 +262,7 @@ Test-WithRetries 3 {
                 $BeforeEachStack.Push(${function:Remove-AllUnusedDockerNetworks}, @($Session))
             }
 
-            Start-Container -Session $Testenv.Sessions[0] `
+            Start-Container -Testbed $Testenv.Testbeds[0] `
                 -ContainerID $ContainersIDs[0] `
                 -ContainerImage 'microsoft/windowsservercore' `
                 -NetworkName $VirtualNetwork.Name
@@ -355,7 +355,7 @@ Test-WithRetries 3 {
                 BeforeEachContext -DNSSetting ([TenantDNSSettings]::New(@($TenantDNSServerAddress)))
 
                 Start-Container `
-                    -Session $Testenv.Sessions[1] `
+                    -Testbed $Testenv.Testbeds[1] `
                     -ContainerID $ContainersIDs[1] `
                     -ContainerImage 'python-dns' `
                     -NetworkName $VirtualNetwork.Name `
