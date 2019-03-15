@@ -13,8 +13,6 @@ class Testbed {
     [String] $VHostName
     [PSSessionT] $Session = $null
 
-    # Keep in mind that this vairiable will only be initialized when data adapter exists at the beginning of run
-    # in the environment (so when components are installed by tests, not preexisting)
     [System.Collections.Hashtable] $DataIpInfo = $null
 
     [PSSessionT] NewSession() {
@@ -23,6 +21,7 @@ class Testbed {
 
     static [Testbed[]] LoadFromFile([string] $Path) {
         $Parsed = Read-TestenvFile($Path)
+
         [Testbed[]] $Testbeds = [Testbed[]]::new($Parsed.Testbeds.Count)
         foreach ($i in (0..($Parsed.Testbeds.Count-1))) {
             $Testbeds[$i] = [Testbed]::new($Parsed.Testbeds[$i])
@@ -171,9 +170,9 @@ class Testbed {
             }
         }
 
-        $this.DataIpInfo = Get-IpInfo($this.DataAdapterName)
+        $this.DataIpInfo = Get-IpInfo -Adapter $this.DataAdapterName
         if ($null -eq $this.DataIpInfo) {
-            $this.DataIpInfo = Get-IpInfo($this.VHostName)
+            $this.DataIpInfo = Get-IpInfo -Adapter $this.VHostName
         }
     }
 }
