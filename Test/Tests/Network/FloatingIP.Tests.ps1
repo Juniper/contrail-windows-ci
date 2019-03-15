@@ -107,7 +107,7 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
                 Write-Log 'Creating containers'
                 Write-Log "Creating container: $ContainerClientID"
                 New-Container `
-                    -Session $Testenv.Sessions[0] `
+                    -Testbed $Testenv.Sessions[0] `
                     -NetworkName $ClientNetwork.Name `
                     -Name $ContainerClientID `
                     -Image $ContainerImage
@@ -115,7 +115,7 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
                 Write-Log 'Creating containers'
                 Write-Log "Creating container: $ContainerServerID"
                 New-Container `
-                    -Session $Testenv.Sessions[1] `
+                    -Testbed $Testenv.Sessions[1] `
                     -NetworkName $ServerNetwork.Name `
                     -Name $ContainerServerID `
                     -Image $ContainerImage

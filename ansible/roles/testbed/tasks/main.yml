@@ -4,6 +4,18 @@
   include_role:
     name: windows-common
 
+# Need to install first, to set feature before downloading any package
+- name: ensure Chocolatey itself is installed
+  win_chocolatey:
+    name: chocolatey
+    state: present
+
+# Fix for incompability of Ansible and choco
+# https://github.com/chocolatey/choco/wiki/ReleaseNotes#01012---march-14-2019
+- name: disable choco enhanced exit codes
+  win_shell: |
+    choco feature disable --name="'useEnhancedExitCodes'"
+
 - name: Install python 2.7.13
   win_chocolatey:
     name: python2
@@ -48,12 +60,25 @@
     state: started
     start_mode: auto
 
-- name: Pull docker images
+- name: Set Windows Server version var
+  set_fact:
+    windows_server_version: "{{ ansible_distribution | regex_findall('Windows Server (\\d{4})') | first }}"
+
+- name: Pull docker images (Windows Server 2016)
   win_shell: "docker pull {{ item }}"
   with_items:
     - microsoft/nanoserver
     - microsoft/windowsservercore
-    - python:3.6.5
+    - python:3.7
+  when: windows_server_version == '2016'
+
+- name: Pull docker images (Windows Server 2019)
+  win_shell: "docker pull {{ item }}"
+  with_items:
+    - mcr.microsoft.com/windows/servercore:1809
+    - mcr.microsoft.com/windows/nanoserver:1809
+    - python:3.7
+  when: windows_server_version == '2019'
 
 - name: Install VC for Python 2.7
   win_chocolatey:
@@ -81,10 +106,6 @@
 - name: Remove NetNat objects
   win_shell: |
     Get-NetNat | Remove-NetNat -Confirm:$false
-
-- name: Set Windows Server version var
-  set_fact:
-    windows_server_version: "{{ ansible_distribution | regex_findall('Windows Server (\\d{4})') | first }}"
 
 # Workaround for flaky HNS behavior.
 # Removing container networks sometimes ends with "Unspecified error".

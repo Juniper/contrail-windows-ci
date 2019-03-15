@@ -90,7 +90,7 @@ Test-WithRetries 3 {
 
             Write-Log "Creating container: $($ContainerIds[2])"
             New-Container `
-                -Session $Testenv.Sessions[1] `
+                -Testbed $Testenv.Sessions[1] `
                 -NetworkName $VirtualNetwork.Name `
                 -Name $ContainerIds[2] `
                 -Image 'microsoft/windowsservercore'
@@ -144,7 +144,7 @@ Test-WithRetries 3 {
             foreach ($i in 0..1) {
                 Write-Log "Creating container: $($ContainerIds[$i])"
                 New-Container `
-                    -Session $Testenv.Sessions[$i] `
+                    -Testbed $Testenv.Sessions[$i] `
                     -NetworkName $VirtualNetwork.Name `
                     -Name $ContainerIds[$i] `
                     -Image 'microsoft/windowsservercore'

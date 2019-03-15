@@ -58,14 +58,18 @@ function Remove-Container {
 
 
 function New-Container {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session,
+    Param ([Parameter(Mandatory = $true)] [Testbed] $Testbed,
            [Parameter(Mandatory = $true)] [string] $NetworkName,
            [Parameter(Mandatory = $false)] [string] $Name,
-           [Parameter(Mandatory = $false)] [string] $Image = "microsoft/nanoserver",
+           [Parameter(Mandatory = $false)] [AllowNull()] [string] $Image = $null,
            [Parameter(Mandatory = $false)] [string] $IP)
 
+    if(($null -eq $Image) -or ('' -eq $Image)) {
+        $Image = $Testbed.DefaultDockerImage
+    }
+
     if (Test-Dockerfile $Image) {
-        Initialize-DockerImage -Session $Session -DockerImageName $Image | Out-Null
+        Initialize-DockerImage -Session $Testbed.GetSession() -DockerImageName $Image | Out-Null
     }
 
     $Arguments = "run", "-di"
@@ -73,7 +77,7 @@ function New-Container {
     if ($IP) { $Arguments += "--ip", $IP }
     $Arguments += "--network", $NetworkName, $Image
 
-    $Result = Invoke-Command -Session $Session { docker @Using:Arguments ; $Global:LastExitCode }
+    $Result = Invoke-Command -Session $Testbed.GetSession() { docker @Using:Arguments ; $Global:LastExitCode }
 
     # Check for exit code
     if (0 -ne $Result[-1]) {
