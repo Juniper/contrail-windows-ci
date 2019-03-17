@@ -11,20 +11,17 @@ function Read-RawRemoteContainerNetAdapterInformation {
 
         $RemoteCommand = {
             $GetIPAddress = { ($_ | Get-NetIPAddress -AddressFamily IPv4).IPAddress }
-            $Fields = 'ifIndex', 'ifName', 'Name', 'MacAddress', 'MtuSize', @{L='IPAddress'; E=$GetIPAddress}
+            $Fields = 'ifIndex', 'Name', 'MacAddress', 'MtuSize', @{L='IPAddress'; E=$GetIPAddress}, @{L='ifName'; E='filledlater'}
             $Adapter = (Get-NetAdapter -Name 'vEthernet (*)')[0]
             return $Adapter | Select-Object $Fields | ConvertTo-Json -Depth 5
         }.ToString()
 
-        docker exec $Using:ContainerID powershell $RemoteCommand
+        $Info = (docker exec $Using:ContainerID powershell $RemoteCommand) | ConvertFrom-Json
+        $Info.'ifName' = (Get-NetAdapter -IncludeHidden -Name $Info.Name | Select-Object -ExpandProperty 'ifName')
+        return $Info
     }
 
-    try {
-        return $JsonAdapterInfo | ConvertFrom-Json
-    }
-    catch {
-        throw $JsonAdapterInfo
-    }
+    return $JsonAdapterInfo
 }
 
 function Assert-IsIpAddressInRawNetAdapterInfoValid {
