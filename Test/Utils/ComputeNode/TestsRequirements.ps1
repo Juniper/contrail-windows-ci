@@ -40,12 +40,12 @@ function Sync-MicrosoftDockerImagesOnTestbeds {
 
 function Install-DNSTestDependencies {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT[]] $Sessions
+        [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds
     )
     $DNSDockerfilePath = Join-Path (Get-DockerfilesPath) (Get-DNSDockerName)
-    foreach ($Session in $Sessions) {
+    foreach ($Testbed in $Testbeds) {
         Write-Log 'Configuring dependencies for DNS tests'
-        $Result = Invoke-NativeCommand -Session $Session -AllowNonZero -CaptureOutput {
+        $Result = Invoke-NativeCommand -Session $Testbed.GetSession() -AllowNonZero -CaptureOutput {
             New-Item -ItemType directory -Path $Using:DNSDockerfilePath -Force
             pip  download dnslib==0.9.7 --dest $Using:DNSDockerfilePath
             pip  install dnslib==0.9.7
