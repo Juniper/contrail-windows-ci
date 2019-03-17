@@ -78,7 +78,7 @@ function Start-Container {
     Param (
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [string] $ContainerID,
-        [Parameter(Mandatory = $true)] [string] $ContainerImage,
+        [Parameter(Mandatory = $false)] [string] $ContainerImage = $null,
         [Parameter(Mandatory = $true)] [string] $NetworkName,
         [Parameter(Mandatory = $false)] [string] $IP
     )
@@ -102,11 +102,11 @@ function Start-Container {
 
 function Start-DNSServerOnTestBed {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
     Write-Log 'Starting Test DNS Server on test bed...'
     $DefaultDNSServerDir = 'C:\DNS_Server'
-    Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         New-Item -ItemType Directory -Force $Using:DefaultDNSServerDir | Out-Null
         New-Item "$($Using:DefaultDNSServerDir + '\zones')" -Type File -Force
         foreach ($Record in $Using:DefaultDNSrecords) {
@@ -114,8 +114,8 @@ function Start-DNSServerOnTestBed {
         }
     }
 
-    Copy-Item -ToSession $Session -Path ($DockerfilesPath + 'python-dns\dnserver.py') -Destination $DefaultDNSServerDir
-    Invoke-Command -Session $Session -ScriptBlock {
+    Copy-Item -ToSession $Testbed.GetSession() -Path ($DockerfilesPath + 'python-dns\dnserver.py') -Destination $DefaultDNSServerDir
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         $env:ZONE_FILE = "$($Using:DefaultDNSServerDir + '\zones')"
         Start-Process -FilePath 'python' -ArgumentList "$($Using:DefaultDNSServerDir + '\dnserver.py')"
     }
@@ -142,26 +142,26 @@ function Set-DNSServerAddressOnTestBed {
 
 function Restore-DNSServerOnTestBed {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $ClientSession,
+        [Parameter(Mandatory = $true)] [Testbed] $Client,
         [Parameter(Mandatory = $true)] [String] $InterfaceAlias,
         [Parameter(Mandatory = $true)] [String] $OldDns
     )
     Write-Log 'Restoring old DNS servers on test bed...'
-    Invoke-Command -Session $ClientSession -ScriptBlock {
+    Invoke-Command -Session $Client.GetSession() -ScriptBlock {
         Set-DnsClientServerAddress -InterfaceAlias $Using:InterfaceAlias -ServerAddresses $Using:OldDns
     }
 }
 
 function Resolve-DNS {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [String] $ContainerName,
         [Parameter(Mandatory = $true)] [String] $Hostname
     )
 
     $Command = $ResolveDNSLocallyCommand -replace '\$Hostname', ('"' + $Hostname + '"')
 
-    $Result = (Invoke-Command -Session $Session -ScriptBlock {
+    $Result = (Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
             docker exec $Using:ContainerName powershell $Using:Command
         }).Split([Environment]::NewLine)
 
@@ -182,7 +182,7 @@ function ResolveCorrectly {
 
     Write-Log "Trying to resolve host '$Hostname', expecting ip '$IP'"
 
-    $result = Resolve-DNS -Session $Testenv.Sessions[0] `
+    $result = Resolve-DNS -Testbed $Testenv.Testbeds[0] `
         -ContainerName $ContainersIDs[0] -Hostname $Hostname
 
     if ((-not $result.error)) {
@@ -201,7 +201,7 @@ function ResolveWithError {
 
     Write-Log "Trying to resolve host '$Hostname', expecting error '$ErrorType'"
 
-    $result = Resolve-DNS -Session $Testenv.Sessions[0] `
+    $result = Resolve-DNS -Testbed $Testenv.Testbeds[0] `
         -ContainerName $ContainersIDs[0] -Hostname $Hostname
     return (($result.error -eq $ErrorType) -and (-not $result.result))
 }
@@ -215,7 +215,7 @@ Test-WithRetries 3 {
             $BeforeAllStack = $Testenv.NewCleanupStack()
 
             Install-DNSTestDependencies -Testbeds $Testenv.Testbeds
-            Start-DNSServerOnTestBed -Session $Testenv.Sessions[1]
+            Start-DNSServerOnTestBed -Testbed $Testenv.Testbeds[1]
             $OldDNSs = Set-DNSServerAddressOnTestBed `
                 -Client $Testenv.Testbeds[0] `
                 -Server $Testenv.Testbeds[1]
@@ -254,19 +254,18 @@ Test-WithRetries 3 {
             $IPAM.DNSSettings = $DNSSettings
             $Testenv.ContrailRepo.Set($IPAM)
 
-            foreach ($Session in $Testenv.Sessions) {
+            foreach ($Testbed in $Testenv.Testbeds) {
                 Initialize-DockerNetworks `
-                    -Session $Session `
+                    -Session $Testbed.GetSession() `
                     -Networks @($VirtualNetwork) `
                     -TenantName $ContrailProject
-                $BeforeEachStack.Push(${function:Remove-AllUnusedDockerNetworks}, @($Session))
+                $BeforeEachStack.Push(${function:Remove-AllUnusedDockerNetworks}, @($Testbed))
             }
 
             Start-Container -Testbed $Testenv.Testbeds[0] `
                 -ContainerID $ContainersIDs[0] `
-                -ContainerImage 'microsoft/windowsservercore' `
                 -NetworkName $VirtualNetwork.Name
-            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Testbeds))
 
             $ContainersLogs = @((New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainersIds[0]),
                 (New-ContainerLogSource -Testbeds $Testenv.Testbeds[1] -ContainerNames $ContainersIds[1]))
