@@ -214,7 +214,7 @@ Test-WithRetries 3 {
 
             $BeforeAllStack = $Testenv.NewCleanupStack()
 
-            Install-DNSTestDependencies -Sessions $Testenv.Sessions
+            Install-DNSTestDependencies -Testbeds $Testenv.Testbeds
             Start-DNSServerOnTestBed -Session $Testenv.Sessions[1]
             $OldDNSs = Set-DNSServerAddressOnTestBed `
                 -Client $Testenv.Testbeds[0] `
