@@ -70,15 +70,13 @@ $Containers = @{
         'Name'         = 'jolly-lumberjack'
         'Image'        = 'python-http'
         'NetInfo'      = $null
-        'HostSession'  = $null
         'Testbed'      = $null
         'Network'      = $ServerNetwork
     }
     'client' = @{
         'Name'         = 'juniper-tree'
-        'Image'        = 'microsoft/windowsservercore'
+        'Image'        = $null
         'NetInfo'      = $null
-        'HostSession'  = $null
         'Testbed'      = $null
         'Network'      = $ClientNetwork
     }
@@ -150,7 +148,7 @@ Test-WithRetries 1 {
 
                 Test-Security -TestRules $TestRules -Testenv $Testenv {
                     Test-TCP `
-                        -Session $Containers.client.HostSession `
+                        -Session $Containers.client.Testbed.GetSession() `
                         -SrcContainerName $Containers.client.Name `
                         -DstContainerName $Containers.server.Name `
                         -DstIP $Containers.server.NetInfo.IPAddress | Should Be 0
@@ -171,7 +169,7 @@ Test-WithRetries 1 {
 
                 Test-Security -TestRules $TestRules -Testenv $Testenv {
                     { Test-TCP `
-                        -Session $Containers.client.HostSession `
+                        -Session $Containers.client.Testbed.GetSession() `
                         -SrcContainerName $Containers.client.Name `
                         -DstContainerName $Containers.server.Name `
                         -DstIP $Containers.server.NetInfo.IPAddress } | Should -Throw "Invoke-WebRequest"
@@ -202,20 +200,20 @@ Test-WithRetries 1 {
 
                 Test-Security -TestRules $TestRules -Testenv $Testenv {
                     Test-UDP `
-                        -ListenerContainerSession $Containers.server.HostSession `
+                        -ListenerContainerSession $Containers.server.Testbed.GetSession() `
                         -ListenerContainerName $Containers.server.Name `
                         -ListenerContainerIP $Containers.server.NetInfo.IPAddress `
-                        -ClientContainerSession $Containers.client.HostSession `
+                        -ClientContainerSession $Containers.client.Testbed.GetSession() `
                         -ClientContainerName $Containers.client.Name `
                         -Message 'With contrail-security i feel safe now.' `
                         -UDPServerPort 1111 `
                         -UDPClientPort 2222 | Should Be $false
 
                     Test-UDP `
-                        -ListenerContainerSession $Containers.server.HostSession `
+                        -ListenerContainerSession $Containers.server.Testbed.GetSession() `
                         -ListenerContainerName $Containers.server.Name `
                         -ListenerContainerIP $Containers.server.NetInfo.IPAddress `
-                        -ClientContainerSession $Containers.client.HostSession `
+                        -ClientContainerSession $Containers.client.Testbed.GetSession() `
                         -ClientContainerName $Containers.client.Name `
                         -Message 'With contrail-security i feel safe now.' `
                         -UDPServerPort 3333 `
@@ -228,9 +226,7 @@ Test-WithRetries 1 {
             $Testenv = [Testenv]::New()
             $Testenv.Initialize($TestenvConfFile, $LogDir, $ContrailProject, $PrepareEnv)
 
-            $Containers.client.HostSession = $Testenv.Sessions[0]
             $Containers.client.Testbed = $Testenv.Testbeds[0]
-            $Containers.server.HostSession = $Testenv.Sessions[1]
             $Containers.server.Testbed = $Testenv.Testbeds[1]
 
             $BeforeAllStack = $Testenv.NewCleanupStack()
@@ -260,13 +256,13 @@ Test-WithRetries 1 {
             $BeforeAllStack.Push($ServerNetwork)
 
             Write-Log 'Creating docker networks'
-            foreach ($Session in $Testenv.Sessions) {
+            foreach ($Testbed in $Testenv.Testbeds) {
                 Initialize-DockerNetworks `
-                    -Session $Session `
+                    -Session $Testbed.GetSession() `
                     -Networks $Networks  `
                     -TenantName $ContrailProject
-                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $ClientNetwork.Name))
-                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $ServerNetwork.Name))
+                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Testbed, $ClientNetwork.Name))
+                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Testbed, $ServerNetwork.Name))
             }
         }
 
@@ -277,20 +273,20 @@ Test-WithRetries 1 {
         BeforeEach {
             $BeforeEachStack = $Testenv.NewCleanupStack()
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
-            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Testbeds))
             $ContainersLogs = @()
             Write-Log 'Creating containers'
             foreach ($Key in $Containers.Keys) {
                 $Container = $Containers[$Key]
                 Write-Log "Creating container: $($Container.Name)"
                 New-Container `
-                    -Testbed $Container.HostSession `
+                    -Testbed $Container.Testbed `
                     -NetworkName $Container.Network.Name `
                     -Name $Container.Name `
                     -Image $Container.Image
 
                 $Container.NetInfo = Get-RemoteContainerNetAdapterInformation `
-                    -Session $Container.HostSession -ContainerID $Container.Name
+                    -Session $Container.Testbed.GetSession() -ContainerID $Container.Name
                 $ContainersLogs += New-ContainerLogSource -Testbeds $Container.Testbed -ContainerNames $Container.Name
                 Write-Log "IP of $($Container.Name): $($Container.NetInfo.IPAddress)"
             }
