@@ -114,7 +114,6 @@ class Testbed {
                 throw 'Not supported Windows version'
             }
         }
-        Write-Log "$($this.Name) is running Windows Server $($this.WinVersion)"
     }
 
     hidden [Void] SetDefaultDockerImage() {
