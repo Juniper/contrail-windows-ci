@@ -16,7 +16,7 @@ function Sync-MicrosoftDockerImagesOnTestbeds {
     $StartedJobs = @()
     ForEach ($Testbed in $Testbeds) {
         $JobName = "$($Testbed.GetSession().ComputerName)-pulldockerms"
-        switch ($Testbed.GetWindowsVersion()) {
+        switch ($Testbed.WinVersion) {
             'v2016' {
                 $Images = @('microsoft/windowsservercore', 'microsoft/nanoserver')
             }

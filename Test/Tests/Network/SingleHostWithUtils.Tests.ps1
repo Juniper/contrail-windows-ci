@@ -126,8 +126,7 @@ Test-WithRetries 3 {
             $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
             $BeforeEachStack.Push($VirtualNetwork)
 
-            New-CNMPluginConfigFile -Session $Session `
-                -AdapterName $Testenv.System.AdapterName `
+            New-CNMPluginConfigFile -Testbed $Session `
                 -OpenStackConfig $Testenv.OpenStack `
                 -ControllerConfig $Testenv.Controller
 
@@ -158,11 +157,11 @@ Test-WithRetries 3 {
 
             Write-Log 'Getting VM NetAdapter Information'
             $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $Testenv.System.AdapterName
+                -AdapterName $Testbed.DataAdapterName
 
             Write-Log 'Getting vHost NetAdapter Information'
             $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
-                -AdapterName $Testenv.System.VHostName
+                -AdapterName $Testbed.VHostName
 
             Initialize-ContainersConnection -VMNetInfo $VMNetInfo -VHostInfo $VHostInfo `
                 -Container1NetInfo $ContainerNetInfos[0] -Container2NetInfo $ContainerNetInfos[1] `
@@ -183,6 +182,7 @@ Test-WithRetries 3 {
             $BeforeAllStack = $Testenv.NewCleanupStack()
 
             $Session = $Testenv.Sessions[0]
+            $Testbed = $Testenv.Testbeds[0]
 
             Install-Utils -Session $Session
             $BeforeAllStack.Push(${function:Uninstall-Utils}, @($Session))
@@ -191,7 +191,7 @@ Test-WithRetries 3 {
             Stop-NodeMgrService -Session $Session
             Stop-CNMPluginService -Session $Session
             Stop-AgentService -Session $Session
-            Disable-VRouterExtension -Session $Session -SystemConfig $TestEnv.System
+            Disable-VRouterExtension -Testbed $Testbed -SystemConfig $TestEnv.System
         }
 
         AfterAll {

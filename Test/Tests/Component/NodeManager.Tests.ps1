@@ -8,11 +8,11 @@ Param (
 . $PSScriptRoot\..\..\Utils\PowershellTools\Init.ps1
 . $PSScriptRoot\..\..\Utils\PowershellTools\Aliases.ps1
 
+. $PSScriptRoot\..\..\Utils\Testenv\Testenv.ps1
+
 . $PSScriptRoot\..\..\PesterHelpers\PesterHelpers.ps1
 . $PSScriptRoot\..\..\PesterLogger\PesterLogger.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
-
-. $PSScriptRoot\..\..\Utils\Testenv\Testenv.ps1
 
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
@@ -61,7 +61,7 @@ function Test-NodeMgrConnectionWithController {
         hostname
     }
     $Out = Invoke-RestMethod ("http://$($ControllerIP):8089/Snh_ShowCollectorServerReq?")
-    $OurNode = $Out.ShowCollectorServerResp.generators.list.GeneratorSummaryInfo.source | Where-Object '#text' -Like $TestbedHostname
+    $OurNode = $Out.ShowCollectorServerResp.generators.list.GeneratorSummaryInfo.source | Where-Object '#text' -Like "$TestbedHostname*"
 
     return [bool]($OurNode)
 }

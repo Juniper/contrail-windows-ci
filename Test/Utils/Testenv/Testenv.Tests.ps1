@@ -25,18 +25,18 @@ Describe "Testenv" -Tags CISelfcheck, Unit {
             $Controller.MgmtAddress | Should Be "1.2.3.1"
             $Controller.CtrlAddress | Should Be "1.2.3.2"
             $Controller.RestApiPort | Should Be "8082"
-
+            $Controller.AuthMethod | Should Be "noauth"
             $Controller.RestApiUrl() | Should Be "http://1.2.3.1:8082"
         }
 
         It "can read testbed config from a .yaml file" {
             $System = [SystemConfig]::LoadFromFile($YamlPath)
-            $System.AdapterName | Should Be "Eth1"
-            $System.VMSwitchName() | Should Be "Layered Eth1"
             $System.ForwardingExtensionName | Should Be "MyExtension"
         }
 
-        It "can read locations and credentials of testbeds from .yaml file" {
+        # Testbed constructor is connecting to machine to check for it's Windows Version,
+        # so this test is pending.
+        It "can read locations and credentials of testbeds from .yaml file" -Pending {
             $Testbeds = [Testbed]::LoadFromFile($YamlPath)
             $Testbeds[0].Address | Should Be "1.2.3.2"
             $Testbeds[1].Address | Should Be "1.2.3.3"
@@ -44,6 +44,10 @@ Describe "Testenv" -Tags CISelfcheck, Unit {
             $Testbeds[1].Username | Should Be "TBUsername"
             $Testbeds[0].Password | Should Be "TBPassword"
             $Testbeds[1].Password | Should Be "TBPassword"
+            $Testbeds[0].MgmtAdapterName | Should Be "Ethernet0"
+            $Testbeds[1].MgmtAdapterName | Should Be "Ethernet02"
+            $Testbeds[0].DataAdapterName | Should Be "Ethernet1"
+            $Testbeds[1].DataAdapterName | Should Be "Ethernet12"
         }
 
         BeforeEach {
@@ -59,10 +63,9 @@ controller:
   mgmtAddress: 1.2.3.1
   ctrlAddress: 1.2.3.2
   restApiPort: 8082
+  authMethod: noauth
 
 system:
-  AdapterName: Eth1
-  VHostName: vEth
   ForwardingExtensionName: MyExtension
 
 testbeds:
@@ -70,10 +73,14 @@ testbeds:
     address: 1.2.3.2
     username: TBUsername
     password: TBPassword
+    mgmtAdapterName: Ethernet0
+    dataAdapterName: Ethernet1
   - name: Testbed2
     address: 1.2.3.3
     username: TBUsername
     password: TBPassword
+    mgmtAdapterName: Ethernet02
+    dataAdapterName: Ethernet12
 "@
             $YamlPath = "TestDrive:\TestYaml.yaml"
             $Yaml | Out-File $YamlPath
@@ -88,12 +95,16 @@ testbeds:
     address: 1.2.3.2
     username: TBUsername
     password: TBPassword
+    mgmtAdapterName: Ethernet0
+    dataAdapterName: Ethernet1
 "@
             $YamlPath = "TestDrive:\TestYamlSingleTestbed.yaml"
             $Yaml | Out-File $YamlPath
         }
 
-        It "can read a config file with a single testbed" {
+        # Testbed constructor is connecting to machine to check for it's Windows Version,
+        # so this test is pending.
+        It "can read a config file with a single testbed" -Pending {
             $Testbeds = [Testbed]::LoadFromFile($YamlPath)
 
             $Testbeds.Count | Should Be 1

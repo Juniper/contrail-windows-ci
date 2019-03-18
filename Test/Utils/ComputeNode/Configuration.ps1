@@ -25,8 +25,7 @@ function Get-DefaultNodeMgrsConfigPath {
 
 function New-CNMPluginConfigFile {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $AdapterName,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $false)] [OpenStackConfig] $OpenStackConfig,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig
     )
@@ -37,7 +36,7 @@ function New-CNMPluginConfigFile {
 
     $Config = @"
 [DRIVER]
-Adapter=$AdapterName
+Adapter=$($Testbed.DataAdapterName)
 ControllerIP=$( $ControllerConfig.MgmtAddress )
 ControllerPort=8082
 
@@ -60,19 +59,18 @@ Os_token=
 "@
     }
 
-    Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Set-Content -Path $Using:ConfigPath -Value $Using:Config
     }
 }
 
 function Get-NodeManagementIP {
     Param(
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $MgmtAdapterName
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
-    return Invoke-Command -Session $Session -ScriptBlock {
+    return Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Get-NetIPAddress |
-        Where-Object InterfaceAlias -like $Using:MgmtAdapterName |
+        Where-Object InterfaceAlias -like $Using:Testbed.MgmtAdapterName |
         Where-Object AddressFamily -eq IPv4 |
         Select-Object -ExpandProperty IPAddress
     }
@@ -80,17 +78,16 @@ function Get-NodeManagementIP {
 
 function New-NodeMgrConfigFile {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [string] $ControllerIP,
-        [Parameter(Mandatory = $true)] [string] $MgmtAdapterName
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
+        [Parameter(Mandatory = $true)] [string] $ControllerIP
     )
 
     Write-Log 'Creating node manager config file'
 
     $ConfigPath = Get-DefaultNodeMgrsConfigPath
-    $LogPath = Join-Path (Get-ComputeLogsDir) "contrail-vrouter-nodemgr.log"
+    $LogPath = Get-NodeMgrLogPath
 
-    $HostIP = Get-NodeManagementIP -Session $Session -MgmtAdapterName $MgmtAdapterName
+    $HostIP = Get-NodeManagementIP -Testbed $Testbed
 
     $Config = @"
 [DEFAULTS]
@@ -107,24 +104,23 @@ introspect_ssl_enable=False
 sandesh_ssl_enable=False
 "@
 
-    Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Set-Content -Path $Using:ConfigPath -Value $Using:Config
     }
 }
 
 function Get-AdaptersInfo {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
     # Gather information about testbed's network adapters
     $HNSTransparentAdapter = Get-RemoteNetAdapterInformation `
-            -Session $Session `
-            -AdapterName $SystemConfig.VHostName
+            -Session $Testbed.GetSession() `
+            -AdapterName $Testbed.VHostName
 
     $PhysicalAdapter = Get-RemoteNetAdapterInformation `
-            -Session $Session `
-            -AdapterName $SystemConfig.AdapterName
+            -Session $Testbed.GetSession() `
+            -AdapterName $Testbed.DataAdapterName
 
     return @{
         "VHostIfIndex" = $HNSTransparentAdapter.ifIndex;
@@ -178,19 +174,19 @@ physical_interface=$PhysIfName
 
 function New-AgentConfigFile {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
     Write-Log 'Creating agent config files'
 
-    $AdaptersInfo = Get-AdaptersInfo -Session $Session -SystemConfig $SystemConfig
+    $AdaptersInfo = Get-AdaptersInfo -Testbed $Testbed
     $AgentConfigPath = Get-DefaultAgentConfigPath
 
     Invoke-CommandWithFunctions `
         -Functions @("Get-VHostConfiguration", "Get-AgentConfig") `
-        -Session $Session `
+        -Session $Testbed.GetSession() `
         -ScriptBlock {
             # Save file with prepared config
             $ConfigFileContent = Get-AgentConfig `

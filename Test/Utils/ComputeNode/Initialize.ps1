@@ -52,13 +52,11 @@ function Initialize-ComputeServices {
     )
 
     New-NodeMgrConfigFile `
-        -Session $Testbed.GetSession()  `
-        -ControllerIP $ControllerConfig.MgmtAddress `
-        -MgmtAdapterName $SystemConfig.MgmtAdapterName
+        -Testbed $Testbed  `
+        -ControllerIP $ControllerConfig.MgmtAddress
 
     New-CNMPluginConfigFile `
-        -Session $Testbed.GetSession() `
-        -AdapterName $SystemConfig.AdapterName `
+        -Testbed $Testbed `
         -OpenStackConfig $OpenStackConfig `
         -ControllerConfig $ControllerConfig
 
@@ -67,7 +65,7 @@ function Initialize-ComputeServices {
         -SystemConfig $SystemConfig
     $CleanupStack.Push(${function:Remove-CnmPluginAndExtension}, @($Testbed, $SystemConfig))
 
-    New-AgentConfigFile -Session $Testbed.GetSession() `
+    New-AgentConfigFile -Testbed $Testbed `
         -ControllerConfig $ControllerConfig `
         -SystemConfig $SystemConfig
 

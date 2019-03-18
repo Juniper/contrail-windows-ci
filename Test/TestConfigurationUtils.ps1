@@ -39,35 +39,31 @@ function Assert-AreDLLsPresent {
 
 function Enable-VRouterExtension {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
         [Parameter(Mandatory = $false)] [string] $ContainerNetworkName = "testnet"
     )
 
     Write-Log "Enabling Extension"
 
-    $AdapterName = $SystemConfig.AdapterName
-    $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
-    $VMSwitchName = $SystemConfig.VMSwitchName()
+    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.DataAdapterName
 
-    Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.AdapterName
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:AdapterName -Name $Using:ContainerNetworkName | Out-Null
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
+        New-ContainerNetwork -Mode Transparent -NetworkAdapterName $Using:Testbed.DataAdapterName -Name $Using:ContainerNetworkName | Out-Null
     }
 
     # We're not waiting for IP on this adapter, because our tests
     # don't rely on this adapter to have the correct IP set for correctess.
     # We could implement retrying to avoid flakiness but it's easier to just
     # ignore the error.
-    # Wait-RemoteInterfaceIP -Session $Session -AdapterName $SystemConfig.VHostName
+    # Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.VHostName
 
-    Invoke-Command -Session $Session -ScriptBlock {
-        $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:ForwardingExtensionName | Where-Object Enabled
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
+        $Extension = Get-VMSwitch | Get-VMSwitchExtension -Name $Using:SystemConfig.ForwardingExtensionName | Where-Object Enabled
         if ($Extension) {
             Write-Warning "Extension already enabled on: $($Extension.SwitchName)"
         }
-        $Extension = Enable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName
+        $Extension = Enable-VMSwitchExtension -VMSwitchName $Using:Testbed.VmSwitchName -Name $Using:SystemConfig.ForwardingExtensionName
         if ((-not $Extension.Enabled) -or (-not ($Extension.Running))) {
             throw "Failed to enable extension (not enabled or not running)"
         }
@@ -76,20 +72,16 @@ function Enable-VRouterExtension {
 
 function Disable-VRouterExtension {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
 
     Write-Log "Disabling Extension"
 
-    $AdapterName = $SystemConfig.AdapterName
-    $ForwardingExtensionName = $SystemConfig.ForwardingExtensionName
-    $VMSwitchName = $SystemConfig.VMSwitchName()
-
-    Invoke-Command -Session $Session -ScriptBlock {
-        Disable-VMSwitchExtension -VMSwitchName $Using:VMSwitchName -Name $Using:ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
-        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:AdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
-        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:AdapterName | Remove-ContainerNetwork -Force
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
+        Disable-VMSwitchExtension -VMSwitchName $Using:Testbed.VmSwitchName -Name $Using:SystemConfig.ForwardingExtensionName -ErrorAction SilentlyContinue | Out-Null
+        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
+        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $Using:Testbed.DataAdapterName | Remove-ContainerNetwork -Force
     }
 }
 
@@ -201,15 +193,13 @@ function Wait-RemoteInterfaceIP {
 
 function Test-IfVmSwitchExist {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [String] $VmSwitchName
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
 
+    Write-Log "Checking if VmSwitch '$($Testbed.VmSwitchName)' exists..."
 
-    Write-Log "Checking if VmSwitch '$VMSwitchName' exists..."
-
-    $r = Invoke-Command -Session $Session -ScriptBlock {
-        Get-VMSwitch $Using:VMSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
+    $r = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
+        Get-VMSwitch $Using:Testbed.VmSwitchName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty isDeleted
     }
 
     if($null -eq $r) {
@@ -231,13 +221,12 @@ function Test-IfVmSwitchExist {
 
 function Write-IpAddresses {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
 
-    $AdaptersNames = @($SystemConfig.VHostName, $SystemConfig.AdapterName)
+    $AdaptersNames = @($Testbed.VHostName, $Testbed.DataAdapterName)
 
-    $Infos = Invoke-Command -Session $Session -ScriptBlock {
+    $Infos = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         $Ret = @{}
         $Using:AdaptersNames | ForEach-Object {
             $Ip = (Get-NetAdapter -Name $_ -ErrorAction SilentlyContinue | Get-NetIPAddress -ErrorAction SilentlyContinue | Where-Object AddressFamily -eq "IPv4" | Select-Object -ExpandProperty IPAddress)
@@ -253,16 +242,15 @@ function Write-IpAddresses {
 
 function Assert-VmSwitchInitialized {
     Param (
-        [Parameter(Mandatory = $true)] [Testbed] $Testbed,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
-    if(-not (Test-IfVmSwitchExist -Session $Testbed.GetSession() -VmSwitchName $SystemConfig.VMSwitchName())) {
-        throw "VmSwitch is not created. No need to wait for IP on $($SystemConfig.VHostName)."
+    if(-not (Test-IfVmSwitchExist -Testbed $Testbed)) {
+        throw "VmSwitch is not created. No need to wait for IP on $($Testbed.VHostName)."
     }
 
-    Write-IPAddresses -Session $Testbed.GetSession() -SystemConfig $SystemConfig
+    Write-IPAddresses -Testbed $Testbed
 
-    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.VHostName
+    Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.VHostName
 }
 
 class RestartNeededException : System.Exception {
@@ -273,16 +261,13 @@ class RestartNeededException : System.Exception {
 function Restart-Testbed {
     Param (
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
-        [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig,
         [Parameter(Mandatory = $true)] [ScriptBlock] $AfterRestart
     )
 
     Write-Log "Restarting testbed $($Testbed.GetSession().ComputerName)"
 
-    $VHostName = $SystemConfig.VHostName
-
     $IPInfo = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
-        Get-NetAdapter -Name $Using:VHostName -ErrorAction SilentlyContinue | `
+        Get-NetAdapter -Name $Using:Testbed.VHostName -ErrorAction SilentlyContinue | `
             Get-NetIPAddress -ErrorAction SilentlyContinue | `
             Where-Object AddressFamily -eq "IPv4"
     }
@@ -302,7 +287,7 @@ function Restart-Testbed {
 
     $IP = $IPInfo.IPAddress
     $Pref = $IPInfo.PrefixLength
-    $AdapterName = $SystemConfig.AdapterName
+    $AdapterName = $Testbed.DataAdapterName
 
     . $AfterRestart
 
@@ -318,14 +303,14 @@ function Assert-VmSwitchDeleted {
         [Parameter(Mandatory = $true)] [Testbed] $Testbed,
         [Parameter(Mandatory = $true)] [SystemConfig] $SystemConfig
     )
-    if(Test-IfVmSwitchExist -Session $Testbed.GetSession() -VmSwitchName $SystemConfig.VMSwitchName()) {
-        throw "VmSwitch is not going to be deleted. No need to wait for IP on $($SystemConfig.AdapterName)."
+    if(Test-IfVmSwitchExist -Testbed $Testbed) {
+        throw "VmSwitch is not going to be deleted. No need to wait for IP on $($Testbed.DataAdapterName)."
     }
 
-    Write-IPAddresses -Session $Testbed.GetSession() -SystemConfig $SystemConfig
+    Write-IPAddresses -Testbed $Testbed
 
     try {
-        Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $SystemConfig.AdapterName
+        Wait-RemoteInterfaceIP -Session $Testbed.GetSession() -AdapterName $Testbed.DataAdapterName
     }
     catch {
         throw [RestartNeededException]::new("Restart needed.")
@@ -358,7 +343,7 @@ function Initialize-CnmPluginAndExtension {
                 Assert-CnmPluginEnabled -Session $Sess
             }
 
-            Assert-VmSwitchInitialized -Testbed $Testbed -SystemConfig $SystemConfig
+            Assert-VmSwitchInitialized -Testbed $Testbed
 
             break
         }
@@ -386,7 +371,7 @@ function Remove-CnmPluginAndExtension {
     Write-Log "Stopping CNMPlugin and disabling Extension"
 
     Stop-CNMPluginService -Session $Testbed.GetSession()
-    Disable-VRouterExtension -Session $Testbed.GetSession() -SystemConfig $SystemConfig
+    Disable-VRouterExtension -Testbed $Testbed -SystemConfig $SystemConfig
 
     try {
         Assert-VmSwitchDeleted -Testbed $Testbed -SystemConfig $SystemConfig
@@ -394,7 +379,7 @@ function Remove-CnmPluginAndExtension {
     catch [RestartNeededException] {
         Write-Log "Error while removing vSwitch."
 
-        Restart-Testbed -Testbed $Testbed -SystemConfig $SystemConfig -AfterRestart {
+        Restart-Testbed -Testbed $Testbed -AfterRestart {
             Stop-CNMPluginService -Session $Testbed.GetSession()
         }
     }
@@ -414,7 +399,7 @@ function Clear-TestConfiguration {
     Stop-NodeMgrService -Session $Testbed.GetSession()
     Stop-CNMPluginService -Session $Testbed.GetSession()
     Stop-AgentService -Session $Testbed.GetSession()
-    Disable-VRouterExtension -Session $Testbed.GetSession() -SystemConfig $SystemConfig
+    Disable-VRouterExtension -Testbed $Testbed -SystemConfig $SystemConfig
 
     try {
         Assert-VmSwitchDeleted -Testbed $Testbed -SystemConfig $SystemConfig
@@ -422,7 +407,7 @@ function Clear-TestConfiguration {
     catch [RestartNeededException] {
         Write-Log "Error while removing vSwitch."
 
-        Restart-Testbed -Testbed $Testbed -SystemConfig $SystemConfig -AfterRestart {
+        Restart-Testbed -Testbed $Testbed -AfterRestart {
             Stop-NodeMgrService -Session $Testbed.GetSession()
             Stop-CNMPluginService -Session $Testbed.GetSession()
             Stop-AgentService -Session $Testbed.GetSession()

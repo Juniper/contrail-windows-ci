@@ -13,11 +13,10 @@ Param (
 
 Describe 'vTest scenarios' -Tag Smoke {
     It 'passes all vtest scenarios' {
-        $VMSwitchName = $SystemConfig.VMSwitchName()
         {
             Invoke-Command -Session $Session -ScriptBlock {
                 Push-Location C:\Artifacts\
-                .\vtest\all_tests_run.ps1 -VMSwitchName $Using:VMSwitchName `
+                .\vtest\all_tests_run.ps1 -VMSwitchName $Using:Testbeds[0].VmSwitchName `
                     -TestsFolder vtest\tests
                 Pop-Location
             }
@@ -33,7 +32,7 @@ Describe 'vTest scenarios' -Tag Smoke {
 
         Install-Extension -Session $Session
         Install-Utils -Session $Session
-        Enable-VRouterExtension -Session $Session -SystemConfig $SystemConfig
+        Enable-VRouterExtension -Testbed $Testbeds[0] -SystemConfig $SystemConfig
     }
 
     AfterAll {

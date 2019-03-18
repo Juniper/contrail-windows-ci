@@ -17,7 +17,6 @@ class Testenv {
         $this.OpenStack = [OpenStackConfig]::LoadFromFile($TestenvConfFile)
         $this.Controller = [ControllerConfig]::LoadFromFile($TestenvConfFile)
         $this.Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
-
         $CleanupStack = $this.NewCleanupStack()
 
         Write-Log 'Creating sessions'
@@ -25,7 +24,12 @@ class Testenv {
 
         Write-Log 'Preparing testbeds'
         Set-ConfAndLogDir -Testbeds $this.Testbeds
-        Sync-MicrosoftDockerImagesOnTestbeds -Testbeds $this.Testbeds
+        try {
+            Sync-MicrosoftDockerImagesOnTestbeds -Testbeds $this.Testbeds
+        }
+        catch {
+            Write-Host 'Unable to update Microsoft docker images'
+        }
 
         Write-Log 'Setting up Contrail'
         $this.MultiNode = New-MultiNodeSetup `

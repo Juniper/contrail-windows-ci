@@ -22,10 +22,9 @@ testbeds:
     address: {{ testbed.ansible_host }}
     username: Administrator
     password: 'Contrail123!'
+    mgmtAdapterName: Ethernet0
+    dataAdapterName: Ethernet1
 {% endfor %}
 
 system:
-  adapterName: Ethernet1
-  vHostName: vEthernet (HNSTransparent)
-  mgmtAdapterName: Ethernet0
   forwardingExtensionName: vRouter forwarding extension
