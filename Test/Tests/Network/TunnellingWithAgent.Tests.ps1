@@ -26,7 +26,7 @@ Param (
 
 $ContrailProject = 'ci_tests_tunneling'
 
-$DockerImages = @('python-http', 'microsoft/windowsservercore')
+$DockerImages = @('python-http', $null)
 
 $ContainersIDs = @('jolly-lumberjack', 'juniper-tree')
 $ContainerNetInfos = @($null, $null)
@@ -59,7 +59,7 @@ function Get-MaxUDPDataSizeForMTU {
 }
 
 function Get-VrfStats {
-    Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
+    Param ([Parameter(Mandatory = $true)] [Testbed] $Testbed)
 
     # NOTE: we are assuming that there will be only one vif with index == 2.
     #       Indices 0 and 1 are reserved, so the first available is index 2.
@@ -68,7 +68,7 @@ function Get-VrfStats {
     #       We could get this index by using other utils and doing a bunch of filtering, but
     #       let's do it when the time comes.
     $VifIdx = 2
-    $Stats = Invoke-Command -Session $Session -ScriptBlock {
+    $Stats = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         $Out = $(vrfstats --get $Using:VifIdx)
         $PktCountMPLSoUDP = [regex]::new('Udp Mpls Tunnels ([0-9]+)').Match($Out[3]).Groups[1].Value
         $PktCountMPLSoGRE = [regex]::new('Gre Mpls Tunnels ([0-9]+)').Match($Out[3]).Groups[1].Value
@@ -112,27 +112,27 @@ Test-WithRetries 3 {
 
                 It 'Uses specified tunneling method' {
 
-                    $StatsBefore = Get-VrfStats -Session $Testenv.Sessions[0]
+                    $StatsBefore = Get-VrfStats -Testbed $Testenv.Testbeds[0]
 
                     Test-Ping `
-                        -Session $Testenv.Sessions[0] `
+                        -Session $Testenv.Testbeds[0].GetSession() `
                         -SrcContainerName $ContainersIDs[0] `
                         -DstContainerName $ContainersIDs[1] `
                         -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
-                    $StatsAfter = Get-VrfStats -Session $Testenv.Sessions[0]
+                    $StatsAfter = Get-VrfStats -Testbed $Testenv.Testbeds[0]
                     $StatsAfter[$TunnelingMethod] | Should BeGreaterThan $StatsBefore[$TunnelingMethod]
                 }
 
                 It 'ICMP - Ping between containers on separate compute nodes succeeds' {
                     Test-Ping `
-                        -Session $Testenv.Sessions[0] `
+                        -Session $Testenv.Testbeds[0].GetSession() `
                         -SrcContainerName $ContainersIDs[0] `
                         -DstContainerName $ContainersIDs[1] `
                         -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
                     Test-Ping `
-                        -Session $Testenv.Sessions[1] `
+                        -Session $Testenv.Testbeds[1].GetSession() `
                         -SrcContainerName $ContainersIDs[1] `
                         -DstContainerName $ContainersIDs[0] `
                         -DstIP $ContainerNetInfos[0].IPAddress | Should Be 0
@@ -140,7 +140,7 @@ Test-WithRetries 3 {
 
                 It 'TCP - HTTP connection between containers on separate compute nodes succeeds' {
                     Test-TCP `
-                        -Session $Testenv.Sessions[1] `
+                        -Session $Testenv.Testbeds[1].GetSession() `
                         -SrcContainerName $ContainersIDs[1] `
                         -DstContainerName $ContainersIDs[0] `
                         -DstIP $ContainerNetInfos[0].IPAddress | Should Be 0
@@ -150,10 +150,10 @@ Test-WithRetries 3 {
                     $MyMessage = 'We are Tungsten Fabric. We come in peace.'
 
                     Test-UDP `
-                        -ListenerContainerSession $Testenv.Sessions[0] `
+                        -ListenerContainerSession $Testenv.Testbeds[0].GetSession() `
                         -ListenerContainerName $ContainersIDs[0] `
                         -ListenerContainerIP $ContainerNetInfos[0].IPAddress `
-                        -ClientContainerSession $Testenv.Sessions[1] `
+                        -ClientContainerSession $Testenv.Testbeds[1].GetSession() `
                         -ClientContainerName $ContainersIDs[1] `
                         -Message $MyMessage | Should Be $true
                 }
@@ -172,7 +172,7 @@ Test-WithRetries 3 {
                         $BufferSizeLargerAfterTunneling = $BufferSizes[$ContainerIdx] - 1
                         foreach ($BufferSize in @($BufferSizeLargerBeforeTunneling, $BufferSizeLargerAfterTunneling)) {
                             Test-Ping `
-                                -Session $Testenv.Sessions[$ContainerIdx] `
+                                -Session $Testenv.Testbeds[$ContainerIdx].GetSession() `
                                 -SrcContainerName $SrcContainers[$ContainerIdx] `
                                 -DstContainerName $DstContainers[$ContainerIdx] `
                                 -DstIP $DstIPs[$ContainerIdx] `
@@ -188,10 +188,10 @@ Test-WithRetries 3 {
                     $MessageLargerAfterTunneling = 'a' * $($MsgFragmentationThreshold - 1)
                     foreach ($Message in @($MessageLargerBeforeTunneling, $MessageLargerAfterTunneling)) {
                         Test-UDP `
-                            -ListenerContainerSession $Testenv.Sessions[0] `
+                            -ListenerContainerSession $Testenv.Testbeds[0].GetSession() `
                             -ListenerContainerName $ContainersIDs[0] `
                             -ListenerContainerIP $ContainerNetInfos[0].IPAddress `
-                            -ClientContainerSession $Testenv.Sessions[1] `
+                            -ClientContainerSession $Testenv.Testbeds[1].GetSession() `
                             -ClientContainerName $ContainersIDs[1] `
                             -Message $Message | Should Be $true
                     }
@@ -213,12 +213,12 @@ Test-WithRetries 3 {
             $BeforeAllStack.Push($VirtualNetwork)
 
             Write-Log 'Creating docker networks'
-            foreach ($Session in $Testenv.Sessions) {
+            foreach ($Testbed in $Testenv.Testbeds) {
                 Initialize-DockerNetworks `
-                    -Session $Session `
+                    -Session $Testbed.GetSession() `
                     -Networks @($VirtualNetwork) `
                     -TenantName $ContrailProject
-                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $VirtualNetwork.Name))
+                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Testbed, $VirtualNetwork.Name))
             }
         }
 
@@ -229,18 +229,18 @@ Test-WithRetries 3 {
         BeforeEach {
             $BeforeEachStack = $Testenv.NewCleanupStack()
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
-            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Testbeds))
             Write-Log 'Creating containers'
             foreach ($i in 0..1) {
                 Write-Log "Creating container: $($ContainersIDs[$i])"
                 New-Container `
-                    -Testbed $Testenv.Sessions[$i] `
+                    -Testbed $Testenv.Testbeds[$i] `
                     -NetworkName $VirtualNetwork.Name `
                     -Name $ContainersIDs[$i] `
                     -Image $DockerImages[$i]
 
                 $ContainerNetInfos[$i] = Get-RemoteContainerNetAdapterInformation `
-                    -Session $Testenv.Sessions[$i] -ContainerID $ContainersIDs[$i]
+                    -Session $Testenv.Testbeds[$i].GetSession() -ContainerID $ContainersIDs[$i]
                 Write-Log "IP of $($ContainersIDs[$i]): $($ContainerNetInfos[$i].IPAddress)"
             }
             $ContainersLogs = @((New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainersIDs[0]),
