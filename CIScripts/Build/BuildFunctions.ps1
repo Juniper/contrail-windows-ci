@@ -284,67 +284,39 @@ function Copy-DebugDlls {
     })
 }
 
-function Get-FailedUnitTests {
-    Param ([Parameter(Mandatory = $true)] [Object[]] $TestOutput)
-    $FailedTests = @()
-    Foreach ($Line in $TestOutput) {
-        if ($Line -match "\[  FAILED  \] (?<FailedTest>\D\S*)\s\(\d*\sms\)$") {
-            $FailedTests += $matches.FailedTest
-        }
-    }
-    return ,$FailedTests
-}
-
-function Invoke-AgentUnitTestRunner {
+function Invoke-ProductUnitTestRunner {
     Param (
         [Parameter(Mandatory = $true)] [String] $TestExecutable
     )
 
     Write-Host "===> Agent tests: running $TestExecutable..."
-    $Res = Invoke-Command -ScriptBlock {
-        $Command = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
-            # TODO: Delete the tee-object part when using aliases instead of raw filepaths
-            Invoke-Expression $TestExecutable | Tee-Object -FilePath "$TestExecutable.log"
-        }
 
-        $Result = @{}
-        # This is a workaround for the following bug:
-        # https://bugs.launchpad.net/opencontrail/+bug/1714205
-        # Even if all tests actually pass, test executables can sometimes
-        # return non-zero exit code.
-        # TODO: It should be removed once the bug is fixed (JW-1110).
-        $Result.FailedTests = Get-FailedUnitTests -TestOutput $Command.Output
-        $Result.ExitCode = $Command.ExitCode
-        if (-not $Result.FailedTests.Count) {
-            $Result.ExitCode = 0
-        }
-
-        return $Result
+    $Res = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
+        # TODO: Delete the tee-object part when using aliases instead of raw filepaths
+        Invoke-Expression $TestExecutable | Tee-Object -FilePath "$TestExecutable.log"
     }
 
     if (-not $Res.ExitCode) {
         Write-Host "   Succeeded."
     } else {
-        $FailedTests = $Res.FailedTests -join [Environment]::NewLine
-        Write-Host "   Failed:`r`n exit code: $($Res.ExitCode) `r`n failed tests: `r`n $FailedTests "
+        Write-Host "   Failed:`r`n exit code: $($Res.ExitCode)"
     }
 
     return $Res.ExitCode
 }
 
-function Invoke-AgentTestsBuild {
+function Invoke-ProductUnitTests {
     Param ([Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
-    $Job.PushStep("Agent Tests build")
-
-    $BuildModeOption = "--optimization=" + $BuildMode
+    $Job.PushStep("Product Unit Tests")
 
     $TestPathPrefix = "build/$BuildMode"
-    $BaseTestPrefix = "$TestPathPrefix/base/test"
-    # $AgentPathPrefix = "$TestPathPrefix/vnsw/agent"
 
-    $Job.Step("Building agent tests", {
+    $Job.Step("Building tests", {
+        $BaseTestPrefix = "$TestPathPrefix/base/test"
+        # $AgentPathPrefix = "$TestPathPrefix/vnsw/agent"
+
         $Tests = @(
             "$BaseTestPrefix/trace_test.exe"
             "$BaseTestPrefix/test_task_monitor.exe"
@@ -363,23 +335,18 @@ function Invoke-AgentTestsBuild {
             # "vrouter:test"
         )
 
-        $TestsString = $Tests -join " "
-        $TestsBuildCommand = "scons -k --debug=explain -j 4 {0} {1}" -f "$BuildModeOption", "$TestsString"
-
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="Env variable is used by another executable")]
+            "", Justification="Env variable is used by SConscripts to build tests without running them")]
         $Env:BUILD_ONLY = "1"
 
         Invoke-NativeCommand -ScriptBlock {
-            Invoke-Expression $TestsBuildCommand | Tee-Object -FilePath $LogsPath/build_agent_tests.log
+            scons -j 4 --opt=$BuildMode @Tests | Tee-Object -FilePath $LogsPath/build_agent_tests.log
         } | Out-Null
 
         Remove-Item Env:\BUILD_ONLY
     })
 
-    $rootBuildDir = "build\$BuildMode"
-
-    $Job.Step("Running agent tests", {
+    $Job.Step("Running tests", {
         $backupPath = $Env:Path
         $Env:Path += ";" + $(Get-Location).Path + "\build\bin"
 
@@ -393,27 +360,17 @@ function Invoke-AgentTestsBuild {
             "timeout's threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_RETRY_COUNT = 6000
 
-        $TestsFolders = @(
-            "base\test",
-            "dns\test",
-            "ksync\test",
-            "schema\test",
-            "vnsw\agent\cmn\test",
-            "vnsw\agent\oper\test",
-            "vnsw\agent\test",
-            "xml\test",
-            "xmpp\test"
-        ) | ForEach-Object { Join-Path $rootBuildDir $_ }
-
-        $AgentExecutables = Get-ChildItem -Recurse $TestsFolders | Where-Object {$_.Name -match '.*?\.exe$'}
+        $AgentExecutables = Get-ChildItem -Recurse $TestPathPrefix | Where-Object {
+            ($_.Name -match '.*?\.exe$') -and ($_.Directory -match '.*\\test')
+        }
 
         $TestRes = $AgentExecutables | ForEach-Object {
-            Invoke-AgentUnitTestRunner -TestExecutable $( $_.FullName )
+            Invoke-ProductUnitTestRunner -TestExecutable $( $_.FullName )
         }
 
         $TestRes | ForEach-Object {
             if (0 -ne $_) {
-                throw "Running agent tests failed"
+                throw "Running tests failed"
             }
         }
 
