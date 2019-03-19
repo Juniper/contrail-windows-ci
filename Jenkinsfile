@@ -44,7 +44,7 @@ pipeline {
         }
 
         stage('Checkout projects') {
-            agent { label 'builder' }
+            agent { label 'builder2019' }
             environment {
                 CNM_PLUGIN_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
             }
@@ -103,7 +103,7 @@ pipeline {
                 }
 
                 stage('Static analysis - Windows') {
-                    agent { label 'builder' }
+                    agent { label 'builder2019' }
                     steps {
                         deleteDir()
                         unstash "StaticAnalysis"
@@ -131,7 +131,7 @@ pipeline {
                 }
 
                 stage('Build') {
-                    agent { label 'builder' }
+                    agent { label 'builder2019' }
                     environment {
                         THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
                         CNM_PLUGIN_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
@@ -167,7 +167,7 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201903181426"
+                        TESTBED_TEMPLATE = "Template-testbed2019-201903181426"
                         CONTROLLER_TEMPLATE = "Template-CentOS-7.5"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"
