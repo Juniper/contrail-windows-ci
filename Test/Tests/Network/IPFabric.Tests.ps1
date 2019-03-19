@@ -30,11 +30,11 @@ $ContainerID = 'jolly-lumberjack'
 $ContainerNetInfo = $null
 
 $Subnet = [Subnet]::new(
-    '172.16.0.128',
+    '192.168.1.128',
     28,
-    '172.16.0.129',
-    '172.16.0.130',
-    '172.16.0.140'
+    '192.168.1.129',
+    '192.168.1.130',
+    '192.168.1.140'
 )
 
 $NetworkPolicy = [NetworkPolicy]::new_PassAll('passallpolicy', $ContrailProject)
