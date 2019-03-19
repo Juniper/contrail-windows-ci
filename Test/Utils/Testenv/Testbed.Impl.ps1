@@ -13,6 +13,8 @@ class Testbed {
     [String] $VHostName
     [PSSessionT] $Session = $null
 
+    [System.Collections.Hashtable] $DataIpInfo = $null
+
     [PSSessionT] NewSession() {
         return $this.NewSession(10, 300000)
     }
@@ -34,6 +36,7 @@ class Testbed {
         $this.SetDefaultDockerImage()
         $this.SetVmSwitchName()
         $this.SetVHostName()
+        $this.SetDataIpInfo()
     }
 
     [PSSessionT] NewSession([Int] $RetryCount, [Int] $Timeout) {
@@ -146,6 +149,29 @@ class Testbed {
             'v2019' {
                 $this.VHostName = "vEthernet ($($this.DataAdapterName))"
             }
+        }
+    }
+
+    [Void] SetDataIpInfo() {
+        function Get-IpInfo {
+            Param(
+                [Parameter(Mandatory=$true)] [string] $adapter
+            )
+            Invoke-Command -Session $this.GetSession() -ScriptBlock {
+                $Res = Get-NetIPAddress -ErrorAction SilentlyContinue -AddressFamily "IPv4" -InterfaceAlias $Using:adapter
+                if ($null -eq $Res) {
+                    return $Res
+                }
+                return @{
+                    IPAddress = $Res.IPAddress;
+                    PrefixLength = $Res.PrefixLength;
+                }
+            }
+        }
+
+        $this.DataIpInfo = Get-IpInfo -Adapter $this.DataAdapterName
+        if ($null -eq $this.DataIpInfo) {
+            $this.DataIpInfo = Get-IpInfo -Adapter $this.VHostName
         }
     }
 }

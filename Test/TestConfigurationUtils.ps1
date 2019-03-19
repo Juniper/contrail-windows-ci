@@ -266,12 +266,6 @@ function Restart-Testbed {
 
     Write-Log "Restarting testbed $($Testbed.GetSession().ComputerName)"
 
-    $IPInfo = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
-        Get-NetAdapter -Name $Using:Testbed.VHostName -ErrorAction SilentlyContinue | `
-            Get-NetIPAddress -ErrorAction SilentlyContinue | `
-            Where-Object AddressFamily -eq "IPv4"
-    }
-
     Invoke-Command -Session $Testbed.GetSession() {
         netcfg -D
         Restart-Computer -Force
@@ -285,8 +279,8 @@ function Restart-Testbed {
             Test-Connection -Quiet -ComputerName $Testbed.Address
         }
 
-    $IP = $IPInfo.IPAddress
-    $Pref = $IPInfo.PrefixLength
+    $IP = $Testbed.DataIpInfo.IPAddress
+    $Pref = $Testbed.DataIpInfo.PrefixLength
     $AdapterName = $Testbed.DataAdapterName
 
     . $AfterRestart
