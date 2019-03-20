@@ -225,10 +225,10 @@ Describe "RemoteLogCollector" -Tags CISelfcheck, Unit {
 
     BeforeAll {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Sess1", Justification = "Pester blocks are handled incorrectly by analyzer.")]
+            "Testbed1", Justification = "Pester blocks are handled incorrectly by analyzer.")]
         $Testbed1 = $null
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Sess2", Justification = "Pester blocks are handled incorrectly by analyzer.")]
+            "Testbed2", Justification = "Pester blocks are handled incorrectly by analyzer.")]
         $Testbed2 = $null
     }
 }
@@ -238,10 +238,10 @@ Describe "RemoteLogCollector - with actual Testbeds" -Tags CISelfcheck, Systest 
     BeforeAll {
         $Testbeds = [Testbed]::LoadFromFile($TestenvConfFile)
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Sess1", Justification = "Pester blocks are handled incorrectly by analyzer.")]
+            "Testbed1", Justification = "Pester blocks are handled incorrectly by analyzer.")]
         $Testbed1 = $Testbeds[0]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "Sess2", Justification = "Pester blocks are handled incorrectly by analyzer.")]
+            "Testbed2", Justification = "Pester blocks are handled incorrectly by analyzer.")]
         $Testbed2 = $Testbeds[1]
     }
 
