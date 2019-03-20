@@ -5,8 +5,8 @@ class Testenv {
     [Testbed[]] $Testbeds
 
     [System.Collections.Stack] $CleanupStacks = [System.Collections.Stack]::new()
-    [MultiNode] $Multinode = $null
     [LogSource[]] $LogSources = $null
+    [ContrailRestApi] $ContrailRestApi = $null
     [ContrailRepo] $ContrailRepo = $null
 
     Initialize([String] $TestenvConfFile, [String] $LogDir, [String] $ContrailProject, [Bool] $InstallComponents) {
@@ -32,13 +32,13 @@ class Testenv {
         }
 
         Write-Log 'Setting up Contrail'
-        $this.MultiNode = New-MultiNodeSetup `
+        $this.ContrailRestApi = Set-Contrail `
             -Testbeds $this.Testbeds `
             -ControllerConfig $this.Controller `
             -AuthConfig $this.OpenStack `
             -ContrailProject $ContrailProject `
             -CleanupStack $CleanupStack
-        $this.ContrailRepo = [ContrailRepo]::new($this.MultiNode.ContrailRestApi)
+        $this.ContrailRepo = [ContrailRepo]::new($this.ContrailRestApi)
 
         Write-Log 'Creating log sources'
         [LogSource[]] $this.LogSources = New-ComputeNodeLogSources -Testbeds $this.Testbeds
@@ -76,3 +76,40 @@ class Testenv {
 
 # This is legacy alias for $Testbeds field
 Update-TypeData -TypeName 'Testenv' -MemberType 'AliasProperty' -MemberName 'Sessions' -Value 'Testbeds' -ErrorAction 'SilentlyContinue'
+
+function Set-Contrail {
+    Param (
+        [Parameter(Mandatory = $true)] [Testbed[]] $Testbeds,
+        [Parameter(Mandatory = $true)] [ControllerConfig] $ControllerConfig,
+        [Parameter(Mandatory = $false)] [PSobject] $AuthConfig,
+        [Parameter(Mandatory = $true)] [String] $ContrailProject,
+        [Parameter(Mandatory = $true)] [CleanupStack] $CleanupStack
+    )
+
+    $Authenticator = [AuthenticatorFactory]::GetAuthenticator($ControllerConfig.AuthMethod, $AuthConfig)
+    $ContrailRestApi = [ContrailRestApi]::new($ControllerConfig.RestApiUrl(), $Authenticator)
+    $ContrailRepo = [ContrailRepo]::new($ContrailRestApi)
+    $CleanupStack.ContrailRepo = $ContrailRepo
+
+    Write-Log "Adding project '$ContrailProject' to Contrail"
+    $Project = [Project]::new($ContrailProject)
+    $ContrailRepo.AddOrReplace($Project) | Out-Null
+    $CleanupStack.Push($Project)
+
+    Write-Log 'Adding SecurityGroup to Contrail project'
+    $SecurityGroup = [SecurityGroup]::new_Default($ContrailProject)
+    $ContrailRepo.AddOrReplace($SecurityGroup) | Out-Null
+    $CleanupStack.Push($SecurityGroup)
+
+    $VRouters = @()
+    foreach ($Testbed in $Testbeds) {
+        Write-Log "Creating virtual router. Name: $($Testbed.Name); Address: $($Testbed.Address)"
+        $VirtualRouter = [VirtualRouter]::new($Testbed.Name, $Testbed.Address)
+        $Response = $ContrailRepo.AddOrReplace($VirtualRouter)
+        Write-Log "Reported UUID of new virtual router: $($Response.'virtual-router'.'uuid')"
+        $VRouters += $VirtualRouter
+        $CleanupStack.Push($VirtualRouter)
+    }
+
+    return $ContrailRestApi
+}

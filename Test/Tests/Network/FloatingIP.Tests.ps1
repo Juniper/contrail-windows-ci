@@ -19,7 +19,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
-. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 . $PSScriptRoot\..\..\Utils\TestCleanup\TestCleanup.ps1
 
@@ -121,7 +120,7 @@ Describe 'Floating IP' -Tags Smoke, EnvSafe {
                     (New-ContainerLogSource -Testbeds $Testenv.Testbeds[1] -ContainerNames $ContainerServerID))
                 $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
 
-                $VirtualNetworkRepo = [VirtualNetworkRepo]::new($Testenv.MultiNode.ContrailRestApi)
+                $VirtualNetworkRepo = [VirtualNetworkRepo]::new($Testenv.ContrailRestApi)
                 $ServerFloatingIp.PortFqNames = $VirtualNetworkRepo.GetPorts($ServerNetwork)
 
                 Write-Log "Creating floating IP: $($ServerFloatingIp.Name)"
