@@ -15,5 +15,9 @@ def call(vmRole = null) {
     baseVMParams.vm_role = vmRole
   }
 
+  if (env.VM_ROLE_SUFFIX) {
+    baseVMParams.vm_role_suffix = env.VM_ROLE_SUFFIX
+  }
+
   return baseVMParams
 }
