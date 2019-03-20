@@ -71,13 +71,11 @@ class Testenv {
         $CleanupStack.Push($SecurityGroup)
 
         if ($InstallComponents) {
-            $VRouters = @()
             foreach ($Testbed in $this.Testbeds) {
                 Write-Log "Creating virtual router. Name: $($Testbed.Name); Address: $($Testbed.Address)"
                 $VirtualRouter = [VirtualRouter]::new($Testbed.Name, $Testbed.Address)
                 $Response = $this.ContrailRepo.AddOrReplace($VirtualRouter)
                 Write-Log "Reported UUID of new virtual router: $($Response.'virtual-router'.'uuid')"
-                $VRouters += $VirtualRouter
                 $CleanupStack.Push($VirtualRouter)
             }
         }
