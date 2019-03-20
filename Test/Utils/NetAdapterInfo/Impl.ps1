@@ -10,14 +10,16 @@ function Read-RawRemoteContainerNetAdapterInformation {
     $JsonAdapterInfo = Invoke-Command -Session $Session -ScriptBlock {
 
         $RemoteCommand = {
-            $GetIPAddress = { ($_ | Get-NetIPAddress -AddressFamily IPv4).IPAddress }
-            $Fields = 'ifIndex', 'Name', 'MacAddress', 'MtuSize', @{L='IPAddress'; E=$GetIPAddress}, @{L='ifName'; E='filledlater'}
             $Adapter = (Get-NetAdapter -Name 'vEthernet (*)')[0]
-            return $Adapter | Select-Object $Fields | ConvertTo-Json -Depth 5
+            $Info = $Adapter | Select-Object 'ifIndex', 'Name', 'MacAddress', 'MtuSize'
+            Add-Member -InputObject $Info -MemberType NoteProperty `
+                -Name 'IPAddress' -Value ($Adapter | Get-NetIPAddress -AddressFamily IPv4).IPAddress
+            return $Info | ConvertTo-Json -Depth 5
         }.ToString()
 
         $Info = (docker exec $Using:ContainerID powershell $RemoteCommand) | ConvertFrom-Json
-        $Info.'ifName' = (Get-NetAdapter -IncludeHidden -Name $Info.Name | Select-Object -ExpandProperty 'ifName')
+        Add-Member -InputObject $Info -MemberType NoteProperty `
+            -Name 'ifName' -Value (Get-NetAdapter -IncludeHidden -Name $Info.Name).ifName
         return $Info
     }
 

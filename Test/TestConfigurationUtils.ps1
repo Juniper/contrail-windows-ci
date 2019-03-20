@@ -58,7 +58,7 @@ function New-HnsTransparentNetwork
 public static extern void HNSCall([MarshalAs(UnmanagedType.LPWStr)] string method, [MarshalAs(UnmanagedType.LPWStr)] string path, [MarshalAs(UnmanagedType.LPWStr)] string request, [MarshalAs(UnmanagedType.LPWStr)] out string response);
 '@
     $HnsApi = Add-Type -MemberDefinition $Signature -Namespace WindowsCI.VmCompute -Name NativeMethods -PassThru
-    $HnsApi::HNSCall('POST', '/networks', "$Request", [ref] $Response)
+    $HnsApi::HNSCall('POST', '/networks', $Request, [ref] $Response)
     if ($Response)
     {
         $Output = ($Response | ConvertFrom-Json)
