@@ -167,7 +167,7 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201903181426"
+                        TESTBED_TEMPLATE = "Template-testbed-201903190303"
                         CONTROLLER_TEMPLATE = "Template-CentOS-7.5"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"

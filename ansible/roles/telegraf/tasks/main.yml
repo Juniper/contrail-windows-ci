@@ -1,17 +1,5 @@
 ---
 
-# Need to install first, to set feature before downloading any package
-- name: ensure Chocolatey itself is installed
-  win_chocolatey:
-    name: chocolatey
-    state: present
-
-# Fix for incompability of Ansible and choco
-# https://github.com/chocolatey/choco/wiki/ReleaseNotes#01012---march-14-2019
-- name: disable choco enhanced exit codes
-  win_shell: |
-    choco feature disable --name="'useEnhancedExitCodes'"
-
 - name: Install Telegraf
   win_chocolatey:
     name: telegraf
