@@ -138,14 +138,8 @@ function Invoke-AgentBuild {
     })
 
     $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
-        if(Test-Path Env:AGENT_BUILD_THREADS) {
-            $Threads = $Env:AGENT_BUILD_THREADS
-        } else {
-            $Threads = 1
-        }
-        $AgentBuildCommand = "scons -j {0} --opt={1} contrail-vrouter-agent.msi" -f $Threads, $BuildMode
         Invoke-NativeCommand -ScriptBlock {
-            Invoke-Expression $AgentBuildCommand | Tee-Object -FilePath $LogsPath/build_agent.log
+            scons -j $Env:BUILD_THREADS --opt=$BuildMode contrail-vrouter-agent.msi
         }
     })
 
@@ -200,7 +194,7 @@ function Invoke-NodemgrBuild {
     $Job.PopStep()
 }
 
-function Remove-PDBfiles {
+function Remove-PdbFiles {
     Param ([Parameter(Mandatory = $true)] [string[]] $OutputPaths)
 
     ForEach ($OutputPath in $OutputPaths) {
@@ -218,97 +212,20 @@ function Copy-DebugDlls {
     })
 }
 
-function Invoke-ProductUnitTestRunner {
-    Param (
-        [Parameter(Mandatory = $true)] [String] $TestExecutable
-    )
-
-    Write-Host "===> Agent tests: running $TestExecutable..."
-
-    $Res = Invoke-NativeCommand -AllowNonZero -CaptureOutput -ScriptBlock {
-        # TODO: Delete the tee-object part when using aliases instead of raw filepaths
-        Invoke-Expression $TestExecutable | Tee-Object -FilePath "$TestExecutable.log"
-    }
-
-    if (-not $Res.ExitCode) {
-        Write-Host "   Succeeded."
-    } else {
-        Write-Host "   Failed:`r`n exit code: $($Res.ExitCode)"
-    }
-
-    return $Res.ExitCode
-}
-
 function Invoke-ProductUnitTests {
-    Param ([Parameter(Mandatory = $true)] [string] $LogsPath,
-           [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
+    Param ([Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
-    $Job.PushStep("Product Unit Tests")
-
-    $TestPathPrefix = "build/$BuildMode"
-
-    $Job.Step("Building tests", {
-        $BaseTestPrefix = "$TestPathPrefix/base/test"
-        # $AgentPathPrefix = "$TestPathPrefix/vnsw/agent"
-
+    $Job.Step("Building and running unit tests", {
         $Tests = @(
-            "$BaseTestPrefix/trace_test.exe"
-            "$BaseTestPrefix/test_task_monitor.exe"
-            "$BaseTestPrefix/subset_test.exe"
-            "$BaseTestPrefix/queue_task_test.exe"
-            "$BaseTestPrefix/patricia_test.exe"
-            "$BaseTestPrefix/label_block_test.exe"
-            "$BaseTestPrefix/factory_test.exe"
-            "$BaseTestPrefix/index_allocator_test.exe"
-            "$BaseTestPrefix/dependency_test.exe"
-            "$BaseTestPrefix/bitset_test.exe"
-
-            #"src/contrail-common/base:test"
+            "src/contrail-common/base:test"
+            "kernel-tests",
+            "vrouter:test"
             # "src/contrail-common/io:test"
             # "controller/src/agent:test"
-            # "vrouter:test"
         )
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="Env variable is used by SConscripts to build tests without running them")]
-        $Env:BUILD_ONLY = "1"
-
         Invoke-NativeCommand -ScriptBlock {
-            scons -j 4 --opt=$BuildMode @Tests | Tee-Object -FilePath $LogsPath/build_agent_tests.log
+            scons -j 4 --opt=$BuildMode @Tests
         } | Out-Null
-
-        Remove-Item Env:\BUILD_ONLY
     })
-
-    $Job.Step("Running tests", {
-        $backupPath = $Env:Path
-        $Env:Path += ";" + $(Get-Location).Path + "\build\bin"
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="TASK_UTIL_WAIT_TIME is used agent tests for determining timeout's " +
-            "threshold. They were copied from Linux unit test job.")]
-        $Env:TASK_UTIL_WAIT_TIME = 10000
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="TASK_UTIL_RETRY_COUNT is used in agent tests for determining " +
-            "timeout's threshold. They were copied from Linux unit test job.")]
-        $Env:TASK_UTIL_RETRY_COUNT = 6000
-
-        $AgentExecutables = Get-ChildItem -Recurse (Join-Path $TestPathPrefix '*.exe') | `
-            Where-Object Directory -match '\\build\\.*\\test'
-
-        $TestRes = $AgentExecutables | ForEach-Object {
-            Invoke-ProductUnitTestRunner -TestExecutable $( $_.FullName )
-        }
-
-        $TestRes | ForEach-Object {
-            if (0 -ne $_) {
-                throw "Running tests failed"
-            }
-        }
-
-        $Env:Path = $backupPath
-    })
-
-    $Job.PopStep()
 }

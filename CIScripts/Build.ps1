@@ -84,7 +84,7 @@ try {
             -Registry $Env:DOCKER_REGISTRY
     }
 
-    Remove-PDBfiles -OutputPaths @($vRouterOutputDir, $AgentOutputDir)
+    Remove-PdbFiles -OutputPaths @($vRouterOutputDir, $AgentOutputDir)
 } finally {
     $testDirs = Get-ChildItem ".\build\$SconsBuildMode" -Directory
     foreach ($d in $testDirs) {
