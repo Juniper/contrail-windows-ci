@@ -23,12 +23,12 @@ Param (
 
 $ContrailProject = 'ci_tests_nodemanager'
 $LogPath = Get-NodeMgrLogPath
-
 function Test-NodeMgrLogs {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session
     )
 
+    $LogPath = Get-NodeMgrLogPath
     $Res = Invoke-Command -Session $Session -ScriptBlock {
         return Test-Path -Path $Using:LogPath
     }
