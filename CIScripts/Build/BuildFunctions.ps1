@@ -215,6 +215,16 @@ function Invoke-ProductUnitTests {
             # "controller/src/agent:test"
         )
 
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="TASK_UTIL_WAIT_TIME is used agent tests for determining timeout's " +
+            "threshold. They were copied from Linux unit test job.")]
+        $Env:TASK_UTIL_WAIT_TIME = 10000
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
+            "", Justification="TASK_UTIL_RETRY_COUNT is used in agent tests for determining " +
+            "timeout's threshold. They were copied from Linux unit test job.")]
+        $Env:TASK_UTIL_RETRY_COUNT = 6000
+
         Invoke-NativeCommand -ScriptBlock {
             scons -j $Env:BUILD_THREADS --opt=$BuildMode @Tests
         } | Out-Null
