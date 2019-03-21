@@ -19,7 +19,6 @@ $AgentOutputDir = "output/agent"
 $NodemgrOutputDir = "output/nodemgr"
 $DllsOutputDir = "output/dlls"
 $ContainersWorkDir = "output/containers"
-$LogsDir = "logs"
 $SconsTestsLogsDir = "unittests-logs"
 
 $Directories = @(
@@ -30,7 +29,6 @@ $Directories = @(
     $NodemgrOutputDir,
     $DllsOutputDir,
     $ContainersWorkDir,
-    $LogsDir,
     $SconsTestsLogsDir
 )
 
@@ -46,22 +44,18 @@ try {
 
     Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
         -BuildMode $SconsBuildMode `
-        -OutputPath $vRouterOutputDir `
-        -LogsPath $LogsDir
+        -OutputPath $vRouterOutputDir
 
     Copy-VtestScenarios -OutputPath $vtestOutputDir
 
     Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
         -BuildMode $SconsBuildMode `
-        -OutputPath $AgentOutputDir `
-        -LogsPath $LogsDir
+        -OutputPath $AgentOutputDir
 
     Invoke-NodemgrBuild -OutputPath $NodemgrOutputDir `
-        -LogsPath $LogsDir `
         -BuildMode $SconsBuildMode
 
-    Invoke-ProductUnitTests -LogsPath $LogsDir `
-        -BuildMode $SconsBuildMode
+    Invoke-ProductUnitTests -BuildMode $SconsBuildMode
 
     if ("debug" -eq $SconsBuildMode) {
         Copy-DebugDlls -OutputPath $DllsOutputDir

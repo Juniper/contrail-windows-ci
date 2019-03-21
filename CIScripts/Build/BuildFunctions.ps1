@@ -73,7 +73,6 @@ function Invoke-CnmPluginBuild {
 function Invoke-ExtensionBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
-           [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Extension build")
@@ -86,13 +85,7 @@ function Invoke-ExtensionBuild {
 
     $Job.Step("Building Extension and Utils", {
         Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsPath/vrouter_build.log
-        }
-    })
-
-    $Job.Step("Running kernel unit tests", {
-        Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption kernel-tests vrouter:test | Tee-Object -FilePath $LogsPath/vrouter_unit_tests.log
+            scons $BuildModeOption vrouter
         }
     })
 
@@ -128,7 +121,6 @@ function Copy-VtestScenarios {
 function Invoke-AgentBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
-           [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Agent build")
@@ -159,7 +151,6 @@ function Invoke-AgentBuild {
 
 function Invoke-NodemgrBuild {
     Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
-           [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Nodemgr build")
@@ -174,7 +165,7 @@ function Invoke-NodemgrBuild {
         )
 
         Invoke-NativeCommand -ScriptBlock {
-            scons --opt=$BuildMode @Components | Tee-Object -FilePath $LogsPath/build_nodemgr.log
+            scons -j $Env:BUILD_THREADS --opt=$BuildMode @Components
         }
     })
 
@@ -225,7 +216,7 @@ function Invoke-ProductUnitTests {
         )
 
         Invoke-NativeCommand -ScriptBlock {
-            scons -j 4 --opt=$BuildMode @Tests
+            scons -j $Env:BUILD_THREADS --opt=$BuildMode @Tests
         } | Out-Null
     })
 }
