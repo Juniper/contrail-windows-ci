@@ -5,4 +5,7 @@
 . $PSScriptRoot\..\TestCleanup\TestCleanup.ps1
 . $PSScriptRoot\..\..\PesterLogger\RemoteLogCollector.ps1
 
+. $PSScriptRoot\..\ContrailAuthentication\Noauth.ps1
+. $PSScriptRoot\..\ContrailAuthentication\Keystone.ps1
+
 . $PSScriptRoot\Testenv.Impl.ps1
