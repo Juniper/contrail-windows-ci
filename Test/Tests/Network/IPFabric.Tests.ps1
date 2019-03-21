@@ -65,6 +65,20 @@ function Get-ContainerSubnet {
     $NetPrefix = $NetIp -band $NetPrefixMask
     $NetBroadcast = $NetPrefix + (-bnot $NetPrefixMask)
 
+    # Code below generates subnet which contains last 8 addresses of dataplane network.
+    # This subnet is used to create contrail network, so we needs at least 5 addresses:
+    # Network address, Default gateway, Service Ip, At least one container IP, broadcast IP.
+    # Network /29 is used, because /30 can have only 4 addresses.
+
+    # Last IP in both networks is Broadcast. Usage of IPs in subnet:
+    # 1  -  Network address (subnet prefix)
+    # 2  -  Default gateway
+    # 3  -  Service IP
+    # 4  -  Not used
+    # 5  -  Not used
+    # 6  -  Not used
+    # 7  -  Container IP (we use only one container in this test)
+    # 8  -  Broadcast (same as broadcast in dataplane network)
     $SubnetPoolEnd = $NetBroadcast - 1
     $SubnetPoolBeg = $NetBroadcast - 1
     $SubnetDefaultGate = $NetBroadcast - 6
@@ -72,7 +86,7 @@ function Get-ContainerSubnet {
 
     return [Subnet]::new(
         (Convert-IpUInt32ToString -Ip $SubnetPrefix),
-        29,
+        29, # Network prefix length, which allows 8 IP addresses
         (Convert-IpUInt32ToString -Ip $SubnetDefaultGate),
         (Convert-IpUInt32ToString -Ip $SubnetPoolBeg),
         (Convert-IpUInt32ToString -Ip $SubnetPoolEnd)
@@ -133,8 +147,7 @@ Test-WithRetries 3 {
             New-Container `
                 -Testbed $Testenv.Testbeds[0] `
                 -NetworkName $VirtualNetwork.Name `
-                -Name $ContainerID `
-                -Image $Testbed.DefaultDockerImage
+                -Name $ContainerID
 
             $ContainerNetInfo = Get-RemoteContainerNetAdapterInformation `
                 -Session $Testenv.Testbeds[0].GetSession() -ContainerID $ContainerID
