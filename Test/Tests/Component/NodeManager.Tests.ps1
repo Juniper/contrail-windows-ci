@@ -22,7 +22,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 
 $ContrailProject = 'ci_tests_nodemanager'
-$LogPath = Get-NodeMgrLogPath
+
 function Test-NodeMgrLogs {
     Param (
         [Parameter(Mandatory = $true)] [PSSessionT] $Session
