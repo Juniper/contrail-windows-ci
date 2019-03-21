@@ -34,7 +34,7 @@ $ContrailProject = 'ci_tests_utils'
 $ContainerIds = @('jolly-lumberjack', 'juniper-tree')
 $ContainerNetInfos = @($null, $null)
 
-$DockerImages = @('python-http', 'microsoft/nanoserver')
+$DockerImages = @('python-http', $null)
 
 $Subnet = [Subnet]::new(
     "10.0.0.0",
@@ -80,13 +80,13 @@ Test-WithRetries 3 {
 
         It 'Ping succeeds' {
             Test-Ping `
-                -Session $Session `
+                -Session $Testbed.GetSession() `
                 -SrcContainerName $ContainerIds[0] `
                 -DstContainerName $ContainerIds[1] `
                 -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
             Test-Ping `
-                -Session $Session `
+                -Session $Testbed.GetSession() `
                 -SrcContainerName $ContainerIds[1] `
                 -DstContainerName $ContainerIds[0] `
                 -DstIP $ContainerNetInfos[0].IPAddress | Should Be 0
@@ -94,14 +94,14 @@ Test-WithRetries 3 {
 
         It 'Ping with big buffer succeeds' {
             Test-Ping `
-                -Session $Session `
+                -Session $Testbed.GetSession() `
                 -SrcContainerName $ContainerIds[0] `
                 -DstContainerName $ContainerIds[1] `
                 -DstIP $ContainerNetInfos[1].IPAddress `
                 -BufferSize 3500 | Should Be 0
 
             Test-Ping `
-                -Session $Session `
+                -Session $Testbed.GetSession() `
                 -SrcContainerName $ContainerIds[1] `
                 -DstContainerName $ContainerIds[0] `
                 -DstIP $ContainerNetInfos[0].IPAddress `
@@ -111,8 +111,8 @@ Test-WithRetries 3 {
         It 'TCP connection works' {
             $ContainerId = $ContainerIds[1]
             $ContainerIp = $ContainerNetInfos[0].IPAddress
-            Invoke-Command -Session $Session -ScriptBlock {
-                docker exec $Using:ContainerId powershell "Invoke-WebRequest -Uri http://${Using:ContainerIP}:8080/ -ErrorAction Continue" | Out-Null
+            Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
+                docker exec $Using:ContainerId powershell "Invoke-WebRequest -UseBasicParsing -Uri http://${Using:ContainerIP}:8080/ -ErrorAction Continue" | Out-Null
                 return $LASTEXITCODE
             } | Should Be 0
 
@@ -126,46 +126,46 @@ Test-WithRetries 3 {
             $Testenv.ContrailRepo.AddOrReplace($VirtualNetwork) | Out-Null
             $BeforeEachStack.Push($VirtualNetwork)
 
-            New-CNMPluginConfigFile -Testbed $Session `
+            New-CNMPluginConfigFile -Testbed $Testbed `
                 -OpenStackConfig $Testenv.OpenStack `
                 -ControllerConfig $Testenv.Controller
 
-            Initialize-CnmPluginAndExtension -Testbed $Testenv.Testbeds[0] `
+            Initialize-CnmPluginAndExtension -Testbed $Testbed `
                 -SystemConfig $Testenv.System `
 
-            $BeforeEachStack.Push(${function:Clear-TestConfiguration}, @($Session, $Testenv.System))
+            $BeforeEachStack.Push(${function:Clear-TestConfiguration}, @($Testbed, $Testenv.System))
 
-            New-DockerNetwork -Session $Session `
+            New-DockerNetwork -Session $Testbed.GetSession() `
                 -TenantName $ContrailProject `
                 -Name $VirtualNetwork.Name `
                 -Subnet "$( $Subnet.IpPrefix )/$( $Subnet.IpPrefixLen )"
 
-            $BeforeEachStack.Push(${function:Remove-AllContainers}, @($Session))
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @($Testbed))
 
             foreach ($i in 0..1) {
                 Write-Log "Creating container: $($ContainerIds[$i])"
                 New-Container `
-                    -Testbed $Session `
+                    -Testbed $Testbed `
                     -NetworkName $VirtualNetwork.Name `
                     -Name $ContainerIds[$i] `
                     -Image $DockerImages[$i]
 
                 $ContainerNetInfos[$i] = Get-RemoteContainerNetAdapterInformation `
-                    -Session $Session -ContainerID $ContainerIds[$i]
+                    -Session $Testbed.GetSession() -ContainerID $ContainerIds[$i]
                 Write-Log "IP of $($ContainerIds[$i]): $($ContainerNetInfos[$i].IPAddress)"
             }
 
             Write-Log 'Getting VM NetAdapter Information'
-            $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Session `
+            $VMNetInfo = Get-RemoteNetAdapterInformation -Session $Testbed.GetSession() `
                 -AdapterName $Testbed.DataAdapterName
 
             Write-Log 'Getting vHost NetAdapter Information'
-            $VHostInfo = Get-RemoteNetAdapterInformation -Session $Session `
+            $VHostInfo = Get-RemoteNetAdapterInformation -Session $Testbed.GetSession() `
                 -AdapterName $Testbed.VHostName
 
             Initialize-ContainersConnection -VMNetInfo $VMNetInfo -VHostInfo $VHostInfo `
                 -Container1NetInfo $ContainerNetInfos[0] -Container2NetInfo $ContainerNetInfos[1] `
-                -Session $Session
+                -Session $Testbed.GetSession()
 
             $ContainersLogs = @(New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainerIds[0], $ContainerIds[1])
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $ContainersLogs))
@@ -181,16 +181,15 @@ Test-WithRetries 3 {
 
             $BeforeAllStack = $Testenv.NewCleanupStack()
 
-            $Session = $Testenv.Sessions[0]
             $Testbed = $Testenv.Testbeds[0]
 
-            Install-Utils -Session $Session
-            $BeforeAllStack.Push(${function:Uninstall-Utils}, @($Session))
-            Test-IfUtilsCanLoadDLLs -Session $Session
+            Install-Utils -Session $Testbed.GetSession()
+            $BeforeAllStack.Push(${function:Uninstall-Utils}, @($Testbed))
+            Test-IfUtilsCanLoadDLLs -Session $Testbed.GetSession()
 
-            Stop-NodeMgrService -Session $Session
-            Stop-CNMPluginService -Session $Session
-            Stop-AgentService -Session $Session
+            Stop-NodeMgrService -Session $Testbed.GetSession()
+            Stop-CNMPluginService -Session $Testbed.GetSession()
+            Stop-AgentService -Session $Testbed.GetSession()
             Disable-VRouterExtension -Testbed $Testbed -SystemConfig $TestEnv.System
         }
 
