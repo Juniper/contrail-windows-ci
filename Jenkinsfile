@@ -136,9 +136,6 @@ pipeline {
                         THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
                         CNM_PLUGIN_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
                         AGENT_BUILD_THREADS = "6"
-                        SIGNTOOL_PATH = "C:/Program Files (x86)/Windows Kits/10/bin/x64/signtool.exe"
-                        CERT_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/codilime.com-selfsigned-cert.pfx"
-                        CERT_PASSWORD_FILE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/common/certs/certp.txt"
 
                         WINCIDEV = credentials('winci-drive')
                     }

@@ -42,16 +42,9 @@ foreach ($Directory in $Directories) {
 
 try {
     Invoke-CnmPluginBuild -PluginSrcPath $Env:CNM_PLUGIN_SRC_PATH `
-        -SigntoolPath $Env:SIGNTOOL_PATH `
-        -CertPath $Env:CERT_PATH `
-        -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
-        -OutputPath $CnmPluginOutputDir `
-        -LogsPath $LogsDir
+        -OutputPath $CnmPluginOutputDir
 
     Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
-        -SigntoolPath $Env:SIGNTOOL_PATH `
-        -CertPath $Env:CERT_PATH `
-        -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
         -BuildMode $SconsBuildMode `
         -OutputPath $vRouterOutputDir `
         -LogsPath $LogsDir
@@ -59,9 +52,6 @@ try {
     Copy-VtestScenarios -OutputPath $vtestOutputDir
 
     Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
-        -SigntoolPath $Env:SIGNTOOL_PATH `
-        -CertPath $Env:CERT_PATH `
-        -CertPasswordFilePath $Env:CERT_PASSWORD_FILE_PATH `
         -BuildMode $SconsBuildMode `
         -OutputPath $AgentOutputDir `
         -LogsPath $LogsDir
