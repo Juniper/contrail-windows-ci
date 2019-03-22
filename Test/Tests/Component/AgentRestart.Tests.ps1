@@ -44,21 +44,21 @@ $VirtualNetwork = [VirtualNetwork]::New('testnet_agentrestart', $ContrailProject
 
 function Restart-Agent {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
 
     $ServiceName = Get-AgentServiceName
-    Invoke-Command -Session $Session -ScriptBlock {
+    Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Restart-Service $Using:ServiceName
     } | Out-Null
 }
 
 function Get-NumberOfStoredPorts {
     Param (
-        [Parameter(Mandatory = $true)] [PSSessionT] $Session
+        [Parameter(Mandatory = $true)] [Testbed] $Testbed
     )
 
-    $NumberOfStoredPorts = Invoke-Command -Session $Session -ScriptBlock {
+    $NumberOfStoredPorts = Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         $PortsDir = 'C:\\ProgramData\\Contrail\\var\\lib\\contrail\\ports'
         if (-not (Test-Path $PortsDir)) {
             return 0
@@ -73,43 +73,52 @@ Test-WithRetries 3 {
         It 'Ports are correctly restored after Agent restart' {
             Write-Log 'Testing ping before Agent restart...'
             Test-Ping `
-                -Session $Testenv.Sessions[0] `
+                -Session $Testenv.Testbeds[0].GetSession() `
                 -SrcContainerName $ContainerIds[0] `
                 -DstContainerName $ContainerIds[1] `
                 -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
 
-            Get-NumberOfStoredPorts -Session $Testenv.Sessions[0] | Should Be 1
-            Restart-Agent -Session $Testenv.Sessions[0]
+            Get-NumberOfStoredPorts -Testbed $Testenv.Testbeds[0] | Should Be 1
+            Restart-Agent -Testbed $Testenv.Testbeds[0]
 
             Write-Log 'Testing ping after Agent restart...'
-            Test-Ping `
-                -Session $Testenv.Sessions[0] `
-                -SrcContainerName $ContainerIds[0] `
-                -DstContainerName $ContainerIds[1] `
-                -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
+            # On Windows Server 2019 it was observed that even though Restart-Service
+            # returned, ports were not yet reloaded in agent, so the ping can fail for
+            # the first time.
+            $Retries = 5
+            while (($Retries--) -gt 0) {
+                $PingRes = Test-Ping `
+                    -Session $Testenv.Testbeds[0].GetSession() `
+                    -SrcContainerName $ContainerIds[0] `
+                    -DstContainerName $ContainerIds[1] `
+                    -DstIP $ContainerNetInfos[1].IPAddress
+                if ($PingRes -eq 0) {
+                    break
+                }
+            }
+            $Retries | Should -Not -Be -1
 
             Write-Log "Creating container: $($ContainerIds[2])"
             New-Container `
-                -Testbed $Testenv.Sessions[1] `
+                -Testbed $Testenv.Testbeds[1] `
                 -NetworkName $VirtualNetwork.Name `
-                -Name $ContainerIds[2] `
-                -Image 'microsoft/windowsservercore'
+                -Name $ContainerIds[2]
 
             $ContainerNetInfos[2] = Get-RemoteContainerNetAdapterInformation `
-                -Session $Testenv.Sessions[1] -ContainerID $ContainerIds[2]
+                -Session $Testenv.Testbeds[1].GetSession() -ContainerID $ContainerIds[2]
             Write-Log "IP of $($ContainerIds[2]): $($ContainerNetInfos[2].IPAddress)"
 
-            Get-NumberOfStoredPorts -Session $Testenv.Sessions[0] | Should Be 1
+            Get-NumberOfStoredPorts -Testbed $Testenv.Testbeds[0] | Should Be 1
 
             Write-Log 'Testing ping after Agent restart with new container...'
             Test-Ping `
-                -Session $Testenv.Sessions[0] `
+                -Session $Testenv.Testbeds[0].GetSession() `
                 -SrcContainerName $ContainerIds[0] `
                 -DstContainerName $ContainerIds[2] `
                 -DstIP $ContainerNetInfos[2].IPAddress | Should Be 0
 
-            Stop-Container -Session $Testenv.Sessions[0] -NameOrId $ContainerIds[0]
-            Get-NumberOfStoredPorts -Session $Testenv.Sessions[0] | Should Be 0
+            Stop-Container -Session $Testenv.Testbeds[0].GetSession() -NameOrId $ContainerIds[0]
+            Get-NumberOfStoredPorts -Testbed $Testenv.Testbeds[0] | Should Be 0
         }
 
         BeforeAll {
@@ -122,12 +131,12 @@ Test-WithRetries 3 {
             $BeforeAllStack.Push($VirtualNetwork)
 
             Write-Log 'Creating docker networks'
-            foreach ($Session in $Testenv.Sessions) {
+            foreach ($Testbed in $Testenv.Testbeds) {
                 Initialize-DockerNetworks `
-                    -Session $Session `
+                    -Session $Testbed.GetSession() `
                     -Networks @($VirtualNetwork) `
                     -TenantName $ContrailProject
-                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Session, $VirtualNetwork.Name))
+                $BeforeAllStack.Push(${function:Remove-DockerNetwork}, @($Testbed, $VirtualNetwork.Name))
             }
         }
 
@@ -138,19 +147,18 @@ Test-WithRetries 3 {
         BeforeEach {
             $BeforeEachStack = $Testenv.NewCleanupStack()
             $BeforeEachStack.Push(${function:Merge-Logs}, @(, $Testenv.LogSources))
-            $BeforeEachStack.Push(${function:Start-AgentService}, @($Testenv.Sessions[0]))
-            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Sessions))
+            $BeforeEachStack.Push(${function:Start-AgentService}, @($Testenv.Testbeds[0]))
+            $BeforeEachStack.Push(${function:Remove-AllContainers}, @(, $Testenv.Testbeds))
             Write-Log 'Creating containers'
             foreach ($i in 0..1) {
                 Write-Log "Creating container: $($ContainerIds[$i])"
                 New-Container `
-                    -Testbed $Testenv.Sessions[$i] `
+                    -Testbed $Testenv.Testbeds[$i] `
                     -NetworkName $VirtualNetwork.Name `
-                    -Name $ContainerIds[$i] `
-                    -Image 'microsoft/windowsservercore'
+                    -Name $ContainerIds[$i]
 
                 $ContainerNetInfos[$i] = Get-RemoteContainerNetAdapterInformation `
-                    -Session $Testenv.Sessions[$i] -ContainerID $ContainerIds[$i]
+                    -Session $Testenv.Testbeds[$i].GetSession() -ContainerID $ContainerIds[$i]
                 Write-Log "IP of $($ContainerIds[$i]): $($ContainerNetInfos[$i].IPAddress)"
             }
             $ContainersLogs = @((New-ContainerLogSource -Testbeds $Testenv.Testbeds[0] -ContainerNames $ContainerIds[0]),
