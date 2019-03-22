@@ -360,9 +360,8 @@ function Invoke-ProductUnitTests {
             "timeout's threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_RETRY_COUNT = 6000
 
-        $AgentExecutables = Get-ChildItem -Recurse $TestPathPrefix | Where-Object {
-            ($_.Name -match '.*?\.exe$') -and ($_.Directory -match '.*\\test')
-        }
+        $AgentExecutables = Get-ChildItem -Recurse (Join-Path $TestPathPrefix '*.exe') | `
+            Where-Object Directory -match '\\build\\.*\\test'
 
         $TestRes = $AgentExecutables | ForEach-Object {
             Invoke-ProductUnitTestRunner -TestExecutable $( $_.FullName )
