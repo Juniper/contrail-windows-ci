@@ -81,12 +81,10 @@ function Invoke-ExtensionBuild {
         Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\
     })
 
-    $BuildModeOption = "--optimization=" + $BuildMode
-
     $Job.Step("Building Extension and Utils", {
         Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption vrouter
-        }
+            scons --opt=$BuildMode vrouter
+        } | Out-Null
     })
 
     $vRouterBuildRoot = "build\{0}\vrouter" -f $BuildMode
@@ -132,7 +130,7 @@ function Invoke-AgentBuild {
     $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
         Invoke-NativeCommand -ScriptBlock {
             scons -j $Env:BUILD_THREADS --opt=$BuildMode contrail-vrouter-agent.msi
-        }
+        } | Out-Null
     })
 
     $agentMSI = "build\$BuildMode\vnsw\agent\contrail\contrail-vrouter-agent.msi"
@@ -166,7 +164,7 @@ function Invoke-NodemgrBuild {
 
         Invoke-NativeCommand -ScriptBlock {
             scons -j $Env:BUILD_THREADS --opt=$BuildMode @Components
-        }
+        } | Out-Null
     })
 
     $Job.Step("Copying artifacts to $OutputPath", {
@@ -208,11 +206,9 @@ function Invoke-ProductUnitTests {
 
     $Job.Step("Building and running unit tests", {
         $Tests = @(
-            "src/contrail-common/base:test"
-            "kernel-tests",
-            "vrouter:test"
-            # "src/contrail-common/io:test"
-            # "controller/src/agent:test"
+            'src/contrail-common/base:test',
+            'kernel-tests',
+            'vrouter:test'
         )
 
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
