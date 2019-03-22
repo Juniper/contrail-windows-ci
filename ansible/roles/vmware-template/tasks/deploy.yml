@@ -1,8 +1,12 @@
 ---
 
+- name: Trim vm_role_suffix
+  set_fact:
+    vm_role_suffix: "{{ vm_role_suffix | default('') | trim }}"
+
 - name: Create template of VM name
   set_fact:
-    vm_name_template: "ci-{{ vm_role }}-"
+    vm_name_template: "ci-{{ vm_role }}{{ vm_role_suffix }}-"
 
 - name: Get highest VM number for {{ vm_name_template }}
   delegate_to: localhost

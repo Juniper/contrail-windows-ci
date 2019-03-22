@@ -14,5 +14,7 @@
         timeout: 900
 
 - hosts: "{{ vm_role }}"
+  vars:
+    jenkins_agent_labels: "windows {{ vm_role }}{{ vm_role_suffix }}"
   roles:
     - wurbanski.jenkins-swarm-agent
