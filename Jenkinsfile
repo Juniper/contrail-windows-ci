@@ -10,6 +10,7 @@ if (isBranchUnsupported()) {
     return
 }
 
+checkSupportedWindowsVersion()
 
 pipeline {
     agent none
@@ -44,7 +45,7 @@ pipeline {
         }
 
         stage('Checkout projects') {
-            agent { label 'builder' }
+            agent { label getBuilderTag() }
             environment {
                 CNM_PLUGIN_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
             }
@@ -103,7 +104,7 @@ pipeline {
                 }
 
                 stage('Static analysis - Windows') {
-                    agent { label 'builder' }
+                    agent { label getBuilderTag() }
                     steps {
                         deleteDir()
                         unstash "StaticAnalysis"
@@ -131,7 +132,7 @@ pipeline {
                 }
 
                 stage('Build') {
-                    agent { label 'builder' }
+                    agent { label getBuilderTag() }
                     environment {
                         THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
                         CNM_PLUGIN_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
@@ -167,7 +168,6 @@ pipeline {
 
                     environment {
                         TESTBED = credentials('win-testbed')
-                        TESTBED_TEMPLATE = "Template-testbed-201903190303"
                         CONTROLLER_TEMPLATE = "Template-CentOS-7.5"
                         TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                         TESTENV_FOLDER = "WINCI/testenvs"
@@ -187,7 +187,7 @@ pipeline {
                                 testenv_folder: env.TESTENV_FOLDER,
                                 testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
                                 testenv_data_network: testNetwork,
-                                testenv_testbed_template: env.TESTBED_TEMPLATE,
+                                testenv_testbed_template: getTestbedTemplate(),
                                 testenv_controller_template: env.CONTROLLER_TEMPLATE,
                                 vcenter_datastore_cluster: env.VCENTER_DATASTORE_CLUSTER,
                             ]
