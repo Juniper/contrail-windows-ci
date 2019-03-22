@@ -57,12 +57,6 @@ function Install-Artifacts {
         Copy-Item -ToSession $Session -Path "vrouter\vRouter.msi" -Destination 'C:\Artifacts\vrouter\'
         Copy-Item -ToSession $Session -Path "vrouter\utils.msi" -Destination 'C:\Artifacts\vrouter\'
         Copy-Item -ToSession $Session -Path "vrouter\*.cer" -Destination 'C:\Artifacts\vrouter\' # TODO: Remove after JW-798
-
-        Invoke-Command -Session $Session -ScriptBlock {
-            Write-Host "Installing certificates"
-            Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ "C:\Artifacts\vrouter\vRouter.cer" | Out-Null # TODO: Remove after JW-798
-            Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ "C:\Artifacts\vrouter\vRouter.cer" | Out-Null # TODO: Remove after JW-798
-        }
     }
 
     if (Test-NonemptyDir "vtest") {

@@ -62,6 +62,34 @@ function Uninstall-Agent {
     Invoke-MsiExec -Uninstall -Session $Session -Path "C:\Artifacts\agent\contrail-vrouter-agent.msi"
 }
 
+function Import-ExtensionCertificate {
+    Param ([Parameter(Mandatory = $true)] [Testbed] $Testbed)
+
+    Write-Log 'Importing vRouter certificate to certstore'
+    Invoke-Command -Session $Testbed.GetSession() {
+        $Cert = Import-Certificate -CertStoreLocation Cert:\LocalMachine\Root\ 'C:\Artifacts\vrouter\vRouter.cer'
+        try {
+            Import-Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher\ 'C:\Artifacts\vrouter\vRouter.cer'
+        }
+        catch {
+            Remove-Item "Cert:\LocalMachine\Root\$($Cert.Thumbprint)"
+            throw
+        }
+    }
+}
+
+function Remove-ExtensionCertificate {
+    Param ([Parameter(Mandatory = $true)] [Testbed] $Testbed)
+
+    Write-Log 'Removing vRouter certificate from certstore'
+    Invoke-Command -Session $Testbed.GetSession() {
+        $Cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new()
+        $Cert.Import('C:\Artifacts\vrouter\vRouter.cer')
+        Remove-Item "Cert:\LocalMachine\Root\$($Cert.Thumbprint)"
+        Remove-Item "Cert:\LocalMachine\TrustedPublisher\$($Cert.Thumbprint)"
+    }
+}
+
 function Install-Extension {
     Param ([Parameter(Mandatory = $true)] [PSSessionT] $Session)
 
@@ -169,6 +197,8 @@ function Install-Components {
         [Parameter(Mandatory = $true)] [CleanupStack] $CleanupStack
     )
 
+    Import-ExtensionCertificate -Testbed $Testbed
+    $CleanupStack.Push(${function:Remove-ExtensionCertificate}, @($Testbed))
     Install-Extension -Session $Testbed.GetSession()
     $CleanupStack.Push(${function:Uninstall-Extension}, @($Testbed))
     Install-CnmPlugin -Session $Testbed.GetSession()

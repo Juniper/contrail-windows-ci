@@ -19,26 +19,9 @@ function Initialize-BuildEnvironment {
     })
 }
 
-function Set-MSISignature {
-    Param ([Parameter(Mandatory = $true)] [string] $SigntoolPath,
-           [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
-           [Parameter(Mandatory = $true)] [string] $MSIPath)
-    $Job.Step("Signing MSI", {
-        $cerp = Get-Content $CertPasswordFilePath
-        Invoke-NativeCommand -ScriptBlock {
-            & $SigntoolPath sign /f $CertPath /p $cerp $MSIPath
-        }
-    })
-}
-
 function Invoke-CnmPluginBuild {
     Param ([Parameter(Mandatory = $true)] [string] $PluginSrcPath,
-           [Parameter(Mandatory = $true)] [string] $SigntoolPath,
-           [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
-           [Parameter(Mandatory = $true)] [string] $OutputPath,
-           [Parameter(Mandatory = $true)] [string] $LogsPath)
+           [Parameter(Mandatory = $true)] [string] $OutputPath)
 
     $Job.PushStep("CNM plugin build")
     $GoPath = Get-Location
@@ -84,27 +67,11 @@ function Invoke-CnmPluginBuild {
         Copy-Item -Path $srcPath\build\* -Include "*.msi", "*.exe" -Destination $OutputPath
     })
 
-    $Job.Step("Signing MSI", {
-        Push-Location $OutputPath
-
-        foreach ($msi in (Get-ChildItem "*.msi")) {
-            Set-MSISignature -SigntoolPath $SigntoolPath `
-                             -CertPath $CertPath `
-                             -CertPasswordFilePath $CertPasswordFilePath `
-                             -MSIPath $msi.FullName
-        }
-
-        Pop-Location # $OutputPath
-    })
-
     $Job.PopStep()
 }
 
 function Invoke-ExtensionBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
-           [Parameter(Mandatory = $true)] [string] $SigntoolPath,
-           [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
@@ -118,18 +85,6 @@ function Invoke-ExtensionBuild {
     $BuildModeOption = "--optimization=" + $BuildMode
 
     $Job.Step("Building Extension and Utils", {
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="Cerp env variable required by vRouter build.")]
-        $Env:cerp = Get-Content $CertPasswordFilePath
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="Required by vRouter build")]
-        $Env:CERT_FILEPATH = $CertPath
-
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
-            "", Justification="Required by vRouter build")]
-        $Env:CERT_PASSWORD = Get-Content $CertPasswordFilePath
-
         Invoke-NativeCommand -ScriptBlock {
             scons $BuildModeOption vrouter | Tee-Object -FilePath $LogsPath/vrouter_build.log
         }
@@ -148,18 +103,6 @@ function Invoke-ExtensionBuild {
 
     $pdbOutputPath = "$OutputPath\$PdbSubfolder"
     $vRouterPdbFiles = "$vRouterBuildRoot\extension\*.pdb"
-
-    Write-Host "Signing utilsMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath `
-                     -CertPath $CertPath `
-                     -CertPasswordFilePath $CertPasswordFilePath `
-                     -MSIPath $utilsMSI
-
-    Write-Host "Signing vRouterMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath `
-                     -CertPath $CertPath `
-                     -CertPasswordFilePath $CertPasswordFilePath `
-                     -MSIPath $vRouterMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $utilsMSI $OutputPath
@@ -184,9 +127,6 @@ function Copy-VtestScenarios {
 
 function Invoke-AgentBuild {
     Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
-           [Parameter(Mandatory = $true)] [string] $SigntoolPath,
-           [Parameter(Mandatory = $true)] [string] $CertPath,
-           [Parameter(Mandatory = $true)] [string] $CertPasswordFilePath,
            [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $true)] [string] $LogsPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
@@ -213,12 +153,6 @@ function Invoke-AgentBuild {
 
     $pdbOutputPath = "$OutputPath\$PdbSubfolder"
     $agentPdbFiles = "build\$BuildMode\vnsw\agent\contrail\*.pdb"
-
-    Write-Host "Signing agentMSI"
-    Set-MSISignature -SigntoolPath $SigntoolPath `
-                     -CertPath $CertPath `
-                     -CertPasswordFilePath $CertPasswordFilePath `
-                     -MSIPath $agentMSI
 
     $Job.Step("Copying artifacts to $OutputPath", {
         Copy-Item $agentMSI $OutputPath -Recurse
