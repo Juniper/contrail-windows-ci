@@ -11,11 +11,7 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\Installation.ps1
 . $PSScriptRoot\..\..\TestConfigurationUtils.ps1
 
-# We need to declare those two classes, because CleanupStack needs to know them, but in case of this test
-# doesn't use them. Alternative would be to dot-source ContrailAPI, which would be waste of resources.
-# TODO Make TestCleanup Module independent from ContrailAPI.
-class BaseResourceModel {}
-class ContrailRepo {}
+. $PSScriptRoot\..\..\Utils\ContrailAPI\ContrailAPI.ps1
 . $PSScriptRoot\..\..\Utils\TestCleanup\TestCleanup.ps1
 
 Describe 'vTest scenarios' -Tag Smoke {
