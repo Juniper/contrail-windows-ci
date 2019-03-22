@@ -51,10 +51,6 @@ function Restart-Agent {
     Invoke-Command -Session $Testbed.GetSession() -ScriptBlock {
         Restart-Service $Using:ServiceName
     } | Out-Null
-
-    # We need to wait for Agent to load ports again.
-    # TODO Do it in better way than sleep.
-    Start-Sleep -Seconds 5
 }
 
 function Get-NumberOfStoredPorts {
@@ -86,11 +82,16 @@ Test-WithRetries 3 {
             Restart-Agent -Testbed $Testenv.Testbeds[0]
 
             Write-Log 'Testing ping after Agent restart...'
-            Test-Ping `
+            # On Windows Server 2019 it was observed that even though Restart-Service
+            # returned, ports were not yet reloaded in agent, so the ping can fail for
+            # the first time.
+            Eventually {
+                Test-Ping `
                 -Session $Testenv.Testbeds[0].GetSession() `
                 -SrcContainerName $ContainerIds[0] `
                 -DstContainerName $ContainerIds[1] `
                 -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
+            } -Duration 60
 
             Write-Log "Creating container: $($ContainerIds[2])"
             New-Container `
