@@ -32,18 +32,6 @@ function New-CNMPluginConfigFile {
 
     Write-Log 'Creating CNM plugin config file'
 
-    switch ($Testbed.WinVersion) {
-        'v2016' {
-            $WsVersion = '2016'
-        }
-        'v2019' {
-            $WsVersion = '2019'
-        }
-        Default {
-            throw 'Unknown CNM Plugin Config for this Windows Server Version'
-        }
-    }
-
     $ConfigPath = Get-DefaultCNMPluginsConfigPath
 
     $Config = @"
@@ -51,7 +39,6 @@ function New-CNMPluginConfigFile {
 Adapter=$($Testbed.DataAdapterName)
 ControllerIP=$( $ControllerConfig.MgmtAddress )
 ControllerPort=8082
-WSVersion=$WsVersion
 
 [LOGGING]
 LogLevel=Debug
