@@ -85,13 +85,18 @@ Test-WithRetries 3 {
             # On Windows Server 2019 it was observed that even though Restart-Service
             # returned, ports were not yet reloaded in agent, so the ping can fail for
             # the first time.
-            Eventually {
-                Test-Ping `
-                -Session $Testenv.Testbeds[0].GetSession() `
-                -SrcContainerName $ContainerIds[0] `
-                -DstContainerName $ContainerIds[1] `
-                -DstIP $ContainerNetInfos[1].IPAddress | Should Be 0
-            } -Duration 60
+            $Retries = 5
+            while (($Retries--) -gt 0) {
+                $PingRes = Test-Ping `
+                    -Session $Testenv.Testbeds[0].GetSession() `
+                    -SrcContainerName $ContainerIds[0] `
+                    -DstContainerName $ContainerIds[1] `
+                    -DstIP $ContainerNetInfos[1].IPAddress
+                if ($PingRes -eq 0) {
+                    break
+                }
+            }
+            $Retries | Should -Not -Be -1
 
             Write-Log "Creating container: $($ContainerIds[2])"
             New-Container `
