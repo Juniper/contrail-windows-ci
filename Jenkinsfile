@@ -40,7 +40,6 @@ pipeline {
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
                 stash name: "Flakes", includes: "flakes/**"
-                stash name: "Test", includes: "Test/**"
             }
         }
 
@@ -55,6 +54,7 @@ pipeline {
                 retry(3) {
                     powershell script: './CIScripts/Checkout.ps1'
                     stash name: "SourceCode", excludes: "CIScripts"
+                    stash name: "Test", includes: "Test/**"
                 }
             }
         }
