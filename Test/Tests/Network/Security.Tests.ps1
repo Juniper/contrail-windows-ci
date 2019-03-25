@@ -24,7 +24,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
-. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 
 $ContrailProject = 'ci_tests_security'

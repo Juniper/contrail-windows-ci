@@ -21,7 +21,6 @@ Param (
 . $PSScriptRoot\..\..\Utils\ComputeNode\TestsRequirements.ps1
 . $PSScriptRoot\..\..\Utils\WinContainers\Containers.ps1
 . $PSScriptRoot\..\..\Utils\NetAdapterInfo\RemoteContainer.ps1
-. $PSScriptRoot\..\..\Utils\MultiNode\ContrailMultiNodeProvisioning.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Initialize.ps1
 . $PSScriptRoot\..\..\Utils\DockerNetwork\Commands.ps1
 . $PSScriptRoot\..\..\Utils\ComputeNode\Configuration.ps1
