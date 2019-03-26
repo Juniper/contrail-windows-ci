@@ -211,6 +211,9 @@ function Invoke-ProductUnitTests {
             'vrouter:test'
         )
 
+        $backupPath = $Env:Path
+        $Env:Path += ";" + $(Get-Location).Path + "\build\bin"
+
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments",
             "", Justification="TASK_UTIL_WAIT_TIME is used agent tests for determining timeout's " +
             "threshold. They were copied from Linux unit test job.")]
@@ -224,5 +227,7 @@ function Invoke-ProductUnitTests {
         Invoke-NativeCommand -ScriptBlock {
             scons -j $Env:BUILD_THREADS --opt=$BuildMode @Tests
         } | Out-Null
+
+        $Env:Path = $backupPath
     })
 }
