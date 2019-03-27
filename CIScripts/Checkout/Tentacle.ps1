@@ -13,4 +13,6 @@ function Get-TentacleRepos {
     $Job.Step("Unpacking tentacle repositories", {
         Expand-Archive -Path repos.zip -DestinationPath .
     })
+
+    Move-Item -Force -Path src/Juniper/contrail-windows-test -Destination Test
 }
