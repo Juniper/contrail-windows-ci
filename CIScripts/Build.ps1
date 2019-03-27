@@ -80,7 +80,7 @@ try {
         )
         Invoke-ContainersBuild -WorkDir $ContainersWorkDir `
             -ContainersAttributes $ContainersAttributes `
-            -ContainerTag "$Env:DOCKER_CONTAINER_TAG" `
+            -ContainerTag $Env:DOCKER_CONTAINER_TAG `
             -Registry $Env:DOCKER_REGISTRY
     }
 
