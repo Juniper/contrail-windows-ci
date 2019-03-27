@@ -26,6 +26,7 @@ function Invoke-ContainerBuild {
         }
         'Windows Server 2019' {
             $BaseImage = 'mcr.microsoft.com/windows/nanoserver:1809'
+            $ContainerTag = 'winsrv2019-' + $ContainerTag
         }
         Default {
             throw 'Unknow Windows Server version'
