@@ -14,5 +14,5 @@ function Get-TentacleRepos {
         Expand-Archive -Path repos.zip -DestinationPath .
     })
 
-    Move-Item -Force -Path src/Juniper/contrail-windows-test -Destination Test
+    Move-Item -Force -Path contrail-windows-test -Destination Test
 }
