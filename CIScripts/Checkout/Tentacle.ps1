@@ -13,10 +13,4 @@ function Get-TentacleRepos {
     $Job.Step("Unpacking tentacle repositories", {
         Expand-Archive -Path repos.zip -DestinationPath .
     })
-
-    # TODO Temporary change, until PR for contrail-vnc putting contrail-windows-test
-    # to directory 'Test', is merged.
-    if (Test-Path contrail-windows-test) {
-        Move-Item -Force -Path contrail-windows-test -Destination Test
-    }
 }
