@@ -90,12 +90,6 @@ function Invoke-ExtensionBuild {
         }
     })
 
-    $Job.Step("Running kernel unit tests", {
-        Invoke-NativeCommand -ScriptBlock {
-            scons $BuildModeOption kernel-tests vrouter:test | Tee-Object -FilePath $LogsPath/vrouter_unit_tests.log
-        }
-    })
-
     $vRouterBuildRoot = "build\{0}\vrouter" -f $BuildMode
     $vRouterMSI = "$vRouterBuildRoot\extension\vRouter.msi"
     $vRouterCert = "$vRouterBuildRoot\extension\vRouter.cer"
@@ -293,6 +287,10 @@ function Invoke-ProductUnitTests {
             "", Justification="TASK_UTIL_RETRY_COUNT is used in agent tests for determining " +
             "timeout's threshold. They were copied from Linux unit test job.")]
         $Env:TASK_UTIL_RETRY_COUNT = 6000
+
+        Invoke-NativeCommand -ScriptBlock {
+            scons --opt=$BuildMode kernel-tests vrouter:test
+        }
 
         $AgentExecutables = Get-ChildItem -Recurse (Join-Path $TestPathPrefix '*.exe') | `
             Where-Object Directory -match '\\build\\.*\\test'
