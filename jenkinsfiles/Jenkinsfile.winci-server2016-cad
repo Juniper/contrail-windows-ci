@@ -1,6 +1,7 @@
 #!groovy
 library "contrailWindows@$BRANCH_NAME"
 
+checkSupportedWindowsVersion()
 
 pipeline {
     agent none
@@ -29,22 +30,21 @@ pipeline {
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
                 stash name: "Flakes", includes: "flakes/**"
-                stash name: "Test", includes: "Test/**"
             }
         }
 
         stage('Download Contrail Ansible Deployer') {
-            agent { label 'builder' }
+            agent { label getBuilderTag() }
             steps {
                 deleteDir()
 
                 unstash "CIScripts"
-                unstash "Test"
 
                 retry(3) {
                     powershell script: './CIScripts/Checkout.ps1'
                 }
 
+                stash name: "Test", includes: "Test/**"
                 stash name: "Deployer", includes: "contrail-ansible-deployer/**"
             }
         }
@@ -52,7 +52,7 @@ pipeline {
         // TODO: This stage should be finally removed once we no longer
         //       use debug builds for c-a-d tests.
         stage('Fetch debug dlls from builder') {
-            agent { label 'builder' }
+            agent { label getBuilderTag() }
             steps {
                 deleteDir()
                 powershell script: '''
@@ -70,7 +70,6 @@ pipeline {
 
             environment {
                 TESTBED = credentials('win-testbed')
-                TESTBED_TEMPLATE = "Template-testbed-201902010453"
                 CONTROLLER_TEMPLATE = "Template-CentOS-7.5"
                 TESTENV_MGMT_NETWORK = "VLAN_501_Management"
                 TESTENV_FOLDER = "WINCI/testenvs"
@@ -90,7 +89,7 @@ pipeline {
                         testenv_folder: env.TESTENV_FOLDER,
                         testenv_mgmt_network: env.TESTENV_MGMT_NETWORK,
                         testenv_data_network: testNetwork,
-                        testenv_testbed_template: env.TESTBED_TEMPLATE,
+                        testenv_testbed_template: getTestbedTemplate(),
                         testenv_controller_template: env.CONTROLLER_TEMPLATE,
                         vcenter_datastore_cluster: env.VCENTER_DATASTORE_CLUSTER,
                     ]

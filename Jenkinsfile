@@ -40,7 +40,6 @@ pipeline {
                 stash name: "Ansible", includes: "ansible/**"
                 stash name: "Monitoring", includes: "monitoring/**"
                 stash name: "Flakes", includes: "flakes/**"
-                stash name: "Test", includes: "Test/**"
             }
         }
 
@@ -50,11 +49,12 @@ pipeline {
                 CNM_PLUGIN_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
             }
             steps {
-                deleteDir()
-                unstash "CIScripts"
                 retry(3) {
+                    deleteDir()
+                    unstash "CIScripts"
                     powershell script: './CIScripts/Checkout.ps1'
                     stash name: "SourceCode", excludes: "CIScripts"
+                    stash name: "Test", includes: "Test/**"
                 }
             }
         }
