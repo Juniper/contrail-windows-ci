@@ -75,9 +75,11 @@
     version: 9.0.0.30729
     state: present
 
-- name: Install MS Visual C++ Redist 14
+- name: Install MS Visual C++ Redists
   win_chocolatey:
-    name: vcredist140
+    name:
+    - vcredist2013
+    - vcredist2015
     state: present
 
 - name: Disable Windows Firewall
