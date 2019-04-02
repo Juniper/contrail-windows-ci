@@ -77,10 +77,11 @@
 
 - name: Install MS Visual C++ Redists
   win_chocolatey:
-    name:
-    - vcredist2013
-    - vcredist2015
+    name: '{{ item }}'
     state: present
+  with_items:
+  - vcredist2013
+  - vcredist2015
 
 - name: Disable Windows Firewall
   win_firewall:
