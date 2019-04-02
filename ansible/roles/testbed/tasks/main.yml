@@ -52,9 +52,6 @@
   set_fact:
     windows_server_version: "{{ ansible_distribution | regex_findall('Windows Server (\\d{4})') | first }}"
 
-- name: Pull docker python image
-  win_shell: "docker pull python:3.7"
-
 - name: Pull Microsoft docker images (Windows Server 2016)
   win_shell: "docker pull {{ item }}"
   with_items:
@@ -68,6 +65,9 @@
     - mcr.microsoft.com/windows/servercore:1809
     - mcr.microsoft.com/windows/nanoserver:1809
   when: windows_server_version == '2019'
+
+- name: Pull docker python image
+  win_shell: "docker pull python:3.7"
 
 - name: Install VC for Python 2.7
   win_chocolatey:
