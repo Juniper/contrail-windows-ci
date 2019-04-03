@@ -52,8 +52,8 @@
   set_fact:
     windows_server_version: "{{ ansible_distribution | regex_findall('Windows Server (\\d{4})') | first }}"
 
-- name: Pull docker python image
-  win_shell: "docker pull python:3.7"
+# For some reason if we try to download the biggest images first it fails.
+# That's why for now we just start from downloading the smallest one.
 
 - name: Pull Microsoft docker images (Windows Server 2016)
   win_shell: "docker pull {{ item }}"
@@ -69,16 +69,22 @@
     - mcr.microsoft.com/windows/nanoserver:1809
   when: windows_server_version == '2019'
 
+- name: Pull docker python image
+  win_shell: "docker pull python:3.7"
+
 - name: Install VC for Python 2.7
   win_chocolatey:
     name: vcpython27
     version: 9.0.0.30729
     state: present
 
-- name: Install MS Visual C++ Redist 14
+- name: Install MS Visual C++ Redists
   win_chocolatey:
-    name: vcredist140
+    name: '{{ item }}'
     state: present
+  with_items:
+  - vcredist2013
+  - vcredist2015
 
 - name: Disable Windows Firewall
   win_firewall:
