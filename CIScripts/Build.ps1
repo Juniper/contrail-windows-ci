@@ -8,7 +8,7 @@
 
 $Job = [Job]::new("Build")
 
-Initialize-BuildEnvironment -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH
+Initialize-BuildEnvironment
 
 $SconsBuildMode = Resolve-BuildMode
 
@@ -42,14 +42,12 @@ try {
     Invoke-CnmPluginBuild -PluginSrcPath $Env:CNM_PLUGIN_SRC_PATH `
         -OutputPath $CnmPluginOutputDir
 
-    Invoke-ExtensionBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
-        -BuildMode $SconsBuildMode `
+    Invoke-ExtensionBuild -BuildMode $SconsBuildMode `
         -OutputPath $vRouterOutputDir
 
     Copy-VtestScenarios -OutputPath $vtestOutputDir
 
-    Invoke-AgentBuild -ThirdPartyCache $Env:THIRD_PARTY_CACHE_PATH `
-        -BuildMode $SconsBuildMode `
+    Invoke-AgentBuild -BuildMode $SconsBuildMode `
         -OutputPath $AgentOutputDir
 
     Invoke-NodemgrBuild -OutputPath $NodemgrOutputDir `
