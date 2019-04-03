@@ -52,6 +52,9 @@
   set_fact:
     windows_server_version: "{{ ansible_distribution | regex_findall('Windows Server (\\d{4})') | first }}"
 
+# For some reason if we try to download the biggest images first it fails.
+# That's why for now we just start from downloading the smallest one.
+
 - name: Pull Microsoft docker images (Windows Server 2016)
   win_shell: "docker pull {{ item }}"
   with_items:
