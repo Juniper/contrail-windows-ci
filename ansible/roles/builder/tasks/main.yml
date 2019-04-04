@@ -340,6 +340,16 @@
     - '{{ dependencies_dir }}'
     state: present
 
+- name: Install 7zip
+  win_chocolatey:
+    name: 7zip
+    state: present
+
+- name: Install GNU patch
+  win_chocolatey:
+    name: patch
+    state: present
+
 - name: Include telegraf role
   include_role:
     name: telegraf
