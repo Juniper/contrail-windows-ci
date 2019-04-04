@@ -220,9 +220,10 @@
     value: '{{ boost_dir }}'
     level: machine
 
-- name: Install prebuilded OpenSSL 1.0.2o
+# based on https://slproweb.com/download/Win64OpenSSL-1_0_2r.exe
+- name: Install prebuilt OpenSSL 1.0.2
   win_unzip:
-    src: '{{ dependencies_source }}\OpenSSL_1_0_2o.zip'
+    src: '{{ dependencies_source }}\OpenSSL_1_0_2r.zip'
     dest: '{{ openssl_dir }}'
 
 - name: Set OPENSSL_ROOT variable
