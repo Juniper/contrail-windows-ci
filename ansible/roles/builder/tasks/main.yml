@@ -351,6 +351,11 @@
     name: patch
     state: present
 
+- name: Install Visual C++ Redistributable 2013 for OpenSSL
+  win_chocolatey:
+    name: vcredist2013
+    state: present
+
 - name: Include telegraf role
   include_role:
     name: telegraf
