@@ -7,7 +7,7 @@ function Initialize-BuildEnvironment {
     $Job.Step("Fetching third-party dependencies", {
         Invoke-NativeCommand -ScriptBlock {
             py third_party\fetch_packages.py
-        }
+        } | Out-Null
     })
 
     $Job.Step("Copying SConstruct from tools\build", {
