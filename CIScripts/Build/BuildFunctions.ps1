@@ -4,10 +4,14 @@
 $PdbSubfolder = "pdb"
 
 function Initialize-BuildEnvironment {
-    $Job.Step("Fetching third-party dependencies", {
-        Invoke-NativeCommand -ScriptBlock {
-            py third_party\fetch_packages.py
-        } | Out-Null
+    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache)
+    $Job.Step("Copying common third-party dependencies", {
+        if (!(Test-Path -Path .\third_party)) {
+            New-Item -ItemType Directory .\third_party | Out-Null
+        }
+        Get-ChildItem "$ThirdPartyCache\common" -Directory |
+            Where-Object{$_.Name -notlike "boost*"} |
+            Copy-Item -Destination third_party\ -Recurse -Force
     })
 
     $Job.Step("Copying SConstruct from tools\build", {
@@ -67,10 +71,15 @@ function Invoke-CnmPluginBuild {
 }
 
 function Invoke-ExtensionBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
+    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
+           [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Extension build")
+
+    $Job.Step("Copying Extension dependencies", {
+        Copy-Item -Recurse "$ThirdPartyCache\extension\*" third_party\
+    })
 
     $Job.Step("Building Extension and Utils", {
         Invoke-NativeCommand -ScriptBlock {
@@ -108,10 +117,15 @@ function Copy-VtestScenarios {
 }
 
 function Invoke-AgentBuild {
-    Param ([Parameter(Mandatory = $true)] [string] $OutputPath,
+    Param ([Parameter(Mandatory = $true)] [string] $ThirdPartyCache,
+           [Parameter(Mandatory = $true)] [string] $OutputPath,
            [Parameter(Mandatory = $false)] [string] $BuildMode = "debug")
 
     $Job.PushStep("Agent build")
+
+    $Job.Step("Copying Agent dependencies", {
+        Copy-Item -Recurse "$ThirdPartyCache\agent\*" third_party/
+    })
 
     $Job.Step("Building contrail-vrouter-agent.exe and .msi", {
         Invoke-NativeCommand -ScriptBlock {
