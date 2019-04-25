@@ -72,9 +72,15 @@ try {
                 $CnmPluginOutputDir
             ))
         )
+
+        $tag = $Env:ZUUL_BRANCH
+        if ($tag.StartsWith("R")) {
+            $tag = $tag.substring(1, $tag.length - 1)
+        }
+
         Invoke-ContainersBuild -WorkDir $ContainersWorkDir `
             -ContainersAttributes $ContainersAttributes `
-            -ContainerTag "$Env:ZUUL_BRANCH-$Env:DOCKER_BUILD_NUMBER" `
+            -ContainerTag "$tag-$Env:DOCKER_BUILD_NUMBER" `
             -Registry $Env:DOCKER_REGISTRY
     }
 
