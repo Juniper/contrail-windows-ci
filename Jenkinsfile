@@ -134,6 +134,7 @@ pipeline {
                 stage('Build') {
                     agent { label getBuilderTag() }
                     environment {
+                        THIRD_PARTY_CACHE_PATH = "C:/BUILD_DEPENDENCIES/third_party_cache/"
                         CNM_PLUGIN_SRC_PATH = "github.com/Juniper/contrail-windows-docker-driver"
                         BUILD_THREADS = "6"
                         WINCIDEV = credentials('winci-drive')
