@@ -205,10 +205,10 @@
     dest: '{{ dependencies_dir }}\third_party_cache'
     flags: /E /PURGE /MT:32
 
-- name: Install boost 1.62.0
+- name: Install Boost
   win_chocolatey:
     name: boost-msvc-14
-    source: 'https://www.myget.org/F/boost-msvc/'
+    source: 'https://www.myget.org/F/boost-msvc/api/v2'
     version: '1.62.0'
     install_args: '/DIR="{{ boost_dir }}"'
     state: present
@@ -220,11 +220,13 @@
     value: '{{ boost_dir }}'
     level: machine
 
-# based on https://slproweb.com/download/Win64OpenSSL-1_0_2r.exe
-- name: Install prebuilt OpenSSL 1.0.2
-  win_unzip:
-    src: '{{ dependencies_source }}\OpenSSL_1_0_2r.zip'
-    dest: '{{ openssl_dir }}'
+- name: Install OpenSSL
+  win_chocolatey:
+    name: win-openssl
+    source: 'https://www.myget.org/F/openssl/api/v2'
+    version: '1.0.2-r'
+    install_args: '/DIR="{{ openssl_dir }}"'
+    state: present
 
 - name: Set OPENSSL_ROOT variable
   win_environment:
