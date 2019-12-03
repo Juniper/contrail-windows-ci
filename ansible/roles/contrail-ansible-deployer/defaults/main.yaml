@@ -1,4 +1,0 @@
-docker_provision_dir: "/tmp/contrail-ansible-deployer"
-network_interface: "ens192"
-physical_interface: "ens224"
-cloud_orchestrator: "openstack"

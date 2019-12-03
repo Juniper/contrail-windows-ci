@@ -1,2 +1,0 @@
-graphite_addr: "{{ graphite_host }}:{{ graphite_port }}"
-telegraf_path: 'C:\Program Files\telegraf'

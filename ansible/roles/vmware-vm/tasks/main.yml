@@ -1,9 +1,0 @@
----
-
-- name: print inventory
-  debug:
-    verbosity: 1
-    msg: "{{ hostvars[inventory_hostname] }}"
-
-- name: Include '{{ action }}' tasks
-  include_tasks: "{{ action }}.yml"

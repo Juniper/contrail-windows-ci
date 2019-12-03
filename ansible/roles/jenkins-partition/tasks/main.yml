@@ -1,9 +1,0 @@
----
-
-- name: Include Windows-specific task
-  include_tasks: windows.yml
-  when: ansible_os_family == "Windows"
-
-- name: Include Linux-specific task
-  include_tasks: linux.yml
-  when: ansible_os_family != "Windows"
